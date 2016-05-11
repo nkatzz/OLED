@@ -1,0 +1,40 @@
+%modeh(initiatedAt(fighting(+entity,+entity),+time))
+%modeh(terminatedAt(fighting(+entity,+entity),+time))
+
+modeh(initiatedAt(moving(+entity,+entity),+time))
+modeh(terminatedAt(moving(+entity,+entity),+time))
+
+%modeh(initiatedAt(meeting(+entity,+entity),+time))
+%modeh(terminatedAt(meeting(+entity,+entity),+time))
+
+%modeh(initiatedAt(leavingObject(+entity,+entity),+time))
+%modeh(terminatedAt(leavingObject(+entity,+entity),+time))
+
+modeb(happensAt(walking(+entity),+time))
+modeb(not happensAt(walking(+entity),+time))
+modeb(happensAt(active(+entity),+time))
+modeb(not happensAt(active(+entity),+time))
+modeb(happensAt(inactive(+entity),+time))
+modeb(not happensAt(inactive(+entity),+time))
+modeb(happensAt(abrupt(+entity),+time))
+modeb(not happensAt(abrupt(+entity),+time))
+modeb(happensAt(running(+entity),+time))
+modeb(not happensAt(running(+entity),+time))
+
+modeb(happensAt(appear(+entity),+time))
+modeb(happensAt(disappear(+entity),+time))
+modeb(holdsAt(person(+entity),+time))
+%modeb(not holdsAt(person(+entity),+time))
+
+modeb(holdsAt(close(+entity,+entity,#threshold_value),+time))
+modeb(holdsAt(far(+entity,+entity,#threshold_value),+time))
+modeb(holdsAt(sameDirection(+entity,+entity),+time))
+modeb(holdsAt(diffDirection(+entity,+entity),+time))
+modeb(holdsAt(visible(+entity),+time))
+
+%examplePattern(holdsAt(fighting(+entity,+entity),+time))
+examplePattern(holdsAt(moving(+entity,+entity),+time))
+%examplePattern(holdsAt(meeting(+entity,+entity),+time))
+%examplePattern(holdsAt(leavingObject(+entity,+entity),+time))
+
+
