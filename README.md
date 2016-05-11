@@ -21,15 +21,15 @@ Clone the source to some local directory. From now one we'll refer to this direc
 
 ``OLED`` has been evaluated on the [CAVIAR dataset](http://homepages.inf.ed.ac.uk/rbf/CAVIARDATA1/) for activity recognition. A more generic version for using it with your own datasets will be uploaded here soon. In the meantime, I'd be happy to offer assistance in using it with other datasets (please contact ``nkatz`` ``at`` ``iit`` ``dot`` ``demokritos`` ``dot`` ``gr``).
 
-### Datasets
+#### Datasets
 
 test
 
-#### CAVIAR Fragment
+###### CAVIAR Fragment
 
 test
 
-#### Whole CAVIAR
+###### Whole CAVIAR
 
 test
 
