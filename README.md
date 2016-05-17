@@ -1,4 +1,4 @@
-# ILED: Online Learning of Event Definitions
+# OLED: Online Learning of Event Definitions
 
 
 ``OLED`` is an online Inductive Logic Programming system for learning logical theories from data streams. ``OLED`` has been designed having in mind the construction of knowledge for event recognition applications, in particular, learning Event Calculus theories, but it can practically be used within any domain where ILP is applicable (preferably, large volumes of sequential data with a time-like structure). Please consult the paper that comes with the source (oled.pdf) to get a grasp on the theory behind ``OLED``.
