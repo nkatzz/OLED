@@ -19,7 +19,7 @@ Clone the source to some local directory. From now one we'll refer to this direc
 
 ## Datasets
 
-``OLED`` has been evaluated on the [CAVIAR dataset](http://homepages.inf.ed.ac.uk/rbf/CAVIARDATA1/) for activity recognition. A more generic version for using it with your own datasets will be uploaded here soon. In the meantime, I'd be happy to offer assistance in using it with other datasets (please contact ``nkatz`` ``at`` ``iit`` ``dot`` ``demokritos`` ``dot`` ``gr``).
+``OLED`` has been evaluated on the [CAVIAR dataset](http://homepages.inf.ed.ac.uk/rbf/CAVIARDATA1/) for activity recognition. See [here](http://homepages.inf.ed.ac.uk/rbf/CAVIARDATA1/) for information on the CAVIAR dataset. A more generic version for using it with your own datasets will be uploaded here soon. In the meantime, I'd be happy to offer assistance in using it with other datasets (please contact ``nkatz`` ``at`` ``iit`` ``dot`` ``demokritos`` ``dot`` ``gr``).
 
 Links to download the CAVIAR dataset and instructions on how to use it with with ``OLED`` follow. 
 
@@ -29,17 +29,13 @@ A fragment of the CAVIAR dataset used for experiments in
 
 * Skarlatidis A., Paliouras G., Artikis A., and Vouros G. Probabilistic Event Calculus for Event Recognition, ACM Transactions on Computational Logic, 16(2):1-37, 2015.
 
-This dataset has been used for evaluating ``OLED``, see the paper that comes with source (``oled.pdf``) for details. Follow [this link](http://users.iit.demokritos.gr/~nkatz/OLED-data/) to download the data.
+This dataset has been used for evaluating ``OLED``, see the paper that comes with source (``oled.pdf``) for details. Follow [this link](http://users.iit.demokritos.gr/~nkatz/OLED-data/CAVIAR_MLN) to download the data.
 
 ###### Whole CAVIAR
 
-test
+The entire CAVIAR dataset, also used for evaluating ``OLED`` -- see the paper that comes with source (``oled.pdf``) for details, is available from [this link](http://users.iit.demokritos.gr/~nkatz/OLED-data/caviar.json) in the form of a mongodb json dumb. To load the dataset in your local mongodb instance do ``mongoimport --db yourDBname --collection examples --file caviar.json``
 
 
-
-#### Activity Recognition (CAVIAR)
-
-See [this link](http://homepages.inf.ed.ac.uk/rbf/CAVIARDATA1/) for information on the CAVIAR dataset. You can also find more information on the dataset itself and the way it has been used for learning with ``ILED`` in [ILED's technical report](http://arxiv.org/pdf/1402.5988v2.pdf). You can download data plus instructions on how to perform learning with ``ILED`` from [this link](http://users.iit.demokritos.gr/~nkatz/ILED-data/CAVIAR.tar.gz).
 
 
 
