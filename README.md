@@ -17,11 +17,9 @@ Clone the source to some local directory. From now one we'll refer to this direc
 * Mongodb
 * Jep (Java Embedded Python). To install, clone the source from [here](https://github.com/mrj0/jep), and do `python setup.py install --home=</your/path>`. Afterwards, add `/your/path/lib/python` to your PYTHONPATH variable and copy the generated jar file from `/your/path/lib/python/jep/jep-x.x.x.jar` to `/oled/lib`.
 
-## Usage
+## Datasets
 
 ``OLED`` has been evaluated on the [CAVIAR dataset](http://homepages.inf.ed.ac.uk/rbf/CAVIARDATA1/) for activity recognition. A more generic version for using it with your own datasets will be uploaded here soon. In the meantime, I'd be happy to offer assistance in using it with other datasets (please contact ``nkatz`` ``at`` ``iit`` ``dot`` ``demokritos`` ``dot`` ``gr``).
-
-#### Datasets
 
 Links to download the CAVIAR dataset and instructions on how to use it with with ``OLED`` follow. 
 
