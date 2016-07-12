@@ -35,9 +35,9 @@ A `json` dump (extracted from a mongodb) of the `CAVIAR` dataset (`caviar.json`)
 * Start SBT from within `\oledhome`
 * Type `assembly`
 * Move the generated file `/oledhome/target/scala-2.11/oled.jar` to `\oledhome`
-* Run ir as follows:
+* Run it as follows:
 
-`java -cp oled.jar:/lib/jep-x.x.x.jar -Djava.library.path=/jephome/lib/python/jep all.core.oled.Runner <command line args>`
+```java -cp oled.jar:/lib/jep-x.x.x.jar -Djava.library.path=/jephome/lib/python/jep all.core.oled.Runner <command line args>```
 
 where `<command line args>` is the following list of runtime parameters for `OLED`: 
 
