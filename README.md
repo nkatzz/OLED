@@ -14,9 +14,10 @@ Clone the source to some local directory, let's call it `/oledhome`. The followi
 * Scala 2.11 & SBT with Java > 7
 * Python 2.7
 * Clingo with Python and multithreading (TBB) support. To install:
-..* Download the Clingo source from [here](http://potassco.sourceforge.net/) and follow the instructions that come with the source to install. Aftewards you should add the clingo executable that will be generated to your `PATH` variable. The path to the executable is: `/clingohome/build/release`, where `/clingohome` is the location where you unzipped the clingo source code.
+  Download the Clingo source from [here](http://potassco.sourceforge.net/) and follow the instructions that come with the source to install. Aftewards you should add the clingo executable that will be generated to your `PATH` variable. The path to the executable is: `/clingohome/build/release`, where `/clingohome` is the location where you unzipped the clingo source code.
 * Mongodb
-* Jep (Java Embedded Python). To install, clone the source from [here](https://github.com/mrj0/jep) to a location (call that `/jephome`), and do `python setup.py install --home=/jephome`. Afterwards, add `/jephome/lib/python` to your `PYTHONPATH` variable and copy the generated jar file from  `/jephome/lib/python/jep/jep-x.x.x.jar` to `/oledhome/lib`.
+* Jep (Java Embedded Python). To install:
+  Clone the source from [here](https://github.com/mrj0/jep) to a location (call that `/jephome`), and do `python setup.py install --home=/jephome`. Afterwards, add `/jephome/lib/python` to your `PYTHONPATH` variable and copy the generated jar file from  `/jephome/lib/python/jep/jep-x.x.x.jar` to `/oledhome/lib`.
 
 ## Datasets
 
@@ -24,13 +25,13 @@ Clone the source to some local directory, let's call it `/oledhome`. The followi
 
 ## Usage
 
-### Run on the CAVIAR dataset
+#### Run on the CAVIAR dataset
 
 A `json` dump (extracted from a mongodb) of the `CAVIAR` dataset (`caviar.json`) may be found in the `\data` folder. To load the dataset in your local mongodb instance do ``mongoimport --db yourDBname --collection examples --file caviar.json`` where `yourDBname`. Next, to run `OLED` with `CAVIAR` data, generate a jar file from the source code:
 
 * Edit the `build.sbt` making sure that the corresponding lines look as follows:
-..* `jarName in assembly := "oled.jar"`
-..* `mainClass in (Compile, packageBin) := Some("all.core.oled.Runner")`
+  * `jarName in assembly := "oled.jar"`
+  * `mainClass in (Compile, packageBin) := Some("all.core.oled.Runner")`
 * Start SBT from within `\oledhome`
 * Type `assembly`
 * Move the generated file `/oledhome/target/scala-2.11/oled.jar` to `\oledhome`
