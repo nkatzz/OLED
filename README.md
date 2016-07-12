@@ -27,7 +27,7 @@ Clone the source to some local directory, let's call it `/oledhome`. The followi
 
 #### Run on the CAVIAR dataset
 
-A `json` dump (extracted from a mongodb) of the `CAVIAR` dataset (`caviar.json`) may be found in the `\data` folder. To load the dataset in your local mongodb instance do ``mongoimport --db yourDBname --collection examples --file caviar.json`` where `yourDBname`. Next, to run `OLED` with `CAVIAR` data, generate a jar file from the source code:
+A `json` dump (extracted from a mongodb) of the `CAVIAR` dataset (`caviar.json`) may be downloaded from [this link](http://users.iit.demokritos.gr/~nkatz/OLED-data/caviar.json). To load the dataset in your local mongodb instance do ``mongoimport --db yourDBname --collection examples --file caviar.json``. Next, to run `OLED` with `CAVIAR` data, generate a jar file from the source code:
 
 * Edit the `build.sbt` making sure that the corresponding lines look as follows:
   * `jarName in assembly := "oled.jar"`
@@ -62,7 +62,7 @@ A fragment of the CAVIAR dataset used for experiments in
 
 * Skarlatidis A., Paliouras G., Artikis A., and Vouros G. Probabilistic Event Calculus for Event Recognition, ACM Transactions on Computational Logic, 16(2):1-37, 2015.
 
-This dataset has been used for evaluating ``OLED``, see the paper that comes with source (``oled.pdf``) for details. Follow [this link](http://users.iit.demokritos.gr/~nkatz/OLED-data/CAVIAR_MLN) to download the data.
+has been used for evaluating ``OLED``, see the paper that comes with source (``oled.pdf``) for details. Follow [this link](http://users.iit.demokritos.gr/~nkatz/OLED-data/CAVIAR_MLN) to download the data.
 
 
 
