@@ -5,17 +5,17 @@ import java.io.File
 import akka.actor.{ActorSystem, Props, Actor, PoisonPill}
 import com.mongodb.casbah.commons.MongoDBObject
 import com.typesafe.scalalogging.LazyLogging
-import iled.core.Core
-import iled.core.noisyILED.experimentsMLNdata.MLNDataHandler
-import iled.utils.CaviarUtils.Interval
+import all.core.Core
+import all.core.oled.experimentsMLNdata.MLNDataHandler
+import all.utils.CaviarUtils.Interval
 
-import iled.core.noisyILED.{TheoryLearner, TrainingSet}
+import all.core.oled.{TheoryLearner, TrainingSet}
 
-import iled.globalValues.GlobalValues
-import iled.structures.{Literal, Theory}
-import iled.utils._
+import all.globalValues.GlobalValues
+import all.structures.{Literal, Theory}
+import all.utils._
 import jep.Jep
-import iled.core.Implicits._
+import all.core.Implicits._
 
 /**
   * Created by nkatz on 4/8/16.
@@ -153,7 +153,7 @@ class OLED(val DB: Database, val delta: Double, val breakTiesThreshold: Double,
   def getTestingData: Iterator[Exmpl] = {
     if (trainingData.asInstanceOf[TrainingSet].testingSet == Nil) {
       // normally just return x below.
-      val x = trainingData.asInstanceOf[iled.core.noisyILED.experimentsMLNdata.MLNDataHandler.TrainingSet].testingData.toIterator
+      val x = trainingData.asInstanceOf[all.core.oled.experimentsMLNdata.MLNDataHandler.TrainingSet].testingData.toIterator
       x
       // The following logic merges all the testing data into one interpretation (for better handling inertia during inference)
       /*

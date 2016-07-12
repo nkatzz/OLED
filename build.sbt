@@ -8,7 +8,7 @@ name := "ILED"
 version := "0.1"
 organization := "nkatz"
 scalaVersion := "2.11.7"
-publishTo := Some(Resolver.file("file", new File("/home/nkatz/Desktop/test")))
+//publishTo := Some(Resolver.file("file", new File("/home/nkatz/Desktop/test")))
 
 // Main class for packaging to jar
 mainClass in (Compile, packageBin) := Some("iled.core.noisyILED.Runner")

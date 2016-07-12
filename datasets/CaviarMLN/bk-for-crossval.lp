@@ -17,8 +17,6 @@ holdsAt(F,Te) :-
       Te = Ts + 1,
       time(Ts),time(Te).
 
-
-
 fluent(moving(X,Y)) :- person(X),person(Y),X != Y.
 fluent(meeting(X,Y)) :- person(X),person(Y),X != Y.
 fluent(fighting(X,Y)) :- person(X),person(Y),X != Y.

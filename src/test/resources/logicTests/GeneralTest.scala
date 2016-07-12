@@ -1,10 +1,10 @@
 package logicTests
 
 import com.mongodb.casbah.MongoClient
-import iled.parsers.ModesParser
-import iled.structures.Examples.Example
-import iled.structures.Modes.ModeAtom
-import iled.structures._
+import all.parsers.ModesParser
+import all.structures.Examples.Example
+import all.structures.Modes.ModeAtom
+import all.structures._
 
 
 object GeneralTest extends ModesParser {

@@ -2,7 +2,7 @@ package logicTests
 
 
 import org.scalatest._
-import iled.structures._
+import all.structures._
 
 class Logic extends FlatSpec with Matchers {
 

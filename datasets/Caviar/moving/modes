@@ -1,0 +1,30 @@
+modeh(initiatedAt(moving(+person,+person),+time))
+modeh(terminatedAt(moving(+person,+person),+time))
+
+modeb(happensAt(walking(+person),+time))
+modeb(happensAt(active(+person),+time))
+modeb(happensAt(inactive(+person),+time))
+modeb(happensAt(abrupt(+person),+time))
+modeb(happensAt(running(+person),+time))
+modeb(close(+person,+person,#threshold_value,+time))
+modeb(far(+person,+person,#threshold_value,+time))
+%modeb(holdsAt(visible(+person),+time))
+modeb(happensAt(appear(+person),+time))
+modeb(happensAt(disappear(+person),+time))
+
+%% Only for moving
+modeb(orientationMove(+person,+person,+time))
+modeb(orientationFar(+person,+person,+time))
+
+modeb(not happensAt(disappear(+person),+time))
+%modeb(not happensAt(appear(+person),+time))
+%modeb(not happensAt(running(+person),+time))
+%modeb(not happensAt(active(+person),+time))
+%modeb(not happensAt(inactive(+person),+time))
+%modeb(not happensAt(walking(+person),+time))
+%modeb(not happensAt(abrupt(+person),+time))
+
+examplePattern(holdsAt(moving(+person,+person),+time))
+
+
+

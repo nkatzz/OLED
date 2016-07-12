@@ -18,6 +18,7 @@ modeb(happensAt(running(+person),+time))
 
 modeb(happensAt(appear(+person),+time))
 modeb(happensAt(disappear(+person),+time))
+modeb(not happensAt(disappear(+person),+time))
 modeb(close(+person,+person,#dist,+time))
 modeb(far(+person,+person,#dist,+time))
 

@@ -2,11 +2,11 @@ package oled
 
 import akka.actor.{PoisonPill, ActorSystem, Props, Actor}
 import com.typesafe.scalalogging.LazyLogging
-import iled.globalValues.GlobalValues
+import all.globalValues.GlobalValues
 
 //import iled.core.noisyILED.{ResultsContainer, TrainingSet}
-import iled.core.noisyILED.experimentsMLNdata.MLNDataHandler
-import iled.utils.{Utils, Database}
+import all.core.oled.experimentsMLNdata.MLNDataHandler
+import all.utils.{Utils, Database}
 
 import scala.collection.mutable.ListBuffer
 

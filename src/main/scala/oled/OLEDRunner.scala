@@ -1,10 +1,10 @@
 package oled
 
 import akka.actor.{Props, ActorSystem}
-import iled.core.noisyILED.TrainingSet
-import iled.core.noisyILED.experimentsMLNdata.MLNDataHandler
-import iled.globalValues.GlobalValues
-import iled.utils.Database
+import all.core.oled.TrainingSet
+import all.core.oled.experimentsMLNdata.MLNDataHandler
+import all.globalValues.GlobalValues
+import all.utils.Database
 
 /**
   * Created by nkatz on 4/11/16.

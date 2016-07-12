@@ -2,10 +2,10 @@ package logicTests
 
 
 import org.scalatest._
-import iled.structures._
-import iled.structures.Modes._
-import iled.utils.Utils
-import iled.utils.Hausdorff 
+import all.structures._
+import all.structures.Modes._
+import all.utils.Utils
+import all.utils.Hausdorff
 
 class LogicWithFunSuite extends FunSuite {
 
@@ -133,14 +133,14 @@ class LogicWithFunSuite extends FunSuite {
    }
    
    test("XHAIL reading from DB") {
-      iled.core.Xhail.runXhail(fromDB = "CAVIAR-01-Walk1", inputDirectory = "")
+      all.core.Xhail.runXhail(fromDB = "CAVIAR-01-Walk1", inputDirectory = "")
    }
    
 }
 
 
 
-class ModesParserTester extends iled.parsers.ModesParser {
+class ModesParserTester extends all.parsers.ModesParser {
 
       val mhParser = modeh
       val mbParser = modeb

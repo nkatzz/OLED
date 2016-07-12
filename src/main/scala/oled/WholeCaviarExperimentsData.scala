@@ -1,11 +1,11 @@
 package oled
 
 import java.io.File
-import iled.core.noisyILED.{MeetingTrainingData, MovingTrainingData}
-import iled.core.noisyILED.experimentsMLNdata.MLNDataHandler
-import iled.structures.Examples.Example
-import iled.utils.{Database, CaviarUtils}
-import iled.core.ExmplImplicits._
+import all.core.oled.{MeetingTrainingData, MovingTrainingData}
+import all.core.oled.experimentsMLNdata.MLNDataHandler
+import all.structures.Examples.Example
+import all.utils.{Database, CaviarUtils}
+import all.core.ExmplImplicits._
 import scala.util.Random
 
 /**
