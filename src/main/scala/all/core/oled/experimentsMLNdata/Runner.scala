@@ -23,32 +23,88 @@ object Runner {
 
     //val trainingSet = MLNDataHandler.getData(foldPath = "/home/nkatz/dev/CAVIAR_MLN/CAVIAR_MLN/move/fold_0", chunkSize = 10)
 
-    run(foldPath = "/home/nkatz/dev/CAVIAR_MLN/CAVIAR_MLN/meet/fold_2", chunkSize = 10)
+
+    /*
+    val help = args.contains("--help")
+    if (help) {
+      println("Input parameters:\n-------------------\ndb=dbname: (mandatory) 'dbname' is a name of a mongodb to learn from.\n" +
+        "target=event: (mandatory) 'event' is the name of a target complex event (either meeting or moving).\n" +
+        "dnum=integer: (mandatory). 'integer' is the number of a training set (the code contains 10" +
+        " pairs of training/test sets of the CAVIAR dataset -- see  all.core.oled.MeetingTrainingData).\n" +
+        "delta=double: (optional, default is 10^-5). 'double' is the δ parameter (significance) for the Hoeffding bound.\n" +
+        "prune=double: (optional, default is 0.0). 'double' is a clause quality threshold (clauses with score lower than that will be pruned.)\n" +
+        "nmin=integer: (optional, default is 1000). 'integer' is a minimum number of examples on which each clause must be evaluated.\n" +
+        "sdepth=integer: (optional, default is 1). 'integer' is the specialization depth.")
+      System.exit(-1)
+    }
+    */
+
+    val args_ = args.toList.map(x => x.split("="))
+    val path = args_.filter(z => z(0) == "path")
+    val target = args_.filter(z => z(0) == "target")
+
+    if (path.isEmpty) throw new RuntimeException("Please indicate a datapath to learn from. Use the parameter 'db=yourdb' (no quotes)")
+    if (target.isEmpty) throw new RuntimeException("Please indicate a target complex event (meeting or moving). Use the parameter 'target=event' (no quotes)")
+
+    GlobalValues.inputPath =
+      if (target.head(1) == "meeting") s"${GlobalValues.cwd}/datasets/CaviarMLN/meeting" else s"${GlobalValues.cwd}/datasets/CaviarMLN/moving"
+
+    val delta_ = args_.filter(z => z(0) == "delta")//0.00001
+    val delta = if (delta_.isEmpty) 0.00001 else delta_.head(1).toDouble
+
+    val prune = args_.filter(z => z(0) == "prune")
+    val pruningThreshold = if (prune.isEmpty) 0.4 else prune.head(1).toDouble
+
+    val nmin = args_.filter(z => z(0) == "nmin")
+    val minSeen = if (nmin.isEmpty) 1000 else nmin.head(1).toInt
+
+    val sdepth = args_.filter(z => z(0) == "sdepth")
+    val specializationDepth = if (sdepth.isEmpty) 1 else sdepth.head(1).toInt
+
+    // example:
+    // path=/home/nkatz/dev/CAVIAR_MLN/CAVIAR_MLN/meet/fold_2 target=meeting delta=0.00001 prune=0.7 nmin=1000 sdepth=2
+
+    run(foldPath=path.head(1), hle=target.head(1), chunkSize=10, delta=delta, prune=pruningThreshold, nmin=minSeen, sdepth=specializationDepth)
+    //"/home/nkatz/dev/CAVIAR_MLN/CAVIAR_MLN/meet/fold_2"
   }
 
 
-  val delta = 0.00001 // 7 0's
+  //val delta = 0.00001 // 7 0's
   val breakTiesThreshold = 0.05
-  val postPruningThreshold = 0.7
-  val minSeenExmpls = 1000 // break ties for a rule only after it has been evaluated on minSeenExmpls
-  val repeatFor = 1     // re-see the data repeatFor
-  val trainingSetSize = 1500 // WHOLE_DATA_SET_VALE
+  //val postPruningThreshold = 0.7
+  //val minSeenExmpls = 1000
+  val repeatFor = 1
+  val trainingSetSize = 1500
   val withPostPruning = true
   val withInertia = false
   // !!!!!!!!!!!!!!!!!!!!!!!!!!!
-  val HLE = "meeting"
+  //val HLE = "meeting"
   // !!!!!!!!!!!!!!!!!!!!!!!!!!!
-  val specializationDepth = 2
-  GlobalValues.glvalues("specializationDepth") = specializationDepth.toString
+  //val specializationDepth = 2
+  //GlobalValues.glvalues("specializationDepth") = specializationDepth.toString
 
+
+/*
   val HAND_CRAFTED = if(HLE=="meeting"){
     GlobalValues.HAND_CRAFTED_RULES+"/meeting-hand-crafted.lp"
   } else {
     GlobalValues.HAND_CRAFTED_RULES+"/moving-hand-crafted.lp"
   }
+*/
+  def run(foldPath: String, hle: String, chunkSize: Int, delta: Double, prune: Double, nmin: Int, sdepth: Int) = {
 
-  def run(foldPath: String, chunkSize: Int) = {
-    // The DB instance is not used anywhere, its given only for the Dispatcher consrtuctor to compile.
+    GlobalValues.glvalues("specializationDepth") = sdepth.toString
+
+    /*
+    val HAND_CRAFTED = if(hle=="meeting"){
+      GlobalValues.HAND_CRAFTED_RULES+"/meeting-hand-crafted.lp"
+    } else {
+      GlobalValues.HAND_CRAFTED_RULES+"/moving-hand-crafted.lp"
+    }
+    */
+    val HAND_CRAFTED = ""
+
+    // The DB instance is not used anywhere, its given only for the Dispatcher constructor to compile.
     // I need to fix this, by adding a more generic constructor to Dispatcher that may accept an empty
     // DB object (and also need to implement the logic that will construct and empty DB at the Database class)
     val DB = new Database("CAVIAR_Real_FixedBorders", "examples")
@@ -64,9 +120,9 @@ object Runner {
 
     val actor =
       system.actorOf(Props(new Dispatcher(DB,delta,breakTiesThreshold,
-        postPruningThreshold,minSeenExmpls,trainingSetSize,repeatFor,
+        prune,nmin,trainingSetSize,repeatFor,
         chunkSize,withInertia,withPostPruning,
-        dataset.asInstanceOf[TrainingSet],HLE,HAND_CRAFTED) ), name = "Learner") ! "start" // "EvaluateHandCrafted"
+        dataset.asInstanceOf[TrainingSet],hle,HAND_CRAFTED) ), name = "Learner") ! "start" // "EvaluateHandCrafted"
 
 
   }
