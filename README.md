@@ -36,9 +36,9 @@ A `json` dump (extracted from a mongodb) of the `CAVIAR` dataset (`caviar.json`)
 * Edit the `build.sbt` making sure that the corresponding lines look as follows:
   * `jarName in assembly := "oled.jar"`
   * `mainClass in (Compile, packageBin) := Some("all.core.oled.Runner")`
-* Start SBT from within `\oledhome`
+* Start SBT from within `/oledhome`
 * Type `assembly`
-* Move the generated file `/oledhome/target/scala-2.11/oled.jar` to `\oledhome`
+* Move the generated file `/oledhome/target/scala-2.11/oled.jar` to `/oledhome`
 * Run it as follows:
 
 ```
