@@ -24,7 +24,7 @@ Clone the source to some local directory, let's call it `/oledhome`. The followi
 
 ## Usage
 
-###### Run on the CAVIAR dataset
+### Run on the CAVIAR dataset
 
 A `json` dump (extracted from a mongodb) of the `CAVIAR` dataset (`caviar.json`) may be found in the `\data` folder. To load the dataset in your local mongodb instance do ``mongoimport --db yourDBname --collection examples --file caviar.json`` where `yourDBname`. Next, to run `OLED` with `CAVIAR` data, generate a jar file from the source code:
 
@@ -53,7 +53,7 @@ sdepth=integer: (optional, default is 1). 'integer' is the specialization depth.
 ```
 
 
-###### Run on a Fragment of CAVIAR
+#### Run on a Fragment of CAVIAR
 
 A fragment of the CAVIAR dataset used for experiments in 
 
