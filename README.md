@@ -5,7 +5,7 @@
 
 ## Related paper/more info
 
-Please consult the paper that comes with the source (``iclp-2016.pdf``) to get a grasp on the theory behind ``OLED``.
+Please consult the paper that comes with the source (``iclp-2016.pdf``) to get a grasp on the theory behind ``OLED``. The paper can also be downloaded from [here](https://www.cambridge.org/core/journals/theory-and-practice-of-logic-programming/article/online-learning-of-event-definitions/B1244B019AF03F6172DC92B57896544D)
 
 ## Licence
 
