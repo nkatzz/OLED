@@ -61,7 +61,7 @@ ties=<double>: (optional, default is 0.005). Tie-breaking threshold.
 evalth=<true|false>: (optional, default is false). If false. learn from the data, else evaluate an existing theory on the data.
 ```
 
-#### The distributed version of `OLED`
+## Distributed version of `OLED`
 
 Description & instructions coming soon.
 
