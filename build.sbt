@@ -4,8 +4,8 @@ import sbt.Tests.Setup
 
 //assemblySettings
 
-//jarName in assembly := "d-oled.jar"
-jarName in assembly := "oled.jar"
+jarName in assembly := "d-oled.jar"
+//jarName in assembly := "oled.jar"
 
 name := "OLED"
 version := "0.1"
@@ -14,8 +14,8 @@ scalaVersion := "2.11.7"
 publishTo := Some(Resolver.file("file", new File("/home/nkatz/Desktop/test")))
 
 // Main class for packaging to jar
-//mainClass in (Compile, packageBin) := Some("app.d_OLEDRunner")
-mainClass in (Compile, packageBin) := Some("app.OLEDRunner")
+mainClass in (Compile, packageBin) := Some("app.d_OLEDRunner")
+//mainClass in (Compile, packageBin) := Some("app.OLEDRunner")
 
 // MongoDB
 libraryDependencies += "org.mongodb" %% "casbah" % "2.8.1"
