@@ -25,7 +25,7 @@ Clone the source to some local directory, let's refer to that by `/oledhome` in 
 
 ## Datasets
 
-A dataset on which ``OLED`` has been evaluated on is the [CAVIAR dataset](http://homepages.inf.ed.ac.uk/rbf/CAVIARDATA1/) for activity recognition. See [here](http://homepages.inf.ed.ac.uk/rbf/CAVIARDATA1/) for information on the CAVIAR dataset. I'd be happy to offer assistance in using it with other datasets (formulate background knowledge, import the data in a mongodb etc). Please contact me at ``nkatz`` ``at`` ``iit`` ``dot`` ``demokritos`` ``dot`` ``gr``. 
+A dataset on which ``OLED`` has been evaluated on is the [CAVIAR dataset](http://homepages.inf.ed.ac.uk/rbf/CAVIARDATA1/) for activity recognition. See [here](http://homepages.inf.ed.ac.uk/rbf/CAVIARDATA1/) for information on the CAVIAR dataset. More datasets and instructions to try them out will be uploaded soon. In the meantime, I'd be happy to offer assistance in using `OLED` with other datasets (formulate background knowledge, import the data in a mongodb etc). Please contact me at ``nkatz`` ``at`` ``iit`` ``dot`` ``demokritos`` ``dot`` ``gr``. 
 
 ## Usage
 
@@ -39,13 +39,26 @@ A `json` dump (extracted from a mongodb) of the `CAVIAR` dataset (`caviar.json`)
 * Run it as follows:
 
 ```
-java -cp oled.jar:/lib/jep-x.x.x.jar -Djava.library.path=/jephome/lib/python/jep app.OLEDRunner inpath=/oledhome/datasets/Caviar/meeting delta=0.00001 prune=0.7 db=yourDBname wjep=true chunksize=10 hle=meeting
+java -cp oled.jar:/lib/jep-x.x.x.jar -Djava.library.path=/jephome/lib/python/jep app.OLEDRunner inpath=/oledhome/datasets/Caviar/meeting delta=0.00001 prune=0.7 db=yourDBname wjep=true chunksize=10 hle=meeting/moving
 ```
 
-To see a description of available command-line parameters with `OLED` type:
+A list of available command line args follows :
 
 ```
-...
+Input parameters:
+-------------------
+inpath=<path>: (mandatory) 'path' The path to a particular application (containing the background knowledge and mode declarations).
+db=<dbname>: (mandatory) 'dbname' is a name of a mongodb that stores the data to learn from.
+hle=<event>: (mandatory) 'event' is the name of a target complex event (e.g. either meeting or moving for the CAVIAR experiments).
+delta=<double>: (optional, default is 10^-5). 'double' is the δ parameter for the Hoeffding bound test.
+prune=<double>: (optional, default is 0.0). 'double' is a rule quality threshold (rules with score lower than that will be pruned.)
+minseen=<integer>: (optional, default is 1000). 'integer' is a minimum number of examples on which each clause must be evaluated.
+spdepth=<integer>: (optional, default is 1). 'integer' is the specialization depth parameter (see the the iclp-2016.pdf paper that accompanies the source).
+repfor=<integer>: (optional, default is 1). Train by passing several times ('integer'-many) over the data.
+wjep=<true|false>: (optional, default is false). Use/not use Jep to communicate with the Clingo solver.
+chunksize=<integer>: (optional, default is false). Pass the data in chunks of size 'integer'.
+ties=<double>: (optional, default is 0.005). Tie-breaking threshold.
+evalth=<true|false>: (optional, default is false). If false. learn from the data, else evaluate an existing theory on the data.
 ```
 
 #### The distributed version of `OLED`
