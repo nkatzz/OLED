@@ -22,14 +22,11 @@ Clone the source to some local directory, let's refer to that by `/oledhome` in 
 * Mongodb (just follow the instructions from the Mongodb website to install).
 * Jep (Java Embedded Python). To install:
   Clone the source from [here](https://github.com/mrj0/jep) to a location (let's refer to that by `/jephome` in what follows), and do `python setup.py install --home=/jephome`. Afterwards, add `/jephome/lib/python` to your `PYTHONPATH` variable and copy the generated jar file from  `/jephome/lib/python/jep/jep-x.x.x.jar` to `/oledhome/lib` (generate a `/lib` folder under `oledhome` if not present).
-* When you're done, download [this patch](http://users.iit.demokritos.gr/~nkatz/clingo-patch/solve-multi.patch.0), put inside `clingohome` (the folder where where you unzipped the clingo source code) and run it as follows:
-
+* When you're done, download [this patch](http://users.iit.demokritos.gr/~nkatz/clingo-patch/solve-multi.patch.0), put it inside `clingohome` (the folder where where you unzipped the clingo source code) and run it as follows:
 ```
 patch -p0 < solve-multi.patch.0
 ```
-
 from within `clingohome`. Then recompile the python module:
-
 ```
 scons --build-dir=release pyclingo
 ```
