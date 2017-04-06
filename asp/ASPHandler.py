@@ -2,13 +2,15 @@
 
 import gringo
 import sys
+sys.path.append('/home/nkatz/dev/ILED/datasets/Fraud/py-utils')
+#sys.path.append('/home/nkatz/dev/OLED/iled/datasets/Fraud/py-utils')
+import functions
 from java.util import ArrayList, HashMap
 import locale
 
-class ASPHandler:
 
-    #models = []
-    #result = ''
+
+class ASPHandler:
 
     def __init__(self, aspFile, solveMode, task):
         #args = dict(x.split('=',1) for x in sys.argv[1:])
@@ -25,6 +27,9 @@ class ASPHandler:
     def __on_model(self, model):
         self.models.append(model.atoms())
         #pass
+
+    #def getCores(self):
+    #    return multiprocessing.cpu_count()
     
     """
     def __on_finish(self, result, canceled):
@@ -33,17 +38,14 @@ class ASPHandler:
     """
     
     def solve(self):
-        #import multiprocessing
-        #cores = multiprocessing.cpu_count()
-        # -t8: run in parallel using 8 threads
-        #ctl = gringo.Control(['-Wno-atom-undefined','-t8']) if cores >= 8 else gringo.Control(['-Wno-atom-undefined'])
+        #cores = '-t%d'%(self.getCores())
         locale.setlocale(locale.LC_ALL, 'C')
-        ctl = gringo.Control(['-Wno-atom-undefined','-t8'])
+        ctl = gringo.Control(['-Wno-atom-undefined','-t4'])
         ctl.load(self.aspfile)
         ctl.conf.solve.models = 0 if self.solveMode in ["all","optN"] else self.solveMode
         if self.solveMode == 'optN':
             ctl.conf.solve.opt_mode = 'optN'
-        ctl.ground([("base", [])])
+        ctl.ground([("base", [])], functions)
         #f = ctl.solve_async(assumptions = None, on_model = self.__on_model, on_finish = self.__on_finish)
         #f.wait()
         self.result = ctl.solve(assumptions = None, on_model = self.__on_model)

@@ -1,0 +1,12 @@
+modeh(initiatedAt(continuing(+community),+time))
+modeh(terminatedAt(continuing(+community),+time))
+
+modeb(happensAt(f1(+community,#featureValue),+time))
+modeb(happensAt(f2(+community,#featureValue),+time))
+modeb(happensAt(f3(+community,#featureValue),+time))
+modeb(happensAt(f4(+community,#featureValue),+time))
+
+examplePattern(holdsAt(continuing(+community),+time))
+
+
+

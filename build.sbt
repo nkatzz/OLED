@@ -1,17 +1,21 @@
+import sbt.Tests.Setup
+
 //import AssemblyKeys._
 
 //assemblySettings
 
-jarName in assembly := "OLED-whole-caviar.jar"
+//jarName in assembly := "d-oled.jar"
+jarName in assembly := "oled.jar"
 
-name := "ILED"
+name := "OLED"
 version := "0.1"
 organization := "nkatz"
 scalaVersion := "2.11.7"
-//publishTo := Some(Resolver.file("file", new File("/home/nkatz/Desktop/test")))
+publishTo := Some(Resolver.file("file", new File("/home/nkatz/Desktop/test")))
 
 // Main class for packaging to jar
-mainClass in (Compile, packageBin) := Some("iled.core.noisyILED.Runner")
+//mainClass in (Compile, packageBin) := Some("app.d_OLEDRunner")
+mainClass in (Compile, packageBin) := Some("app.OLEDRunner")
 
 // MongoDB
 libraryDependencies += "org.mongodb" %% "casbah" % "2.8.1"
@@ -37,7 +41,7 @@ libraryDependencies += "com.typesafe.akka" %% "akka-actor" % "2.3.11"
 libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.1.0"
 libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.1.2"
 libraryDependencies += "ch.qos.logback" % "logback-core" % "1.1.2"
-libraryDependencies += "org.slf4j" % "slf4j-api" % "1.7.1"
+libraryDependencies += "org.slf4j" % "slf4j-api" % "1.7.15"
 
 // Scalaz
 libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.1.4"

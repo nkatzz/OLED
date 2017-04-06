@@ -1,0 +1,13 @@
+modeh(fraud(+cardId))
+
+modeb(increasingSeqsAtLeast(+cardId,#incSeqs))
+modeb(decreasingSeqsAtLeast(+cardId,#incSeqs))
+
+modeb(largestIncreasingSeqAtLeast(+cardId,#incSeqs))
+modeb(largestDecreasingSeqAtLeast(+cardId,#incSeqs))
+
+basic(fraud)
+basic(increasingSeqsAtLeast)
+basic(decreasingSeqsAtLeast)
+basic(largestIncreasingSeqAtLeast)
+basic(largestDecreasingSeqAtLeast)

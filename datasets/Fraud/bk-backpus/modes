@@ -1,0 +1,112 @@
+
+
+modeh(fraud(+cardId,+time))
+
+%modeb(transaction(+cardId,small_amount(-amountNum),-acqCountry,+time))
+%modeb(transaction(+cardId,high_amount(-amountNum),-acqCountry,+time))
+%modeb(transaction(+cardId,very_high_amount(-amountNum),-acqCountry,+time))
+%modeb(transaction(+cardId,very_small_amount(-amountNum),-acqCountry,+time))
+%modeb(transaction(+cardId,medium_amount(-amountNum),-acqCountry,+time))
+%modeb(transaction(+cardId,tiny_amount(-amountNum),-acqCountry,+time))
+%modeb(transaction(+cardId,massive_amount(-amountNum),-acqCountry,+time))
+%modeb(transaction(+cardId,small_amount(-amountNum),-acqCountry,-time))
+%modeb(transaction(+cardId,high_amount(-amountNum),-acqCountry,-time))
+%modeb(transaction(+cardId,very_high_amount(-amountNum),-acqCountry,-time))
+%modeb(transaction(+cardId,very_small_amount(-amountNum),-acqCountry,-time))
+%modeb(transaction(+cardId,medium_amount(-amountNum),-acqCountry,-time))
+%modeb(transaction(+cardId,tiny_amount(-amountNum),-acqCountry,-time))
+%modeb(transaction(+cardId,massive_amount(-amountNum),-acqCountry,-time))
+
+
+%modeb(transaction(+cardId,-amountNum,-acqCountry,+time))
+%modeb(transaction(+cardId,-amountNum,-acqCountry,-time))
+
+%modeb(transaction(+cardId,#quantised,-amountNum,-acqCountry,+time))
+%modeb(transaction(+cardId,#quantised,-amountNum,-acqCountry,-time))
+
+%modeb(transaction(+cardId,#amount,+time))
+%modeb(transaction(+cardId,#amount,-time))
+
+modeb(transaction(+cardId,#trend,+time))
+modeb(transaction(+cardId,#trend,-time))
+
+modeb(before(+time,+time))
+modeb(before(+time,-time))
+modeb(before(-time,+time))
+
+%modeb(after(+time,+time))
+%modeb(after(+time,-time))
+%modeb(after(-time,+time))
+
+%modeb(greaterThan(+amountNum,-amountNum))
+%modeb(greaterThan(-amountNum,+amountNum))
+%modeb(lessThan(+amountNum,-amountNum))
+%modeb(lessThan(-amountNum,+amountNum))
+
+%modeb(diffAcquirer(+cardId,+time,+time))
+%modeb(diffAcquirer(+cardId,+time,-time))
+%modeb(diffAcquirer(+cardId,-time,+time))
+
+modeb(diffAcquirer(+cardId, +time))
+modeb(diffAcquirer(+cardId, -time))
+modeb(diffAcquirer(-cardId, +time))
+
+modeb(small_amount(+time))
+modeb(small_amount(-time))
+modeb(high_amount(+time))
+modeb(high_amount(-time))
+modeb(very_high_amount(+time))
+modeb(very_high_amount(-time))
+modeb(very_small_amount(+time))
+modeb(very_small_amount(-time))
+modeb(medium_amount(+time))
+modeb(medium_amount(-time))
+modeb(tiny_amount(+time))
+modeb(tiny_amount(-time))
+modeb(massive_amount(+time))
+modeb(massive_amount(-time))
+
+modeb(decreasingCountAtLeast(+cardId,#decreaseAtLeast))
+modeb(increasingCountAtLeast(+cardId,#increaseAtLeast))
+modeb(totalTransactionsCountAtLeast(+cardId,#totalAtLeast))
+
+modeb(fraudWithin(-time,+time,#winSpan))
+%modeb(fraudWithin(+cardId,#winSpan))
+
+
+examplePattern(fraud(+cardId,+time))
+
+
+
+basic(fraud)
+basic(transaction)
+basic(diffAcquirer)
+basic(fraudWithin)
+basic(small_amount)
+basic(high_amount)
+basic(very_high_amount)
+basic(very_small_amount)
+basic(medium_amount)
+basic(tiny_amount)
+basic(massive_amount)
+basic(decreasingCountAtLeast)
+basic(increasingCountAtLeast)
+basic(totalTransactionsCountAtLeast)
+
+auxiliary(before)
+auxiliary(after)
+auxiliary(greaterThan)
+auxiliary(lessThan)
+
+
+%lookahead( transaction(X,const,T), before(T,T1), appearsEarlier(2) )
+
+% THIS IS VERY IMPORTANT: whatevers may be whatever, but they must be vars (start with a capital-case letter) and they must be different (within the same literal)
+% Also, constants must be declared as constants (no matter the name)
+
+%lookahead( transaction(Whatever1,const,A1,Whatever2,T1) <-> transaction(Whatever3,const,A2,Whatever4,T2) : {before(T1,T2) | after(T1,T2)}, {greaterThan(A1,A2) | lessThan(A1,A2)} )
+%lookahead( transaction(Whatever1,const,Whatever2,Whatever3,T1) <-> fraud(Whatever4,T2) : {before(T1,T2) | after(T1,T2)} )
+
+lookahead( transaction(Whatever1,const,T1) <-> transaction(Whatever3,const,T2) : {before(T1,T2) | before(T2,T1)} )
+lookahead( transaction(Whatever1,const,T1) <-> fraud(Whatever4,T2) : {before(T1,T2) | before(T2,T1)} )
+
