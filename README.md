@@ -47,7 +47,7 @@ A `json` dump (extracted from a mongodb) of the `CAVIAR` dataset (`caviar.json`)
 * Run it as follows:
 
 ```
-java -cp oled.jar:/lib/jep-x.x.x.jar -Djava.library.path=/jephome/lib/python/jep app.OLEDRunner inpath=/oledhome/datasets/Caviar/meeting delta=0.00001 prune=0.7 db=yourDBname wjep=true chunksize=10 hle=meeting/moving
+java -cp oled.jar:/lib/jep-x.x.x.jar -Djava.library.path=/jephome/lib/python/jep app.OLEDRunner inpath=/oledhome/datasets/Caviar/meeting delta=0.00001 prune=0.7 db=yourDBname wjep=true chunksize=10 hle=meeting
 ```
 
 A list of available command line args follows :
