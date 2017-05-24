@@ -5,10 +5,11 @@ package app
   */
 
 import java.util.concurrent.CountDownLatch
-import akka.actor.{Props, ActorSystem}
+
+import akka.actor.{ActorSystem, Props}
 import oled.MasterActor
 import utils._
-import oled.whole_caviar_data.MeetingTrainingData
+import oled.whole_caviar_data.{MeetingTrainingData, MovingTrainingData}
 import utils.Database
 
 object OLEDRunner extends {
@@ -73,9 +74,16 @@ object OLEDRunner extends {
     //val HLE = "moving"
     // !!!!!!!!!!!!!!!!!!!!!!!!!!!-
 
+    val trainSetNum = split.find(x => x._1 == "trainset").getOrElse( throw new RuntimeException("No training set provided") )._2.toInt //1
+
     val msg = s"δ=$delta-prune=$pruningThreshold-minseen=$minSeenExmpls-depth=$specializationDepth"
-    //val trainingSets = List(MeetingTrainingData.allTrainingSets.head)
-    val trainingSets = List(MeetingTrainingData.wholeCAVIAR1)
+
+    val trainingSets =
+      if (HLE == "meeting")
+        List(MeetingTrainingData.allTrainingSets(trainSetNum))
+      else
+        List(MovingTrainingData.allTrainingSets(trainSetNum))
+    //val trainingSets = List(MeetingTrainingData.wholeCAVIAR1)
 
     // for debugging
     trainingSets.foreach(x => x.showTrainingIntervals())

@@ -28,16 +28,32 @@ object MeetingTrainingData {
   90% of negatives (training set size) is 22592.7
   So negatives' testing set size is 2511.0
 */
-  val meetPos1 = Interval("meeting",5720,24480)
-  val meetPos2 = Interval("meeting",27280,61560)
-  val meetPos3 = Interval("meeting",507120,509800)
-  val meetPos4 = Interval("meeting",559200,564200)
-  val meetPos5 = Interval("meeting",785240,786320)
-  val meetPos6 = Interval("meeting",813080,814960)
-  val meetPos7 = Interval("meeting",829400,835520)
-  val meetPos8 = Interval("meeting",842680,843640)
-  val meetPos9 = Interval("meeting",892440,894920)
-  val meetPos10 = Interval("meeting",1009000,1009880)
+  //val meetPos1 = Interval("meeting",5720,24480)
+  val meetPos1 = Interval("meeting",5680,24480)
+  //val meetPos2 = Interval("meeting",27280,61560)
+  val meetPos2 = Interval("meeting",27240,61520)
+  //val meetPos3 = Interval("meeting",507120,509800)
+  val meetPos3 = Interval("meeting",507080,509760)
+  //val meetPos4 = Interval("meeting",559200,564200)
+  val meetPos4 = Interval("meeting",559160,564160)
+  //val meetPos5 = Interval("meeting",785240,786320)
+  val meetPos5 = Interval("meeting",785200,786280)
+  //val meetPos6 = Interval("meeting",813080,814960)
+  val meetPos6 = Interval("meeting",813040,814920)
+
+  //val meetPos7 = Interval("meeting",829400,835520)
+  val meetPos7 = Interval("meeting",829360,833520)
+
+  //val meetPos8 = Interval("meeting",842680,843640)
+  val meetPos8 = Interval("meeting",840200,841320)
+
+  //val meetPos9 = Interval("meeting",892440,894920)
+  val meetPos9 = Interval("meeting",867560,868520)
+
+  //val meetPos10 = Interval("meeting",1009000,1009880)
+  val meetPos10 = Interval("meeting",917320,919800)
+
+  val meetPos11 = Interval("meeting",1033880,1034760)
 
   // To break large intervals in smaller of 1000 data points use this (40 is the step):
   // List.range(568080,786280,40).grouped(1000).map(x => (x.head,x.tail.reverse.head)) foreach println

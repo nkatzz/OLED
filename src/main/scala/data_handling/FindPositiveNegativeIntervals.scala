@@ -12,7 +12,7 @@ import utils.Database
 object FindPositiveNegativeIntervals {
 
   def main(args: Array[String]) = {
-    val intervals = getPositiveNegativeIntervals("CAVIAR_Real_FixedBorders", "meeting")
+    val intervals = getPositiveNegativeIntervals("CAVIAR_Real_original", "meeting")
     println(intervals)
   }
   /**
