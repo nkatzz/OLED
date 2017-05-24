@@ -18,7 +18,7 @@ object OLEDRunner extends {
   * e.g:
   *
   * inpath=/home/nkatz/dev/ILED/datasets/Caviar/meeting spdepth=1 repfor=1 minseen=1000 prune=0.7 ties=0.05 delta=0.00001
-  * db=CAVIAR_Real_FixedBorders wjep=true chunksize=10 hle=meeting
+  * db=CAVIAR_Real_FixedBorders wjep=true chunksize=10 hle=meeting trainset=0
   * */
 
   def main(args: Array[String]) = {
