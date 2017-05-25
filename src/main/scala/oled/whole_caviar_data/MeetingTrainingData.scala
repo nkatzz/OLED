@@ -106,136 +106,113 @@ object MeetingTrainingData {
   val testingNeg9 = List(meetNeg25,meetNeg26,meetNeg27)
   val testingNeg10 = List(meetNeg28,meetNeg29,meetNeg30,meetNeg31,meetNeg32)
 
-  val allNegativeTestingSetIntervals =
-    List(testingNeg1,testingNeg2,testingNeg3,testingNeg4,testingNeg5,testingNeg6,testingNeg7,testingNeg8,testingNeg9,testingNeg10)
+  val allNegativeTestingSetIntervals = List(testingNeg1,testingNeg2,testingNeg3,testingNeg4,testingNeg5,testingNeg6,testingNeg7,testingNeg8,testingNeg9,testingNeg10)
 
 
+  def getMeetingTrainingData(fold: Int, randomOrder: Boolean) = {
+    val training = fold match {
+      case 1 =>
+        randomOrder match {
+          // Training set 1. All but meetPos1 & meetPos11
+          case true => allPosIntervals.filter(x => x!= meetPos1 && x!= meetPos11) ++ allNegIntervals.filter(z => !testingNeg1.contains(z))
+          case _ => List(Interval("meeting",27240,61520),Interval("meeting",301480,341440),Interval("meeting",939760,959720),Interval("meeting",813040,814920),Interval("meeting",684120,724080),Interval("meeting",644120,684080),Interval("meeting",1009840,1077680),Interval("meeting",833480,840240),Interval("meeting",867560,868520),Interval("meeting",559160,564160),Interval("meeting",786240,813080),Interval("meeting",917320,919800),Interval("meeting",840200,841320),Interval("meeting",785200,786280),Interval("meeting",919760,939720),Interval("meeting",181480,221440),Interval("meeting",829360,833520),Interval("meeting",564120,604080),Interval("meeting",421480,461440),Interval("meeting",141480,181440),Interval("meeting",341480,381440),Interval("meeting",959760,979720),Interval("meeting",999760,1019720),Interval("meeting",509720,559200),Interval("meeting",1019760,1030640),Interval("meeting",261480,301440),Interval("meeting",381480,421440),Interval("meeting",724120,764080),Interval("meeting",461480,501440),Interval("meeting",814880,829400),Interval("meeting",221480,261440),Interval("meeting",604120,644080),Interval("meeting",841280,867600),Interval("meeting",507080,509760),Interval("meeting",868480,917360),Interval("meeting",101480,141440),Interval("meeting",1030720,1033920),Interval("meeting",764120,785200))
+        }
+      case 2 =>
+        randomOrder match {
+          // Training set 2. All but meetPos2
+          case true => allPosIntervals.filter(x => x!= meetPos2) ++ allNegIntervals.filter(z => !testingNeg2.contains(z))
+          case _ => List(Interval("meeting",5680,24480),Interval("meeting",680,5720),Interval("meeting",1033880,1034760),Interval("meeting",814880,829400),Interval("meeting",917320,919800),Interval("meeting",381480,421440),Interval("meeting",999760,1019720),Interval("meeting",840200,841320),Interval("meeting",261480,301440),Interval("meeting",461480,501440),Interval("meeting",507080,509760),Interval("meeting",868480,917360),Interval("meeting",684120,724080),Interval("meeting",221480,261440),Interval("meeting",301480,341440),Interval("meeting",959760,979720),Interval("meeting",813040,814920),Interval("meeting",1034720,1102600),Interval("meeting",341480,381440),Interval("meeting",604120,644080),Interval("meeting",867560,868520),Interval("meeting",509720,559200),Interval("meeting",1009840,1077680),Interval("meeting",421480,461440),Interval("meeting",833480,840240),Interval("meeting",841280,867600),Interval("meeting",785200,786280),Interval("meeting",786240,813080),Interval("meeting",564120,604080),Interval("meeting",1019760,1030640),Interval("meeting",61480,101440),Interval("meeting",24440,27280),Interval("meeting",919760,939720),Interval("meeting",829360,833520),Interval("meeting",559160,564160),Interval("meeting",764120,785200),Interval("meeting",1030720,1033920),Interval("meeting",644120,684080),Interval("meeting",724120,764080),Interval("meeting",939760,959720))
+        }
+      case 3 =>
+        randomOrder match {
+          // Training set 3. All but meetPos3
+          case true => allPosIntervals.filter(x => x!= meetPos3) ++ allNegIntervals.filter(z => !testingNeg3.contains(z))
+          case _ => List(Interval("meeting",5680,24480),Interval("meeting",1009840,1077680),Interval("meeting",684120,724080),Interval("meeting",724120,764080),Interval("meeting",680,5720),Interval("meeting",868480,917360),Interval("meeting",841280,867600),Interval("meeting",27240,61520),Interval("meeting",461480,501440),Interval("meeting",785200,786280),Interval("meeting",559160,564160),Interval("meeting",181480,221440),Interval("meeting",1019760,1030640),Interval("meeting",509720,559200),Interval("meeting",341480,381440),Interval("meeting",867560,868520),Interval("meeting",1033880,1034760),Interval("meeting",833480,840240),Interval("meeting",829360,833520),Interval("meeting",999760,1019720),Interval("meeting",564120,604080),Interval("meeting",939760,959720),Interval("meeting",959760,979720),Interval("meeting",1030720,1033920),Interval("meeting",644120,684080),Interval("meeting",61480,101440),Interval("meeting",840200,841320),Interval("meeting",919760,939720),Interval("meeting",813040,814920),Interval("meeting",917320,919800),Interval("meeting",764120,785200),Interval("meeting",24440,27280),Interval("meeting",101480,141440),Interval("meeting",421480,461440),Interval("meeting",814880,829400),Interval("meeting",786240,813080),Interval("meeting",1034720,1102600),Interval("meeting",604120,644080),Interval("meeting",141480,181440),Interval("meeting",381480,421440))
+        }
+      case 4 =>
+        randomOrder match {
+          // Training set 4. All but meetPos4
+          case true => allPosIntervals.filter(x => x!= meetPos4) ++ allNegIntervals.filter(z => !testingNeg4.contains(z))
+          case _ => List(Interval("meeting",5680,24480),Interval("meeting",840200,841320),Interval("meeting",101480,141440),Interval("meeting",829360,833520),Interval("meeting",1019760,1030640),Interval("meeting",461480,501440),Interval("meeting",868480,917360),Interval("meeting",680,5720),Interval("meeting",61480,101440),Interval("meeting",261480,301440),Interval("meeting",724120,764080),Interval("meeting",604120,644080),Interval("meeting",785200,786280),Interval("meeting",999760,1019720),Interval("meeting",301480,341440),Interval("meeting",841280,867600),Interval("meeting",181480,221440),Interval("meeting",141480,181440),Interval("meeting",939760,959720),Interval("meeting",24440,27280),Interval("meeting",644120,684080),Interval("meeting",221480,261440),Interval("meeting",786240,813080),Interval("meeting",919760,939720),Interval("meeting",813040,814920),Interval("meeting",959760,979720),Interval("meeting",684120,724080),Interval("meeting",27240,61520),Interval("meeting",1034720,1102600),Interval("meeting",509720,559200),Interval("meeting",1030720,1033920),Interval("meeting",564120,604080),Interval("meeting",833480,840240),Interval("meeting",867560,868520),Interval("meeting",814880,829400),Interval("meeting",1033880,1034760),Interval("meeting",507080,509760),Interval("meeting",764120,785200),Interval("meeting",1009840,1077680),Interval("meeting",917320,919800))
 
-  // Training set 1. All but meetPos1 & meetPos11
-  //----------------------------------------------
-  val meetTrainingSet1 = {
-    //val training = allPosIntervals.filter(x => x!= meetPos1 && x!= meetPos11) ++ allNegIntervals.filter(z => !testingNeg1.contains(z))
-    val training = List(Interval("meeting",27240,61520),Interval("meeting",301480,341440),Interval("meeting",939760,959720),Interval("meeting",813040,814920),Interval("meeting",684120,724080),Interval("meeting",644120,684080),Interval("meeting",1009840,1077680),Interval("meeting",833480,840240),Interval("meeting",867560,868520),Interval("meeting",559160,564160),Interval("meeting",786240,813080),Interval("meeting",917320,919800),Interval("meeting",840200,841320),Interval("meeting",785200,786280),Interval("meeting",919760,939720),Interval("meeting",181480,221440),Interval("meeting",829360,833520),Interval("meeting",564120,604080),Interval("meeting",421480,461440),Interval("meeting",141480,181440),Interval("meeting",341480,381440),Interval("meeting",959760,979720),Interval("meeting",999760,1019720),Interval("meeting",509720,559200),Interval("meeting",1019760,1030640),Interval("meeting",261480,301440),Interval("meeting",381480,421440),Interval("meeting",724120,764080),Interval("meeting",461480,501440),Interval("meeting",814880,829400),Interval("meeting",221480,261440),Interval("meeting",604120,644080),Interval("meeting",841280,867600),Interval("meeting",507080,509760),Interval("meeting",868480,917360),Interval("meeting",101480,141440),Interval("meeting",1030720,1033920),Interval("meeting",764120,785200))
-    val testing = List(meetPos1) ++ List(meetPos11) ++ testingNeg1
-    new DataAsIntervals(trainingSet = List(training.head) ++ Random.shuffle(training.tail), testingSet = testing)
+        }
+      case 5 =>
+        randomOrder match {
+          // Training set 5. All but meetPos5
+          case true => allPosIntervals.filter(x => x!= meetPos5) ++ allNegIntervals.filter(z => !testingNeg5.contains(z))
+          case _ => List(Interval("meeting",5680,24480),Interval("meeting",1019760,1030640),Interval("meeting",829360,833520),Interval("meeting",421480,461440),Interval("meeting",999760,1019720),Interval("meeting",680,5720),Interval("meeting",814880,829400),Interval("meeting",1033880,1034760),Interval("meeting",559160,564160),Interval("meeting",1009840,1077680),Interval("meeting",917320,919800),Interval("meeting",840200,841320),Interval("meeting",61480,101440),Interval("meeting",1034720,1102600),Interval("meeting",684120,724080),Interval("meeting",764120,785200),Interval("meeting",101480,141440),Interval("meeting",833480,840240),Interval("meeting",381480,421440),Interval("meeting",221480,261440),Interval("meeting",841280,867600),Interval("meeting",724120,764080),Interval("meeting",507080,509760),Interval("meeting",919760,939720),Interval("meeting",1030720,1033920),Interval("meeting",261480,301440),Interval("meeting",813040,814920),Interval("meeting",301480,341440),Interval("meeting",341480,381440),Interval("meeting",939760,959720),Interval("meeting",604120,644080),Interval("meeting",867560,868520),Interval("meeting",959760,979720),Interval("meeting",27240,61520),Interval("meeting",181480,221440),Interval("meeting",141480,181440),Interval("meeting",868480,917360),Interval("meeting",24440,27280),Interval("meeting",786240,813080),Interval("meeting",644120,684080))
+        }
+      case 6 =>
+        randomOrder match {
+          // Training set 6. All but meetPos6
+          case true => allPosIntervals.filter(x => x!= meetPos6) ++ allNegIntervals.filter(z => !testingNeg6.contains(z))
+          case _ => List(Interval("meeting",5680,24480),Interval("meeting",786240,813080),Interval("meeting",507080,509760),Interval("meeting",840200,841320),Interval("meeting",833480,840240),Interval("meeting",829360,833520),Interval("meeting",785200,786280),Interval("meeting",917320,919800),Interval("meeting",261480,301440),Interval("meeting",341480,381440),Interval("meeting",27240,61520),Interval("meeting",939760,959720),Interval("meeting",724120,764080),Interval("meeting",461480,501440),Interval("meeting",1033880,1034760),Interval("meeting",301480,341440),Interval("meeting",221480,261440),Interval("meeting",764120,785200),Interval("meeting",61480,101440),Interval("meeting",1034720,1102600),Interval("meeting",999760,1019720),Interval("meeting",381480,421440),Interval("meeting",841280,867600),Interval("meeting",509720,559200),Interval("meeting",141480,181440),Interval("meeting",564120,604080),Interval("meeting",680,5720),Interval("meeting",101480,141440),Interval("meeting",181480,221440),Interval("meeting",1019760,1030640),Interval("meeting",959760,979720),Interval("meeting",868480,917360),Interval("meeting",867560,868520),Interval("meeting",814880,829400),Interval("meeting",1030720,1033920),Interval("meeting",421480,461440),Interval("meeting",559160,564160),Interval("meeting",24440,27280),Interval("meeting",1009840,1077680),Interval("meeting",919760,939720))
+        }
+      case 7 =>
+        randomOrder match {
+          // Training set 7. All but meetPos7
+          case true => allPosIntervals.filter(x => x!= meetPos7) ++ allNegIntervals.filter(z => !testingNeg7.contains(z))
+          case _ => List(Interval("meeting",5680,24480),Interval("meeting",27240,61520),Interval("meeting",221480,261440),Interval("meeting",814880,829400),Interval("meeting",301480,341440),Interval("meeting",684120,724080),Interval("meeting",840200,841320),Interval("meeting",509720,559200),Interval("meeting",1033880,1034760),Interval("meeting",1034720,1102600),Interval("meeting",61480,101440),Interval("meeting",841280,867600),Interval("meeting",461480,501440),Interval("meeting",999760,1019720),Interval("meeting",507080,509760),Interval("meeting",381480,421440),Interval("meeting",559160,564160),Interval("meeting",785200,786280),Interval("meeting",181480,221440),Interval("meeting",141480,181440),Interval("meeting",261480,301440),Interval("meeting",1009840,1077680),Interval("meeting",813040,814920),Interval("meeting",341480,381440),Interval("meeting",644120,684080),Interval("meeting",101480,141440),Interval("meeting",919760,939720),Interval("meeting",421480,461440),Interval("meeting",1019760,1030640),Interval("meeting",917320,919800),Interval("meeting",24440,27280),Interval("meeting",564120,604080),Interval("meeting",867560,868520),Interval("meeting",604120,644080),Interval("meeting",959760,979720),Interval("meeting",833480,840240),Interval("meeting",1030720,1033920),Interval("meeting",680,5720),Interval("meeting",868480,917360),Interval("meeting",939760,959720))
+        }
+      case 8 =>
+        randomOrder match {
+          // Training set 8. All but meetPos8
+          case true => allPosIntervals.filter(x => x!= meetPos8) ++ allNegIntervals.filter(z => !testingNeg8.contains(z))
+          case _ => allPosIntervals.filter(x => x!= meetPos8) ++ allNegIntervals.filter(z => !testingNeg8.contains(z))
+        }
+      case 9 =>
+        randomOrder match {
+          // Training set 9. All but meetPos9
+          case true => allPosIntervals.filter(x => x!= meetPos9) ++ allNegIntervals.filter(z => !testingNeg9.contains(z))
+          case _ => List(Interval("meeting",5680,24480),Interval("meeting",341480,381440),Interval("meeting",813040,814920),Interval("meeting",786240,813080),Interval("meeting",917320,919800),Interval("meeting",1009840,1077680),Interval("meeting",724120,764080),Interval("meeting",101480,141440),Interval("meeting",840200,841320),Interval("meeting",1030720,1033920),Interval("meeting",604120,644080),Interval("meeting",814880,829400),Interval("meeting",461480,501440),Interval("meeting",27240,61520),Interval("meeting",559160,564160),Interval("meeting",1019760,1030640),Interval("meeting",24440,27280),Interval("meeting",1033880,1034760),Interval("meeting",381480,421440),Interval("meeting",141480,181440),Interval("meeting",841280,867600),Interval("meeting",61480,101440),Interval("meeting",680,5720),Interval("meeting",509720,559200),Interval("meeting",221480,261440),Interval("meeting",959760,979720),Interval("meeting",829360,833520),Interval("meeting",507080,509760),Interval("meeting",564120,604080),Interval("meeting",301480,341440),Interval("meeting",833480,840240),Interval("meeting",764120,785200),Interval("meeting",181480,221440),Interval("meeting",684120,724080),Interval("meeting",785200,786280),Interval("meeting",644120,684080),Interval("meeting",421480,461440),Interval("meeting",261480,301440),Interval("meeting",1034720,1102600),Interval("meeting",999760,1019720))
+        }
+      case 10 =>
+        randomOrder match {
+          // Training set 10. All but meetPos10
+          case true => allPosIntervals.filter(x => x!= meetPos10) ++ allNegIntervals.filter(z => !testingNeg10.contains(z))
+          case _ => List(Interval("meeting",5680,24480),Interval("meeting",684120,724080),Interval("meeting",764120,785200),Interval("meeting",813040,814920),Interval("meeting",919760,939720),Interval("meeting",644120,684080),Interval("meeting",181480,221440),Interval("meeting",1034720,1102600),Interval("meeting",1033880,1034760),Interval("meeting",814880,829400),Interval("meeting",559160,564160),Interval("meeting",867560,868520),Interval("meeting",841280,867600),Interval("meeting",604120,644080),Interval("meeting",680,5720),Interval("meeting",868480,917360),Interval("meeting",786240,813080),Interval("meeting",221480,261440),Interval("meeting",509720,559200),Interval("meeting",564120,604080),Interval("meeting",785200,786280),Interval("meeting",261480,301440),Interval("meeting",939760,959720),Interval("meeting",724120,764080),Interval("meeting",61480,101440),Interval("meeting",840200,841320),Interval("meeting",341480,381440),Interval("meeting",461480,501440),Interval("meeting",829360,833520),Interval("meeting",381480,421440),Interval("meeting",507080,509760),Interval("meeting",141480,181440),Interval("meeting",24440,27280),Interval("meeting",27240,61520),Interval("meeting",421480,461440),Interval("meeting",833480,840240),Interval("meeting",101480,141440),Interval("meeting",301480,341440))
+        }
+      case _ => throw new RuntimeException("No such training exists.")
+    }
+
+    val testing = fold match {
+      case 1 => List(meetPos1) ++ List(meetPos11) ++ testingNeg1
+      case 2 => List(meetPos2) ++ testingNeg2
+      case 3 => List(meetPos3) ++ testingNeg3
+      case 4 => List(meetPos4) ++ testingNeg4
+      case 5 => List(meetPos5) ++ testingNeg5
+      case 6 => List(meetPos6) ++ testingNeg6
+      case 7 => List(meetPos7) ++ testingNeg7
+      case 8 => List(meetPos8) ++ testingNeg8
+      case 9 => List(meetPos9) ++ testingNeg9
+      case 10 => List(meetPos10) ++ testingNeg10
+    }
+
+    if (randomOrder) new DataAsIntervals(trainingSet = List(training.head) ++ Random.shuffle(training.tail), testingSet = testing)
+    else new DataAsIntervals(trainingSet = training, testingSet = testing)
   }
 
-  // Training set 2. All but meetPos2
-  //----------------------------------
-  val meetTrainingSet2 = {
-    //val training = allPosIntervals.filter(x => x!= meetPos2) ++ allNegIntervals.filter(z => !testingNeg2.contains(z))
-    val training = List(Interval("meeting",5680,24480),Interval("meeting",680,5720),Interval("meeting",1033880,1034760),Interval("meeting",814880,829400),Interval("meeting",917320,919800),Interval("meeting",381480,421440),Interval("meeting",999760,1019720),Interval("meeting",840200,841320),Interval("meeting",261480,301440),Interval("meeting",461480,501440),Interval("meeting",507080,509760),Interval("meeting",868480,917360),Interval("meeting",684120,724080),Interval("meeting",221480,261440),Interval("meeting",301480,341440),Interval("meeting",959760,979720),Interval("meeting",813040,814920),Interval("meeting",1034720,1102600),Interval("meeting",341480,381440),Interval("meeting",604120,644080),Interval("meeting",867560,868520),Interval("meeting",509720,559200),Interval("meeting",1009840,1077680),Interval("meeting",421480,461440),Interval("meeting",833480,840240),Interval("meeting",841280,867600),Interval("meeting",785200,786280),Interval("meeting",786240,813080),Interval("meeting",564120,604080),Interval("meeting",1019760,1030640),Interval("meeting",61480,101440),Interval("meeting",24440,27280),Interval("meeting",919760,939720),Interval("meeting",829360,833520),Interval("meeting",559160,564160),Interval("meeting",764120,785200),Interval("meeting",1030720,1033920),Interval("meeting",644120,684080),Interval("meeting",724120,764080),Interval("meeting",939760,959720))
-    val testing = List(meetPos2) ++ testingNeg2
-    new DataAsIntervals(trainingSet = List(training.head) ++ Random.shuffle(training.tail), testingSet = testing)
-  }
-
-  // Training set 3. All but meetPos3
-  //----------------------------------
-  val meetTrainingSet3 = {
-    //val training = allPosIntervals.filter(x => x!= meetPos3) ++ allNegIntervals.filter(z => !testingNeg3.contains(z))
-    val training = List(Interval("meeting",5680,24480),Interval("meeting",1009840,1077680),Interval("meeting",684120,724080),Interval("meeting",724120,764080),Interval("meeting",680,5720),Interval("meeting",868480,917360),Interval("meeting",841280,867600),Interval("meeting",27240,61520),Interval("meeting",461480,501440),Interval("meeting",785200,786280),Interval("meeting",559160,564160),Interval("meeting",181480,221440),Interval("meeting",1019760,1030640),Interval("meeting",509720,559200),Interval("meeting",341480,381440),Interval("meeting",867560,868520),Interval("meeting",1033880,1034760),Interval("meeting",833480,840240),Interval("meeting",829360,833520),Interval("meeting",999760,1019720),Interval("meeting",564120,604080),Interval("meeting",939760,959720),Interval("meeting",959760,979720),Interval("meeting",1030720,1033920),Interval("meeting",644120,684080),Interval("meeting",61480,101440),Interval("meeting",840200,841320),Interval("meeting",919760,939720),Interval("meeting",813040,814920),Interval("meeting",917320,919800),Interval("meeting",764120,785200),Interval("meeting",24440,27280),Interval("meeting",101480,141440),Interval("meeting",421480,461440),Interval("meeting",814880,829400),Interval("meeting",786240,813080),Interval("meeting",1034720,1102600),Interval("meeting",604120,644080),Interval("meeting",141480,181440),Interval("meeting",381480,421440))
-    val testing = List(meetPos3) ++ testingNeg3
-    new DataAsIntervals(trainingSet = List(training.head) ++ Random.shuffle(training.tail), testingSet = testing)
-  }
-
-  // Training set 4. All but meetPos4
-  //----------------------------------
-  val meetTrainingSet4 = {
-    //val training = allPosIntervals.filter(x => x!= meetPos4) ++ allNegIntervals.filter(z => !testingNeg4.contains(z))
-    val training = List(Interval("meeting",5680,24480),Interval("meeting",840200,841320),Interval("meeting",101480,141440),Interval("meeting",829360,833520),Interval("meeting",1019760,1030640),Interval("meeting",461480,501440),Interval("meeting",868480,917360),Interval("meeting",680,5720),Interval("meeting",61480,101440),Interval("meeting",261480,301440),Interval("meeting",724120,764080),Interval("meeting",604120,644080),Interval("meeting",785200,786280),Interval("meeting",999760,1019720),Interval("meeting",301480,341440),Interval("meeting",841280,867600),Interval("meeting",181480,221440),Interval("meeting",141480,181440),Interval("meeting",939760,959720),Interval("meeting",24440,27280),Interval("meeting",644120,684080),Interval("meeting",221480,261440),Interval("meeting",786240,813080),Interval("meeting",919760,939720),Interval("meeting",813040,814920),Interval("meeting",959760,979720),Interval("meeting",684120,724080),Interval("meeting",27240,61520),Interval("meeting",1034720,1102600),Interval("meeting",509720,559200),Interval("meeting",1030720,1033920),Interval("meeting",564120,604080),Interval("meeting",833480,840240),Interval("meeting",867560,868520),Interval("meeting",814880,829400),Interval("meeting",1033880,1034760),Interval("meeting",507080,509760),Interval("meeting",764120,785200),Interval("meeting",1009840,1077680),Interval("meeting",917320,919800))
-    val testing = List(meetPos4) ++ testingNeg4
-    new DataAsIntervals(trainingSet = List(training.head) ++ Random.shuffle(training.tail), testingSet = testing)
-  }
-
-  // Training set 5. All but meetPos5
-  //----------------------------------
-  val meetTrainingSet5 = {
-    //val training = allPosIntervals.filter(x => x!= meetPos5) ++ allNegIntervals.filter(z => !testingNeg5.contains(z))
-    val training = List(Interval("meeting",5680,24480),Interval("meeting",1019760,1030640),Interval("meeting",829360,833520),Interval("meeting",421480,461440),Interval("meeting",999760,1019720),Interval("meeting",680,5720),Interval("meeting",814880,829400),Interval("meeting",1033880,1034760),Interval("meeting",559160,564160),Interval("meeting",1009840,1077680),Interval("meeting",917320,919800),Interval("meeting",840200,841320),Interval("meeting",61480,101440),Interval("meeting",1034720,1102600),Interval("meeting",684120,724080),Interval("meeting",764120,785200),Interval("meeting",101480,141440),Interval("meeting",833480,840240),Interval("meeting",381480,421440),Interval("meeting",221480,261440),Interval("meeting",841280,867600),Interval("meeting",724120,764080),Interval("meeting",507080,509760),Interval("meeting",919760,939720),Interval("meeting",1030720,1033920),Interval("meeting",261480,301440),Interval("meeting",813040,814920),Interval("meeting",301480,341440),Interval("meeting",341480,381440),Interval("meeting",939760,959720),Interval("meeting",604120,644080),Interval("meeting",867560,868520),Interval("meeting",959760,979720),Interval("meeting",27240,61520),Interval("meeting",181480,221440),Interval("meeting",141480,181440),Interval("meeting",868480,917360),Interval("meeting",24440,27280),Interval("meeting",786240,813080),Interval("meeting",644120,684080))
-    val testing = List(meetPos5) ++ testingNeg5
-    new DataAsIntervals(trainingSet = List(training.head) ++ Random.shuffle(training.tail), testingSet = testing)
-  }
-
-  // Training set 6. All but meetPos6
-  //----------------------------------
-  val meetTrainingSet6 = {
-    //val training = allPosIntervals.filter(x => x!= meetPos6) ++ allNegIntervals.filter(z => !testingNeg6.contains(z))
-    val training = List(Interval("meeting",5680,24480),Interval("meeting",786240,813080),Interval("meeting",507080,509760),Interval("meeting",840200,841320),Interval("meeting",833480,840240),Interval("meeting",829360,833520),Interval("meeting",785200,786280),Interval("meeting",917320,919800),Interval("meeting",261480,301440),Interval("meeting",341480,381440),Interval("meeting",27240,61520),Interval("meeting",939760,959720),Interval("meeting",724120,764080),Interval("meeting",461480,501440),Interval("meeting",1033880,1034760),Interval("meeting",301480,341440),Interval("meeting",221480,261440),Interval("meeting",764120,785200),Interval("meeting",61480,101440),Interval("meeting",1034720,1102600),Interval("meeting",999760,1019720),Interval("meeting",381480,421440),Interval("meeting",841280,867600),Interval("meeting",509720,559200),Interval("meeting",141480,181440),Interval("meeting",564120,604080),Interval("meeting",680,5720),Interval("meeting",101480,141440),Interval("meeting",181480,221440),Interval("meeting",1019760,1030640),Interval("meeting",959760,979720),Interval("meeting",868480,917360),Interval("meeting",867560,868520),Interval("meeting",814880,829400),Interval("meeting",1030720,1033920),Interval("meeting",421480,461440),Interval("meeting",559160,564160),Interval("meeting",24440,27280),Interval("meeting",1009840,1077680),Interval("meeting",919760,939720))
-    val testing = List(meetPos6) ++ testingNeg6
-    new DataAsIntervals(trainingSet = List(training.head) ++ Random.shuffle(training.tail), testingSet = testing)
-  }
-
-  // Training set 7. All but meetPos7
-  //----------------------------------
-  val meetTrainingSet7 = {
-    //val training = allPosIntervals.filter(x => x!= meetPos7) ++ allNegIntervals.filter(z => !testingNeg7.contains(z))
-    val training = List(Interval("meeting",5680,24480),Interval("meeting",27240,61520),Interval("meeting",221480,261440),Interval("meeting",814880,829400),Interval("meeting",301480,341440),Interval("meeting",684120,724080),Interval("meeting",840200,841320),Interval("meeting",509720,559200),Interval("meeting",1033880,1034760),Interval("meeting",1034720,1102600),Interval("meeting",61480,101440),Interval("meeting",841280,867600),Interval("meeting",461480,501440),Interval("meeting",999760,1019720),Interval("meeting",507080,509760),Interval("meeting",381480,421440),Interval("meeting",559160,564160),Interval("meeting",785200,786280),Interval("meeting",181480,221440),Interval("meeting",141480,181440),Interval("meeting",261480,301440),Interval("meeting",1009840,1077680),Interval("meeting",813040,814920),Interval("meeting",341480,381440),Interval("meeting",644120,684080),Interval("meeting",101480,141440),Interval("meeting",919760,939720),Interval("meeting",421480,461440),Interval("meeting",1019760,1030640),Interval("meeting",917320,919800),Interval("meeting",24440,27280),Interval("meeting",564120,604080),Interval("meeting",867560,868520),Interval("meeting",604120,644080),Interval("meeting",959760,979720),Interval("meeting",833480,840240),Interval("meeting",1030720,1033920),Interval("meeting",680,5720),Interval("meeting",868480,917360),Interval("meeting",939760,959720))
-    val testing = List(meetPos7) ++ testingNeg7
-    new DataAsIntervals(trainingSet = List(training.head) ++ Random.shuffle(training.tail), testingSet = testing)
-  }
-
-  // Training set 8. All but meetPos8
-  //----------------------------------
-  val meetTrainingSet8 = {
-    val training = allPosIntervals.filter(x => x!= meetPos8) ++ allNegIntervals.filter(z => !testingNeg8.contains(z))
-    val testing = List(meetPos8) ++ testingNeg8
-    new DataAsIntervals(trainingSet = List(training.head) ++ Random.shuffle(training.tail), testingSet = testing)
-  }
-
-  // Training set 9. All but meetPos9
-  //----------------------------------
-  val meetTrainingSet9 = {
-    //val training = allPosIntervals.filter(x => x!= meetPos9) ++ allNegIntervals.filter(z => !testingNeg9.contains(z))
-    val training = List(Interval("meeting",5680,24480),Interval("meeting",341480,381440),Interval("meeting",813040,814920),Interval("meeting",786240,813080),Interval("meeting",917320,919800),Interval("meeting",1009840,1077680),Interval("meeting",724120,764080),Interval("meeting",101480,141440),Interval("meeting",840200,841320),Interval("meeting",1030720,1033920),Interval("meeting",604120,644080),Interval("meeting",814880,829400),Interval("meeting",461480,501440),Interval("meeting",27240,61520),Interval("meeting",559160,564160),Interval("meeting",1019760,1030640),Interval("meeting",24440,27280),Interval("meeting",1033880,1034760),Interval("meeting",381480,421440),Interval("meeting",141480,181440),Interval("meeting",841280,867600),Interval("meeting",61480,101440),Interval("meeting",680,5720),Interval("meeting",509720,559200),Interval("meeting",221480,261440),Interval("meeting",959760,979720),Interval("meeting",829360,833520),Interval("meeting",507080,509760),Interval("meeting",564120,604080),Interval("meeting",301480,341440),Interval("meeting",833480,840240),Interval("meeting",764120,785200),Interval("meeting",181480,221440),Interval("meeting",684120,724080),Interval("meeting",785200,786280),Interval("meeting",644120,684080),Interval("meeting",421480,461440),Interval("meeting",261480,301440),Interval("meeting",1034720,1102600),Interval("meeting",999760,1019720))
-    val testing = List(meetPos9) ++ testingNeg9
-    new DataAsIntervals(trainingSet = List(training.head) ++ Random.shuffle(training.tail), testingSet = testing)
-  }
-
-  // Training set 10. All but meetPos10
-  //----------------------------------
-  val meetTrainingSet10 = {
-    //val training = allPosIntervals.filter(x => x!= meetPos10) ++ allNegIntervals.filter(z => !testingNeg10.contains(z))
-    val training = List(Interval("meeting",5680,24480),Interval("meeting",684120,724080),Interval("meeting",764120,785200),Interval("meeting",813040,814920),Interval("meeting",919760,939720),Interval("meeting",644120,684080),Interval("meeting",181480,221440),Interval("meeting",1034720,1102600),Interval("meeting",1033880,1034760),Interval("meeting",814880,829400),Interval("meeting",559160,564160),Interval("meeting",867560,868520),Interval("meeting",841280,867600),Interval("meeting",604120,644080),Interval("meeting",680,5720),Interval("meeting",868480,917360),Interval("meeting",786240,813080),Interval("meeting",221480,261440),Interval("meeting",509720,559200),Interval("meeting",564120,604080),Interval("meeting",785200,786280),Interval("meeting",261480,301440),Interval("meeting",939760,959720),Interval("meeting",724120,764080),Interval("meeting",61480,101440),Interval("meeting",840200,841320),Interval("meeting",341480,381440),Interval("meeting",461480,501440),Interval("meeting",829360,833520),Interval("meeting",381480,421440),Interval("meeting",507080,509760),Interval("meeting",141480,181440),Interval("meeting",24440,27280),Interval("meeting",27240,61520),Interval("meeting",421480,461440),Interval("meeting",833480,840240),Interval("meeting",101480,141440),Interval("meeting",301480,341440))
-    val testing = List(meetPos10) ++ testingNeg10
-    new DataAsIntervals(trainingSet = List(training.head) ++ Random.shuffle(training.tail), testingSet = testing)
-  }
-
-  val allTrainingSets = List(meetTrainingSet1,meetTrainingSet2,meetTrainingSet3,meetTrainingSet4,meetTrainingSet5,meetTrainingSet6,meetTrainingSet7,meetTrainingSet8,
-    meetTrainingSet9,meetTrainingSet10)
 
   val wholeCAVIARForManualRules = {
     new DataAsIntervals(trainingSet = List(), testingSet = allPosIntervals++allNegIntervals)
   }
 
-  val wholeCAVIARForTraining = {
-    new DataAsIntervals(trainingSet = allPosIntervals++allNegIntervals, testingSet = allPosIntervals++allNegIntervals)
-  }
-
-
-  /*
-  test code to test the total size of each negative testing interval
-    for (x <- allNegativeTestingSetIntervals) {
-      val totalLength = x.foldLeft(0)((p,q) => p + q.length)
-      println(totalLength)
-    }
-  */
-
-
   val wholeCAVIAR1 = {
     //new TrainingSet(trainingSet = List(allPosIntervals.head) ++ Random.shuffle(allPosIntervals++allNegIntervals), testingSet = allPosIntervals++allNegIntervals)
 
     // that's the one used normally
-    //new DataAsIntervals(trainingSet = List(allPosIntervals.head) ++ Random.shuffle(allPosIntervals++allNegIntervals), testingSet = List(Interval("meeting",680,1077680)))
-    //Interval("meeting",24440,27320)
+    new DataAsIntervals(trainingSet = List(allPosIntervals.head) ++ Random.shuffle(allPosIntervals++allNegIntervals), testingSet = List(Interval("meeting",680,1077680)))
+    Interval("meeting",24440,27320)
 
     // that's for giving intervals explicitly to re-produce results. For instance, the one ordered as below should give a theory no example coverage at all
+    /*
     new DataAsIntervals(trainingSet = List(meetPos1, meetNeg18, meetNeg14, meetNeg28, meetNeg17, meetPos7, meetNeg32,
       meetNeg33, meetNeg20, meetNeg4, meetNeg21, meetNeg25, meetNeg23, meetNeg9, meetNeg19, meetNeg22, meetNeg7,
       meetNeg15, meetPos9, meetNeg31, meetPos5, meetNeg2, meetPos8, meetNeg5, meetPos1, meetNeg3, meetPos4,
       meetNeg11, meetNeg12, meetNeg29, meetNeg16, meetNeg6, meetNeg27, meetPos6, meetPos2, meetNeg1, meetNeg13,
       meetNeg8, meetPos3, meetNeg30, meetNeg10, meetNeg24, meetPos10, meetNeg26
     ), testingSet = List(Interval("meeting",680,1077680)))
-
+    */
 
   }
 
