@@ -157,9 +157,13 @@ class TheoryLearner(val DB: Database,
         logger.info(s"\nLearned hypothesis (before pruning):\n${finalTheory.showWithStats}")
         val pruned = finalTheory.clauses.filter(x => x.score > pruningThreshold)
         logger.debug(s"\nPruned hypothesis:\n${pruned.showWithStats}")
-        //pruned.foreach { p => p.clearStatistics } // No need. I want to display the stats and also they cause no problem since the theory is evaluated as a whole
         Theory(pruned)
-      case _ => finalTheory
+      case _ =>
+        // no re-scoring
+        val pruned = finalTheory.clauses.filter(x => x.score > pruningThreshold)
+        logger.info(s"\nLearnt hypothesis (non-pruned):\n${finalTheory.showWithStats}")
+        Theory(pruned)
+      //finalTheory
     }
     logger.debug(s"\n$targetClass theory found:\n${output.tostring}")
     this.jep.close()

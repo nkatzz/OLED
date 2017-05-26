@@ -122,7 +122,7 @@ notSideBySize(Id1,Id2,Time) :-
    xAxisThreshold(Threshold),
    D > Threshold.
 
-xAxisThreshold(0).
+xAxisThreshold(100).
 axisDis(X) :- sideBySize(_,_,X,_).
 axisDis(X) :- notSideBySize(_,_,X,_).
 

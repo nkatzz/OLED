@@ -69,13 +69,19 @@ So negatives' testing set size is 2514.0
   val moveNeg22 = Interval("moving",791840,797120)//133
   val moveNeg23 = Interval("moving",800400,814880)//363
   val moveNeg24 = Interval("moving",829400,841280)//298
-  val moveNeg25 = Interval("moving",844720,868480)//595
-  val moveNeg26 = Interval("moving",874280,896920)//567
+
+  val moveNeg25 = Interval("moving",844720,852680)//200
+  val moveNeg26 = Interval("moving",852720,860680)//200
+  //val moveNeg27 = Interval("moving",860720,868440)//195
+
+  //val moveNeg26 = Interval("moving",874280,896920)//567
+
   val moveNeg27 = Interval("moving",909440,910400)//25
   val moveNeg28 = Interval("moving",917360,957320)//1000
   val moveNeg29 = Interval("moving",957360,997320)//1000
   val moveNeg30 = Interval("moving",997360,1037320)//1000
   val moveNeg31 = Interval("moving",1037360,1077320)//1000
+
   val moveNeg32 = Interval("moving",1077360,1102560)//1000
 
 
@@ -88,15 +94,21 @@ So negatives' testing set size is 2514.0
 
   val allPosIntervals = List(movePos1,movePos2,movePos3,movePos4,movePos5,movePos6,movePos7,movePos8,movePos9,movePos10,movePos11,movePos12)
 
-  val testingNeg1 = List(moveNeg1,moveNeg2,moveNeg3,moveNeg31)
-  val testingNeg2 = List(moveNeg4,moveNeg5,moveNeg6)
-  val testingNeg3 = List(moveNeg7,moveNeg8,moveNeg9)
-  val testingNeg4 = List(moveNeg10,moveNeg11,moveNeg12)
-  val testingNeg5 = List(moveNeg13,moveNeg14,moveNeg15)
+  val testingNeg1 = List(moveNeg2,moveNeg3,moveNeg31)
+  val testingNeg2 = List(moveNeg4,moveNeg5,moveNeg6,moveNeg32)
+  val testingNeg3 = List(moveNeg7,moveNeg8,moveNeg9,moveNeg26)
+  val testingNeg4 = List(moveNeg10,moveNeg11,moveNeg12,moveNeg27)
+  val testingNeg5 = List(moveNeg1,moveNeg13,moveNeg14,moveNeg15)
   val testingNeg6 = List(moveNeg16,moveNeg17,moveNeg18)
   val testingNeg7 = List(moveNeg19,moveNeg20,moveNeg21)
   val testingNeg8 = List(moveNeg21,moveNeg23,moveNeg24)
-  val testingNeg9 = List(moveNeg26,moveNeg27,moveNeg32)
+
+  //val testingNeg9 = List(moveNeg26,moveNeg27,moveNeg32)
+  //moveNeg26
+  //moveNeg27
+  //moveNeg32
+  val testingNeg9 = List(moveNeg16)
+
   val testingNeg10 = List(moveNeg28,moveNeg29,moveNeg30)
 
   val allNegativeTestingSetIntervals =
@@ -105,7 +117,8 @@ So negatives' testing set size is 2514.0
   // Training set 1. All but movePos1 & movePos12
   //----------------------------------------------
   val moveTrainingSet1 = {
-    //val training = allPosIntervals.filter(x => x!= movePos1 && x!= movePos12) ++ allNegIntervals.filter(z => !testingNeg1.contains(z))
+    val training = allPosIntervals.filter(x => x!= movePos1 && x!= movePos12) ++ allNegIntervals.filter(z => !testingNeg1.contains(z))
+    /*
     val training =
       List(Interval("moving",24400,27320),
         Interval("moving",688080,728040),
@@ -145,9 +158,10 @@ So negatives' testing set size is 2514.0
         Interval("moving",797080,800440),
         Interval("moving",464120,547400),
         Interval("moving",187280,227240))
+        */
     val testing = List(movePos1,movePos12) ++ testingNeg1
-    //new DataAsIntervals(trainingSet = List(training.head) ++ Random.shuffle(training.tail), testingSet = testing)
-    new DataAsIntervals(trainingSet = training, testingSet = testing)
+    new DataAsIntervals(trainingSet = List(training.head) ++ Random.shuffle(training.tail), testingSet = testing)
+    //new DataAsIntervals(trainingSet = training, testingSet = testing)
   }
 
   // Training set 2. All but movePos2
@@ -453,7 +467,8 @@ So negatives' testing set size is 2514.0
   // Training set 8. All but movePos8
   //----------------------------------
   val moveTrainingSet8 = {
-    //val training = allPosIntervals.filter(x => x!= movePos8) ++ allNegIntervals.filter(z => !testingNeg8.contains(z))
+    val training = allPosIntervals.filter(x => x!= movePos8) ++ allNegIntervals.filter(z => !testingNeg8.contains(z))
+    /*
     val training =
       List(Interval("moving",2480,5760),
         Interval("moving",910360,917400),
@@ -495,19 +510,20 @@ So negatives' testing set size is 2514.0
         Interval("moving",786200,791880),
         Interval("moving",896880,909480),
         Interval("moving",347280,387240))
+        */
     val testing = List(movePos8) ++ testingNeg8
-    //new DataAsIntervals(trainingSet = List(training.head) ++ Random.shuffle(training.tail), testingSet = testing)
-    new DataAsIntervals(trainingSet = training, testingSet = testing)
+    new DataAsIntervals(trainingSet = List(training.head) ++ Random.shuffle(training.tail), testingSet = testing)
+    //new DataAsIntervals(trainingSet = training, testingSet = testing)
   }
 
   // Training set 9. All but movePos9
   //----------------------------------
   val moveTrainingSet9 = {
-    //val training = allPosIntervals.filter(x => x!= movePos9) ++ allNegIntervals.filter(z => !testingNeg9.contains(z))
-    val training = List(Interval("moving",2480,5760),Interval("moving",267280,307240),Interval("moving",307280,347240),Interval("moving",768080,786200),Interval("moving",547360,559240),Interval("moving",24400,27320),Interval("moving",910360,917400),Interval("moving",917360,957320),Interval("moving",728080,768040),Interval("moving",460600,464160),Interval("moving",786200,791880),Interval("moving",387280,427240),Interval("moving",347280,387240),Interval("moving",27280,67240),Interval("moving",1037360,1077320),Interval("moving",464120,547400),Interval("moving",680,2520),Interval("moving",997360,1037320),Interval("moving",559200,565800),Interval("moving",67280,107240),Interval("moving",227280,267240),Interval("moving",568080,608040),Interval("moving",844720,868480),Interval("moving",107280,147240),Interval("moving",896880,909480),Interval("moving",5720,24440),Interval("moving",427280,460600),Interval("moving",797080,800440),Interval("moving",648080,688040),Interval("moving",688080,728040),Interval("moving",868440,874320),Interval("moving",814840,829440),Interval("moving",957360,997320),Interval("moving",829400,841280),Interval("moving",608080,648040),Interval("moving",565760,568120),Interval("moving",800400,814880),Interval("moving",791840,797120),Interval("moving",147280,187240),Interval("moving",187280,227240))
-    val testing =  testingNeg9 //List(movePos9) ++ testingNeg9
-    //new DataAsIntervals(trainingSet = List(training.head) ++ Random.shuffle(training.tail), testingSet = testing)
-    new DataAsIntervals(trainingSet = training, testingSet = testing)
+    val training = allPosIntervals.filter(x => x!= movePos9) ++ allNegIntervals.filter(z => !testingNeg9.contains(z))
+    //val training = List(Interval("moving",2480,5760),Interval("moving",267280,307240),Interval("moving",307280,347240),Interval("moving",768080,786200),Interval("moving",547360,559240),Interval("moving",24400,27320),Interval("moving",910360,917400),Interval("moving",917360,957320),Interval("moving",728080,768040),Interval("moving",460600,464160),Interval("moving",786200,791880),Interval("moving",387280,427240),Interval("moving",347280,387240),Interval("moving",27280,67240),Interval("moving",1037360,1077320),Interval("moving",464120,547400),Interval("moving",680,2520),Interval("moving",997360,1037320),Interval("moving",559200,565800),Interval("moving",67280,107240),Interval("moving",227280,267240),Interval("moving",568080,608040),Interval("moving",844720,868480),Interval("moving",107280,147240),Interval("moving",896880,909480),Interval("moving",5720,24440),Interval("moving",427280,460600),Interval("moving",797080,800440),Interval("moving",648080,688040),Interval("moving",688080,728040),Interval("moving",868440,874320),Interval("moving",814840,829440),Interval("moving",957360,997320),Interval("moving",829400,841280),Interval("moving",608080,648040),Interval("moving",565760,568120),Interval("moving",800400,814880),Interval("moving",791840,797120),Interval("moving",147280,187240),Interval("moving",187280,227240))
+    val testing =  List(movePos9) ++ testingNeg9
+    new DataAsIntervals(trainingSet = List(training.head) ++ Random.shuffle(training.tail), testingSet = testing)
+    //new DataAsIntervals(trainingSet = training, testingSet = testing)
   }
 
   // Training set 10. All but movePos10

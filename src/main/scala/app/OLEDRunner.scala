@@ -70,8 +70,8 @@ object OLEDRunner extends {
       if (HLE == "meeting")
         List(MeetingTrainingData.getMeetingTrainingData(trainSetNum, randomOrder = randomOrder))
       else
-        //List(MovingTrainingData.allTrainingSets(trainSetNum))
-        List(MovingTrainingData.wholeCAVIAR1)
+        List(MovingTrainingData.allTrainingSets(trainSetNum))
+        //List(MovingTrainingData.wholeCAVIAR1)
 
     // for debugging
     trainingSets.foreach(x => x.showTrainingIntervals())

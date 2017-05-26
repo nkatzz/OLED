@@ -50,7 +50,7 @@ terminatedAt(moving(X, Y), T) :-
   happensAt(disappear(Y), T).
 *%
 
-%*
+
 terminatedAt(moving(X0,X1),X2) :-
       person(X0),person(X1),time(X2),
       orientationFar(X1,X0,X2),
@@ -86,6 +86,7 @@ initiatedAt(moving(X0,X1),X2) :-
       happensAt(walking(X0),X2),
       not happensAt(disappear(X0),X2),
       not happensAt(disappear(X1),X2).
-*%
+
+
 
 
