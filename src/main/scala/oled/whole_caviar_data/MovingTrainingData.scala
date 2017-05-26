@@ -72,17 +72,19 @@ So negatives' testing set size is 2514.0
 
   val moveNeg25 = Interval("moving",844720,852680)//200
   val moveNeg26 = Interval("moving",852720,860680)//200
-  //val moveNeg27 = Interval("moving",860720,868440)//195
+  val moveNeg27 = Interval("moving",860720,868440)//195
 
-  //val moveNeg26 = Interval("moving",874280,896920)//567
+  val moveNeg28 = Interval("moving",874280,882240)//200
+  val moveNeg29 = Interval("moving",882280,890240)//200
+  val moveNeg30 = Interval("moving",890280,896880)//167
 
-  val moveNeg27 = Interval("moving",909440,910400)//25
-  val moveNeg28 = Interval("moving",917360,957320)//1000
-  val moveNeg29 = Interval("moving",957360,997320)//1000
-  val moveNeg30 = Interval("moving",997360,1037320)//1000
-  val moveNeg31 = Interval("moving",1037360,1077320)//1000
+  val moveNeg31 = Interval("moving",909440,910400)//25
+  val moveNeg32 = Interval("moving",917360,957320)//1000
+  val moveNeg33 = Interval("moving",957360,997320)//1000
+  val moveNeg34 = Interval("moving",997360,1037320)//1000
+  val moveNeg35 = Interval("moving",1037360,1077320)//1000
 
-  val moveNeg32 = Interval("moving",1077360,1102560)//1000
+  val moveNeg36 = Interval("moving",1077360,1102560)//1000
 
 
 
