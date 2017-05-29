@@ -20,6 +20,8 @@ object Globals {
   var totalPos = 0
   var totalNegs = 0
 
+
+
   // This may be set to a different value (e.g. passed from cmd) during the construction of the Globals instance
   var MAX_CLAUSE_LENGTH = 15
 

@@ -48,7 +48,10 @@ object DataUtils {
   }
 
   class DataAsIntervals(override val trainingSet: List[Interval], override val testingSet: List[Interval]) extends TrainingSet {
-    def showTrainingIntervals() = trainingSet.foreach(x => println(x))
+    //def showTrainingIntervals() = trainingSet.foreach(x => println(x))
+
+    def showTrainingIntervals() = println(trainingSet.map(x => x.toString.replaceAll("moving",""""moving"""")))
+
     def showTestingIntervals() = testingSet.foreach(x => println(x))
   }
 

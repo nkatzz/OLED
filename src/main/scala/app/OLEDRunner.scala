@@ -55,6 +55,10 @@ object OLEDRunner extends {
     val withPostPruning = split.find(x => x._1 == CMDArgsNames.POST_PRUNING).getOrElse( ("","true") )._2.toBoolean
     val withInertia = false
 
+    // This adds a new clause from each new example (if the corresponding bottom clause does not already exist).
+    // Currently set a globals. It needs to be false to have the normal behaviour.
+    val tryMoreRules = split.find(x => x._1 == "try-more-rules").getOrElse( ("","false") )._2.toBoolean
+
     // !!!!!!!!!!!!!!!!!!!!!!!!!!!
     val HLE = split.find(x => x._1 == CMDArgsNames.HLE).getOrElse( throw new RuntimeException("No target HLE provided") )._2
     //val HLE = "moving"
@@ -62,7 +66,7 @@ object OLEDRunner extends {
 
     val trainSetNum = split.find(x => x._1 == "trainset").getOrElse( throw new RuntimeException("No training set provided") )._2.toInt //1
 
-    val randomOrder = split.find(x => x._1 == "randomOrder").getOrElse( ("", "false") )._2.toBoolean
+    val randomOrder = split.find(x => x._1 == "randorder").getOrElse( ("", "false") )._2.toBoolean
 
     val msg = s"δ=$delta-prune=$pruningThreshold-minseen=$minSeenExmpls-depth=$specializationDepth"
 
@@ -70,7 +74,7 @@ object OLEDRunner extends {
       if (HLE == "meeting")
         List(MeetingTrainingData.getMeetingTrainingData(trainSetNum, randomOrder = randomOrder))
       else
-        List(MovingTrainingData.allTrainingSets(trainSetNum))
+        List(MovingTrainingData.getMovingTrainingData(trainSetNum, randomOrder = randomOrder))
         //List(MovingTrainingData.wholeCAVIAR1)
 
     // for debugging
@@ -103,8 +107,9 @@ object OLEDRunner extends {
 
     val actor =
       system.actorOf(Props(
-        new MasterActor(DB,delta,breakTiesThreshold,pruningThreshold,minSeenExmpls,
-          trainingSetSize,repeatFor,chunkSize,withInertia,withPostPruning,onlinePruning,trainingSets,HLE,HAND_CRAFTED, msg, globals)
+        new MasterActor(DB, delta, breakTiesThreshold, pruningThreshold, minSeenExmpls,
+          trainingSetSize, repeatFor, chunkSize, withInertia, withPostPruning, onlinePruning, trainingSets,
+          HLE,HAND_CRAFTED, msg, globals, tryMoreRules)
       ), name = "Master-Actor") !  startMsg
 
 

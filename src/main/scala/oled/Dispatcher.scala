@@ -18,7 +18,7 @@ import jep.Jep
 class Dispatcher(val DB: Database, val delta: Double, val breakTiesThreshold: Double, val postPruningThreshold: Double, val minSeenExmpls: Double,
                  val trainingSetSize: Int, val repeatFor: Int, val chunkSize: Int, withInertia: Boolean, withPostPruning: Boolean,
                  onlinePruning: Boolean, data: TrainingSet, val HLE: String, handCraftedTheoryFile: String = "",
-                 val kernelSet: Theory = Theory(), globals: Globals) extends Actor with LazyLogging {
+                 val kernelSet: Theory = Theory(), globals: Globals, tryMoreRules: Boolean=false) extends Actor with LazyLogging {
 
   val WHOLE_DATA_SET_VALE = 1000000000
   var size = 2 // two processes are started, one for learning the initiatedAt part and one for the terminatedAt
@@ -46,13 +46,15 @@ class Dispatcher(val DB: Database, val delta: Double, val breakTiesThreshold: Do
       context.actorOf(Props(
         new TheoryLearner(DB, delta, breakTiesThreshold, postPruningThreshold,
           minSeenExmpls, trainingSetSize, repeatFor, chunkSize, "initiated", withInertia=false,
-          withPostPruning=withPostPruning, onlinePruning=onlinePruning, data=data, HLE, kernelSet=kernelSet, globals=globals)
+          withPostPruning=withPostPruning, onlinePruning=onlinePruning, data=data, HLE, kernelSet=kernelSet,
+          globals=globals,tryMoreRules=tryMoreRules)
       ), name = s"initiated-learner-${this.##}") ! "go"
 ///*
       context.actorOf(Props(
         new TheoryLearner(DB, delta, breakTiesThreshold, postPruningThreshold,
           minSeenExmpls, trainingSetSize, repeatFor, chunkSize, "terminated", withInertia=false,
-          withPostPruning=withPostPruning, onlinePruning=onlinePruning, data=data, HLE, kernelSet=kernelSet, globals=globals)
+          withPostPruning=withPostPruning, onlinePruning=onlinePruning, data=data, HLE, kernelSet=kernelSet,
+          globals=globals, tryMoreRules=tryMoreRules)
       ), name = s"terminated-learner-${this.##}") ! "go"
 //*/
     case x: (Theory,Double) =>

@@ -2,7 +2,7 @@
 
 import gringo
 import sys
-sys.path.append('/home/nkatz/dev/OLED-github/OLED/datasets/Fraud/py-utils')
+sys.path.append('/home/nkatz/dev/oled-github/OLED/datasets/Fraud/py-utils')
 import functions
 from java.util import ArrayList, HashMap
 import locale

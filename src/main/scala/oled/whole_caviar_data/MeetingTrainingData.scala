@@ -172,7 +172,7 @@ object MeetingTrainingData {
           case true => allPosIntervals.filter(x => x!= meetPos10) ++ allNegIntervals.filter(z => !testingNeg10.contains(z))
           case _ => List(Interval("meeting",5680,24480),Interval("meeting",684120,724080),Interval("meeting",764120,785200),Interval("meeting",813040,814920),Interval("meeting",919760,939720),Interval("meeting",644120,684080),Interval("meeting",181480,221440),Interval("meeting",1034720,1102600),Interval("meeting",1033880,1034760),Interval("meeting",814880,829400),Interval("meeting",559160,564160),Interval("meeting",867560,868520),Interval("meeting",841280,867600),Interval("meeting",604120,644080),Interval("meeting",680,5720),Interval("meeting",868480,917360),Interval("meeting",786240,813080),Interval("meeting",221480,261440),Interval("meeting",509720,559200),Interval("meeting",564120,604080),Interval("meeting",785200,786280),Interval("meeting",261480,301440),Interval("meeting",939760,959720),Interval("meeting",724120,764080),Interval("meeting",61480,101440),Interval("meeting",840200,841320),Interval("meeting",341480,381440),Interval("meeting",461480,501440),Interval("meeting",829360,833520),Interval("meeting",381480,421440),Interval("meeting",507080,509760),Interval("meeting",141480,181440),Interval("meeting",24440,27280),Interval("meeting",27240,61520),Interval("meeting",421480,461440),Interval("meeting",833480,840240),Interval("meeting",101480,141440),Interval("meeting",301480,341440))
         }
-      case _ => throw new RuntimeException("No such training exists.")
+      case _ => throw new RuntimeException("No such training set exists (use 1..10).")
     }
 
     val testing = fold match {

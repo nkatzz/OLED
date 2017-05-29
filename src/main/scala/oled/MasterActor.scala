@@ -32,7 +32,8 @@ import scala.collection.mutable.ListBuffer
 class MasterActor(DB: Database, delta: Double, breakTiesThreshold: Double,postPruningThreshold: Double,
                   minSeenExmpls: Int,trainingSetSize: Int,repeatFor: Int,chunkSize: Int, withInertia: Boolean,
                   withPostPruning: Boolean, onlinePruning: Boolean, trainingData: List[TrainingSet]=Nil,
-                  HLE: String, handCraftedTheoryFile: String="", msg: String, globals: Globals) extends Actor with LazyLogging{
+                  HLE: String, handCraftedTheoryFile: String="", msg: String,
+                  globals: Globals, tryMoreRules: Boolean) extends Actor with LazyLogging{
 
   //val debugTrainingData = trainingData.take(4)
   var remainingTasks =  trainingData.size //debugTrainingData.size //
@@ -52,7 +53,8 @@ class MasterActor(DB: Database, delta: Double, breakTiesThreshold: Double,postPr
         //for (dataset <- debugTrainingData) {
         context.actorOf(Props(
           new Dispatcher(DB,delta,breakTiesThreshold,postPruningThreshold,minSeenExmpls,
-            trainingSetSize,repeatFor,chunkSize,withInertia,withPostPruning,onlinePruning,dataset,HLE,handCraftedTheoryFile, globals=globals)
+            trainingSetSize,repeatFor,chunkSize,withInertia,withPostPruning,onlinePruning,dataset,HLE,
+            handCraftedTheoryFile, globals=globals, tryMoreRules=tryMoreRules)
         ), name = s"Dispatcher-Actor-${dataset.##}") ! "EvaluateHandCrafted"
       }
 
@@ -61,7 +63,7 @@ class MasterActor(DB: Database, delta: Double, breakTiesThreshold: Double,postPr
         //for (dataset <- debugTrainingData) {
         context.actorOf(Props(
           new Dispatcher(DB,delta,breakTiesThreshold,postPruningThreshold,minSeenExmpls,
-            trainingSetSize,repeatFor,chunkSize,withInertia,withPostPruning,onlinePruning,dataset,HLE,globals=globals)
+            trainingSetSize,repeatFor,chunkSize,withInertia,withPostPruning,onlinePruning,dataset,HLE,globals=globals,tryMoreRules=tryMoreRules)
         ), name = s"Dispatcher-Actor-${dataset.##}") ! "start"
       }
 

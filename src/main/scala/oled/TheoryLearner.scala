@@ -49,7 +49,8 @@ class TheoryLearner(val DB: Database,
                     val HLE: String,
                     val learningInitWithInertia: Boolean = false,
                     kernelSet: Theory = Theory(),
-                    globals: Globals) extends LazyLogging with Actor {
+                    globals: Globals,
+                    tryMoreRules: Boolean) extends LazyLogging with Actor {
 
 
 
@@ -171,13 +172,52 @@ class TheoryLearner(val DB: Database,
     (output,time)
   }
 
+  def filterTriedRules(T: Theory, newRules: List[Clause]) = {
+    val out = newRules.filter { newRule =>
+      val bottomClauses = T.clauses.map(x => x.supportSet.clauses.head)
+      val bottom = newRule.supportSet.clauses.head
+      //!bottomClauses.exists(x => x.thetaSubsumes(bottom) && bottom.thetaSubsumes(x))
+      !bottomClauses.exists(x => x.thetaSubsumes(bottom)) // this suffices for it to be excluded.
+    }
+    if (out.length != newRules.length) logger.info("DROPPED NEW CLAUSE (repeated bottom clause)")
+    out
+  }
+
+
   def processExample(topTheory: Theory, e: Exmpl, learningInitWithInertia: Boolean): Theory = {
+
     var newTopTheory = topTheory
     if (this.bottomClauses.clauses.isEmpty){ // in the opposite case we've collected the BCs in a first pass over the data.
-    val startNew = newTopTheory.growNewRuleTest(e, this.jep, initorterm, globals)
+      //val startNew = newTopTheory.growNewRuleTest(e, this.jep, initorterm, globals)
+
+      val startNew = {
+        if (this.tryMoreRules) {
+          if (this.initorterm == "terminatedAt") {
+            // try to pack more termination rules
+            true
+          } else {
+            newTopTheory.growNewRuleTest(e, this.jep, initorterm, globals)
+          }
+        } else {
+          newTopTheory.growNewRuleTest(e, this.jep, initorterm, globals)
+        }
+      }
+
       if (startNew) {
-        val newRules = generateNewRules(topTheory, e, learningInitWithInertia)
-        newTopTheory = topTheory.clauses ++ newRules
+        val newRules = if (this.initorterm == "terminatedAt") {
+          // Don't use the current theory here to force the system to generate new rules
+          generateNewRules(Theory(), e, learningInitWithInertia)
+        } else {
+          generateNewRules(topTheory, e, learningInitWithInertia)
+        }
+
+        /*
+         *
+         * COMPRESS NEW RULES (EXPERIMENTAL)
+         * */
+         //newTopTheory = topTheory.clauses ++ newRules
+        newTopTheory = topTheory.clauses ++ filterTriedRules(topTheory, newRules)
+
         //-------------------------------------------------------------
         // updateGlobals Used in a test to see if we can learn better
         // theories by down-scoring candidates that are
