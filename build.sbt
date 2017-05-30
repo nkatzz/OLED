@@ -4,8 +4,8 @@ import sbt.Tests.Setup
 
 //assemblySettings
 
-jarName in assembly := "d-oled.jar"
-//jarName in assembly := "oled.jar"
+//jarName in assembly := "d-oled.jar"
+jarName in assembly := "oled.jar"
 //jarName in assembly := "maritime.jar"
 
 
@@ -16,8 +16,8 @@ scalaVersion := "2.11.8"
 publishTo := Some(Resolver.file("file", new File("/home/nkatz/Desktop/test")))
 
 // Main class for packaging to jar
-mainClass in (Compile, packageBin) := Some("app.d_OLEDRunner")
-//mainClass in (Compile, packageBin) := Some("app.OLEDRunner")
+//mainClass in (Compile, packageBin) := Some("app.d_OLEDRunner")
+mainClass in (Compile, packageBin) := Some("app.OLEDRunner")
 //mainClass in (Compile, packageBin) := Some("data_handling.maritime_data.MaritimeDataToMongo")
 
 // MongoDB
