@@ -9,7 +9,7 @@ import oled_distributed.Structures.TargetConcept
 object Structures {
 
   class NodeDoneMessage(val sender: String)
-  class NodeTheoryMessage(val theory: Theory, val sender: String)
+  class NodeTheoryMessage(val theory: Theory, val msgNum: Int, val msgSize: Long, val sender: String)
   class TheoryRequestMessage(val sender: String)
 
   /*
@@ -81,7 +81,9 @@ object Structures {
 
   class QueuedExpandingNode(val senderName: String, val otherNodesNames: List[String])
 
-  class FinalTheoryMessage(val theory: List[Clause], val trainingTime: String, val targetPredicate: TargetConcept)
+  class FinalTheoryMessage(val theory: List[Clause], val trainingTime: String,
+                           val totalMsgNum: Int, val totalMsgSize: Long,
+                           val targetPredicate: TargetConcept)
 
   class ExpansionAbortMsg(val abortingNodeName: String)
 

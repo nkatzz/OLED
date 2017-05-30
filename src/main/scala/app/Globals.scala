@@ -17,10 +17,11 @@ object Globals {
     new Globals("","")
   }
 
+
+  var timeDebug = List[Double]()
+
   var totalPos = 0
   var totalNegs = 0
-
-
 
   // This may be set to a different value (e.g. passed from cmd) during the construction of the Globals instance
   var MAX_CLAUSE_LENGTH = 15
@@ -76,7 +77,8 @@ object Globals {
       // selected, because of a tie in score with other clauses)
       "OLEDdownscoreBySimilarity" -> "true",
       "distributed" -> "false",
-      "with-jep" -> "true"
+      "with-jep" -> "true",
+      "domain" -> "any"
     )
 
   // if jep is used "UNSAT" else "UNSATISFIABLE"
@@ -302,5 +304,9 @@ object CMDArgsNames {
   val ONLINE_PRUNING = "onlineprune"
   val POST_PRUNING = "postprune"
   val HLE = "hle"
+
+  def showHelp = {
+
+  }
 
 }

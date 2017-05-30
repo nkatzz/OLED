@@ -1,5 +1,5 @@
 
-% The initiation axiom is needed here to ensure that we won't an UNSAT
+% The initiation axiom is needed here to ensure that we won't get an UNSAT
 % error in case a fluent is initiated in the middle of a training sequence.
 % So we abduce initiatedAt atoms as well, but we filter them out before
 % kernel set construction (with the learningTerminatedOnly parameter).

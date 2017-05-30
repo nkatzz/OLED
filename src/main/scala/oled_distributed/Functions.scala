@@ -2,12 +2,13 @@ package oled_distributed
 
 
 
-import app.Globals
+import app.{Globals, InputParameters}
+import com.mongodb.casbah.commons.MongoDBObject
 import com.typesafe.scalalogging.LazyLogging
 import jep.Jep
-import logic.{LogicUtils, Clause, Theory}
+import logic.{Clause, Literal, LogicUtils, Theory}
 import oled_distributed.Structures.ClauseStats
-import utils.DataUtils.{TrainingSet, DataAsExamples, DataAsIntervals}
+import utils.DataUtils.{DataAsExamples, DataAsIntervals, TrainingSet}
 import utils._
 import utils.Implicits._
 
@@ -20,17 +21,18 @@ object Functions extends LazyLogging {
 
   def score(clause: Clause) = clause.distScore
 
-  def rightWay(parentRule: Clause, delta: Double, breakTiesThreshold: Double, minSeenExmpls: Int) = {
+  def rightWay(parentRule: Clause, delta: Double, breakTiesThreshold: Double, minSeenExmpls: Int, minTpsRequired: Int = 0) = {
     val (observedDiff,best,secondBest) = parentRule.distributedMeanDiff
     val epsilon = utils.Utils.hoeffding(delta, parentRule.getTotalSeenExmpls)
     val passesTest = if (epsilon < observedDiff) true else false
     val tie = if (observedDiff < epsilon  && epsilon < breakTiesThreshold && parentRule.getTotalSeenExmpls >= minSeenExmpls) true else false
-    val couldExpand = passesTest || tie
+    val couldExpand = if (minTpsRequired != 0) (passesTest || tie) && best.getTotalTPs > minTpsRequired else passesTest || tie
     (couldExpand,epsilon,observedDiff,best,secondBest)
   }
 
-  def expandRule(parentRule: Clause, delta: Double, breakTiesThreshold: Double, minSeenExmpls: Int, nodeName: String) = {
-    val (couldExpand,epsilon,observedDiff,best,secondBest) = rightWay(parentRule, delta, breakTiesThreshold, minSeenExmpls)
+  def expandRule(parentRule: Clause, delta: Double, breakTiesThreshold: Double, minSeenExmpls: Int, nodeName: String, params: InputParameters) = {
+    val minTpsRequired = params.minTpsRequired
+    val (couldExpand,epsilon,observedDiff,best,secondBest) = rightWay(parentRule, delta, breakTiesThreshold, minSeenExmpls, minTpsRequired)
     if (couldExpand) {
       // This is the extra test that I added at Feedzai
       val extraTest =
@@ -50,9 +52,11 @@ object Functions extends LazyLogging {
         refinedRule.generateCandidateRefs
         (true, refinedRule)
       } else {
+        logger.info(s"Hoeffding test failed (clause ${parentRule.uuid}) not expanded")
         (false, parentRule)
       }
     } else {
+      logger.info(s"Hoeffding test failed (clause ${parentRule.uuid}) not expanded")
       (false, parentRule)
     }
   }
@@ -99,18 +103,29 @@ object Functions extends LazyLogging {
     logger.debug( theory.clauses map { p => s"score: ${score(p)}, tps: ${p.tps}, fps: ${p.fps}, fns: ${p.fns}\n${p.tostring}" } mkString("\n") )
   }
 
+  /*
   def showInfo(c: Clause, c1: Clause, c2: Clause, hoeffding: Double, observedDiff: Double, n: Int, onNode: String) = {
 
     s"\n===========================================================\n" +
       s"\nClause (score: ${score(c)} | ${c.showCountsPerNode(onNode)}\n\n${c.tostring}\n\nwas refined to" +
       s" (new score: ${score(c1)} | ${c1.showCountsPerNode(onNode)}\n\n${c1.tostring}\n\nε: $hoeffding, ΔG: $observedDiff, examples used: $n" +
-      //s"\nall refs: \n\n ${c.refinements.sortBy(z => -z.score).map(x => x.tostring+" "+" | score "+x.score+" | similarity "+similarity(x)).mkString("\n")}" +
       s"\nall refs (total tp/fp/fn counts):\n\n${c.refinements.sortBy(z => (-score(z), z.body.length+1)).map(x => x.tostring+" | " +
         "score "+score(x)+x.showCountsPerNode(onNode)).mkString("\n")}" +
       s"\n===========================================================\n"
 
   }
+  */
 
+  def showInfo(c: Clause, c1: Clause, c2: Clause, hoeffding: Double, observedDiff: Double, n: Int, onNode: String) = {
+
+    s"\n===========================================================\n" +
+      s"\nClause (score: ${score(c)} | ${c.showCountsPerNode(onNode)}\n\n${c.tostring}\n\nwas refined to" +
+      s" (new score: ${score(c1)} | ${c1.showCountsPerNode(onNode)}\n\n${c1.tostring}\n\nε: $hoeffding, ΔG: $observedDiff, examples used: $n" +
+      //s"\nall refs (total tp/fp/fn counts):\n\n${c.refinements.sortBy(z => (-score(z), z.body.length+1)).map(x => x.tostring+" | " +
+      //  "score "+score(x)+x.showCountsPerNode(onNode)).mkString("\n")}" +
+      s"\n===========================================================\n"
+
+  }
 
 
   def generateNewRules(topTheory: Theory, e: Exmpl, jep: Jep, initorterm: String,
@@ -151,6 +166,76 @@ object Functions extends LazyLogging {
     }
     Theory(pruned)
   }
+
+
+
+  def crossVal(t: Theory, DB: Database, jep: Jep, testingSetSize: Int, data: TrainingSet,
+               handCraftedTheoryFile: String = "", globals: Globals, HLE: String, chunkSize: Int) = {
+    val WHOLE_DATA_SET_VALE = 1000000000
+    data match {
+      case x: DataAsExamples =>
+        val dataIterator =
+          if (testingSetSize < WHOLE_DATA_SET_VALE) DB.collection.find().sort(MongoDBObject("exampleId" -> 1)).drop(testingSetSize)
+          else DB.collection.find().sort(MongoDBObject("exampleId" -> 1))
+        while (dataIterator.hasNext) {
+          val e = dataIterator.next()
+          val ee = new Exmpl(e)
+          println(ee.id)
+          evaluateTheory(t, ee, withInertia = true, jep, handCraftedTheoryFile, globals)
+        }
+      case x: DataAsIntervals =>
+        val _data = getTestingData(data, DB, HLE, chunkSize)
+        while (_data.hasNext) {
+          val e = _data.next()
+          println(e.time)
+          evaluateTheory(t, e, withInertia = true, jep, handCraftedTheoryFile, globals)
+        }
+      case _ => throw new RuntimeException("This logic is not implemented yet")
+    }
+    val stats = t.stats
+    (stats._1, stats._2, stats._3, stats._4, stats._5, stats._6)
+  }
+
+  def getTestingData(data: TrainingSet, DB: Database, HLE: String, chunkSize: Int): Iterator[Exmpl] = {
+    data match {
+      case x: DataAsExamples =>
+        data.asInstanceOf[DataAsExamples].testingSet.toIterator
+      case x: DataAsIntervals =>
+        CaviarUtils.getDataFromIntervals(DB,HLE,data.asInstanceOf[DataAsIntervals].testingSet,chunkSize, withChunking = false)
+      case _ => throw new RuntimeException("This logic is not implemented yet")
+    }
+  }
+
+  def evaluateTheory(theory: Theory, e: Exmpl, withInertia: Boolean = true, jep: Jep, handCraftedTheoryFile: String = "", globals: Globals): Unit = {
+    val varbedExmplPatterns = globals.EXAMPLE_PATTERNS_AS_STRINGS
+    val coverageConstr = s"${globals.TPS_RULES}\n${globals.FPS_RULES}\n${globals.FNS_RULES}"
+    val t =
+      if(theory != Theory()) {
+        theory.clauses.map(x => x.withTypePreds(globals).tostring).mkString("\n")
+      } else {
+        globals.INCLUDE_BK(handCraftedTheoryFile)
+      }
+
+    val show = globals.SHOW_TPS_ARITY_1 + globals.SHOW_FPS_ARITY_1 + globals.SHOW_FNS_ARITY_1
+    val ex = if(withInertia) e.exmplWithInertia.tostring else e.exmplNoInertia.tostring
+    val program = ex + globals.INCLUDE_BK(globals.BK_CROSSVAL) + t + coverageConstr + show
+    val f = utils.Utils.getTempFile("isConsistent",".lp",deleteOnExit = true)
+    utils.Utils.writeLine(program, f, "overwrite")
+    val answerSet = ASP.solve(task = Globals.INFERENCE, aspInputFile = f, jep=jep)
+    if (answerSet.nonEmpty) {
+      val atoms = answerSet.head.atoms
+      atoms.foreach { a=>
+        val lit = Literal.toLiteral(a)
+        val inner = lit.terms.head
+        lit.functor match {
+          case "tps" => theory.tps += inner.tostring
+          case "fps" => theory.fps += inner.tostring
+          case "fns" => theory.fns += inner.tostring
+        }
+      }
+    }
+  }
+
 
 
 

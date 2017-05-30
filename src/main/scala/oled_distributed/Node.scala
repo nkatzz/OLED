@@ -1,12 +1,14 @@
 package oled_distributed
 
-import akka.actor.{ActorRef, PoisonPill, Actor}
+import akka.actor.{Actor, ActorRef, PoisonPill}
 import app.{Globals, InputParameters}
+import com.madhukaraphatak.sizeof.SizeEstimator
 import jep.Jep
-import logic.{Theory, Clause}
+import logic.{Clause, Theory}
 import oled_distributed.Structures._
 import utils.Exmpl
 import org.slf4j.LoggerFactory
+import utils.DataUtils.{DataAsIntervals, Interval}
 
 /**
   * Created by nkatz on 2/15/17.
@@ -18,29 +20,30 @@ class Node(val otherNodesNames: List[String],
            val dbName: String,
            val targetConcept: TargetConcept,
            val globals: Globals,
-           val getDataFunction: (String, String, Int) => Iterator[Exmpl],
-           val inputParameters: InputParameters) extends Actor {
+           val getDataFunction: (String, String, Int, DataAsIntervals) => Iterator[Exmpl],
+           val inputParameters: InputParameters,
+           val intervals: DataAsIntervals = DataAsIntervals()) extends Actor {
 
   import context.become
 
-  val initorterm = targetConcept match {
+  private val initorterm = targetConcept match {
     case x: Initiated => "initiatedAt"
     case x: Terminated => "terminatedAt"
   }
 
   // Get the training data from the current database
-  def getTrainData = getDataFunction(dbName, inputParameters.targetHLE, inputParameters.chunkSize)
+  def getTrainData = getDataFunction(dbName, inputParameters.targetHLE, inputParameters.chunkSize, intervals)
 
   val jep = new Jep()
-  var data = Iterator[Exmpl]()
-  var currentTheory = List[Clause]()
+  private var data = Iterator[Exmpl]()
+  private var currentTheory = List[Clause]()
 
   // This variable stores the replies from other nodes in response to a StatsRequest from this node
-  var statsReplies = List[StatsReply]()
-  var statsRepliesCount = 0
+  private var statsReplies = List[StatsReply]()
+  private var statsRepliesCount = 0
 
   // Control learning iterations over the data
-  var repeatFor = inputParameters.repeatFor
+  private var repeatFor = inputParameters.repeatFor
 
   /* FOR LOGGING-DEBUGGING */
   def showCurrentClauseUUIDs = s"(${this.currentTheory.length}): ${this.currentTheory.map(x => x.uuid).mkString("  ")}"
@@ -90,9 +93,9 @@ class Node(val otherNodesNames: List[String],
   // a situation when this node infers that a clause C must be specialized, while it has
   // also received a similar request for C from another node. In that case, if C gets
   // specialized in the other node, there is no point in trying to specialize it again.
-  var specializedSoFar = List[String]()
+  private var specializedSoFar = List[String]()
 
-  var currentExpansionCandidates = List[Clause]()
+  private var currentExpansionCandidates = List[Clause]()
 
   var finishedAndSentTheory = false
 
@@ -101,16 +104,22 @@ class Node(val otherNodesNames: List[String],
   * name the logger after a particular class instance, which is helpful for tracing messages
   * between different instances of the same class.
   * */
-  val slf4jLogger = LoggerFactory.getLogger(self.path.name)
+  private val slf4jLogger = LoggerFactory.getLogger(self.path.name)
 
   def logger_info(msg: String) = this.slf4jLogger.info(s"$showState $msg $showClausesDebugMsg")
   def logger_dubug(msg: String) = this.slf4jLogger.debug(s"$showState $msg $showClausesDebugMsg")
 
+  private var messages = List[Long]()
+
+  def updateMessages(m: AnyRef) = {
+    val size = SizeEstimator.estimate(m)
+    messages = messages :+ size
+  }
 
   def receive = {
     // Start processing data. This message is received from the top level actor
     case "go" => start()
-
+    //case "go-no-communication" => runNoCommunication()
     case _: ShutDown => self ! PoisonPill
   }
 
@@ -120,6 +129,9 @@ class Node(val otherNodesNames: List[String],
   }
 
   def start() = {
+    if (this.intervals != DataAsIntervals()) {
+      //logger_info(s"Training on\n${this.intervals.trainingSet.mkString("\n")}")
+    }
     this.repeatFor -= 1
     logger_info(s"$showState Getting training data from db $dbName")
     // Get the training data into a fresh iterator
@@ -129,6 +141,9 @@ class Node(val otherNodesNames: List[String],
     // and send the first batch to self
     self ! getNextBatch
   }
+
+
+
 
   def normalState: Receive = {
     /*
@@ -157,7 +172,7 @@ class Node(val otherNodesNames: List[String],
 
     case "start-over" =>
       logger_info(s"$showState Starting a new training iteration (${this.repeatFor - 1} iterations remaining.)")
-      start // re-starts according to the repeatFor parameter
+      start() // re-starts according to the repeatFor parameter
 
     case chunk: Iterator[Exmpl] =>
       // Receive a small example batch for processing. This is received from self.
@@ -171,6 +186,7 @@ class Node(val otherNodesNames: List[String],
         if (this.repeatFor > 0) {
           self ! "start-over"
         } else if (this.repeatFor == 0) {
+          this.jep.close()
           this.finishedAndSentTheory = true
           logger_info(s"$showState Sending the theory to the top-level actor")
           context.parent ! new NodeDoneMessage(self.path.name)
@@ -190,7 +206,11 @@ class Node(val otherNodesNames: List[String],
         this.currentTheory = this.currentTheory ++ result.newClauses
         val copies = result.newClauses.map(x => Utils.copyClause(x))
         logger_info(s"Generated new clauses, sending them over...")
-        Utils.getOtherActors(context, otherNodesNames) foreach ( _ ! new NewClauses(copies, self.path.name))
+        Utils.getOtherActors(context, otherNodesNames) foreach { x =>
+          val cls = new NewClauses(copies, self.path.name)
+          updateMessages(cls)
+          x ! cls
+        }
       }
 
       // Handle expansion candidates
@@ -200,7 +220,9 @@ class Node(val otherNodesNames: List[String],
         // Switch to a waiting state
         become(expansionNodeWaitingState)
         // ...and request a specialization ticket from the top-level actor
-        context.parent ! new SpecializationTicketRequest(self.path.name, otherNodesNames)
+        val ticket = new SpecializationTicketRequest(self.path.name, otherNodesNames)
+        updateMessages(ticket)
+        context.parent ! ticket
       }
       // When everything is done, send a request to self to process next batch. This request will be processed in time.
       // For example, if the node has entered a a waiting state, the new batch will be processed after all the logic in
@@ -212,8 +234,29 @@ class Node(val otherNodesNames: List[String],
       // Receive one or more new clauses. Simply add them to the current
       // theory for processing. This message is sent from another node
       // Add the copies to the current theory
+
       this.currentTheory = this.currentTheory ++ nc.newClauses
       logger_info(s"Received new clauses from ${nc.senderName}")
+
+      /*This may be useful but needs some thinking to work*/
+      /*
+      if (!inputParameters.compressNewRules) {
+        this.currentTheory = this.currentTheory ++ nc.newClauses
+        logger_info(s"Received new clauses from ${nc.senderName}")
+      } else {
+        val bottomClauses = this.currentTheory.map(x => x.supportSet.clauses.head)
+        for (clause <- nc.newClauses) {
+          val bottom = clause.supportSet.clauses.head
+          if (!bottomClauses.exists(x => x.thetaSubsumes(bottom) && bottom.thetaSubsumes(x))) {
+            this.currentTheory = this.currentTheory :+ clause
+            logger_info(s"Received new clause from ${nc.senderName} (compressNewClause is on)")
+          } else {
+            logger_info(s"Received new clause from ${nc.senderName} but it was dropped (compressNewClause is on)")
+          }
+        }
+      }
+      */
+
 
     case request: StatsRequest =>
       logNormalState
@@ -234,7 +277,9 @@ class Node(val otherNodesNames: List[String],
     * This is a request for the learnt theory from the coordinating TopLevelActor
     * */
     case msg: TheoryRequestMessage =>
-      sender ! new NodeTheoryMessage(Theory(this.currentTheory), self.path.name)
+      val msgNum = this.messages.length
+      val msgSize = this.messages.sum
+      sender ! new NodeTheoryMessage(Theory(this.currentTheory), msgNum, msgSize, self.path.name)
 
     case x: SpecializationTicket => println("this shouldn't have happened")
   }
@@ -277,7 +322,15 @@ class Node(val otherNodesNames: List[String],
 
         // send a StatsRequest msg to all other nodes
         val otherNodes = Utils.getOtherActors(context, otherNodesNames)
-        otherNodes foreach ( _ ! new StatsRequest(candidates map (_.uuid), self.path.name) )
+
+        val x = new StatsRequest(candidates map (_.uuid), self.path.name)
+        println(SizeEstimator.estimate(x))
+
+        otherNodes foreach { x =>
+          val request = new StatsRequest(candidates map (_.uuid), self.path.name)
+          updateMessages(request)
+          x ! request
+        }
         /*
         otherNodesNames foreach { name =>
           val actor = Utils.getActorByName(context, name)
@@ -290,7 +343,7 @@ class Node(val otherNodesNames: List[String],
         this.statsReplies = List[StatsReply]()     // clear the reply storage
         become(statsRequestSenderWaitingState)
       } else {
-        logger_info(s"Got a specialization ticket, but all candidates have already been specialized.")
+        //logger_info(s"Got a specialization ticket, but all candidates have already been specialized.")
         this.currentExpansionCandidates = Nil
         context.parent ! new ExpansionAbortMsg(self.path.name)
         become(normalState)
@@ -312,7 +365,7 @@ class Node(val otherNodesNames: List[String],
     case request: StatsRequest =>
       logExpansionNodeState
       //become(expansionNodeNonPriorityState)
-      logger_info(s"RECEIVED A StatsRequest FROM ${request.senderName}, SWITCHING TO NON-PRIORITY STATE & FW THE REQUEST THERE")
+      //logger_info(s"RECEIVED A StatsRequest FROM ${request.senderName}, SWITCHING TO NON-PRIORITY STATE & FW THE REQUEST THERE")
       become(expansionNodeNonPriorityState)
       self ! request
       //handleStatsRequest(request)
@@ -393,8 +446,7 @@ class Node(val otherNodesNames: List[String],
 
     case x: StatsRequest =>
       logRequestSenderState
-      throw new RuntimeException("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA: received a stats" +
-        " request while in a statsRequestSenderWaitingState. Something's really wrong!")
+      throw new RuntimeException("XXXXXXXXXX: received a stats" + " request while in a statsRequestSenderWaitingState. Something's really wrong!")
 
     case reply: StatsReply =>
       logRequestSenderState
@@ -405,7 +457,8 @@ class Node(val otherNodesNames: List[String],
         // all replies have been received from all nodes.
         // Time to decide which candidates will eventually be expanded.
         val (delta, ties, minseen) = (inputParameters.delta,inputParameters.breakTiesThreshold,inputParameters.minSeenExmpls)
-        val checked = getCurrentExpansionCandidates map (clause => Utils.expand_?(clause, this.statsReplies, delta, ties, minseen, showState, self.path.name))
+        val checked = getCurrentExpansionCandidates map (clause => Utils.expand_?(clause, this.statsReplies, delta, ties, minseen, showState, self.path.name, inputParameters))
+
         val (expanded, notExpanded) = checked.foldLeft(List[Clause](), List[Clause]()){ (x, y) =>
           val (expandAccum, notExpandAccum) = (x._1, x._2)
           val (expandedFlag, clause)  = (y._1, y._2)
@@ -431,7 +484,11 @@ class Node(val otherNodesNames: List[String],
 
         // finally, send the reply the all other actors (which are currently in a statsReceiverwaitingState)
         val otherNodes = Utils.getOtherActors(context, otherNodesNames)
-        otherNodes foreach ( _ ! new ExpansionReply(notExpanded, expanded.map(p => Utils.copyClause(p)), self.path.name) )
+        otherNodes foreach { x =>
+          val reply = new ExpansionReply(notExpanded, expanded.map(p => Utils.copyClause(p)), self.path.name)
+          updateMessages(reply)
+          x ! reply
+        }
         // notify the top-level actor
         context.parent ! new ExpansionFinished(notExpanded.map(_.uuid), expanded.map(_.parentClause.uuid), self.path.name, otherNodesNames)
         // ...and switch back to normal state to continue processing.
@@ -469,6 +526,7 @@ class Node(val otherNodesNames: List[String],
         ).map(a => a.uuid -> new Stats( new ClauseStats(a.tps, a.fps, a.fns, a.seenExmplsNum),
         a.refinements.map(r => r.uuid -> new ClauseStats(r.tps, r.fps, r.fns, r.seenExmplsNum)).toMap )).toMap
     val reply = new StatsReply(statsObject, self.path.name)
+    updateMessages(reply)
     Utils.getActorByName(context, request.senderName) ! reply
   }
 
@@ -501,30 +559,59 @@ class Node(val otherNodesNames: List[String],
   * */
   def processBatch(exmpls: Iterator[Exmpl], jep: Jep, logger: org.slf4j.Logger): BatchProcessResult = {
 
-    var newTopTheory = Theory(this.currentTheory)
-    val (newRules_, expansionCandidateRules_) = exmpls.foldLeft(List[Clause](), List[Clause]()){ (x, e) =>
-      //logger.info(s"processing example ${e.time}")
-      var (newRules, expansionCandidateRules) = (x._1, x._2)
-      val startNew = newTopTheory.growNewRuleTest(e, this.jep, initorterm, globals)
-      if (startNew) {
-        newRules = Functions.generateNewRules(newTopTheory, e, jep, initorterm, globals, inputParameters.withInertia, this.otherNodesNames)
-        //newRules.foreach(x => x.generatedAtNode = self.path.name) // just for debugging
-        newTopTheory = Theory(newTopTheory.clauses ++ newRules)
+    def filterTriedRules(newRules: List[Clause]) = {
+      val out = newRules.filter{ newRule =>
+        val bottomClauses = this.currentTheory.map(x => x.supportSet.clauses.head)
+        val bottom = newRule.supportSet.clauses.head
+        //if (bottomClauses.nonEmpty) {
+        //  true
+        //} else {
+          !bottomClauses.exists(x => x.thetaSubsumes(bottom) && bottom.thetaSubsumes(x))
+        //}
       }
-      if (newTopTheory.clauses.nonEmpty) {
-        newTopTheory.scoreRules(e.exmplWithInertia, this.jep, globals)
-      }
-      for (rule <- newTopTheory.clauses) {
-        val (delta, ties, seen) =
-          (inputParameters.delta, inputParameters.breakTiesThreshold, inputParameters.minSeenExmpls)
-        if (Functions.shouldExpand(rule, delta, ties, seen)) {
-          expansionCandidateRules = expansionCandidateRules :+ rule
-        }
-      }
-      (newRules, expansionCandidateRules)
+      if (out.length != newRules.length) logger.info("Dropped new clause (repeated bottom clause)")
+      out
     }
-    new BatchProcessResult(newRules_, expansionCandidateRules_)
+
+    val out = utils.Utils.time {
+      var newTopTheory = Theory(this.currentTheory)
+      val (newRules_, expansionCandidateRules_) = exmpls.foldLeft(List[Clause](), List[Clause]()) { (x, e) =>
+        //logger.info(s"processing example ${e.time}")
+        var (newRules, expansionCandidateRules) = (x._1, x._2)
+        val startNew = newTopTheory.growNewRuleTest(e, this.jep, initorterm, globals)
+        if (startNew) {
+          newRules = Functions.generateNewRules(newTopTheory, e, jep, initorterm, globals, inputParameters.withInertia, this.otherNodesNames)
+          //newRules.foreach(x => x.generatedAtNode = self.path.name) // just for debugging
+          newTopTheory = Theory(newTopTheory.clauses ++ newRules)
+        }
+        if (newTopTheory.clauses.nonEmpty) {
+          newTopTheory.scoreRules(e.exmplWithInertia, this.jep, globals)
+        }
+        for (rule <- newTopTheory.clauses) {
+          val (delta, ties, seen) =
+            (inputParameters.delta, inputParameters.breakTiesThreshold, inputParameters.minSeenExmpls)
+          if (Functions.shouldExpand(rule, delta, ties, seen)) {
+            expansionCandidateRules = expansionCandidateRules :+ rule
+          }
+        }
+        (newRules, expansionCandidateRules)
+      }
+      (newRules_, expansionCandidateRules_)
+    }
+    val (newRules, expansionCandidateRules, time) = (out._1._1, out._1._2, out._2)
+    //Globals.timeDebug = Globals.timeDebug :+ time
+
+    if (inputParameters.compressNewRules) {
+      //logger.info("DROPPED NEW CLAUSE (repeated bottom clause)")
+      new BatchProcessResult(filterTriedRules(newRules), expansionCandidateRules)
+    } else {
+      new BatchProcessResult(newRules, expansionCandidateRules)
+    }
+
+
   }
+
+
 
 
 }

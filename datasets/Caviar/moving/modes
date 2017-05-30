@@ -6,11 +6,9 @@ modeb(happensAt(active(+person),+time))
 modeb(happensAt(inactive(+person),+time))
 modeb(happensAt(abrupt(+person),+time))
 modeb(happensAt(running(+person),+time))
-modeb(not happensAt(disappear(+person),+time))
 modeb(close(+person,+person,#threshold_value,+time))
 modeb(far(+person,+person,#threshold_value,+time))
-modeb(holdsAt(visible(+person),+time))
-modeb(not holdsAt(visible(+person),+time))
+%modeb(holdsAt(visible(+person),+time))
 modeb(happensAt(appear(+person),+time))
 modeb(happensAt(disappear(+person),+time))
 
@@ -18,19 +16,13 @@ modeb(happensAt(disappear(+person),+time))
 modeb(orientationMove(+person,+person,+time))
 modeb(orientationFar(+person,+person,+time))
 
-
+modeb(not happensAt(disappear(+person),+time))
 %modeb(not happensAt(appear(+person),+time))
 %modeb(not happensAt(running(+person),+time))
 %modeb(not happensAt(active(+person),+time))
 %modeb(not happensAt(inactive(+person),+time))
 %modeb(not happensAt(walking(+person),+time))
 %modeb(not happensAt(abrupt(+person),+time))
-
-%modeb(sideBySize(+person,+person,#axisDis,+time))
-%modeb(notSideBySize(+person,+person,#axisDis,+time))
-
-%modeb(sideBySize(+person,+person,+time))
-%modeb(notSideBySize(+person,+person,+time))
 
 examplePattern(holdsAt(moving(+person,+person),+time))
 

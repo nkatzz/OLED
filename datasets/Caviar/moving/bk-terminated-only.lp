@@ -112,37 +112,7 @@ function absval(x,y)
    res = math.abs(z)
    return z
 end
-
-function axisdist(a,b)
-   z = a - b
-   res = math.abs(z)
-   return res
-end
 #end.
-
-%--------------------------------
-% Improve performance of moving?
-%--------------------------------
-
-% Persons close on the X-axis
-sideBySize(Id1,Id2,Time) :-
-   coords(Id1,X1,_,Time),
-   coords(Id2,X2,_,Time),
-   D = @axisdist(X1,X2),
-   xAxisThreshold(Threshold),
-   D <= Threshold.
-
-% Persons not close on the X-axis
-notSideBySize(Id1,Id2,Time) :-
-   coords(Id1,X1,_,Time),
-   coords(Id2,X2,_,Time),
-   D = @axisdist(X1,X2),
-   xAxisThreshold(Threshold),
-   D > Threshold.
-
-xAxisThreshold(0).
-axisDis(X) :- sideBySize(_,_,X,_).
-axisDis(X) :- notSideBySize(_,_,X,_).
 
 dist(Id1,Id2,T,Ypot):-
        coords(Id1,X1,Y1,T),
@@ -195,7 +165,6 @@ threshold_value(24).
 threshold_value(27).
 threshold_value(34).
 threshold_value(40).
-
 
 %threshold_value(5..10). %move
 %threshold_value(30). %meet

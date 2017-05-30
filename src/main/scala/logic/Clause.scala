@@ -210,9 +210,11 @@ case class Clause(head: PosLiteral = PosLiteral(), body: List[Literal] = Nil, fr
 
   def meanDiff = {
 
+    /*
     if (Globals.glvalues("distributed").toBoolean) {
       throw new RuntimeException("This is just to debug the distributed version, where the execution flow should not pass from here!")
     }
+    */
 
     // The - sign is to sort with decreasing order (default is with increasing)
     // Also sort clauses by length also, so that sorter clauses be preferred over longer ones with the same score

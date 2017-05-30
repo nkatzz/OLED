@@ -29,7 +29,8 @@ object ParseCAVIAR extends ClausalLogicParser {
 
 
 
-  val fixedBordersDBName = "CAVIAR_Real_FixedBorders"
+  //val fixedBordersDBName = "CAVIAR_Real_FixedBorders"
+  val fixedBordersDBName = "caviar"
   val originalDBName = "CAVIAR_Real_original"
 
   def main(args: Array[String]) = {
@@ -39,13 +40,10 @@ object ParseCAVIAR extends ClausalLogicParser {
     //val fixedBorders = true
 
     // original version
-    //val dataPath = "/home/nkatz/dev/CAVIAR-abrupt-original"
-    //val dbname = "caviar"
+    val dataPath = "/home/nkatz/dev/CAVIAR-abrupt-original"
+    val fixedBorders = false
 
-    val dataPath = args(0)
-    val dbname = args(1)
-
-    run(dataPath, dbname)
+    run(dataPath, fixedBorders)
   }
 
   /**
@@ -86,8 +84,8 @@ object ParseCAVIAR extends ClausalLogicParser {
   // The corrected version of CAVIAR is under /dev/CAVIAR-abrupt-corrected-borderlines.
   // The second version is the original one, nothing has been tweaked. It is located under /dev/CAVIAR-abrupt-original
 
-  def run(path: String, dbName: String) = {
-    //val dbName = if (fixedBorders) fixedBordersDBName else originalDBName
+  def run(path: String, fixedBorders: Boolean) = {
+    val dbName = if (fixedBorders) fixedBordersDBName else originalDBName
     val mongoClient = MongoClient()
     mongoClient.dropDatabase(dbName)
     val collection = mongoClient(dbName)("examples")

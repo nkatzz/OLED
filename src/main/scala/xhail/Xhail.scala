@@ -383,12 +383,17 @@ object Xhail extends ASPResultsParser with LazyLogging {
     val vlength = varKernel.length
     val compressed = if (Globals.glvalues("compressKernels").toBoolean) compressTheory(varKernel.toList) else varKernel.toList
     val clength = compressed.length
-    logger.info("Created Kernel set")
-    logger.debug("\n------------------------------------------------------------------------------------\n" +
-      s"Kernel Set (Ground---Variabilized($vlength clauses)---Compressed($clength clauses)):" +
-      "\n------------------------------------------------------------------------------------\n" +
-      showTheory(kernelSet.toList) + "\n\n" + showTheory(varKernel.toList) + "\n\n" + showTheory(compressed.toList))
-    //println(Theory(kernelSet.toList).tostring)
+    val nonEmptyVarKernel = compressed.filter(x => x.body.nonEmpty)
+    val nonEmptyKernel = kernelSet.filter(x => x.body.nonEmpty)
+    if (nonEmptyVarKernel.nonEmpty) {
+      logger.info("Created Kernel set")
+      logger.debug("\n------------------------------------------------------------------------------------\n" +
+        s"Kernel Set (Ground---Variabilized($vlength clauses)---Compressed($clength clauses)):" +
+        "\n------------------------------------------------------------------------------------\n" +
+        showTheory(kernelSet.toList) + "\n\n" + showTheory(varKernel.toList) + "\n\n" + showTheory(compressed.toList))
+      //println(Theory(kernelSet.toList).tostring)
+    }
+
     (kernelSet.toList, compressed)
   }
 

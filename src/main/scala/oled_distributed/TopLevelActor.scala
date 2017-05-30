@@ -1,14 +1,12 @@
 package oled_distributed
 
 import akka.actor._
-import java.util.UUID
-
 import app.{Globals, InputParameters}
-import com.mongodb.casbah.MongoClient
-import com.typesafe.scalalogging.LazyLogging
+import com.madhukaraphatak.sizeof.SizeEstimator
 import logic.{Clause, Theory}
 import oled_distributed.Structures._
 import org.slf4j.LoggerFactory
+import utils.DataUtils.{DataAsIntervals, Interval}
 import utils.Exmpl
 
 
@@ -16,10 +14,48 @@ import utils.Exmpl
   * Created by nkatz on 2/15/17.
   */
 
-class TopLevelActor(val databases: List[String],
-                    val getDataFunction: (String, String, Int) => Iterator[Exmpl],
+/*
+*
+* This version is used to learn with data fetched from intervals
+*
+* */
+
+/*
+class IntervalsTopLevelActor(databases: List[String] = Nil,
+                             getDataFunction: (String, String, Int, DataAsIntervals) => Iterator[Exmpl],
+                             inputParams: InputParameters,
+                             targetConcept: TargetConcept,
+                             val masterDB: String,
+                             val taskIntervals: List[DataAsIntervals]) extends
+  TopLevelActor(databases, getDataFunction, inputParams, targetConcept) {
+
+  /* Modify the method of the super class to handle data in intervals. */
+  override def getActorsPool(taskNames: List[String], targetConcept: TargetConcept) = {
+    val NodeActorNames = taskNames map (db => s"Node-$db-${targetConcept.toString}")
+    val globalsPool = taskNames.map(db => new Globals(inputParams.entryPath, db))
+    val nodeActorsPool = (NodeActorNames, globalsPool, this.taskIntervals).zipped.toList map { x =>
+      val (nodeName, global, nodeIntervals) = (x._1, x._2, x._3)
+      val otherActors = NodeActorNames.filter(_ != nodeName)
+      context.actorOf(Props(
+        new Node(otherActors, masterDB, targetConcept, global, getDataFunction, inputParams, nodeIntervals)
+      ), name = nodeName)
+    }
+    nodeActorsPool
+  }
+
+  override val actorsPool: List[ActorRef] = {
+    val taskNames = (1 to this.taskIntervals.length).map(i => s"dataset-$i").toList
+    getActorsPool(taskNames, targetConcept)
+  }
+
+}
+*/
+class TopLevelActor(val databases: List[String] = Nil,
+                    val getDataFunction: (String, String, Int, DataAsIntervals) => Iterator[Exmpl],
                     val inputParams: InputParameters,
-                    val targetConcept: TargetConcept) extends Actor {
+                    val targetConcept: TargetConcept,
+                    val masterDB: String,
+                    val taskIntervals: List[DataAsIntervals] = Nil) extends Actor {
 
   import context._
 
@@ -29,48 +65,63 @@ class TopLevelActor(val databases: List[String],
   var startTime = 0L
   var endTime = 0L
 
-  val actorsPool = getActorsPool(databases, targetConcept)
-  val actorNames = actorsPool.map(x => x.path.name)
+  val actorsPool: List[ActorRef] =
+    if(databases.nonEmpty) getActorsPool(databases, targetConcept)
+    else getActorsPool()
 
-  var queuedExpandingNodes = scala.collection.mutable.Queue[QueuedExpandingNode]()
+  val actorNames: List[String] = actorsPool.map(x => x.path.name)
+
+  private var queuedExpandingNodes = scala.collection.mutable.Queue[QueuedExpandingNode]()
   var nodeHavingTheSlot = "" // that's only for logging
 
   def getOtherActorNames(actorName: String) = actorNames.filter(name => name != actorName)
   def getOtherActorRefs(a: String) = getOtherActorNames(a) map (actorName => context.actorSelection(s"${self.path}/$actorName"))
 
-  var finalTheories = List[Theory]() // these should all be the same
+  private var finalTheories = List[Theory]() // these should all be the same
 
   /*
   * The logger for this class. Getting a logger this way instead of mixin-in the LazyLogging trait allows to
   * name the logger after a particular class instance, which is helpful for tracing messages
   * between different instances of the same class.
   * */
-  val logger = LoggerFactory.getLogger(self.path.name)
+  private val logger = LoggerFactory.getLogger(self.path.name)
 
+  private var messages = List[Long]()
 
+  def updateMessages(m: AnyRef) = {
+    val size = SizeEstimator.estimate(m)
+    messages = messages :+ size
+  }
+
+  private var childrenMsgNums = List[Int]()
+  private var childrenMsgSizes = List[Long]()
 
   def receive = {
     case "go" =>
       this.actorsPoolSize = actorsPool.length
       this.nodesCounter = actorsPool.length
-
       Thread.sleep(4000)
-
       this.startTime = System.nanoTime()
-
       actorsPool foreach (a => a ! "go")
 
+    case "go-no-communication" =>
+      this.actorsPoolSize = actorsPool.length
+      this.nodesCounter = actorsPool.length
+      Thread.sleep(4000)
+      this.startTime = System.nanoTime()
+      actorsPool foreach (a => a ! "go-no-communication")
+      become(replyHandler)
+
+      /*--------------------------------------------------------------------------------------*/
       // For debugging
       //context.actorOf(Props( new PingActor(this.actorNames) ), name = "Pinging-Actor") ! "go"
+    /*--------------------------------------------------------------------------------------*/
 
     case request: SpecializationTicketRequest =>
       become(requestHandler)
       // re-send the message to self to be processed
       self ! request
-
   }
-
-
 
 
   def replyHandler: Receive = {
@@ -162,41 +213,32 @@ class TopLevelActor(val databases: List[String],
     }
   }
 
+
+
   def acceptNewLearntTheory(msg: NodeTheoryMessage) = {
     this.nodesCounter -= 1
-    logger.info(s"Node ${msg.sender} sent:\n${msg.theory.clauses.map(x => x.showWithStats).mkString("\n")}")
+    logger.info(s"Node ${msg.sender} sent:\n${msg.theory.clauses.map(x => x.showWithStats + s"evaluated on ${x.seenExmplsNum} exmpls | refs: ${x.refinements.length}").mkString("\n")}")
     this.finalTheories = this.finalTheories :+ msg.theory
+    this.childrenMsgNums = this.childrenMsgNums :+ msg.msgNum
+    this.childrenMsgSizes = this.childrenMsgSizes :+ msg.msgSize
     if (this.nodesCounter == 0) {
       this.endTime = System.nanoTime()
       this.actorsPool.foreach(_ ! PoisonPill)
       val totalTime = (this.endTime - this.startTime)/1000000000.0
       logger.info(s"Total training time: $totalTime sec")
-      context.parent ! new FinalTheoryMessage(getFinalTheory(), totalTime.toString, targetConcept)
+      val totalMsgNum = childrenMsgNums.sum + messages.length
+      val totalMsgSize = childrenMsgSizes.sum + messages.sum
+      context.parent ! new FinalTheoryMessage(getFinalTheory(), totalTime.toString, totalMsgNum, totalMsgSize, targetConcept)
     }
   }
 
+  /*
   def getFinalTheory() = {
-
     val uuids = this.finalTheories.head.clauses.map(_.uuid)
     val withAccumScores = uuids.foldLeft(List[Clause]()) { (accumed, newUUID) =>
       val copies = this.finalTheories.flatMap(theory => theory.clauses.filter(p => p.uuid == newUUID))
-      // The length of copies should equal the length of different theories, since there is one\
-      // copy per theory. If it's less than that, something is wrong.
       if (copies.length != this.finalTheories.length) throw new RuntimeException("Produced non-identical theories")
-      /*
-      if (copies.nonEmpty) {
-        val (tps, fps, fns, exmpls) = copies.foldLeft(0, 0, 0, 0) { (x, y) =>
-          (x._1 + y.tps, x._2 + y.fps, x._3 + y.fns, x._4 + y.seenExmplsNum)
-        }
-        copies.head.tps = tps
-        copies.head.fps = fps
-        copies.head.fns = fns
-        copies.head.seenExmplsNum = exmpls
-        accumed :+ copies.head
-      } else {
-        accumed
-      }
-      */
+
       val (tps, fps, fns, exmpls) = copies.foldLeft(0, 0, 0, 0) { (x, y) =>
         (x._1 + y.tps, x._2 + y.fps, x._3 + y.fns, x._4 + y.seenExmplsNum)
       }
@@ -213,8 +255,29 @@ class TopLevelActor(val databases: List[String],
 
     filteredTheory
   }
+  */
 
 
+  def getFinalTheory() = {
+    this.finalTheories.head.clauses.foldLeft(List[Clause]()){ (accum, clause) =>
+      val clauseCopies = this.finalTheories.tail.flatMap(theory => theory.clauses.filter(c => c.uuid == clause.uuid))
+      if(clauseCopies.length + 1 != this.finalTheories.length) {
+        logger.info(s"\nCLAUSE\n${clause.tostring} (uuid: ${clause.uuid}) \nIS NOT FOUND IS SOME FINAL THEORY")
+      }
+      val sumCounts = clauseCopies.foldLeft(clause.tps, clause.fps, clause.fns, clause.seenExmplsNum) { (x, y) =>
+        (x._1 + y.tps, x._2 + y.fps, x._3 + y.fns, x._4 + y.seenExmplsNum)
+      }
+      clause.tps = sumCounts._1
+      clause.fps = sumCounts._2
+      clause.fns = sumCounts._3
+      clause.seenExmplsNum = sumCounts._4
+      if (clause.seenExmplsNum > inputParams.minSeenExmpls && clause.score >= inputParams.postPruningThreshold) {
+        accum :+ clause
+      } else {
+        accum
+      }
+    }
+  }
 
 
 
@@ -231,6 +294,23 @@ class TopLevelActor(val databases: List[String],
     }
     nodeActorsPool
   }
+
+  /* Modify to handle data in intervals. */
+  def getActorsPool() = {
+    val taskNames = (1 to this.taskIntervals.length).map(i => s"dataset-$i").toList
+    val NodeActorNames = taskNames map (db => s"Node-$db-${targetConcept.toString}")
+    val globalsPool = taskNames.map(t => new Globals(inputParams.entryPath, t))
+    val nodeActorsPool = (NodeActorNames, globalsPool, this.taskIntervals).zipped.toList map { x =>
+      val (nodeName, global, nodeIntervals) = (x._1, x._2, x._3)
+      val otherActors = NodeActorNames.filter(_ != nodeName)
+      context.actorOf(Props(
+        new Node(otherActors, masterDB, targetConcept, global, getDataFunction, inputParams, nodeIntervals)
+      ), name = nodeName)
+    }
+    nodeActorsPool
+  }
+
+
 
 
 

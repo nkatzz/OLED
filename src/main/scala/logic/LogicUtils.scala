@@ -30,8 +30,13 @@ object LogicUtils {
                      oledLearningInitWithInertia: Boolean=false, bkFile: String, globals: Globals) = {
 
     val infile = Utils.getTempFile("example", ".lp", deleteOnExit = true)
-    val f = (x: String) => if(x.endsWith(".")) x.split("\\.")(0) else x
-    val interpretation = examples("annotation").map(x => s"${f(x)}.") ++ examples("narrative").map(x => s"${f(x)}.")
+
+    //val f = (x: String) => if(x.endsWith(".")) x.split("\\.")(0) else x
+    //val interpretation = examples("annotation").map(x => s"${f(x)}.") ++ examples("narrative").map(x => s"${f(x)}.")
+
+    val f = (x: String) => if (x.endsWith(".")) x else s"$x."
+    val interpretation = examples("annotation").map(x => s"${f(x)}") ++ examples("narrative").map(x => s"${f(x)}")
+
     Utils.writeToFile(infile, "overwrite") { p => interpretation.foreach(p.println) }
     var (kernel, varKernel) =
       Xhail.runXhail(fromFile = infile.getAbsolutePath, kernelSetOnly = true,

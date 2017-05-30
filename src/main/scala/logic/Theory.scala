@@ -107,12 +107,15 @@ case class Theory(clauses: List[Clause] = List()) extends Expression with LazyLo
     // If a rule has just been expanded its refinements are empty, so generate new
     if (!postPruningMode) {
       // Just to be on the safe side in the distributed case...
+
+      /*
       if (Globals.glvalues("distributed").toBoolean) {
         if (this.clauses.exists(rule => rule.refinements.isEmpty)) {
           throw new RuntimeException(s"Found a rule with empty refinements set. That's an error because" +
             s" in the distributed setting the refinements' set is generated right after clause construction.")
         }
       }
+      */
       this.clauses foreach (rule => if (rule.refinements.isEmpty) rule.generateCandidateRefs)
     }
 
@@ -166,14 +169,17 @@ case class Theory(clauses: List[Clause] = List()) extends Expression with LazyLo
           }
         }
 
-        if (exampleCounts.isEmpty) throw new RuntimeException("No example count returned")
-        //if (timeCounts.size > 1) throw new RuntimeException(s"Don't know what to do with these times counts:\n$timeCounts")
-        //val times = Literal.toLiteral(timeCounts.head).terms.head.tostring.toInt
+        /*
+        *
+        * Don't throw this exception. There are cases where we do not hace any groundings.
+        * For instance consider this example from the maritime domain: We are learning the concept
+        * terminatedAt(highSpeedIn(Vessel,Area),Time) and an example comes with no area in it.
+        * Then there are no groundings and, correctly, the "seen examples" from our existing rules
+        * should not be increased.
+        * */
+        //if (exampleCounts.isEmpty) throw new RuntimeException("No example count returned")
 
 
-        //if (interpretationsCounts.isEmpty) throw new RuntimeException("No interpretations count returned")
-        //if (interpretationsCounts.size > 1) throw new RuntimeException(s"Don't know what to do with these interpretations counts:\n$timeCounts")
-        //val interps = Literal.toLiteral(interpretationsCounts.head).terms.head.tostring.toInt
 
         /*=====================================
          We need to get the count of different

@@ -1,12 +1,17 @@
 package oled_distributed
 
+import java.util.UUID
+
 import akka.actor.{ActorContext, ActorSelection}
-import com.mongodb.casbah.{MongoCollection, MongoClient}
+import app.InputParameters
+import com.mongodb.casbah.{MongoClient, MongoCollection}
 import com.mongodb.casbah.commons.MongoDBObject
-import logic.{Theory, Literal, PosLiteral, Clause}
+import logic.{Clause, Literal, PosLiteral, Theory}
 import logic.Examples.Example
 import oled_distributed.Structures.{Stats, StatsReply}
-import utils.Exmpl
+import utils.DataUtils.{DataAsIntervals, Interval}
+import utils.{Database, Exmpl}
+import com.mongodb.casbah.Imports._
 
 /**
   * Created by nkatz on 2/15/17.
@@ -21,28 +26,73 @@ object Utils {
   }
 
   /* utility function for retrieving data */
-  def getDataFromDB(dbName: String, HLE: String, chunkSize: Int): Iterator[Exmpl] = {
+  def getDataFromDB(dbName: String, HLE: String, chunkSize: Int, intervals: DataAsIntervals = DataAsIntervals()): Iterator[Exmpl] = {
     // No worry about removing prior annotation from the examples, since in any case inertia
     // is not used during learning. Even if a pair is passed where in both times
     // there is positive annotation, the first positive example will be covered by
     // the initalTime axiom, while the second positive will be covered by abduction (no inertia).
-    val mc = MongoClient()
-    val collection = mc(dbName)("examples")
+    if (intervals.isEmpty) {
+      val mc = MongoClient()
+      val collection = mc(dbName)("examples")
 
-    val data = collection.find().sort(MongoDBObject("time" -> 1)).map { x =>
-      val e = Example(x)
-      new Example(annot = e.annotation filter (_.contains(HLE)), nar = e.narrative, _time = e.time)
-    }
-    val dataChunked = data.grouped(chunkSize)
-    val dataIterator = dataChunked.map { x =>
-      val merged = x.foldLeft(Example()) { (z,y) =>
-        new Example(annot = z.annotation ++ y.annotation, nar = z.narrative ++ y.narrative, _time = x.head.time)
+      collection.createIndex(MongoDBObject("time" -> 1))
+
+      val data = collection.find().sort(MongoDBObject("time" -> 1)).map { x =>
+        val e = Example(x)
+        new Example(annot = e.annotation filter (_.contains(HLE)), nar = e.narrative, _time = e.time)
       }
-      new Exmpl(_id = merged.time, exampleWithInertia = merged)
+      val dataChunked = data.grouped(chunkSize)
+      val dataIterator = dataChunked.map { x =>
+        val merged = x.foldLeft(Example()) { (z,y) =>
+          new Example(annot = z.annotation ++ y.annotation, nar = z.narrative ++ y.narrative, _time = x.head.time)
+        }
+        new Exmpl(_id = merged.time, exampleWithInertia = merged)
+      }
+      //val shuffled = scala.util.Random.shuffle(dataIterator)
+      //shuffled
+      dataIterator
+    } else {
+      /*
+      val shuffledTrainingSet = List(intervals.trainingSet.head) ++ scala.util.Random.shuffle(intervals.trainingSet.tail)
+      utils.CaviarUtils.getDataFromIntervals(new Database(dbName), HLE, shuffledTrainingSet, chunkSize)
+      */
+
+      utils.CaviarUtils.getDataFromIntervals(new Database(dbName), HLE, intervals.trainingSet, chunkSize)
     }
-    //val shuffled = scala.util.Random.shuffle(dataIterator)
-    //shuffled
-    dataIterator
+
+  }
+
+  def intervalsToDB(dbToReadFrom: String, intervals: DataAsIntervals, HLE: String,
+                     chunkSize: Int, withChunking: Boolean = true) = {
+
+    val dbToWriteTo = s"d-oled-DB-${UUID.randomUUID()}"
+    val mongoClient = MongoClient()
+    val collectionWriteTo = mongoClient(dbToWriteTo)("examples")
+    val collectionReadFrom = mongoClient(dbToReadFrom)("examples")
+    println(s"Inserting data to $dbToWriteTo")
+    for (interval <- intervals.trainingSet) {
+      val batch = collectionReadFrom.find("time" $gte interval.startPoint $lte interval.endPoint).
+        sort(MongoDBObject("time" -> 1))
+      val examples = batch.map(x => Example(x))//.toList
+      val HLExmpls = examples map { x =>
+        val a = x.annotation filter (_.contains(HLE))
+        new Example(annot = a, nar = x.narrative, _time = x.time)
+      }
+
+      val chunked = if (withChunking) HLExmpls.sliding(chunkSize, chunkSize-1) else HLExmpls.sliding(HLExmpls.length)
+
+      val out = chunked map { x =>
+          val merged = x.foldLeft(Example()) { (z, y) =>
+            new Example(annot = z.annotation ++ y.annotation, nar = z.narrative ++ y.narrative, _time = x.head.time)
+          }
+        merged
+        }
+      out.foreach{ e =>
+        val entry = MongoDBObject("time" -> e._time.toInt) ++ ("annotation" -> e.annotation) ++ ("narrative" -> e.narrative)
+        collectionWriteTo.insert(entry)
+      }
+    }
+    dbToWriteTo
   }
 
   def getExmplIteratorSorted(collection: MongoCollection) = {
@@ -76,8 +126,12 @@ object Utils {
   * specialization (if b = true).
   * */
   def expand_?(clause: Clause, replies: List[StatsReply], delta: Double,
-               breakTiesThreshold: Double, minSeenExmpls: Int, currentNodeState: String, nodeName: String) = {
+               breakTiesThreshold: Double, minSeenExmpls: Int,
+               currentNodeState: String, nodeName: String, params: InputParameters) = {
 
+    // A StatsReply is a reply from a node. So it should contain stats
+    // for any requested clause. If a clause id is not found in a reply an exception
+    // is thrown from r.getClauseStats
     val repliesGroupedByNode = (for (r <- replies) yield (r.sender, r.getClauseStats(clause.uuid))).toMap
 
     // update the counts per node for each node, for this clause and for each one of its refinements
@@ -86,7 +140,7 @@ object Utils {
     }
 
     // Re-check the clause for expansion
-    Functions.expandRule(clause, delta, breakTiesThreshold, minSeenExmpls, nodeName)
+    Functions.expandRule(clause, delta, breakTiesThreshold, minSeenExmpls, nodeName, params)
   }
 
   /*

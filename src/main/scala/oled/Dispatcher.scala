@@ -5,7 +5,7 @@ import com.mongodb.casbah.commons.MongoDBObject
 import com.typesafe.scalalogging.LazyLogging
 import app.Globals
 import logic.{LogicUtils, Literal, Theory}
-import utils.DataUtils.{DataAsIntervals, DataAsExamples, ResultsContainer, TrainingSet}
+import utils.DataUtils._
 import utils._
 import utils.Implicits._
 import jep.Jep
@@ -42,21 +42,20 @@ class Dispatcher(val DB: Database, val delta: Double, val breakTiesThreshold: Do
 
 
     case "start" =>
-
+      ///*
       context.actorOf(Props(
         new TheoryLearner(DB, delta, breakTiesThreshold, postPruningThreshold,
           minSeenExmpls, trainingSetSize, repeatFor, chunkSize, "initiated", withInertia=false,
-          withPostPruning=withPostPruning, onlinePruning=onlinePruning, data=data, HLE, kernelSet=kernelSet,
-          globals=globals,tryMoreRules=tryMoreRules)
+          withPostPruning=withPostPruning, onlinePruning=onlinePruning, data=data, HLE, kernelSet=kernelSet, globals=globals, tryMoreRules=tryMoreRules)
       ), name = s"initiated-learner-${this.##}") ! "go"
-///*
+      //*/
+      ///*
       context.actorOf(Props(
         new TheoryLearner(DB, delta, breakTiesThreshold, postPruningThreshold,
           minSeenExmpls, trainingSetSize, repeatFor, chunkSize, "terminated", withInertia=false,
-          withPostPruning=withPostPruning, onlinePruning=onlinePruning, data=data, HLE, kernelSet=kernelSet,
-          globals=globals, tryMoreRules=tryMoreRules)
+          withPostPruning=withPostPruning, onlinePruning=onlinePruning, data=data, HLE, kernelSet=kernelSet, globals=globals, tryMoreRules=tryMoreRules)
       ), name = s"terminated-learner-${this.##}") ! "go"
-//*/
+     //*/
     case x: (Theory,Double) =>
       theories = theories :+ x
       size -= 1
@@ -125,6 +124,13 @@ class Dispatcher(val DB: Database, val delta: Double, val breakTiesThreshold: Do
         val data = getTestingData
         while (data.hasNext) {
           val e = data.next()
+          println(e.time)
+          evaluateTheory(t, e, withInertia = true, jep, handCraftedTheoryFile, globals)
+        }
+      case x: DataFunction =>
+        val d = data.asInstanceOf[DataFunction].function(DB.name, HLE, chunkSize, DataAsIntervals())
+        while (d.hasNext) {
+          val e = d.next()
           println(e.time)
           evaluateTheory(t, e, withInertia = true, jep, handCraftedTheoryFile, globals)
         }

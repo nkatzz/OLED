@@ -8,6 +8,18 @@ import logic.Theory
   * Created by nkatz on 9/13/16.
   */
 
+/*
+*
+*
+* MOST OF THIS IS THIS IS USELESS (NEED ITERATORS TO STORE THE DATA)
+*
+*
+*
+*
+* */
+
+
+
 object DataUtils {
 
   trait Data
@@ -48,14 +60,15 @@ object DataUtils {
   }
 
   class DataAsIntervals(override val trainingSet: List[Interval], override val testingSet: List[Interval]) extends TrainingSet {
-    //def showTrainingIntervals() = trainingSet.foreach(x => println(x))
-
-    def showTrainingIntervals() = println(trainingSet.map(x => x.toString.replaceAll("moving",""""moving"""")))
-
+    override def isEmpty = this.trainingSet.isEmpty
+    def showTrainingIntervals() = trainingSet.foreach(x => println(x))
     def showTestingIntervals() = testingSet.foreach(x => println(x))
   }
 
   class DataAsExamples(override val trainingSet: List[Example], override val testingSet: List[Example]) extends TrainingSet
+
+  /* Use this to stream training data directly from the db. */
+  class DataFunction(val function: (String, String, Int, DataAsIntervals) => Iterator[Exmpl]) extends TrainingSet
 
   class ResultsContainer(val tps: Double, val fps: Double, val fns: Double,
                          val precision: Double, val recall: Double,

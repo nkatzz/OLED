@@ -382,14 +382,7 @@ object CaviarUtils {
       new Example(annot = a, nar = x.narrative, _time = x.time)
     }
 
-    val chunked =
-      if (HLExmpls.nonEmpty) {
-        if (withChunking) HLExmpls.sliding(chunkSize, chunkSize-1) else HLExmpls.sliding(HLExmpls.length) // won't be chunked in the else case
-      } else {
-        println(s"""${DB.name} return no results for the query "DB.collection.find("time" gte $startTime lte $endTime).sort(MongoDBObject("time" -> 1))" """)
-        Iterator.empty
-      }
-
+    val chunked = if (withChunking) HLExmpls.sliding(chunkSize, chunkSize-1) else HLExmpls.sliding(HLExmpls.length) // won't be chunked in the else case
 
     /*
      * We need no worry about removing prior annotation from the examples, since in any case inertia is not used during learning.

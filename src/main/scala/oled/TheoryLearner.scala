@@ -4,8 +4,8 @@ import akka.actor.Actor
 import com.typesafe.scalalogging.LazyLogging
 import app.Globals
 import logic.{LogicUtils, Clause, Theory}
-import utils.DataUtils.{DataAsExamples, DataAsIntervals, TrainingSet}
-import utils.{CaviarUtils, Utils, Exmpl, Database}
+import utils.DataUtils.{DataFunction, DataAsExamples, DataAsIntervals, TrainingSet}
+import utils.{CaviarUtils, Utils, Exmpl}
 import jep.Jep
 import utils.Database
 
@@ -99,6 +99,8 @@ class TheoryLearner(val DB: Database,
           CaviarUtils.getDataFromIntervals(DB, HLE, data.asInstanceOf[DataAsIntervals].trainingSet, chunkSize)
       case x: DataAsExamples =>
         data.asInstanceOf[DataAsExamples].trainingSet.toIterator
+      case x: DataFunction =>
+        data.asInstanceOf[DataFunction].function(DB.name, HLE, chunkSize, DataAsIntervals())
       case _ =>
         throw new RuntimeException(s"${data.getClass}: Don't know what to do with this data container!")
     }
@@ -123,10 +125,9 @@ class TheoryLearner(val DB: Database,
       val data = getTrainingData
 
       data.foldLeft(inTheory){ (topTheory, newExample) =>
-        //println(newExample.time)
-        //if (newExample.time == "507120") {
-        //  val stop = "stop"
-        //}
+
+        //println(newExample.time, topTheory.clauses.length, s"${topTheory.clauses.map(x => (x.tps, x.fps, x.fns)).mkString(" ")}")
+
         val res = Utils.time {
           processExample(topTheory, newExample, learningInitWithInertia)
         }
@@ -179,10 +180,9 @@ class TheoryLearner(val DB: Database,
       //!bottomClauses.exists(x => x.thetaSubsumes(bottom) && bottom.thetaSubsumes(x))
       !bottomClauses.exists(x => x.thetaSubsumes(bottom)) // this suffices for it to be excluded.
     }
-    if (out.length != newRules.length) logger.info("DROPPED NEW CLAUSE (repeated bottom clause)")
+    if (out.length != newRules.length) logger.info("Dropped new clause (repeated bottom clause)")
     out
   }
-
 
   def processExample(topTheory: Theory, e: Exmpl, learningInitWithInertia: Boolean): Theory = {
 
@@ -215,7 +215,7 @@ class TheoryLearner(val DB: Database,
          *
          * COMPRESS NEW RULES (EXPERIMENTAL)
          * */
-         //newTopTheory = topTheory.clauses ++ newRules
+        //newTopTheory = topTheory.clauses ++ newRules
         newTopTheory = topTheory.clauses ++ filterTriedRules(topTheory, newRules)
 
         //-------------------------------------------------------------
