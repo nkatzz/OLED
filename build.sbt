@@ -18,7 +18,7 @@ publishTo := Some(Resolver.file("file", new File("/home/nkatz/Desktop/test")))
 // Main class for packaging to jar
 //mainClass in (Compile, packageBin) := Some("app.runners.d_OLEDRunner")
 //mainClass in (Compile, packageBin) := Some("app.runners.OLEDRunner")
-mainClass in (Compile, packageBin) := Some("data_handling.maritime_data.Tests")
+mainClass in (Compile, packageBin) := Some("data_handling.OLEDDefaultRunner")
 
 // MongoDB
 libraryDependencies += "org.mongodb" %% "casbah" % "3.1.1"
