@@ -54,7 +54,7 @@ Type
 
 
 ```
-java -cp oled.jar:/lib/jep-x.x.x.jar -Djava.library.path=/jephome/lib/python/jep app.runners.OLEDDefaultRunner --help 
+java -cp oled.jar app.runners.OLEDDefaultRunner --help 
 ```
 
 to see the list of cmd args
