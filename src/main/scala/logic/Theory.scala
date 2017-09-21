@@ -2,11 +2,11 @@ package logic
 
 import java.io.File
 
+import app.runutils.Globals
 import com.typesafe.scalalogging.LazyLogging
 //import iled.core.{Core, Iled}
-import app.Globals
 import logic.Examples.Example
-import utils.{Utils, Exmpl, ASP}
+import utils.{Utils, ASP}
 import jep.Jep
 
 import scala.collection.mutable.ListBuffer
@@ -107,12 +107,15 @@ case class Theory(clauses: List[Clause] = List()) extends Expression with LazyLo
     // If a rule has just been expanded its refinements are empty, so generate new
     if (!postPruningMode) {
       // Just to be on the safe side in the distributed case...
+
+      /*
       if (Globals.glvalues("distributed").toBoolean) {
         if (this.clauses.exists(rule => rule.refinements.isEmpty)) {
           throw new RuntimeException(s"Found a rule with empty refinements set. That's an error because" +
             s" in the distributed setting the refinements' set is generated right after clause construction.")
         }
       }
+      */
       this.clauses foreach (rule => if (rule.refinements.isEmpty) rule.generateCandidateRefs)
     }
 
@@ -166,14 +169,17 @@ case class Theory(clauses: List[Clause] = List()) extends Expression with LazyLo
           }
         }
 
-        if (exampleCounts.isEmpty) throw new RuntimeException("No example count returned")
-        //if (timeCounts.size > 1) throw new RuntimeException(s"Don't know what to do with these times counts:\n$timeCounts")
-        //val times = Literal.toLiteral(timeCounts.head).terms.head.tostring.toInt
+        /*
+        *
+        * Don't throw this exception. There are cases where we do not hace any groundings.
+        * For instance consider this example from the maritime domain: We are learning the concept
+        * terminatedAt(highSpeedIn(Vessel,Area),Time) and an example comes with no area in it.
+        * Then there are no groundings and, correctly, the "seen examples" from our existing rules
+        * should not be increased.
+        * */
+        //if (exampleCounts.isEmpty) throw new RuntimeException("No example count returned")
 
 
-        //if (interpretationsCounts.isEmpty) throw new RuntimeException("No interpretations count returned")
-        //if (interpretationsCounts.size > 1) throw new RuntimeException(s"Don't know what to do with these interpretations counts:\n$timeCounts")
-        //val interps = Literal.toLiteral(interpretationsCounts.head).terms.head.tostring.toInt
 
         /*=====================================
          We need to get the count of different
@@ -342,7 +348,7 @@ case class Theory(clauses: List[Clause] = List()) extends Expression with LazyLo
 
   */
 
-  def growNewRuleTest(e: Exmpl, jep: Jep, target: String, globals: Globals): Boolean = {
+  def growNewRuleTest(e: Example, jep: Jep, target: String, globals: Globals): Boolean = {
     // we already have the target with the input (the target parameter).
     // But the one from the input is used only in case of an empty theory. In
     // other cases with get the target class by looking at the rules' heads,
@@ -385,7 +391,7 @@ case class Theory(clauses: List[Clause] = List()) extends Expression with LazyLo
 
     val t = (this.withTypePreds(globals) map (_.tostring)).mkString("\n")
     // Getting exmplWithInertia here does not cause problems (in the initiated case). See comments at CaviarUtils.getDataAsChunks
-    val ex = (e.exmplWithInertia.annotationASP ++ e.exmplWithInertia.narrativeASP).mkString("\n")
+    val ex = (e.annotationASP ++ e.narrativeASP).mkString("\n")
 
     val program = ex + includeBKfile + t + failedTestDirective + show
     // Fail if either one of the existing rules
@@ -419,7 +425,7 @@ case class Theory(clauses: List[Clause] = List()) extends Expression with LazyLo
 
 
 
-  def growNewRuleTestWholeTheories(e: Exmpl, jep: Jep, globals: Globals): Boolean = {
+  def growNewRuleTestWholeTheories(e: Example, jep: Jep, globals: Globals): Boolean = {
 
     def solve(program: String, jep: Jep): List[AnswerSet] = {
       val f = Utils.getTempFile(s"growNewRuleTest",".lp",deleteOnExit = true)
@@ -436,7 +442,7 @@ case class Theory(clauses: List[Clause] = List()) extends Expression with LazyLo
     }
 
     val t = (this.withTypePreds(globals) map (_.tostring)).mkString("\n")
-    val ex = (e.exmplWithInertia.annotationASP ++ e.exmplWithInertia.narrativeASP).mkString("\n")
+    val ex = (e.annotationASP ++ e.narrativeASP).mkString("\n")
 
     val program = ex + includeBKfile + t + failedTestDirective + show
     // Fail if either one of the existing rules

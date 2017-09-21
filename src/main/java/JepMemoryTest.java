@@ -1,7 +1,6 @@
-import app.Globals;
+import app.runutils.Globals;
 import jep.Jep;
 import jep.JepException;
-import scala.Int;
 
 /**
  * Created by nkatz on 3/7/2016.

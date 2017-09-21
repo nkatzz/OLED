@@ -67,7 +67,7 @@ object Utils extends ASPResultsParser with LazyLogging{
     * #show father(X,Y).
     * #show mother(X,Y)
     * @param extra @tparam List[String] any extra knowledge, that is simply printed in the ASP input file
-    */ 
+    */
 
     def toASPprogram(program: List[String] = Nil,
       generateDirectives: List[String] = Nil,
@@ -86,9 +86,9 @@ object Utils extends ASPResultsParser with LazyLogging{
          case x @ (Nil, _, _) => List()
          //case x @ (head :: tail, 1000000000,1000000000) => println(x); x._1.map( y => "{" + y + "}.\n")
          case x @ (head :: tail, 1000000000, 1000000000) => for (e <- x._1) yield "{" + e + "}."
-         case x @ (head :: tail, lower, 1000000000) => (head :: tail).map(y => "$lower {" + y + "}.\n")
-         case x @ (head :: tail, 1000000000, upper) => (head :: tail).map(y => "0 {" + y + "} $upper.\n")
-         case x @ (head :: tail, lower, upper) => (head :: tail).map(y => "$lower {" + y + "} $upper.\n")
+         case x @ (head :: tail, lower, 1000000000) => (head :: tail).map(y => s"$lower {" + y + "}.\n")
+         case x @ (head :: tail, 1000000000, upper) => (head :: tail).map(y => "0 {" + y + s"} $upper.\n")
+         case x @ (head :: tail, lower, upper) => (head :: tail).map(y => s"$lower {" + y + s"} $upper.\n")
       }
       Utils.writeToFile(new java.io.File(writeToFile), "append")(p => genStatems foreach (p.println))
       val minStatement = minimizeStatements match { // This is a single string
@@ -389,9 +389,9 @@ object Utils extends ASPResultsParser with LazyLogging{
 
    /* Get a simple string as result, from the field of interest */
    def getStringByField(field: String, fieldValue: Any, collection: MongoCollection): Any = {
-      val query = MongoDBObject(field -> fieldValue)
-      val target = collection.findOne(query)
-      val result = target match {
+     val query = MongoDBObject(field -> fieldValue)
+     val target = collection.findOne(query)
+     val result = target match {
          case Some(x) => target.get(field)
          case _ => None
       }

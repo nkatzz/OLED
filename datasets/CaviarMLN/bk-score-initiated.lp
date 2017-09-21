@@ -1,8 +1,10 @@
-%tps(I, X) :- rule(I), X = #count {X0,X1,Te,Ts: example( holdsAt(moving(X0,X1),Te) ), marked(I, initiatedAt(moving(X0,X1),Ts) ), Te = Ts + 1 }.
-%fps(I, X) :- rule(I), X = #count {X0,X1,Te,Ts: not example( holdsAt(moving(X0,X1),Te) ), marked(I, initiatedAt(moving(X0,X1),Ts) ), Te = Ts + 1 }.
+tps(I, X) :- rule(I), X = #count {X0,X1,Te,Ts: example( holdsAt(moving(X0,X1),Te) ), marked(I, initiatedAt(moving(X0,X1),Ts) ), Te = Ts + 1, time(Te), time(Ts) }.
+fps(I, X) :- rule(I), X = #count {X0,X1,Te,Ts: not example( holdsAt(moving(X0,X1),Te) ), marked(I, initiatedAt(moving(X0,X1),Ts) ), Te = Ts + 1, time(Te), time(Ts) }.
+fns(I, X) :- rule(I), X = #count {X0,X1,Te,Ts: example( holdsAt(moving(X0,X1),Te) ), not marked(I, initiatedAt(moving(X0,X1),Ts) ), Te = Ts + 1, time(Te), time(Ts) }.
 
-tps(I, X) :- rule(I), X = #count {X0,X1,Te,Ts: example( holdsAt(meeting(X0,X1),Te) ), marked(I, initiatedAt(meeting(X0,X1),Ts) ), Te = Ts + 1 }.
-fps(I, X) :- rule(I), X = #count {X0,X1,Te,Ts: not example( holdsAt(meeting(X0,X1),Te) ), marked(I, initiatedAt(meeting(X0,X1),Ts) ), Te = Ts + 1 }.
+%tps(I, X) :- rule(I), X = #count {X0,X1,Te,Ts: example( holdsAt(meeting(X0,X1),Te) ), marked(I, initiatedAt(meeting(X0,X1),Ts) ), Te = Ts + 1, time(Te), time(Ts) }.
+%fps(I, X) :- rule(I), X = #count {X0,X1,Te,Ts: not example( holdsAt(meeting(X0,X1),Te) ), marked(I, initiatedAt(meeting(X0,X1),Ts) ), Te = Ts + 1, time(Te), time(Ts) }.
+%fns(I, X) :- rule(I), X = #count {X0,X1,Te,Ts: example( holdsAt(meeting(X0,X1),Te) ), not marked(I, initiatedAt(meeting(X0,X1),Ts) ), Te = Ts + 1, time(Te), time(Ts) }.
 
 initialTime(X) :- time(X), #false : X > Y, time(Y).
 

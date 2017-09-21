@@ -2,13 +2,16 @@ package utils
 
 import java.io.File
 import java.util
+
+import app.runutils.Globals
 import com.typesafe.scalalogging._
-import app.Globals
+
 import scala.collection.JavaConverters._
 import parsers.ASPResultsParser
 import logic._
 import jep.Jep
 import logic.Examples._
+
 import scala.io.Source
 import scala.sys.process._
 
@@ -456,14 +459,23 @@ object ASP extends ASPResultsParser with LazyLogging {
                 if (task == Globals.ILED) logger.info("Failed to learn something from that...")
                 return Nil
               } else {
+                /* Perhaps there's no need to crash because the solver get stuck with something... Learning sound stuff in a past no one wants to return to */
+                logger.info(s"Task: $task -- Abduction failed (UNSATISFIABLE program)")
+                return Nil
+                /*
                 logger.error(s"\nTask: $task -- Ended up with an UNSATISFIABLE program")
                 val program = Source.fromFile(aspFile).getLines.toList.mkString("\n")
                 throw new RuntimeException(s"\nTask: $task -- Ended up with an UNSATISFIABLE program:\n$program")
+                */
               }
             case _ =>
+              logger.info(s"Task: $task -- Abduction failed (UNSATISFIABLE program)")
+              return Nil
+              /*
               logger.error(s"\nTask: $task -- Ended up with an UNSATISFIABLE program")
               val program = Source.fromFile(aspFile).getLines.toList.mkString("\n")
               throw new RuntimeException(s"\nTask: $task -- Ended up with an UNSATISFIABLE program:\n$program")
+              */
           }
       }
     }
@@ -490,6 +502,7 @@ object ASP extends ASPResultsParser with LazyLogging {
     // else breaks.
     //=========================================================================
     //-------------------------------------------------------------------------
+    if (_models.isEmpty) return Nil
     if (task == Globals.ABDUCTION && _models.head == "") return Nil
     //-------------------------------------------------------------------------
 
@@ -565,18 +578,25 @@ object ASP extends ASPResultsParser with LazyLogging {
               // a kernel from a weak data point, to gen a new rule, but end up in an
               // UNSAT program. We don't want a crash in this case either, we simply want
               // to quit learning from the particular example and move on.
-              if (fromWeakExmpl) {
+              if (fromWeakExmpl ) {
                 if (task == Globals.ILED) logger.info("Failed to learn something from that...")
                 return Nil
               } else {
+                /* Perhaps there's no need to crash because the solver get stuck with something... Learning sound stuff in a past no one wants to return to */
+                logger.info(s"\nTask: $task -- Abduction failed (UNSATISFIABLE program)")
+                /*
                 logger.error(s"\nTask: $task -- Ended up with an UNSATISFIABLE program")
                 val program = Source.fromFile(aspFile).getLines.toList.mkString("\n")
                 throw new RuntimeException(s"\nTask: $task -- Ended up with an UNSATISFIABLE program:\n$program")
+                */
               }
             case _ =>
+              logger.info(s"\nTask: $task -- Abduction failed (UNSATISFIABLE program)")
+              /*
               logger.error(s"\nTask: $task -- Ended up with an UNSATISFIABLE program")
               val program = Source.fromFile(aspFile).getLines.toList.mkString("\n")
               throw new RuntimeException(s"\nTask: $task -- Ended up with an UNSATISFIABLE program:\n$program")
+              */
           }
 
       }

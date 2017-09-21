@@ -1,7 +1,7 @@
-%modeh(initiatedAt(moving(+person,+person),+time))
-%modeh(terminatedAt(moving(+person,+person),+time))
-modeh(initiatedAt(meeting(+person,+person),+time))
-modeh(terminatedAt(meeting(+person,+person),+time))
+modeh(initiatedAt(moving(+person,+person),+time))
+modeh(terminatedAt(moving(+person,+person),+time))
+%modeh(initiatedAt(meeting(+person,+person),+time))
+%modeh(terminatedAt(meeting(+person,+person),+time))
 
 
 modeb(happensAt(walking(+person),+time))
@@ -24,14 +24,11 @@ modeb(far(+person,+person,#dist,+time))
 
 %% Only for Moving:
 
-%modeb(orientationMove(+person,+person,+time))
-%modeb(orientationFar(+person,+person,+time))
+modeb(orientationMove(+person,+person,+time))
+modeb(orientationFar(+person,+person,+time))
 
-
-
-
-%examplePattern(holdsAt(moving(+person,+person),+time))
-examplePattern(holdsAt(meeting(+person,+person),+time))
+examplePattern(holdsAt(moving(+person,+person),+time))
+%examplePattern(holdsAt(meeting(+person,+person),+time))
 
 
 

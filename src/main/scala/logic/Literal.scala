@@ -1,12 +1,12 @@
 package logic
 
-import app.Globals
+import app.runutils.Globals
 
 import scala.collection.mutable.ListBuffer
 import scala.util.control.Breaks
 import logic.Modes._
 import logic.Exceptions._
-import parsers.{ClausalLogicParser, ModesParser}
+import utils.parsers.{ClausalLogicParser, ModesParser}
 
 
 /**

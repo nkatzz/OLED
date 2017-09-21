@@ -8,6 +8,18 @@ import logic.Theory
   * Created by nkatz on 9/13/16.
   */
 
+/*
+*
+*
+* MOST OF THIS IS THIS IS USELESS (NEED ITERATORS TO STORE THE DATA)
+*
+*
+*
+*
+* */
+
+
+
 object DataUtils {
 
   trait Data
@@ -34,7 +46,7 @@ object DataUtils {
   * This is only for experiments with CAVIAR, it's a valid data format to use,
   * i.e. it's an abstraction for data representation I'm gonna stick with.
   * */
-  case class Interval(val HLE: String, val startPoint: Int, var endPoint: Int) extends Data {
+  case class Interval(HLE: String, startPoint: Int, var endPoint: Int) extends Data {
     val step = 40
     //var endPoint = 0
     def length = List.range(startPoint,endPoint+step, step).length
@@ -48,11 +60,15 @@ object DataUtils {
   }
 
   class DataAsIntervals(override val trainingSet: List[Interval], override val testingSet: List[Interval]) extends TrainingSet {
+    override def isEmpty = this.trainingSet.isEmpty
     def showTrainingIntervals() = trainingSet.foreach(x => println(x))
     def showTestingIntervals() = testingSet.foreach(x => println(x))
   }
 
   class DataAsExamples(override val trainingSet: List[Example], override val testingSet: List[Example]) extends TrainingSet
+
+  /* Use this to stream training data directly from the db. */
+  class DataFunction(val function: (String, String, Int, DataAsIntervals) => Iterator[Example]) extends TrainingSet
 
   class ResultsContainer(val tps: Double, val fps: Double, val fns: Double,
                          val precision: Double, val recall: Double,
@@ -63,7 +79,7 @@ object DataUtils {
 
   object Stats {
 
-    def getExampleStats(exmpls: List[Exmpl]) = {
+    def getExampleStats(exmpls: List[Example]) = {
 
       def append(x: List[String], y: List[String]) = {
         x ++ y.filter(p => !x.contains(p))
@@ -72,8 +88,8 @@ object DataUtils {
       val (ratios, annotSizes, narSizes, totalSize, wholeAnnotation, wholeNarrative) =
         exmpls.foldLeft(List[Double](), List[Double](), List[Double](), List[Double](), List[String](), List[String]()) { (s, e) =>
           val (rats, annots, nars, total, a, n) = (s._1, s._2, s._3, s._4, s._5, s._6)
-          val holdsAtoms = e.exmplWithInertia.annotation
-          val narrativeAtoms = e.exmplWithInertia.narrative
+          val holdsAtoms = e.annotation
+          val narrativeAtoms = e.narrative
           val holdsSize = holdsAtoms.size.toDouble
           val narrativeSize = narrativeAtoms.size.toDouble
           val t = holdsSize + narrativeSize

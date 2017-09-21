@@ -1,6 +1,6 @@
 package logic
 
-import app.Globals
+import app.runutils.Globals
 import jep.Jep
 import logic.Examples.Example
 import utils.{ASP, Utils}
@@ -12,31 +12,42 @@ import scala.collection.mutable.ListBuffer
 /**
   * Created by nkatz on 9/13/16.
   */
+
 object LogicUtils {
 
 
+  ///*
   def compressTheory(kernel: List[Clause]): List[Clause] = {
     val compressed = new ListBuffer[Clause]
     val included = (c: Clause) => compressed.toList.exists(x => x.thetaSubsumes(c) && c.thetaSubsumes(x))
     for (c <- kernel) {
-      //val others = kernel.filter(x => x != c)
       if (!included(c)) compressed += c
     }
     compressed.toList
   }
+  //*/
+
+  /*
+  def compressTheory(kernel: List[Clause]): List[Clause] = {
+    val compressed = new ListBuffer[Clause]
+    val included = (c: Clause) => compressed.toList.exists(x => c.thetaSubsumes(x))
+    for (c <- kernel) {
+      if (!included(c)) compressed += c
+    }
+    compressed.toList
+  }
+  */
 
   def generateKernel(examples: Map[String,List[String]], fromWeakExmpl: Boolean = false,
-                     jep: Jep, learningTerminatedOnly: Boolean=false,
-                     oledLearningInitWithInertia: Boolean=false, bkFile: String, globals: Globals) = {
+                     jep: Jep, learningTerminatedOnly: Boolean=false, bkFile: String, globals: Globals) = {
 
     val infile = Utils.getTempFile("example", ".lp", deleteOnExit = true)
-    val f = (x: String) => if(x.endsWith(".")) x.split("\\.")(0) else x
-    val interpretation = examples("annotation").map(x => s"${f(x)}.") ++ examples("narrative").map(x => s"${f(x)}.")
+    val f = (x: String) => if (x.endsWith(".")) x else s"$x."
+    val interpretation = examples("annotation").map(x => s"${f(x)}") ++ examples("narrative").map(x => s"${f(x)}")
     Utils.writeToFile(infile, "overwrite") { p => interpretation.foreach(p.println) }
     var (kernel, varKernel) =
       Xhail.runXhail(fromFile = infile.getAbsolutePath, kernelSetOnly = true,
-        fromWeakExmpl = fromWeakExmpl, jep=jep, learningTerminatedAtOnly=learningTerminatedOnly,
-        oledLearningInitWithInertia=oledLearningInitWithInertia, bkFile=bkFile, globals=globals)
+        fromWeakExmpl = fromWeakExmpl, jep=jep, learningTerminatedAtOnly=learningTerminatedOnly, bkFile=bkFile, globals=globals)
     if (fromWeakExmpl) {
       varKernel = varKernel.map (x => Clause.updateField(x, fromWeakExample = true))
     }
@@ -48,8 +59,7 @@ object LogicUtils {
   def generateKernel2(examplesFile: java.io.File, jep: Jep, bkFile: String, globals: Globals) = {
     val (kernel, varKernel) =
       Xhail.runXhail(fromFile = examplesFile.getAbsolutePath, kernelSetOnly = true,
-        fromWeakExmpl = false, jep=jep, learningTerminatedAtOnly=false,
-        oledLearningInitWithInertia=false, bkFile=bkFile, globals=globals)
+        fromWeakExmpl = false, jep=jep, learningTerminatedAtOnly=false, bkFile=bkFile, globals=globals)
     (kernel,varKernel)
   }
 

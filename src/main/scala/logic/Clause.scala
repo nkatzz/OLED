@@ -2,16 +2,18 @@ package logic
 
 import java.util.UUID
 
-import app.Globals
+import app.runutils.Globals
 import logic.Examples.Example
-import oled_distributed.Structures.ClauseStats
-import parsers.{ClausalLogicParser, ModesParser}
+import oled.distributed.Structures.ClauseStats
 import logic.Exceptions._
 import utils.{ASP, Utils}
 import jep.Jep
+import oled.distributed.Structures
+
 import scala.collection.mutable.ListBuffer
 import scala.util.Random
 import utils.ClauseImplicits._
+import utils.parsers.ClausalLogicParser
 
 /**
  * Companion object
@@ -47,7 +49,7 @@ object Clause {
 }
 
 case class Clause(head: PosLiteral = PosLiteral(), body: List[Literal] = Nil, fromWeakExample: Boolean = false,
-                  var supportSet: Theory = Theory(), val uuid: String = UUID.randomUUID.toString) extends Expression {
+                  var supportSet: Theory = Theory(), uuid: String = UUID.randomUUID.toString) extends Expression {
 
 
   var parentClause = Clause.empty
@@ -59,7 +61,7 @@ case class Clause(head: PosLiteral = PosLiteral(), body: List[Literal] = Nil, fr
   // This field is used by the distributed version of oled.
   // It is a (k,v) map, where each k is the id (name) of one of the other nodes N and
   // v is a Structures.Stats instance carrying the current counts from N.
-  var countsPerNode = scala.collection.mutable.Map[String, oled_distributed.Structures.ClauseStats]()
+  var countsPerNode = scala.collection.mutable.Map[String, Structures.ClauseStats]()
 
   // These variables store the total current counts from all nodes.
   // These are also used in the distributed setting.
@@ -127,7 +129,7 @@ case class Clause(head: PosLiteral = PosLiteral(), body: List[Literal] = Nil, fr
     // positivesCovered = the number of positives covered by the clause
     // relFreq = the relative frequency of positives in the training set (pos/pos+negs)
     // totalExamplesCovered = the total number of examples covered by the clause
-    // m = a parameter set according tho the expected amount of noise (larger m for more noise)
+    // m = a parameter set according to the expected amount of noise (larger m for more noise)
     // We'll use the laplace m-estimate where m = 2 and p(+|clause) = 0.5
 
     //val positivesRelativeFrequency = totalPositives.toFloat / (totalPositives.toFloat + totalNegatives.toFloat)
@@ -151,20 +153,24 @@ case class Clause(head: PosLiteral = PosLiteral(), body: List[Literal] = Nil, fr
 
   def compressionTerm = (tps - (fns*10) - (this.body.length + 1)).toDouble
 
-  def tpsRelativeFrequency = if (this.tps == 0) 0.0 else this.tps.toDouble/this.parentClause.tps
+  def tpsRelativeFrequency = if (this.tps == 0 || this.parentClause.tps == 0) 0.0 else this.tps.toDouble/(this.parentClause.tps)
 
   def foilGainInit = {
     val nonzero = 0.0000006
-    val adjust = (x: Double) => if (x.isNaN) nonzero else x
+    val adjust = (x: Double) => if (x.isNaN || x == 0.0) nonzero else x
     //tps * (Math.log(adjust(precision)) - Math.log(adjust(parentClause.precision)))
     tpsRelativeFrequency * (Math.log(adjust(precision)) - Math.log(adjust(parentClause.precision)))
   }
 
   def foilGainTerm = {
     val nonzero = 0.0000006
-    val adjust = (x: Double) => if (x.isNaN) nonzero else x
+    val adjust = (x: Double) => if (x.isNaN || x == 0.0) nonzero else x
     //tps * (Math.log(adjust(recall)) - Math.log(adjust(parentClause.recall)))
     tpsRelativeFrequency * (Math.log(adjust(recall)) - Math.log(adjust(parentClause.recall)))
+  }
+
+  def foilInfoGainInit = {
+
   }
 
   def gainInt = {
@@ -210,12 +216,14 @@ case class Clause(head: PosLiteral = PosLiteral(), body: List[Literal] = Nil, fr
 
   def meanDiff = {
 
+    /*
     if (Globals.glvalues("distributed").toBoolean) {
       throw new RuntimeException("This is just to debug the distributed version, where the execution flow should not pass from here!")
     }
+    */
 
     // The - sign is to sort with decreasing order (default is with increasing)
-    // Also sort clauses by length also, so that sorter clauses be preferred over longer ones with the same score
+    // Also sort clauses by length, so that sorter clauses be preferred over longer ones with the same score
     val allSorted = (List(this) ++ this.refinements).sortBy { x => (- x.score, x.body.length+1) }
     val bestTwo = allSorted.take(2)
 
@@ -300,6 +308,10 @@ case class Clause(head: PosLiteral = PosLiteral(), body: List[Literal] = Nil, fr
 
   def score: Double = {
 
+    if (this.foilGainInit.isInfinite || this.foilGainTerm.isInfinite) {
+      val debug = "stop"
+    }
+
     /*
     if (Globals.glvalues("distributed").toBoolean) {
       throw new RuntimeException("This is just to debug the distributed version, where the execution flow should not pass from here!")
@@ -307,13 +319,25 @@ case class Clause(head: PosLiteral = PosLiteral(), body: List[Literal] = Nil, fr
     */
 
     if (this.head.functor == "initiatedAt") {
-      if (!precision.isNaN) precision else 0.0
+      Globals.scoringFunction match {
+        case "default" => if (!precision.isNaN) precision else 0.0
+        case "foilgain" => foilGainInit
+        case "fscore" => fscore
+        case _ => throw new RuntimeException("Error: No scoring function given.")
+      }
+
       //presision_length
       //compressionInit
       //foilGainInit
       //gainInt
     } else if (this.head.functor == "terminatedAt") {
-      if (!recall.isNaN) recall else 0.0
+      Globals.scoringFunction match {
+        case "default" => if (!recall.isNaN) recall else 0.0
+        case "foilgain" => foilGainTerm
+        case "fscore" => fscore
+        case _ => throw new RuntimeException("Error: No scoring function given.")
+      }
+
       //recall_length
       //compressionTerm
       //foilGainTerm
@@ -345,7 +369,7 @@ case class Clause(head: PosLiteral = PosLiteral(), body: List[Literal] = Nil, fr
 
   // This is the scoring function used in the distributed setting
   def distScore: Double = {
-    val precision_ = getTotalTPs.toFloat / (getTotalTPs + getTotalFPs)
+    val precision_ = getTotalTPs.toFloat / (getTotalTPs + (getTotalFPs))
     /*
     val recall_ =
       if (List("initiatedAt","terminatedAt").contains(this.head.functor)) getTotalTPs.toFloat / ( getTotalTPs + (getTotalFNs * 10))
@@ -376,12 +400,15 @@ case class Clause(head: PosLiteral = PosLiteral(), body: List[Literal] = Nil, fr
     val (tps_, fps_, fns_) =
       if(! Globals.glvalues("distributed").toBoolean) (tps, fps, fns)
       else (this.getTotalTPs, this.getTotalFPs, this.getTotalFNs)
-    s"score (${if (this.head.functor=="initiatedAt") "precision" else "recall"}):" +
-      s" $scoreFunction, tps: $tps_, fps: $fps_, fns: $fns_ Evaluated on: ${this.getTotalSeenExmpls} examples\n$tostring"
+    //s"score (${if (this.head.functor=="initiatedAt") "precision" else "recall"}):" +
+    //  s" $scoreFunction, tps: $tps_, fps: $fps_, fns: $fns_ Evaluated on: ${this.getTotalSeenExmpls} examples\n$tostring"
       //+ s"\nLiterals in generating bottom clause: ${this.supportSet.clauses.head.body.map(x => x.tostring).mkString(" ")}"
+
+    s"score:" + s" $scoreFunction, tps: $tps_, fps: $fps_, fns: $fns_ Evaluated on: ${this.getTotalSeenExmpls} examples\n$tostring"
   }
 
   def showWithStats_NoEC = {
+    //s"score (precision): $score, tps: $tps, fps: $fps, fns: $fns\n$tostring"
     s"score (precision): $score, tps: $tps, fps: $fps, fns: $fns\n$tostring"
   }
 

@@ -1,6 +1,6 @@
 package logic
 
-import app.Globals
+import app.runutils.Globals
 import com.typesafe.scalalogging.LazyLogging
 import logic.Examples.Example
 import utils.ASP

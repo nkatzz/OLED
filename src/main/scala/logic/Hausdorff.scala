@@ -1,6 +1,6 @@
 package logic
 
-import parsers.ClausalLogicParser
+import utils.parsers.ClausalLogicParser
 
 /**
  * Compute the Haussdorff distance between Herbrand Interpretations.

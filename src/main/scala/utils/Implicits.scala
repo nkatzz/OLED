@@ -34,9 +34,10 @@ object Implicits {
   implicit def getFilePath(x: java.io.File): String = x.getCanonicalPath
   implicit def getFileFromPath(x: String): java.io.File = new File(x)
 
+  /*
   implicit def asExample(e: Example): Exmpl = new Exmpl(_id = e.time, exampleWithInertia = e)
   implicit def toExample(e: Iterator[Example]): Iterator[Exmpl] = e map asExample _
-
+  */
 }
 
 /**
@@ -66,10 +67,11 @@ object TrainingSetImplicits {
   }
 }
 
+/*
 object ExmplImplicits {
 
   implicit def toExample(e: List[Exmpl]): List[Example] = {
     e map (x => new Example(annot = x.exmplWithInertia.annotation, nar = x.exmplWithInertia.narrative, _time = x.exmplWithInertia.time))
   }
-
 }
+*/

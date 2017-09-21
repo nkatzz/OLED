@@ -1,0 +1,45 @@
+modeh(initiatedAt(stopped(+vessel),+time))
+modeh(terminatedAt(stopped(+vessel),+time))
+
+modeb(happensAt(stop_start(+vessel),+time))
+modeb(happensAt(gap_start(+vessel),+time))
+modeb(not happensAt(gap_start(+vessel),+time))
+modeb(happensAt(gap_end(+vessel),+time))
+modeb(not happensAt(gap_end(+vessel),+time))
+modeb(happensAt(change_in_speed_start(+vessel),+time))
+modeb(not happensAt(change_in_speed_start(+vessel),+time))
+modeb(happensAt(change_in_speed_end(+vessel),+time))
+modeb(not happensAt(change_in_speed_end(+vessel),+time))
+modeb(not happensAt(stop_start(+vessel),+time))
+modeb(happensAt(stop_end(+vessel),+time))
+modeb(not happensAt(stop_end(+vessel),+time))
+modeb(happensAt(slow_motion_start(+vessel),+time))
+modeb(not happensAt(slow_motion_start(+vessel),+time))
+modeb(happensAt(slow_motion_end(+vessel),+time))
+modeb(not happensAt(slow_motion_end(+vessel),+time))
+
+modeb(happensAt(velocity(+vessel,-speed),+time))
+modeb(happensAt(velocity(+vessel,+speed),+time))
+
+modeb(happensAt(change_in_heading(+vessel),+time))
+%modeb(not happensAt(change_in_heading(+vessel),+time))
+modeb(happensAt(isInArea(+vessel,+area),+time))
+modeb(not happensAt(isInArea(+vessel,+area),+time))
+modeb(happensAt(leavesArea(+vessel,+area),+time))
+modeb(not happensAt(leavesArea(+vessel,+area),+time))
+
+modeb(happensAt(tooFastForArea(+vessel,+area),+time))
+modeb(happensAt(speedOk(+vessel,+area),+time))
+
+modeb(speedLimit(+area, +speed))
+modeb(speedLimit(+area, -speed))
+
+modeb(notCloseToPorts(+vessel,+time))
+
+modeb(grThan(+speed,+speed))
+modeb(lessThan(+speed,+speed))
+
+% needed for sailing
+%modeb(grThan(+speed,#velocity))
+
+examplePattern(holdsAt(stopped(+vessel),+time))

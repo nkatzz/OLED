@@ -2,7 +2,8 @@ package utils.lookaheads
 
 import logic.Exceptions.MyParsingException
 import logic.Literal
-import parsers.ClausalLogicParser
+import utils.parsers.ClausalLogicParser
+
 import scala.io.Source
 
 /**

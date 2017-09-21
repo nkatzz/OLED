@@ -2,15 +2,15 @@ package xhail
 
 import java.io.File
 
+import app.runutils.Globals
 import com.typesafe.scalalogging._
-import app.Globals
-import parsers.ASPResultsParser
 import logic.Exceptions._
 import logic.Modes._
 import logic.Rules._
 import logic._
 import utils.{ASP, MongoUtils, Utils}
 import jep.Jep
+import utils.parsers.ASPResultsParser
 
 import scala.collection.mutable.ListBuffer
 import scala.io.Source
@@ -42,9 +42,9 @@ object Xhail extends ASPResultsParser with LazyLogging {
                inputDirectory: String = "",
                kernelSetOnly: Boolean = false,
                learningTerminatedAtOnly: Boolean = false,
+               //keepAbducedPreds: String = "all",
                fromWeakExmpl:Boolean = false,
                jep: Jep,
-               oledLearningInitWithInertia: Boolean=false,
                bkFile: String,
                globals: Globals): (List[Clause],List[Clause]) = {
 
@@ -383,12 +383,17 @@ object Xhail extends ASPResultsParser with LazyLogging {
     val vlength = varKernel.length
     val compressed = if (Globals.glvalues("compressKernels").toBoolean) compressTheory(varKernel.toList) else varKernel.toList
     val clength = compressed.length
-    logger.info("Created Kernel set")
-    logger.debug("\n------------------------------------------------------------------------------------\n" +
-      s"Kernel Set (Ground---Variabilized($vlength clauses)---Compressed($clength clauses)):" +
-      "\n------------------------------------------------------------------------------------\n" +
-      showTheory(kernelSet.toList) + "\n\n" + showTheory(varKernel.toList) + "\n\n" + showTheory(compressed.toList))
-    //println(Theory(kernelSet.toList).tostring)
+    val nonEmptyVarKernel = compressed.filter(x => x.body.nonEmpty)
+    val nonEmptyKernel = kernelSet.filter(x => x.body.nonEmpty)
+    if (nonEmptyVarKernel.nonEmpty) {
+      logger.info("Created Kernel set")
+      logger.debug("\n------------------------------------------------------------------------------------\n" +
+        s"Kernel Set (Ground---Variabilized($vlength clauses)---Compressed($clength clauses)):" +
+        "\n------------------------------------------------------------------------------------\n" +
+        showTheory(kernelSet.toList) + "\n\n" + showTheory(varKernel.toList) + "\n\n" + showTheory(compressed.toList))
+      //println(Theory(kernelSet.toList).tostring)
+    }
+
     (kernelSet.toList, compressed)
   }
 
@@ -402,8 +407,7 @@ object Xhail extends ASPResultsParser with LazyLogging {
     compressed.toList
   }
 
-  def findHypothesis(varKernel: List[Clause],
-                     examples: Map[String, List[String]], jep: Jep, globals: Globals) = {
+  def findHypothesis(varKernel: List[Clause], examples: Map[String, List[String]], jep: Jep, globals: Globals) = {
 
 
     Globals.glvalues("perfect-fit") = "false"

@@ -1,25 +1,18 @@
 package utils
 
-import java.io.File
 
+
+import app.runutils.Globals
 import com.mongodb.BasicDBObject
 import com.mongodb.casbah.Imports._
 import com.mongodb.casbah.MongoClient
 import com.mongodb.casbah.commons.MongoDBObject
-
-//import iled.core.noisyILED.old_stuff.ILEDHoeffdingNoSupportTermInit
-import app.Globals
-import parsers.ClausalLogicParser
-import logic.Examples.{ExampleBatch, Example}
+import logic.Examples.{Example, ExampleBatch}
 import logic.{Constant, Literal}
 import jep.Jep
 import logic.Examples.Example
-import scala.collection.mutable.ListBuffer
-import scala.io.Source
 
-//import scala.util.parsing.combinator.Parsers.Parser
-//import scala.util.parsing.combinator.Parsers.~
-import scala.collection.immutable.SortedMap
+import scala.collection.mutable.ListBuffer
 import utils.DataUtils.Interval
 
 /**
@@ -101,35 +94,26 @@ trait MongoUtils {
     alldbs.toList
   }
 
-
 }
 
 
 class Database(val name: String, val collectionName: String = "examples") {
-
   val mongoClient = MongoClient()
-
   private val _collection = mongoClient(name)(collectionName)
-
   val collection = this._collection
-
+  // Need to create an index to avoid running out of memory during sorting operations for large dbs.cl
+  collection.createIndex(MongoDBObject("time" -> 1))
   var startTime = 0
-
   val endTime = collection.last.asInstanceOf[BasicDBObject].get("time").toString.toInt
-
   val isEmpty = this.collection.findOne() match {
     case Some(x) =>
       this.startTime = x.asInstanceOf[BasicDBObject].get("time").toString.toInt
       false
     case _ => true
   }
-
   val nonEmpty = if (this.isEmpty) false else true
-
   val size = this.collection.size
-
   def close() = this.mongoClient.close()
-
   def inspectDB(seeWhat: String = "time") = {
     for (x <- this.collection.find().sort(MongoDBObject("time" -> 1))) {
       val e = Example(x)
@@ -139,7 +123,6 @@ class Database(val name: String, val collectionName: String = "examples") {
         case "narrative" => println(e.narrative)
         case "example" => println(e)
       }
-
     }
   }
 
@@ -291,56 +274,27 @@ object CaviarUtils {
 
 
   //val dataIterator = DB.collection.find().sort(MongoDBObject("exampleId" -> 1))
-  def getDataAsChunks(DB: Database, chunkSize: Int, targetClass: String, withInertia: Boolean): Iterator[Exmpl] = {
-    def mergeExmpl(in: List[Exmpl]) = {
+  def getDataAsChunks(collection: MongoCollection, chunkSize: Int, targetClass: String): Iterator[Example] = {
+    def mergeExmpl(in: List[Example]) = {
       val time = in.head.time
-      val id = in.head.id
+      //val id = in.head.id
       val merged = in.foldLeft(Example()){ (x,newExmpl) =>
         val accum = x
-        val annotation =
-          if (! withInertia && targetClass == "initiated") {
-            // This is for learning without inertia, splitting the initiatedAt
-            // from the terminatedAt part.
-            // We need to get examples without inertia, to make sure that in each
-            // chunk, the first example is not covered by inertia (if positive).
-            // In detail, the cases are as folows:
-            // ----------------------------------------
-            // CASE 1: Learning the initiatedAt part.
-            // -----------------------------------------
-            // CASE 1.1: The first example in the input list is a positive
-            // with annotation of the form (holdsAt(F,T),holdsAt(F,T+1)), i.e.
-            // holdsAt at T+1 are explained by inertia. We do not want that, so
-            // we omit prior annotation (holdsAt(F,T)) by getting
-            // newExmpl.exmplNoInertia.annotation
-            // Case 1.2: The first example in the input list is a positive
-            // with annotation of the form (not holdsAt(F,T),holdsAt(F,T+1)), i.e.
-            // it'sinitiated at T. Then getting newExmpl.exmplNoInertia.annotation
-            // gives the correct supervision
-            // -------------------------------------
-            // CASE 2: Learning the terminatedAt part
-            // -------------------------------------
-            // In this case we always want the prior annotation (terminated is
-            // always learnt WITH inertia, therefore in this case we are at the else part below)
-            // In general, for all other examples (other than the first one in the chunk)
-            // getting the annotation with or without prior supervision does not matter,
-            // since the examples are merged, so annotation "slides" from the one to the next
-            // and is correct for the whole chunk.
-            accum.annotation ++ newExmpl.exmplNoInertia.annotation.distinct
-          } else {
-            accum.annotation ++ newExmpl.exmplWithInertia.annotation.distinct
-          }
-        val narrative = accum.narrative ++ newExmpl.exmplWithInertia.narrative.distinct
+        val annotation = accum.annotation ++ newExmpl.annotation.distinct
+        val narrative = accum.narrative ++ newExmpl.narrative.distinct
         new Example(annot = annotation, nar = narrative, _time = time)
       }
-      new Exmpl(_id = id, exampleWithInertia = merged)
+      //new Exmpl(_id = id, exampleWithInertia = merged)
+      merged
     }
 
-    val dataIterator = DB.collection.find().sort(MongoDBObject("time" -> 1))
+    val dataIterator = collection.find().sort(MongoDBObject("time" -> 1))
 
-    val accum = new ListBuffer[Exmpl]
+    val accum = new ListBuffer[Example]
     while (dataIterator.hasNext) {
       val newExample = dataIterator.next()
-      val e = new Exmpl(newExample)
+      //val e = new Exmpl(newExample)
+      val e = Example(newExample)
       accum += e
     }
     val chunked = accum.toList.sliding(chunkSize, chunkSize - 1)
@@ -364,26 +318,31 @@ object CaviarUtils {
     The withChunking parameter is simply passed to getDataFromInterval method that handles chunking or
     the lack thereof.
    */
-  def getDataFromIntervals(DB: Database, HLE: String, i: List[Interval], chunkSize: Int, withChunking: Boolean = true): Iterator[Exmpl] = {
-    val out  = i.foldLeft(Iterator[Exmpl]()){ (x,y) =>
-      val z = getDataFromInterval(DB, HLE, y, chunkSize, withChunking)
+  def getDataFromIntervals(collection: MongoCollection, HLE: String, i: List[Interval], chunkSize: Int, withChunking: Boolean = true): Iterator[Example] = {
+    val out  = i.foldLeft(Iterator[Example]()){ (x,y) =>
+      val z = getDataFromInterval(collection, HLE, y, chunkSize, withChunking)
       x ++ z
     }// simply merge iterators without producing them
     out
   }
 
-  def getDataFromInterval(DB: Database, HLE: String, i: Interval, chunkSize: Int, withChunking: Boolean = true): Iterator[Exmpl] = {
+  def getDataFromInterval(collection: MongoCollection, HLE: String, i: Interval, chunkSize: Int, withChunking: Boolean = true): Iterator[Example] = {
     val startTime = i.startPoint
     val endTime = i.endPoint
-    val batch = DB.collection.find("time" $gte startTime $lte endTime).sort(MongoDBObject("time" -> 1))
+    val batch = collection.find("time" $gte startTime $lte endTime).sort(MongoDBObject("time" -> 1))
     val examples = batch.map(x => Example(x)) toList
     val HLExmpls = examples map { x =>
       val a = x.annotation filter (_.contains(HLE))
       new Example(annot = a, nar = x.narrative, _time = x.time)
     }
 
-    val chunked = if (withChunking) HLExmpls.sliding(chunkSize, chunkSize-1) else HLExmpls.sliding(HLExmpls.length) // won't be chunked in the else case
-
+    val chunked =
+      if (HLExmpls.nonEmpty) {
+        if (withChunking) HLExmpls.sliding(chunkSize, chunkSize-1) else HLExmpls.sliding(HLExmpls.length) // won't be chunked in the else case
+      } else {
+        println(s"""${collection.name} returned no results for the query "DB.collection.find("time" gte $startTime lte $endTime).sort(MongoDBObject("time" -> 1))" """)
+        Iterator.empty
+      }
     /*
      * We need no worry about removing prior annotation from the examples, since in any case inertia is not used during learning.
      * Even if a pair is passed where in both times there is positive annotation, the first positive example will be covered by
@@ -396,7 +355,8 @@ object CaviarUtils {
           val merged = x.foldLeft(Example()) { (z, y) =>
             new Example(annot = z.annotation ++ y.annotation, nar = z.narrative ++ y.narrative, _time = x.head.time)
           }
-          new Exmpl(_id = merged.time, exampleWithInertia = merged)
+          //new Exmpl(_id = merged.time, exampleWithInertia = merged)
+          merged
         }
 
     out
@@ -481,7 +441,8 @@ object CaviarUtils {
 
 
   def copyCAVIAR = {
-    val CaviarDB = new Database("CAVIAR_Real_FixedBorders")
+    //val CaviarDB = new Database("CAVIAR_Real_FixedBorders")
+    val CaviarDB = new Database("caviar")
     val idPattern = "id[0-9]+".r
     val originalIds = List("id0", "id4", "id5", "id1", "id2", "id3", "id6", "id7", "id8", "id9")
     val sort = (ids: List[String]) => ids.sortBy(z => z.split("id")(1).toInt)
@@ -524,7 +485,7 @@ object CaviarUtils {
   def mergeCaviarCopies(numOfCopies: Int) = {
     val mongoClient = MongoClient()
     val allCopies =
-      (mongoClient.databaseNames.filter(x => x.contains("CAVIAR_id")).toList :+ "CAVIAR_Real_FixedBorders").take(numOfCopies)
+      (mongoClient.databaseNames.filter(x => x.contains("CAVIAR_id")).toList :+ "caviar").take(numOfCopies)
     println(allCopies.size)
     val DBs = allCopies.map(name => new Database(name))
     // get all times to use them later as queries for merging
@@ -551,14 +512,14 @@ object CaviarUtils {
 
 }
 
-
+/*
 class Exmpl(e: DBObject = DBObject(), _id: String = "", exampleWithInertia: Example = Example()) {
   val time = if (e != DBObject()) e.asInstanceOf[BasicDBObject].get("time").toString else exampleWithInertia.time
   val id = if (e != DBObject()) e.asInstanceOf[BasicDBObject].get("exampleId").toString else _id
   val exmplWithInertia = if (e != DBObject()) Example(e.asInstanceOf[BasicDBObject].get("inertia").asInstanceOf[BasicDBObject]) else exampleWithInertia
   val exmplNoInertia = if (e != DBObject()) Example(e.asInstanceOf[BasicDBObject].get("noInertia").asInstanceOf[BasicDBObject]) else Example()
 }
-
+*/
 
 
 

@@ -1,21 +1,21 @@
-%tps(I, X) :- rule(I), X = #count {X0,X1,Te,Ts: example( holdsAt(moving(X0,X1),Te) ), not marked(I, terminatedAt(moving(X0,X1),Ts) ), Te = Ts + 1 }.
-tps(I, X) :- rule(I), X = #count {X0,X1,Te,Ts: example( holdsAt(meeting(X0,X1),Te) ), not marked(I, terminatedAt(meeting(X0,X1),Ts) ), Te = Ts + 1 }.
+tps(I, X) :- rule(I), X = #count {X0,X1,Te,Ts: example( holdsAt(moving(X0,X1),Te) ), not marked(I, terminatedAt(moving(X0,X1),Ts) ), Te = Ts + 1, time(Te), time(Ts) }.
+%tps(I, X) :- rule(I), X = #count {X0,X1,Te,Ts: example( holdsAt(meeting(X0,X1),Te) ), not marked(I, terminatedAt(meeting(X0,X1),Ts) ), Te = Ts + 1, time(Te), time(Ts) }.
 
-%tps(I, X) :-
-%  rule(I),
-%  X = #count {X0,X1,Te,Ts: example( holdsAt(moving(X0,X1),Ts) ),
-%                           not example( holdsAt(moving(X0,X1),Te) ),
-%                           marked(I, terminatedAt(moving(X0,X1),Ts) ), Te = Ts + 1 }.
+tps(I, X) :-
+  rule(I),
+  X = #count {X0,X1,Te,Ts: example( holdsAt(moving(X0,X1),Ts) ),
+                           not example( holdsAt(moving(X0,X1),Te) ),
+                           marked(I, terminatedAt(moving(X0,X1),Ts) ), Te = Ts + 1, time(Te), time(Ts) }.
 
 %tps(I, X) :-
 %  rule(I),
 %  X = #count {X0,X1,Te,Ts: example( holdsAt(meeting(X0,X1),Ts) ),
 %                           not example( holdsAt(meeting(X0,X1),Te) ),
-%                           marked(I, terminatedAt(meeting(X0,X1),Ts) ), Te = Ts + 1 }.
+%                           marked(I, terminatedAt(meeting(X0,X1),Ts) ), Te = Ts + 1, time(Te), time(Ts) }.
 
 
-%fns(I, X) :- rule(I), X = #count {X0,X1,Te,Ts: example( holdsAt(moving(X0,X1),Te) ), marked(I, terminatedAt(moving(X0,X1),Ts) ), Te = Ts + 1 }.
-fns(I, X) :- rule(I), X = #count {X0,X1,Te,Ts: example( holdsAt(meeting(X0,X1),Te) ), marked(I, terminatedAt(meeting(X0,X1),Ts) ), Te = Ts + 1 }.
+fns(I, X) :- rule(I), X = #count {X0,X1,Te,Ts: example( holdsAt(moving(X0,X1),Te) ), marked(I, terminatedAt(moving(X0,X1),Ts) ), Te = Ts + 1, time(Te), time(Ts) }.
+%fns(I, X) :- rule(I), X = #count {X0,X1,Te,Ts: example( holdsAt(meeting(X0,X1),Te) ), marked(I, terminatedAt(meeting(X0,X1),Ts) ), Te = Ts + 1, time(Te), time(Ts) }.
 
 examplesInitialTime(X) :- example(holdsAt(_,X)), #false : X > Y, example(holdsAt(_,Y)).
 
