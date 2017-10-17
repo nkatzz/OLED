@@ -45,13 +45,12 @@ class TheoryLearner[T <: Source](inps: RunningOptions,
         System.exit(-1)
       }
       trainingData.foldLeft(inTheory){ (topTheory, newExample) =>
-        //println(newExample.time, topTheory.clauses.length, s"${topTheory.clauses.map(x => (x.tps, x.fps, x.fns, x.score)).mkString(" ")}")
-        println(newExample.time)
+        //println(newExample.time)
 
         val res = Utils.time {
           processExample(topTheory, newExample)
         }
-        println(res._2)
+        //println(res._2)
         res._1
       }
     }

@@ -20,7 +20,7 @@ class Dispatcher[T <: Source](inps: RunningOptions,
                               trainingDataFunction: T => Iterator[Example],
                               testingDataFunction: T => Iterator[Example]) extends Actor with LazyLogging {
 
-  var size = 2 // two processes are started, one for learning the initiatedAt part and one for the terminatedAt
+  var size = 1 // two processes are started, one for learning the initiatedAt part and one for the terminatedAt
   var theories = List[(Theory,Double)]()
   var merged = Theory()
   var time = 0.0
@@ -48,7 +48,7 @@ class Dispatcher[T <: Source](inps: RunningOptions,
 
 
     case "start" =>
-      context.actorOf(Props(new TheoryLearner(inps, trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction, "initiated")), name = s"initiated-learner-${this.##}") ! "go"
+      //context.actorOf(Props(new TheoryLearner(inps, trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction, "initiated")), name = s"initiated-learner-${this.##}") ! "go"
       context.actorOf(Props(new TheoryLearner(inps, trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction, "terminated")), name = s"terminated-learner-${this.##}") ! "go"
 
     case x: (Theory,Double) =>
@@ -58,7 +58,7 @@ class Dispatcher[T <: Source](inps: RunningOptions,
       if(size == 0) {
         // merge the theories and do cross-validation
         val first = theories.head
-        val second = theories.tail.head
+        val second = if (theories.tail.nonEmpty) theories.tail.head else (Theory(), 0.0)
         merged = first._1.clauses ++ second._1.clauses
         val theorySize = merged.clauses.foldLeft(0)((x,y) => x + y.body.length + 1)
         time = Math.max(first._2,second._2)

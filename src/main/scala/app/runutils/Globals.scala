@@ -78,8 +78,15 @@ object Globals {
       // selected, because of a tie in score with other clauses)
       "OLEDdownscoreBySimilarity" -> "true",
       "distributed" -> "false",
-      "with-jep" -> "true",
-      "domain" -> "any"
+      "with-jep" -> "false",
+      "domain" -> "any",
+      // Use this to get non-empty revisions at any point. This is necessary
+      // because there are cases where the model corresponding to an empty
+      // theory may have lower cost (in the optimization) than a model that
+      // corresponds to a theory (e.g. when including any initiation rule in the theory yields
+      // many fps). In such cases the solver will opt for an empty theory, which is not
+      // always desirable. This parameter is used by the MCTS version of OLED.
+      "smallest-nonempty" -> "false"
     )
 
   // if jep is used "UNSAT" else "UNSATISFIABLE"

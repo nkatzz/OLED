@@ -141,8 +141,7 @@ case class Clause(head: PosLiteral = PosLiteral(), body: List[Literal] = Nil, fr
   def precision: Double = tps.toFloat / (tps + fps)
 
   def recall: Double =
-    if (List("initiatedAt","terminatedAt").contains(this.head.functor))
-      tps.toFloat / ( tps + (fns*10))
+    if (List("initiatedAt","terminatedAt").contains(this.head.functor)) tps.toFloat / ( tps + (fns*10)) //tps.toFloat / ( tps + (fns))
     else tps.toFloat / ( tps + fns)
 
   def fscore: Double = if (this.precision+this.recall == 0) 0.0 else (2*this.precision*this.recall)/(this.precision+this.recall)

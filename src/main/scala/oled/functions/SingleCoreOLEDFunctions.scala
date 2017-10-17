@@ -72,7 +72,7 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
   def reScoreAndPrune(inps: RunningOptions, data: Iterator[Example], finalTheory: Theory, targetClass: String, jep: Jep, logger: org.slf4j.Logger) = {
     logger.info(s"Starting post-pruning for $targetClass")
     logger.info(s"Rescoring $targetClass theory")
-    reScore(inps, data, finalTheory, targetClass, jep, logger)
+    if (finalTheory != Theory()) reScore(inps, data, finalTheory, targetClass, jep, logger)
     logger.info(s"\nLearned hypothesis (before pruning):\n${finalTheory.showWithStats}")
     val pruned = finalTheory.clauses.filter(x => x.score > inps.pruneThreshold && x.seenExmplsNum > inps.minEvalOn)
     logger.debug(s"\nPruned hypothesis:\n${pruned.showWithStats}")

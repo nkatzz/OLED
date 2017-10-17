@@ -398,8 +398,7 @@ object ILED extends ClausalLogicParser with LazyLogging with MongoUtils{
              noiseTolerant: Boolean = false,
              jep: Jep, globals: Globals): PriorTheory = {
 
-    val aspFile: File =
-      utils.Utils.getTempFile("aspInduction", ".lp", "", deleteOnExit = true)
+    val aspFile: File = utils.Utils.getTempFile("aspInduction", ".lp", "", deleteOnExit = true)
     val (_, use2AtomsMap, defeasiblePrior, use3AtomsMap, _, _) =
       ASP.inductionASPProgram(
         kernelSet = kernelSet,

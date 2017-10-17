@@ -191,7 +191,7 @@ class Node[T <: Source](val otherNodesNames: List[String],
           logger_info(s"$showState Sending the theory to the top-level actor")
           context.parent ! new NodeDoneMessage(self.path.name)
         } else {
-          throw new RuntimeException("This should never have happened (reperatfor is now negative?)")
+          throw new RuntimeException("This should never have happened (repeatfor is now negative?)")
         }
       } else {
         self ! processBatch(chunk, this.jep, this.slf4jLogger)

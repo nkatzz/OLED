@@ -29,7 +29,7 @@ class Node[T <: Source](val otherNodesNames: List[String],
   }
 
   // Get the training data from the current database
-  def getTrainData = trainingDataFunction(trainingDataOptions)
+  def getTrainData: Iterator[Example] = trainingDataFunction(trainingDataOptions)
 
   val jep = new Jep()
   private var data = Iterator[Example]()
@@ -180,7 +180,7 @@ class Node[T <: Source](val otherNodesNames: List[String],
           context.parent ! new NodeDoneMessage(self.path.name)
           logger_info(s"Sent the theory to the top-level actor")
         } else {
-          throw new RuntimeException("This should never have happened (reperatfor is now negative?)")
+          throw new RuntimeException("This should never have happened (repeatfor is now negative?)")
         }
       } else {
         self ! processBatch(chunk, this.jep, this.slf4jLogger)

@@ -796,7 +796,7 @@ object ASP extends ASPResultsParser with LazyLogging {
      }
 
      val generateUse2 =
-       if (!use2AtomsMap.isEmpty) {
+       if (use2AtomsMap.nonEmpty) {
          (for ( (cl, i) <- kernelSet.clauses zip
            List.range(1, kernelSet.clauses.length + 1)
          ) yield "{use2(" + i + ",0.." + cl.body.length + ")}.").

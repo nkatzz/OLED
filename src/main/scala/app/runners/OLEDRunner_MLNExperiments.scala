@@ -32,7 +32,7 @@ object OLEDRunner_MLNExperiments {
     } else {
       Globals.glvalues("OLEDdownscoreBySimilarity") = "false" // re-set this if you need to try it
       val learnWholeTheories = false
-      val foldPath = "/home/nkatz/dev/CAVIAR_MLN/CAVIAR_MLN/move/fold_4"
+      val foldPath = "/home/nkatz/dev/CAVIAR_MLN/CAVIAR_MLN/move/fold_2"
 
       val inps = CMDArgs.getOLEDInputArgs(args)
 

@@ -32,9 +32,19 @@ object Theory  {
 
 case class Theory(clauses: List[Clause] = List()) extends Expression with LazyLogging {
 
-  val tps = new ListBuffer[String]
-  val fps = new ListBuffer[String]
+  var tps = new ListBuffer[String]
+  var fps = new ListBuffer[String]
   var fns = new ListBuffer[String]
+
+  /*
+  def clearStats() = {
+    this.tps = new ListBuffer[String]
+    this.fps = new ListBuffer[String]
+    this.fns = new ListBuffer[String]
+  }
+
+  def f1 = if (this.stats._6.toDouble.isNaN) 0.0 else this.stats._6.toDouble
+  */
 
   def stats = {
     val tps = this.tps.distinct.length.toFloat
@@ -241,7 +251,10 @@ case class Theory(clauses: List[Clause] = List()) extends Expression with LazyLo
   var _fns: Int = 0
   def precision: Double = _tps.toFloat/(_tps + _fps)
   def recall: Double = _tps.toFloat/(_tps + _fns)
-  def fscore: Double = (2*precision*recall)/(precision+recall)
+  def fscore: Double = {
+    val s = (2*precision*recall)/(precision+recall)
+    if (s.isNaN) 0.0 else s
+  }
   def score = fscore
 
   /* Score this theory as a whole */
