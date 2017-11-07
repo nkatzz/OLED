@@ -77,7 +77,8 @@ class TheoryLearner[T <: Source](inps: RunningOptions,
 
   def processExample(topTheory: Theory, e: Example): Theory = {
     var newTopTheory = topTheory
-    val startNew = if (this.inps.tryMoreRules) true else newTopTheory.growNewRuleTest(e, this.jep, initorterm, inps.globals)
+    //val startNew = if (this.inps.tryMoreRules) true else newTopTheory.growNewRuleTest(e, this.jep, initorterm, inps.globals)
+    val startNew = if (this.inps.tryMoreRules && this.targetClass == "terminated") true else newTopTheory.growNewRuleTest(e, this.jep, initorterm, inps.globals)
     if (startNew) {
       val newRules_ = if (this.inps.tryMoreRules) {
         // Don't use the current theory here to force the system to generate new rules
@@ -87,6 +88,8 @@ class TheoryLearner[T <: Source](inps: RunningOptions,
       }
       // Just to be on the safe side...
       val newRules = newRules_.filter(x => x.head.functor == this.initorterm)
+
+      if (newRules.nonEmpty) logger.info(s"Generated ${newRules.length} new rules.")
 
       if (this.inps.compressNewRules) {
         newTopTheory = topTheory.clauses ++ filterTriedRules(topTheory, newRules, logger)

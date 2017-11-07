@@ -20,7 +20,7 @@ class Dispatcher[T <: Source](inps: RunningOptions,
                               trainingDataFunction: T => Iterator[Example],
                               testingDataFunction: T => Iterator[Example]) extends Actor with LazyLogging {
 
-  var size = 1 // two processes are started, one for learning the initiatedAt part and one for the terminatedAt
+  var size = 2 // two processes are started, one for learning the initiatedAt part and one for the terminatedAt
   var theories = List[(Theory,Double)]()
   var merged = Theory()
   var time = 0.0
@@ -48,7 +48,7 @@ class Dispatcher[T <: Source](inps: RunningOptions,
 
 
     case "start" =>
-      //context.actorOf(Props(new TheoryLearner(inps, trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction, "initiated")), name = s"initiated-learner-${this.##}") ! "go"
+      context.actorOf(Props(new TheoryLearner(inps, trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction, "initiated")), name = s"initiated-learner-${this.##}") ! "go"
       context.actorOf(Props(new TheoryLearner(inps, trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction, "terminated")), name = s"terminated-learner-${this.##}") ! "go"
 
     case x: (Theory,Double) =>

@@ -64,6 +64,9 @@ object CMDArgs {
     val pruneAfter = getMatchingArgumentValue("--prune-after")
     val mongoCol = getMatchingArgumentValue("--mongo-collection")
     val dataLimit = getMatchingArgumentValue("--data-limit")
+    val tpWeight = getMatchingArgumentValue("--tps-weight")
+    val fpWeight = getMatchingArgumentValue("--fps-weight")
+    val fnWeight = getMatchingArgumentValue("--fns-weight")
 
     //-------------
     // Global sets:
@@ -71,6 +74,9 @@ object CMDArgs {
     Globals.glvalues("with-jep") = with_jep.toString
     Globals.glvalues("specializationDepth") = specializationDepth.toString
     Globals.scoringFunction = scoringFun.toString
+    Globals.glvalues("tp-weight") = tpWeight.toString
+    Globals.glvalues("fp-weight") = fpWeight.toString
+    Globals.glvalues("fn-weight") = fnWeight.toString
 
     // show the params:
     println(s"\nRunning with options:\n${map.map{ case (k, v) => s"$k=$v" }.mkString(" ")}\n")
@@ -82,7 +88,8 @@ object CMDArgs {
       compress_new_rules.toString.toBoolean, mintps.toString.toInt, tryMoreRules.toString.toBoolean,
       trainSetNum.toString.toInt, randomOrder.toString.toBoolean, scoringFun.toString, with_jep.toString.toBoolean,
       evaluate_existing.toString, fromDB.toString, globals, minEvaluatedOn.toString.toInt, cores.toString.toInt,
-      shuffleData.toString.toBoolean, showRefs.toString.toBoolean, pruneAfter.toString.toInt, mongoCol.toString, dataLimit.toString.toInt)
+      shuffleData.toString.toBoolean, showRefs.toString.toBoolean, pruneAfter.toString.toInt, mongoCol.toString,
+      dataLimit.toString.toInt, tpWeight.toString.toInt, fpWeight.toString.toInt, fnWeight.toString.toInt)
   }
 
   val arguments = Vector(
@@ -98,7 +105,7 @@ object CMDArgs {
     Arg(name = "--repfor", valueType = "Int", text = "Re-see the data this-many times. ", default = "1"),
     Arg(name = "--chunksize", valueType = "Int", text = "Mini-batch size. ", default = "10"),
     Arg(name = "--onlineprune", valueType = "Boolean", text = "If true bad rules are pruned in an online fashion.", default = "false"),
-    Arg(name = "--postprune", valueType = "Boolean", text = "If true bad rules are pruned after learning terminates.", default = "false"),
+    Arg(name = "--postprune", valueType = "Boolean", text = "If true bad rules are pruned after learning terminates.", default = "true"),
     Arg(name = "--try-more-rules", valueType = "Boolean", text = "If true a larger number of rules than that specified by the default" +
       " rule generation strategy are generated and scored, in a effort to improve quality.", default = "false"),
     Arg(name = "--target", valueType = "String", text = "The target concept. This is used in case the training data contain more than on target concept", default = "None"),
@@ -113,8 +120,11 @@ object CMDArgs {
     Arg(name = "--shuffle-data", valueType = "Boolean", text = "If true the data are shuffled each time they are seen (used for order effects).", default = "false"),
     Arg(name = "--showrefs", valueType = "Boolean", text = "If true all candidate refinements are printed out during learning.", default = "true"),
     Arg(name = "--prune-after", valueType = "Int", text = "Minimum number of examples after which a bad rule may be pruned.", default = "100000"),
-    Arg(name = "--mongo-collection", valueType = "String", text = "A mongo collections containing the data.", default = "examples"),
-    Arg(name = "--data-limit", valueType = "Int", text = "Fetch that-many data from the db to learn from (default is max integer).", default = s"${Double.PositiveInfinity.toInt}")
+    Arg(name = "--mongo-collection", valueType = "String", text = "A mongo collection containing the data.", default = "examples"),
+    Arg(name = "--data-limit", valueType = "Int", text = "Fetch that-many data from the db to learn from (default is max integer).", default = s"${Double.PositiveInfinity.toInt}"),
+    Arg(name = "--tps-weight", valueType = "Int", text = "Weight on true positive instances.", default = "1"),
+    Arg(name = "--fps-weight", valueType = "Int", text = "Weight on false positive instances.", default = "1"),
+    Arg(name = "--fns-weight", valueType = "Int", text = "Weight on false negative instances.", default = "10")
   )
 
   def helpMesg = {
@@ -172,6 +182,9 @@ class RunningOptions(val entryPath: String,
                      val showRefs: Boolean,
                      val pruneAfter: Int,
                      val mongoCollection: String,
-                     val dataLimit: Int)
+                     val dataLimit: Int,
+                     val tpWeight: Int,
+                     val fpWeight: Int,
+                     val fnWeight: Int)
 
 

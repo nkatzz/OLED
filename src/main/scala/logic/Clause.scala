@@ -79,16 +79,16 @@ case class Clause(head: PosLiteral = PosLiteral(), body: List[Literal] = Nil, fr
     val (totalTps, totalFps, totalFns, totalNexmpls) = this.countsPerNode.filter(x => x._1 != excludeNodeName).foldLeft(0,0,0,0){ (x, y) =>
       (x._1 + y._2.tps, x._2 + y._2.fps, x._3 + y._2.fns, x._4 + y._2.Nexmls)
     }
-    this.totalTPs = totalTps
-    this.totalFPs = totalFps
-    this.totalFNs = totalFns
+    this.totalTPs = totalTps*tpw
+    this.totalFPs = totalFps*fpw
+    this.totalFNs = totalFns*fnw
     this.totalSeenExmpls = totalNexmpls
   }
 
   // These are used in the distributed setting
-  def getTotalTPs = this.tps + this.totalTPs
-  def getTotalFPs = this.fps + this.totalFPs
-  def getTotalFNs = this.fns + this.totalFNs
+  def getTotalTPs = this.tps*tpw + this.totalTPs
+  def getTotalFPs = this.fps*fpw + this.totalFPs
+  def getTotalFNs = this.fns*fnw + this.totalFNs
   def getTotalSeenExmpls = this.seenExmplsNum + this.totalSeenExmpls
 
   def showCountsPerNode(excludeNodeName: String) = {
@@ -100,9 +100,9 @@ case class Clause(head: PosLiteral = PosLiteral(), body: List[Literal] = Nil, fr
     val exmplsMsg = s"emxpls: ${transposed(3).sum} (${transposed(3).mkString("+")})"
     */
 
-    val tpsMsg = s"tps: $getTotalTPs [$tps + (${transposed(0).mkString("+")})]"
-    val fpsMsg = s"fps: $getTotalFPs [$fps + (${transposed(1).mkString("+")})]"
-    val fnsMsg = s"fns: $getTotalFNs [$fns + (${transposed(2).mkString("+")})]"
+    val tpsMsg = s"tps: $getTotalTPs [${tps*tpw} + (${transposed(0).mkString("+")})]"
+    val fpsMsg = s"fps: $getTotalFPs [${fps*fpw} + (${transposed(1).mkString("+")})]"
+    val fnsMsg = s"fns: $getTotalFNs [${fns*fnw} + (${transposed(2).mkString("+")})]"
     val exmplsMsg = s"emxpls: $getTotalSeenExmpls [$seenExmplsNum + (${transposed(3).mkString("+")})]"
 
     s"$tpsMsg $fpsMsg $fnsMsg $exmplsMsg"
@@ -122,6 +122,8 @@ case class Clause(head: PosLiteral = PosLiteral(), body: List[Literal] = Nil, fr
   var fps: Int = 0
   var fns: Int = 0
 
+  private val (tpw, fpw, fnw) = (Globals.glvalues("tp-weight").toInt, Globals.glvalues("fp-weight").toInt, Globals.glvalues("fn-weight").toInt)
+
   def mestimate(mparam: Double, totalPositives: Int, totalNegatives: Int): Double = {
     // The Laplace estimate is:
     // l = (positivesCovered + m * relFreq)/totalExamplesCovered + m
@@ -135,24 +137,20 @@ case class Clause(head: PosLiteral = PosLiteral(), body: List[Literal] = Nil, fr
     //val positivesRelativeFrequency = totalPositives.toFloat / (totalPositives.toFloat + totalNegatives.toFloat)
     //val totalExmplsCovered = tps+fps
     //(tps.toFloat + (mparam * positivesRelativeFrequency)) / (totalExmplsCovered.toFloat + mparam)
-    (tps.toFloat + 1) / (tps.toFloat+fps.toFloat+2.0)
+    (tps.toFloat*tpw + 1) / (tps.toFloat*tpw  + fps.toFloat*fpw + 2.0)
   }
 
-  def precision: Double = tps.toFloat / (tps + fps)
+  def precision: Double = tps.toFloat*tpw / (tps*tpw + fps*fpw)
 
-  def recall: Double =
-    if (List("initiatedAt","terminatedAt").contains(this.head.functor)) tps.toFloat / ( tps + (fns*10)) //tps.toFloat / ( tps + (fns))
-    else tps.toFloat / ( tps + fns)
+  def recall: Double = tps.toFloat*tpw / ( tps*tpw + fns*fnw)
 
   def fscore: Double = if (this.precision+this.recall == 0) 0.0 else (2*this.precision*this.recall)/(this.precision+this.recall)
 
-  //def recall: Double = tps.toFloat / ( tps + (fns))
+  def compressionInit = (tps*tpw - fps*fpw - (this.body.length + 1)).toDouble
 
-  def compressionInit = (tps - fps - (this.body.length + 1)).toDouble
+  def compressionTerm = (tps*tpw - (fns*fns) - (this.body.length + 1)).toDouble
 
-  def compressionTerm = (tps - (fns*10) - (this.body.length + 1)).toDouble
-
-  def tpsRelativeFrequency = if (this.tps == 0 || this.parentClause.tps == 0) 0.0 else this.tps.toDouble/(this.parentClause.tps)
+  def tpsRelativeFrequency = if (this.tps == 0 || this.parentClause.tps == 0) 0.0 else this.tps.toDouble*tpw/this.parentClause.tps*tpw
 
   def foilGainInit = {
     val nonzero = 0.0000006
@@ -185,9 +183,6 @@ case class Clause(head: PosLiteral = PosLiteral(), body: List[Literal] = Nil, fr
   def rateDiff = {
     this.tps.toFloat/Globals.totalPos.toFloat - this.fps.toFloat - Globals.totalNegs.toFloat
   }
-
-
-    //tps * (Math.log(tps.toFloat/(tps.toFloat+fps.toFloat)) - Math.log(2))
 
   var refinements = List[Clause]()
   //var refinements = List[Refinement]()
@@ -368,13 +363,13 @@ case class Clause(head: PosLiteral = PosLiteral(), body: List[Literal] = Nil, fr
 
   // This is the scoring function used in the distributed setting
   def distScore: Double = {
-    val precision_ = getTotalTPs.toFloat / (getTotalTPs + (getTotalFPs))
+    val precision_ = getTotalTPs.toFloat / (getTotalTPs + getTotalFPs)
     /*
     val recall_ =
       if (List("initiatedAt","terminatedAt").contains(this.head.functor)) getTotalTPs.toFloat / ( getTotalTPs + (getTotalFNs * 10))
       else  getTotalTPs.toFloat / ( getTotalTPs + (getTotalFNs * 10))
     */
-    val recall_ = getTotalTPs.toFloat / ( getTotalTPs + (getTotalFNs * 10))
+    val recall_ = getTotalTPs.toFloat / ( getTotalTPs + getTotalFNs)
 
     if (this.head.functor=="initiatedAt"){
       if (!precision_.isNaN) precision_ else 0.0
@@ -397,18 +392,14 @@ case class Clause(head: PosLiteral = PosLiteral(), body: List[Literal] = Nil, fr
   def showWithStats = {
     val scoreFunction = if (! Globals.glvalues("distributed").toBoolean) this.score else this.distScore
     val (tps_, fps_, fns_) =
-      if(! Globals.glvalues("distributed").toBoolean) (tps, fps, fns)
+      if(! Globals.glvalues("distributed").toBoolean) (tps*tpw, fps*fpw, fns*fnw)
       else (this.getTotalTPs, this.getTotalFPs, this.getTotalFNs)
-    //s"score (${if (this.head.functor=="initiatedAt") "precision" else "recall"}):" +
-    //  s" $scoreFunction, tps: $tps_, fps: $fps_, fns: $fns_ Evaluated on: ${this.getTotalSeenExmpls} examples\n$tostring"
-      //+ s"\nLiterals in generating bottom clause: ${this.supportSet.clauses.head.body.map(x => x.tostring).mkString(" ")}"
-
     s"score:" + s" $scoreFunction, tps: $tps_, fps: $fps_, fns: $fns_ Evaluated on: ${this.getTotalSeenExmpls} examples\n$tostring"
   }
 
   def showWithStats_NoEC = {
     //s"score (precision): $score, tps: $tps, fps: $fps, fns: $fns\n$tostring"
-    s"score (precision): $score, tps: $tps, fps: $fps, fns: $fns\n$tostring"
+    s"score (precision): $score, tps: ${tps*tpw}, fps: ${fps*fpw}, fns: ${fns*fnw}\n$tostring"
   }
 
 

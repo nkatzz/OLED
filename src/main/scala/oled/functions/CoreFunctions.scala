@@ -68,7 +68,8 @@ trait CoreFunctions {
     val terminatedOnly = if(initorterm == "terminatedAt") true else false
     val specialBKfile = if(initorterm=="initiatedAt") globals.BK_INITIATED_ONLY else globals.BK_TERMINATED_ONLY
     val (_, varKernel) =
-      LogicUtils.generateKernel(e.toMapASP, jep=jep, learningTerminatedOnly = terminatedOnly, bkFile = specialBKfile, globals=globals)
+      LogicUtils.generateKernel(e.toMapASP, jep=jep,
+        learningTerminatedOnly = terminatedOnly, bkFile = specialBKfile, globals=globals)
     val bottomTheory = topTheory.clauses flatMap(x => x.supportSet.clauses)
     val goodKernelRules = varKernel.filter(newBottomRule => !bottomTheory.exists(supportRule => newBottomRule.thetaSubsumes(supportRule)))
     goodKernelRules

@@ -74,6 +74,7 @@ object OLEDDefaultRunner {
       case false => data
       case _ =>
         data.grouped(opts.chunkSize).map { x =>
+        //data.sliding(opts.chunkSize).map { x =>
           x.foldLeft(Example()) { (z, y) =>
             new Example(annot = z.annotation ++ y.annotation, nar = z.narrative ++ y.narrative, _time = x.head.time)
           }

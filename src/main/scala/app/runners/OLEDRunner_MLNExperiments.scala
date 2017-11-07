@@ -32,7 +32,10 @@ object OLEDRunner_MLNExperiments {
     } else {
       Globals.glvalues("OLEDdownscoreBySimilarity") = "false" // re-set this if you need to try it
       val learnWholeTheories = false
-      val foldPath = "/home/nkatz/dev/CAVIAR_MLN/CAVIAR_MLN/move/fold_2"
+
+      //val foldPath = "/home/nkatz/dev/CAVIAR_MLN/CAVIAR_MLN/move/fold_9"
+
+      val foldPath = args.map(x => x.split("=")).find(x => x(0) == "--foldpath").getOrElse(throw new RuntimeException("--foldpath missing."))(1)
 
       val inps = CMDArgs.getOLEDInputArgs(args)
 
@@ -182,7 +185,7 @@ object MLNDataHandler {
     val trainingData = formatAndSplitData(training, split = true)
     // make sure that we start with positive examples (don't waste negatives from which nothing is learnt)
     val pos = trainingData.filter(x => x.annotation.nonEmpty)
-    val _trainingData = List(pos.head) ++ Random.shuffle(trainingData) // trainingData //
+    val _trainingData = trainingData //List(pos.head) ++ Random.shuffle(trainingData) // trainingData //
     (_trainingData, testingData)
   }
 

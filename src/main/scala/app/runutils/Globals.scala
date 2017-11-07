@@ -86,7 +86,11 @@ object Globals {
       // corresponds to a theory (e.g. when including any initiation rule in the theory yields
       // many fps). In such cases the solver will opt for an empty theory, which is not
       // always desirable. This parameter is used by the MCTS version of OLED.
-      "smallest-nonempty" -> "false"
+      "smallest-nonempty" -> "false",
+      // Weights on examples
+      "tp-weight" -> "1",
+      "fp-weight" -> "1",
+      "fn-weight" -> "1"
     )
 
   // if jep is used "UNSAT" else "UNSATISFIABLE"
