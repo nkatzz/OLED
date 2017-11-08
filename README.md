@@ -39,7 +39,7 @@ A dataset on which ``OLED`` has been evaluated is the [CAVIAR dataset](http://ho
 
 #### Run on the CAVIAR dataset
 
-A `json` dump (extracted from a mongodb) of the `CAVIAR` dataset (`caviar.json`) may be downloaded from [this link](http://users.iit.demokritos.gr/~nkatz/OLED-data/caviar.json.tar.gz). To load the dataset to your local mongodb instance, unzip the downloaded file, cd into that folder and do ``mongoimport --db yourDBname --collection examples --file caviar.json``, where `yourDBname` is the name of your database (it can be anything, but do not change the name of the collection -- `examples`). Next, to run `OLED` with `CAVIAR` data, generate a jar file from the source code:
+A `json` dump (extracted from a mongodb) of the `CAVIAR` dataset (`caviar.json`) may be downloaded from [this link](http://users.iit.demokritos.gr/~nkatz/OLED-data/caviar.json.tar.gz). Also, a larger version of CAVIAR, synthetically augmented with 10 times more domain constants amy be found [here](http://users.iit.demokritos.gr/~nkatz/data/caviarx10.zip). To load the data to your local mongodb instance, unzip the downloaded file, cd into that folder and do ``mongoimport --db yourDBname --collection examples --file caviar.json``, where `yourDBname` is the name of your database (it can be anything, but do not change the name of the collection -- `examples`). Next, to run `OLED` with `CAVIAR` data, generate a jar file from the source code:
 
 * Start SBT from within `/oledhome`
 * Type `assembly`
