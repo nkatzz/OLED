@@ -75,8 +75,16 @@ class Dispatcher[T <: Source](inps: RunningOptions,
 
         logger.info(s"\ntps: $tps\nfps: $fps\nfns: $fns\nprecision: $precision\nrecall: $recall\nf-score: $fscore\ntraining time: " +
           s"$time\ntheory size: $theorySize")
+
+        println(s"\ntps: $tps\nfps: $fps\nfns: $fns\nprecision: $precision\nrecall: $recall\nf-score: $fscore\ntraining time: " +
+          s"$time\ntheory size: $theorySize")
+
         val merged_ = Theory(LogicUtils.compressTheory(merged.clauses))
+
         logger.info(s"\nDone. Theory found:\n ${merged_.showWithStats}")
+
+        println(s"\nDone. Theory found:\n ${merged_.showWithStats}")
+
         crossValJep.close()
         //context.parent ! new ResultsContainer(tps.toFloat,fps.toFloat,fns.toFloat,precision,recall,fscore,theorySize.toFloat,time,merged)
         //println("sent results, shutting down")

@@ -105,7 +105,7 @@ trait CoreFunctions {
 
     while (data.hasNext) {
       val e = data.next()
-      println(e.time)
+      //println(e.time)
       evaluateTheory(t, e, jep, handCraftedTheoryFile, globals)
     }
     val stats = t.stats

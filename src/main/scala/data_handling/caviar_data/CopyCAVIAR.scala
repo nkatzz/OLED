@@ -1,6 +1,10 @@
 package data_handling.caviar_data
 
 import ParseCAVIAR.{lleParser1, parseAll}
+import com.mongodb.casbah.MongoClient
+import com.mongodb.casbah.commons.MongoDBObject
+import com.mongodb.casbah.Imports._
+import logic.Examples.Example
 import logic.{Constant, Literal}
 
 /**
@@ -10,14 +14,14 @@ import logic.{Constant, Literal}
 object CopyCAVIAR extends App {
 
 
-  val numOfCopies = 2
+  val numOfCopies = 10
   val idPattern = "id[0-9]+".r
   val originalIds = List("id0", "id1", "id2", "id3", "id4", "id5", "id6", "id7", "id8", "id9").sortBy(x => x.last)
   val IDCopies = originalIds.map(x => x -> (1 until numOfCopies).map(y => x+y)).toMap
 
-  /*
+  ///*
   val mc = MongoClient()
-  val collection = mc("caviar")("examples")
+  val collection = mc("caviar-whole")("examples")
 
   val newDBName = s"caviarX$numOfCopies"
   val newDB = mc(newDBName)("examples")
@@ -26,6 +30,7 @@ object CopyCAVIAR extends App {
   for (x <- collection.find()) {
     val e = Example(x)
     val time = e.time.toInt
+    println(time)
     val extendedNarrative = copyAtoms(e.narrative, "narrative")
     val extendedAnnotation = copyAtoms(e.annotation, "annotation")
     // Need to get extra annotation (see the generateExtraAnnotation to see what this is about)
@@ -34,7 +39,7 @@ object CopyCAVIAR extends App {
     val entry = MongoDBObject("time" -> time) ++ ("annotation" -> (extendedAnnotation ++ extraAnnotation) ) ++ ("narrative" -> extendedNarrative)
     newDB.insert(entry)
   }
-  */
+  //*/
 
   generateExtraAnnotation("happensAt(walking(id1),2347)").foreach(println)
 

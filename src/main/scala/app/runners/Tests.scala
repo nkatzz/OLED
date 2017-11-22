@@ -10,23 +10,17 @@ import com.mongodb.casbah.MongoClient
 
 object Tests extends App {
 
-  val mongoClient = MongoClient()
-  val collection = mongoClient("brest-1")("examples")
+  splitString("lklvkjxlkjlkjlnvzlxnlkJlc,mn,fdnklandlakm.,c>Z<M", 10, Vector[String]()) foreach println
 
-  val times = collection.find().sort(MongoDBObject("time" -> 1)).map(x => x.asInstanceOf[BasicDBObject].get("time").toString.toInt)
 
-  //println(collection.count())
-
-  var start = times.next()
-  var count = 0
-  var finished = false
-  while(!finished) {
-    val x = times.next()
-    if ( x - start >= 300000 ) {
-      println(count)
-      finished = true
+  def splitString(s: String, l: Int, chunks: Vector[String]): Vector[String] = {
+    s.length > l match {
+      case true =>
+        val first = s.splitAt(l)
+        splitString(first._2, l, chunks :+ first._1)
+      case _ => chunks :+ s
     }
-    count += 1
   }
+
 
 }

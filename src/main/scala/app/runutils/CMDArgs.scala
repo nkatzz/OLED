@@ -1,5 +1,7 @@
 package app.runutils
 
+import com.typesafe.scalalogging.LazyLogging
+
 /**
   * Created by nkatz on 6/20/17.
   */
@@ -11,7 +13,7 @@ package app.runutils
 *
 * */
 
-object CMDArgs {
+object CMDArgs extends LazyLogging {
 
 
   val map = scala.collection.mutable.Map[String, String]()
@@ -79,7 +81,7 @@ object CMDArgs {
     Globals.glvalues("fn-weight") = fnWeight.toString
 
     // show the params:
-    println(s"\nRunning with options:\n${map.map{ case (k, v) => s"$k=$v" }.mkString(" ")}\n")
+    logger.info(s"\nRunning with options:\n${map.map{ case (k, v) => s"$k=$v" }.mkString(" ")}\n")
 
     new RunningOptions(entryPath.toString, delta.toString.toDouble, pruningThreshold.toString.toDouble,
       minSeenExmpls.toString.toInt, specializationDepth.toString.toInt, breakTiesThreshold.toString.toDouble,
@@ -106,8 +108,7 @@ object CMDArgs {
     Arg(name = "--chunksize", valueType = "Int", text = "Mini-batch size. ", default = "10"),
     Arg(name = "--onlineprune", valueType = "Boolean", text = "If true bad rules are pruned in an online fashion.", default = "false"),
     Arg(name = "--postprune", valueType = "Boolean", text = "If true bad rules are pruned after learning terminates.", default = "true"),
-    Arg(name = "--try-more-rules", valueType = "Boolean", text = "If true a larger number of rules than that specified by the default" +
-      " rule generation strategy are generated and scored, in a effort to improve quality.", default = "false"),
+    Arg(name = "--try-more-rules", valueType = "Boolean", text = "If true, a larger number of rules will be generated.", default = "false"),
     Arg(name = "--target", valueType = "String", text = "The target concept. This is used in case the training data contain more than on target concept", default = "None"),
     Arg(name = "--trainset", valueType = "Int", text = "Number of training-testing set pair (this is used in a cross-validation setting).", default = "1"),
     Arg(name = "--randorder", valueType = "Boolean", text = "If true the training data are given in random order.", default = "true"),
@@ -127,11 +128,22 @@ object CMDArgs {
     Arg(name = "--fns-weight", valueType = "Int", text = "Weight on false negative instances.", default = "10")
   )
 
+
+  def splitString(s: String, l: Int, chunks: Vector[String]): Vector[String] = {
+    s.length > l match {
+      case true =>
+        val first = s.splitAt(l)
+        splitString(first._2, l, chunks :+ first._1)
+      case _ => chunks :+ s
+    }
+  }
+
   def helpMesg = {
     val msg = (x: Arg) => s"${x.name}=<${x.valueType}> | default=<${x.default}>"
     val maxLength = arguments.map(x => msg(x).length).max
     val thisLength = (x: Arg) => msg(x).length
     val message = (x: Arg) => s"  ${msg(x)} ${" " * (maxLength - thisLength(x))} : ${x.text}"
+    //val message = (x: Arg) => s"  ${msg(x)} ${" " * (maxLength - thisLength(x))} : ${splitString(x.text, 30, Vector[String]())}"
     (List("\nOLED options:\n") ++ arguments.map(x => message(x))).mkString("\n")
   }
 
