@@ -40,9 +40,27 @@ case class Theory(clauses: List[Clause] = List()) extends Expression with LazyLo
     val tps = this.tps.distinct.length.toFloat
     val fps = this.fps.distinct.length.toFloat
     val fns = this.fns.distinct.length.toFloat
-    val precision = tps/(tps+fps)
-    val recall = tps/(tps+fns)
-    val fscore = 2*precision*recall/(precision+recall)
+
+    val recognised = tps + fps
+    val positives = tps + fns
+
+    val precision =
+      if (recognised == 0 && positives == 0) 1.0
+      else if (recognised == 0 && positives > 0) 0.0
+      else tps / (tps + fps)
+
+    val recall =
+      if (recognised == 0 && positives == 0) 1.0
+      else if (recognised > 0 && positives == 0) 0.0
+      else tps / (tps + fns)
+
+    val fscore =
+      if (recognised == 0 && positives == 0) 1.0
+      else if ((recognised == 0 && positives > 0)
+        || (positives == 0 && recognised > 0)
+        || (positives > 0 && recognised > 0 && tps == 0)) 0.0
+      else 2 * precision * recall / (precision + recall)
+
     (tps.toInt,fps.toInt,fns.toInt,precision,recall,fscore)
   }
 
