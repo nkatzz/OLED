@@ -153,15 +153,4 @@ class TheoryLearner[T <: Source](inps: RunningOptions,
     Theory(out)
   }
 
-
-
-
-
-
-
-
-
-
-
-
 }

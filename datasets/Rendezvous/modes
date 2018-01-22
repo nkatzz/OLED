@@ -1,0 +1,20 @@
+modeh(initiatedAt(rendezvous(+vessel,+vessel),+time))
+modeh(terminatedAt(rendezvous(+vessel,+vessel),+time))
+
+modeb(happensAt(slow_motion_start(+vessel),+time))
+modeb(happensAt(slow_motion_end(+vessel),+time))
+modeb(not happensAt(slow_motion_end(+vessel),+time))
+modeb(happensAt(stop_start(+vessel),+time))
+modeb(happensAt(stop_end(+vessel),+time))
+modeb(not happensAt(stop_end(+vessel),+time))
+modeb(happensAt(proximity(+vessel,+vessel),+time))
+modeb(happensAt(change_in_heading(+vessel),+time))
+modeb(happensAt(change_in_speed_end(+vessel),+time))
+modeb(happensAt(change_in_speed_start(+vessel),+time))
+modeb(happensAt(gap_end(+vessel),+time))
+modeb(happensAt(gap_start(+vessel),+time))
+
+examplePattern(holdsAt(rendezvous(+vessel,+vessel),+time))
+
+
+

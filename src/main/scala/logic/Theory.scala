@@ -364,14 +364,14 @@ case class Theory(clauses: List[Clause] = List()) extends Expression with LazyLo
   def growNewRuleTest(e: Example, jep: Jep, target: String, globals: Globals): Boolean = {
     // we already have the target with the input (the target parameter).
     // But the one from the input is used only in case of an empty theory. In
-    // other cases with get the target class by looking at the rules' heads,
-    // just for some extra safety on the fact that we are indeed learning separately
-    // (check out the exceptions thrown below in case we end but with a mixture
-    // of initiatedAt and terminated rules in the theory._
+    // other cases we get the target class by looking at the rules' heads,
+    // just for some extra safety on whether we're indeed learning separately
+    // (check out the exceptions thrown below in case we end with a mixture
+    // of initiatedAt and terminated rules in the theory.)
     val targetClass = getTargetClass
 
     def solve(program: String, jep: Jep): List[AnswerSet] = {
-      val f = Utils.getTempFile(s"growNewRuleTest-for-$target",".lp",deleteOnExit = true)
+      val f = Utils.getTempFile(s"growNewRuleTest-for-$target",".lp")
       Utils.writeToFile(f, "append")(p => List(program) foreach p.println)
       val path = f.getCanonicalPath
       //ASP.solve(task = Core.INFERENCE, aspInputFile = new File(path), jep=jep)

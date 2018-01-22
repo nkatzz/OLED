@@ -705,7 +705,8 @@ object ILED extends ClausalLogicParser with LazyLogging with MongoUtils{
         case Right(x) =>
           done = true
           out = x
-          system.shutdown()
+          //system.shutdown()
+          system.terminate()
       }
     }
     out
