@@ -804,7 +804,7 @@ case class Clause(head: PosLiteral = PosLiteral(), body: List[Literal] = Nil, fr
     val types = (for (x <- this.toLiteralList)
       yield x.getTypePredicates(globals)).filter { z => z != Nil }.
       flatten.++(extraTypePreds).distinct.
-      map { y => Literal.toLiteral(y) }
+      map { y => Literal.parse(y) }
     Clause(head = this.head, body = this.body ::: types)
   }
 

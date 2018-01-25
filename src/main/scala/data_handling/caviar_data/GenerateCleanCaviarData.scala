@@ -57,14 +57,14 @@ object GenerateCleanCaviarData {
 
       val prior =
         if (out.nonEmpty)  {
-          out.head.atoms.map( x => (Literal.toLiteral(x).terms(1).tostring,x) ).filter(z => z._1 == e.time).map(_._2)
+          out.head.atoms.map( x => (Literal.parse(x).terms(1).tostring,x) ).filter(z => z._1 == e.time).map(_._2)
         } else {
           Nil
         }
 
       val next =
         if (out.nonEmpty)  {
-          out.head.atoms.map( x => (Literal.toLiteral(x).terms(1).tostring,x) ).filter(z => z._1 == (e.time.toInt+40).toString).map(_._2)
+          out.head.atoms.map( x => (Literal.parse(x).terms(1).tostring,x) ).filter(z => z._1 == (e.time.toInt+40).toString).map(_._2)
         } else {
           Nil
         }

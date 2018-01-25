@@ -34,7 +34,7 @@ object Eval {
     if (answerSet.nonEmpty) {
       val atoms = answerSet.head.atoms
       atoms.foreach { a=>
-        val lit = Literal.toLiteral(a)
+        val lit = Literal.parse(a)
         val inner = lit.terms.head
         lit.functor match {
           case "tps" => theory.tps += inner.tostring

@@ -19,6 +19,19 @@ initialTime(X) :- time(X), #false : X > Y, time(Y).
 
 fluent(rendezvous(X,Y)) :- vessel(X),vessel(Y),X != Y.
 
+
+% Extra BK, see if it helps.
+holdsAt(stopped(V),Te) :- initiatedAt(stopped(V),Ts), Te = Ts + 1, time(Ts),time(Te).
+holdsAt(stopped(V),Te) :- holdsAt(stopped(V),Ts) not terminatedAt(stopped(V),Ts), Te = Ts + 1, time(Ts),time(Te).
+holdsAt(stopped(V),Te) :- holdsAt(stopped(V),Ts), initialTime(Ts), Te = Ts + 1, time(Ts),time(Te).
+
+holdsAt(slow(V),Te) :- initiatedAt(slow(V),Ts), Te = Ts + 1, time(Ts), time(Te).
+holdsAt(slow(V),Te) :- holdsAt(slow(V),Ts) not terminatedAt(slow(V),Ts), Te = Ts + 1, time(Ts), time(Te).
+holdsAt(slow(V),Te) :- holdsAt(slow(V),Ts), initialTime(Ts), Te = Ts + 1, time(Ts), time(Te).
+
+initiatedAt(stopped(V),T) :- happensAt()
+
+
 vessel(X) :- happensAt(change_in_heading(X),_).
 vessel(X) :- happensAt(change_in_speed_end(X),_).
 vessel(X) :- happensAt(change_in_speed_start(X),_).

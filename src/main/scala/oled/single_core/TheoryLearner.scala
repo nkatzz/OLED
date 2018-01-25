@@ -2,7 +2,7 @@ package oled.single_core
 
 import akka.actor.Actor
 import app.runutils.IOHandling.{MongoSource, Source}
-import app.runutils.RunningOptions
+import app.runutils.{Globals, RunningOptions}
 import jep.Jep
 import logic.Examples.Example
 import logic.{Clause, LogicUtils, Theory}
@@ -36,6 +36,8 @@ class TheoryLearner[T <: Source](inps: RunningOptions,
 
   val initorterm: String = if(targetClass=="initiated") "initiatedAt" else "terminatedAt"
 
+  private val withInertia = Globals.glvalues("with-inertia").toBoolean
+
   def run: (Theory,Double) = {
 
     def runOnce(inTheory: Theory): Theory = {
@@ -45,10 +47,18 @@ class TheoryLearner[T <: Source](inps: RunningOptions,
         System.exit(-1)
       }
       trainingData.foldLeft(inTheory){ (topTheory, newExample) =>
-        //println(newExample.time)
+
+        //println(newExample.time, s"current joint theory size: ${Globals.getCurrentJointTheory().clauses.length}")
 
         val res = Utils.time {
-          processExample(topTheory, newExample)
+          val t = processExample(topTheory, newExample)
+
+          // This is used only when learning with inertia. But I think
+          // its ok to keep it so that I can print out stats for the current
+          // joint theory. for debugging.
+          //if (withInertia) updateGlobalTheoryStore(t, initorterm, inps.globals)
+          updateGlobalTheoryStore(t, initorterm, inps.globals)
+          t
         }
         //println(res._2)
         res._1
@@ -76,16 +86,37 @@ class TheoryLearner[T <: Source](inps: RunningOptions,
 
 
   def processExample(topTheory: Theory, e: Example): Theory = {
+
     var newTopTheory = topTheory
-    //val startNew = if (this.inps.tryMoreRules) true else newTopTheory.growNewRuleTest(e, this.jep, initorterm, inps.globals)
-    val startNew = if (this.inps.tryMoreRules && this.targetClass == "terminated") true else newTopTheory.growNewRuleTest(e, this.jep, initorterm, inps.globals)
-    if (startNew) {
-      val newRules_ = if (this.inps.tryMoreRules) {
-        // Don't use the current theory here to force the system to generate new rules
-        generateNewRules(Theory(), e, this.jep, this.initorterm, inps.globals)
+
+    val startNew =
+      if (withInertia) {
+
+        // / This works, but it takes too long. The reason is that it tries
+        // to abduce at almost every example. See the comment above the isSat
+        // method in SingleCoreOLEDFunctions for more details.
+        //if (e.annotation.isEmpty) false else ! isSat(e, inps.globals, this.jep)
+
+        if (e.annotation.isEmpty) false else newTopTheory.growNewRuleTest(e, this.jep, initorterm, inps.globals)
+
       } else {
-        generateNewRules(topTheory, e, this.jep, this.initorterm, inps.globals)
+        if (this.inps.tryMoreRules && this.targetClass == "terminated") true
+        else newTopTheory.growNewRuleTest(e, this.jep, initorterm, inps.globals)
       }
+
+    if (startNew) {
+      val newRules_ =
+        if (withInertia) {
+          getnerateNewBottomClauses_withInertia(topTheory, e, this.initorterm, this.jep, inps.globals)
+        } else {
+          if (this.inps.tryMoreRules) {
+            // Don't use the current theory here to force the system to generate new rules
+            generateNewRules(Theory(), e, this.jep, this.initorterm, inps.globals)
+          } else {
+            generateNewRules(topTheory, e, this.jep, this.initorterm, inps.globals)
+          }
+        }
+
       // Just to be on the safe side...
       val newRules = newRules_.filter(x => x.head.functor == this.initorterm)
 

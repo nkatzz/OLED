@@ -296,7 +296,7 @@ object Xhail extends ASPResultsParser with LazyLogging {
 
       val result =
         (for (x <- q.head.atoms;
-              tolit = Literal.toLiteral(x);
+              tolit = Literal.parse(x);
               mode = mapping(tolit.terms.head.name.toInt);
               groundTerm = tolit.terms(1))
           yield (mode,groundTerm)).groupBy(_._1).toList map {case (k,v) => (for ((_,m) <- v) yield m.tostring, k) }
@@ -311,7 +311,7 @@ object Xhail extends ASPResultsParser with LazyLogging {
 // Map[Modes.ModeAtom, List[(Modes.ModeAtom, Expression)]]
     val abducedAtoms: List[Literal] = for (
       x <- abdModel;
-      tolit = Literal.toLiteral(x);
+      tolit = Literal.parse(x);
       (atom, modeAtom) = try {
         (tolit.terms(1), globals.MODEHS(tolit.terms.head.asInstanceOf[Constant].name.toInt - 1))
       } catch {
@@ -356,7 +356,7 @@ object Xhail extends ASPResultsParser with LazyLogging {
           }
 
           val b = solution.head.atoms.asInstanceOf[List[String]].distinct map (
-            x => Literal.toLiteral(x)
+            x => Literal.parse(x)
             ) map (
             x => (x.terms.head, x.terms(1))
             ) map (

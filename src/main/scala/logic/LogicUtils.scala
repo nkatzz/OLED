@@ -41,7 +41,7 @@ object LogicUtils {
   def generateKernel(examples: Map[String,List[String]], fromWeakExmpl: Boolean = false,
                      jep: Jep, learningTerminatedOnly: Boolean=false, bkFile: String, globals: Globals) = {
 
-    val infile = Utils.getTempFile("example", ".lp", deleteOnExit = true)
+    val infile = Utils.getTempFile("example", ".lp")
     val f = (x: String) => if (x.endsWith(".")) x else s"$x."
     val interpretation = examples("annotation").map(x => s"${f(x)}") ++ examples("narrative").map(x => s"${f(x)}")
     Utils.writeToFile(infile, "overwrite") { p => interpretation.foreach(p.println) }

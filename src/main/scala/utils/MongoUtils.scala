@@ -238,7 +238,7 @@ object CaviarUtils {
     def mergeExamplesNoInertia(e1: Example, e2: Example) = {
       // see the comments in mergeExample function from ILEDNoiseTollerant to see what keepAtom does
       val keepAtom = (atom: String, annotation: List[String]) => {
-        val fluent = Literal.toLiteral(atom).terms.head.tostring // the fluent is the first term
+        val fluent = Literal.parse(atom).terms.head.tostring // the fluent is the first term
         annotation forall (x => !x.contains(fluent))
       }
       val time = e1.time
@@ -417,14 +417,14 @@ object CaviarUtils {
 
       val prior =
         if (out.nonEmpty)  {
-          out.head.atoms.map( x => (Literal.toLiteral(x).terms(1).tostring,x) ).filter(z => z._1 == e.time).map(_._2)
+          out.head.atoms.map( x => (Literal.parse(x).terms(1).tostring,x) ).filter(z => z._1 == e.time).map(_._2)
         } else {
           Nil
         }
 
       val next =
         if (out.nonEmpty)  {
-          out.head.atoms.map( x => (Literal.toLiteral(x).terms(1).tostring,x) ).filter(z => z._1 == (e.time.toInt+40).toString).map(_._2)
+          out.head.atoms.map( x => (Literal.parse(x).terms(1).tostring,x) ).filter(z => z._1 == (e.time.toInt+40).toString).map(_._2)
         } else {
           Nil
         }
@@ -454,7 +454,7 @@ object CaviarUtils {
     }
     def replaceAll = (s: String, map: Map[String,String]) => {
       val ids = idPattern.findAllIn(s)
-      val toLit = if (!s.contains(".")) Literal.toLiteral(s) else Literal.toLiteral(s.split("\\.")(0))
+      val toLit = if (!s.contains(".")) Literal.parse(s) else Literal.parse(s.split("\\.")(0))
       //ids.foldLeft(s){ (x,id) => x.replaceFirst(id,map(id)) }
       ids.foldLeft(toLit){ (x,id) => x.replace(Constant(id),Constant(map(id))) }.tostring
     }

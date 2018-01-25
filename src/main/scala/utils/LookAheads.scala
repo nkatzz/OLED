@@ -37,7 +37,7 @@ object LookAheads {
      * Policies are implemented in the LookAheadImplementations object
      *
      */
-    val parsed = Literal.toLiteral(lookAheadDefinition)
+    val parsed = Literal.parse(lookAheadDefinition)
 
     // the current atom
     val currentLiteralSignature = parsed.terms.head.asInstanceOf[Literal]

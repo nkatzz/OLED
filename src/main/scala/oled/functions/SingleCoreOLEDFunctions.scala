@@ -4,10 +4,11 @@ import app.runutils.{Globals, RunningOptions}
 import com.mongodb.casbah.MongoClient
 import jep.Jep
 import logic.Examples.Example
-import logic.{Clause, Theory}
+import logic.{AnswerSet, Clause, Theory}
+import utils.ASP.getCoverageDirectives
 import utils.DataUtils.{DataAsExamples, DataAsIntervals, DataFunction, TrainingSet}
 import utils.Implicits._
-import utils.{CaviarUtils, Database}
+import utils.{ASP, CaviarUtils, Database, Utils}
 
 import scala.util.Random
 
@@ -77,6 +78,66 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
     val pruned = finalTheory.clauses.filter(x => x.score > inps.pruneThreshold && x.seenExmplsNum > inps.minEvalOn)
     logger.debug(s"\nPruned hypothesis:\n${pruned.showWithStats}")
     Theory(pruned)
+  }
+
+  /* Used by the monolithic OLED when learning with inertia.*/
+  def check_SAT_withInertia(theory: Theory, example: Example, globals: Globals, jep: Jep): Boolean = {
+    val e = (example.annotationASP ++ example.narrativeASP).mkString("\n")
+    val exConstr = getCoverageDirectives(withCWA = Globals.glvalues("cwa"), globals = globals).mkString("\n")
+    val t = theory.map(x => x.withTypePreds(globals).tostring).mkString("\n")
+    val f = Utils.getTempFile("sat",".lp")
+    Utils.writeToFile(f, "append")(
+      p => List(e,exConstr,t,s"\n#include "+"\""+globals.ABDUCE_WITH_INERTIA+"\".\n") foreach p.println
+    )
+    val inFile = f.getCanonicalPath
+    val out = ASP.solve(Globals.CHECKSAT, Map(), new java.io.File(inFile), example.toMapASP, jep = jep)
+    if (out != Nil && out.head == AnswerSet.UNSAT){
+      false
+    } else {
+      true
+    }
+  }
+
+  /* Used by the monolithic OLED when learning with inertia.
+   * After processing each example, form a joint current theory by
+   * putting together the best specialization of each existing rule so far.
+   * If you just use each top rule, chances are that over-general rules will
+   * screw things up.*/
+  def updateGlobalTheoryStore(theory: Theory, target: String, gl: Globals) = {
+
+    def getBestClause(c: Clause) = {
+      val allSorted = (List(c) ++ c.refinements).sortBy { x => (- x.score, x.body.length+1) }
+      val best = allSorted.take(1)
+      best.head
+    }
+
+    def getBestClauses(T: Theory) = {
+      T.clauses.map(x => getBestClause(x))
+    }
+
+    if (target == "initiatedAt") {
+      Globals.CURRENT_THEORY_INITIATED = getBestClauses(theory).toVector
+    } else if (target == "terminatedAt") {
+      Globals.CURRENT_THEORY_TERMINATED = getBestClauses(theory).toVector
+    } else {
+      throw new RuntimeException(s"Unknown target predicate: $target")
+    }
+  }
+
+  /* Used by the monolithic OLED when learning with inertia.*/
+  // The problem with deciding when to learn a new clause with
+  // isSat here is that almost always, the decision will be yes!
+  // That's because, even if we form the current theory in isSat
+  // by selecting the best specialization from each existing clause.
+  // chances are that there will be imperfect rules, which are not
+  // specialized quickly enough, so we end-up with an unsatisfiable program.
+  // We'd need something more in the style of ILED for this. Reacting fast
+  // to every mistake, specializing immediately, so in the absence of noise, we quickly
+  // learn the correct definitions. (Note that in any case, if there is noise
+  // in the strongly-initiated setting, there is not chance to learn anything.
+  def isSat(example: Example, globals: Globals, jep: Jep) = {
+    val jointTheory = Theory((Globals.CURRENT_THEORY_INITIATED ++ Globals.CURRENT_THEORY_TERMINATED).toList)
+    check_SAT_withInertia(jointTheory, example, globals, jep)
   }
 
 }

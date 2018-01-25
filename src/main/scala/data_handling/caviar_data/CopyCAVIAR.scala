@@ -47,7 +47,7 @@ object CopyCAVIAR extends App {
 
   def replaceIds(atom: String, replaceWith: Map[String, String]) = {
     val ids = idPattern.findAllIn(atom)
-    val toLit = if (!atom.contains(".")) Literal.toLiteral(atom) else Literal.toLiteral(atom.split("\\.")(0))
+    val toLit = if (!atom.contains(".")) Literal.parse(atom) else Literal.parse(atom.split("\\.")(0))
     // CAVIAR-specific stuff.
     // THIS IS FOR ANNOTATION ATOMS ONLY
     val first = replaceWith.head._2

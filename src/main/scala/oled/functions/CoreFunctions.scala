@@ -4,7 +4,8 @@ import app.runutils.{Globals, RunningOptions}
 import com.mongodb.casbah.MongoCollection
 import jep.Jep
 import logic.Examples.Example
-import logic.{Clause, Literal, LogicUtils, Theory}
+import logic._
+import utils.ASP.getCoverageDirectives
 import utils.DataUtils.{DataAsExamples, DataAsIntervals, DataFunction, TrainingSet}
 import utils._
 import utils.Implicits._
@@ -32,6 +33,29 @@ trait CoreFunctions {
     }
     if (out.length != newRules.length) logger.info("Dropped new clause (repeated bottom clause)")
     out
+  }
+
+  /* Determines if a fluent holds initially in a mini-batch.
+  * This is used in the functionality that supports learning
+  * strongly initiated fluents. If we know that a fluent is strongly
+  * initiated then we don't learn new rules from mini-batches where the fluent holds initially.*/
+  def holdsInitially(e: Example) = {
+    if (e.annotation.isEmpty) {
+      false
+    } else {
+      val timeAll = e.narrative.map(x => Literal.parse(x).terms.last.tostring.toInt).sorted
+      val labelsTime = e.annotation.map(x => Literal.parse(x).terms.last.tostring.toInt).sorted
+      timeAll.head == labelsTime.head
+    }
+  }
+
+  def startNewRules_withInertia(e: Example) = {
+    if (e.annotation.isEmpty) {
+      false
+    } else {
+      // Try to abduce initiation & termination atoms with Inertia.
+      // If some abducibles are returned, construct new rules from them
+    }
   }
 
   /* Online pruning. */
@@ -74,6 +98,25 @@ trait CoreFunctions {
     val goodKernelRules = varKernel.filter(newBottomRule => !bottomTheory.exists(supportRule => newBottomRule.thetaSubsumes(supportRule)))
     goodKernelRules
   }
+
+  def getnerateNewBottomClauses_withInertia(topTheory: Theory, e: Example, targetClass: String, jep: Jep, globals: Globals) = {
+    val specialBKfile = globals.ABDUCE_WITH_INERTIA
+    val (_, varKernel) = LogicUtils.generateKernel(e.toMapASP, jep=jep, bkFile = specialBKfile, globals=globals)
+    val filteredKernel = varKernel.filter(p => p.head.functor == targetClass)
+    val bottomTheory = topTheory.clauses flatMap(x => x.supportSet.clauses)
+    val goodKernelRules = filteredKernel.filter(newBottomRule => !bottomTheory.exists(supportRule => newBottomRule.thetaSubsumes(supportRule)))
+    goodKernelRules map { x =>
+      val c = Clause(head=x.head, body = List())
+      c.addToSupport(x)
+      c
+    }
+  }
+
+
+
+
+
+
 
 
   def showInfo(c: Clause, c1: Clause, c2: Clause, hoeffding: Double, observedDiff: Double, n: Int, showRefs: Boolean) = {
@@ -136,7 +179,7 @@ trait CoreFunctions {
     if (answerSet.nonEmpty) {
       val atoms = answerSet.head.atoms
       atoms.foreach { a=>
-        val lit = Literal.toLiteral(a)
+        val lit = Literal.parse(a)
         val inner = lit.terms.head
         lit.functor match {
           case "tps" => theory.tps += inner.tostring

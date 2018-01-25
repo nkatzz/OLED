@@ -73,19 +73,21 @@ class Dispatcher[T <: Source](inps: RunningOptions,
         val data = testingDataFunction(testingDataOptions)
         val (tps,fps,fns,precision,recall,fscore) = crossVal(merged, crossValJep, data=data, globals = inps.globals, inps = inps)
 
-        //logger.info(s"\ntps: $tps\nfps: $fps\nfns: $fns\nprecision: $precision\nrecall: $recall\nf-score: $fscore\ntraining time: " +
-        //  s"$time\ntheory size: $theorySize")
+        logger.info(s"\ntps: $tps\nfps: $fps\nfns: $fns\nprecision: $precision\nrecall: $recall\nf-score: $fscore\ntraining time: " +
+          s"$time\ntheory size: $theorySize")
+
+        /* THIS MAY TAKE TOO LONG FOR LARGE AND COMPLEX THEORIES!! */
+        //val merged_ = Theory(LogicUtils.compressTheory(merged.clauses))
+
+        //logger.info(s"\nDone. Theory found:\n ${merged_.showWithStats}")
 
         println(s"\ntps: $tps\nfps: $fps\nfns: $fns\nprecision: $precision\nrecall: $recall\nf-score: $fscore\ntraining time: " +
           s"$time\ntheory size: $theorySize")
 
-        val merged_ = Theory(LogicUtils.compressTheory(merged.clauses))
-
-        logger.info(s"\nDone. Theory found:\n ${merged_.showWithStats}")
-
         //println(s"\nDone. Theory found:\n ${merged_.showWithStats}")
 
         crossValJep.close()
+
         //context.parent ! new ResultsContainer(tps.toFloat,fps.toFloat,fns.toFloat,precision,recall,fscore,theorySize.toFloat,time,merged)
         //println("sent results, shutting down")
         context.system.terminate()

@@ -1,9 +1,3 @@
-
-% The initiation axiom is needed here to ensure that we won't get an UNSAT
-% error in case a fluent is initiated in the middle of a training sequence.
-% So we abduce initiatedAt atoms as well, but we filter them out before
-% kernel set construction (with the learningTerminatedOnly parameter).
-
 holdsAt(F,Te) :-
        fluent(F),
        initiatedAt(F,Ts),
@@ -22,23 +16,6 @@ holdsAt(F,T) :-
        example(holdsAt(F,T)).
 
 initialTime(X) :- time(X), #false : X > Y, time(Y).
-
-
-% the overall initial time, extracted by the rule
-% initialTime(X) :- time(X), #false : X > Y, time(Y).
-% may differ from the time of the first observed example.
-% Since we do not have an axiom to initiate the corresponding fluent
-% here (we are learning terminatedAt only), we need to add an additional rule
-% that extracts the examples' initial time:
-% examplesInitialTime(X) :- example(holdsAt(_,X)), #false : X > Y, example(holdsAt(_,Y)).
-% and an additional axiom as below:
-
-holdsAt(F,T) :-
-       fluent(F),
-       examplesInitialTime(T),
-       example(holdsAt(F,T)).
-
-examplesInitialTime(X) :- example(holdsAt(_,X)), #false : X > Y, example(holdsAt(_,Y)).
 
 fluent(rendezvous(X,Y)) :- vessel(X),vessel(Y),X != Y.
 

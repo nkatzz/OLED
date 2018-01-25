@@ -69,6 +69,7 @@ object CMDArgs extends LazyLogging {
     val tpWeight = getMatchingArgumentValue("--tps-weight")
     val fpWeight = getMatchingArgumentValue("--fps-weight")
     val fnWeight = getMatchingArgumentValue("--fns-weight")
+    val withInertia = getMatchingArgumentValue("--with-inertia")
 
     //-------------
     // Global sets:
@@ -79,6 +80,7 @@ object CMDArgs extends LazyLogging {
     Globals.glvalues("tp-weight") = tpWeight.toString
     Globals.glvalues("fp-weight") = fpWeight.toString
     Globals.glvalues("fn-weight") = fnWeight.toString
+    Globals.glvalues("with-inertia") = withInertia.toString
 
     // show the params:
     logger.info(s"\nRunning with options:\n${map.map{ case (k, v) => s"$k=$v" }.mkString(" ")}\n")
@@ -91,7 +93,8 @@ object CMDArgs extends LazyLogging {
       trainSetNum.toString.toInt, randomOrder.toString.toBoolean, scoringFun.toString, with_jep.toString.toBoolean,
       evaluate_existing.toString, fromDB.toString, globals, minEvaluatedOn.toString.toInt, cores.toString.toInt,
       shuffleData.toString.toBoolean, showRefs.toString.toBoolean, pruneAfter.toString.toInt, mongoCol.toString,
-      dataLimit.toString.toInt, tpWeight.toString.toInt, fpWeight.toString.toInt, fnWeight.toString.toInt)
+      dataLimit.toString.toInt, tpWeight.toString.toInt, fpWeight.toString.toInt, fnWeight.toString.toInt,
+      withInertia.toString.toBoolean)
   }
 
   val arguments = Vector(
@@ -125,7 +128,8 @@ object CMDArgs extends LazyLogging {
     Arg(name = "--data-limit", valueType = "Int", text = "Fetch that-many data from the db to learn from (default is max integer).", default = s"${Double.PositiveInfinity.toInt}"),
     Arg(name = "--tps-weight", valueType = "Int", text = "Weight on true positive instances.", default = "1"),
     Arg(name = "--fps-weight", valueType = "Int", text = "Weight on false positive instances.", default = "1"),
-    Arg(name = "--fns-weight", valueType = "Int", text = "Weight on false negative instances.", default = "10")
+    Arg(name = "--fns-weight", valueType = "Int", text = "Weight on false negative instances.", default = "10"),
+    Arg(name = "--with-inertia", valueType = "Boolean", text = "If true learns with inertia from edge interval points only.", default = "false")
   )
 
 
@@ -197,6 +201,7 @@ class RunningOptions(val entryPath: String,
                      val dataLimit: Int,
                      val tpWeight: Int,
                      val fpWeight: Int,
-                     val fnWeight: Int)
+                     val fnWeight: Int,
+                     val withInertia: Boolean)
 
 

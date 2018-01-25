@@ -624,7 +624,7 @@ object ASP extends ASPResultsParser with LazyLogging {
       val e = (example.annotationASP ++ example.narrativeASP).mkString("\n")
       val exConstr = getCoverageDirectives(withCWA = Globals.glvalues("cwa"), globals = globals).mkString("\n")
       val t = theory.map(x => x.withTypePreds(globals).tostring).mkString("\n")
-      val f = Utils.getTempFile("sat",".lp",deleteOnExit = true)
+      val f = Utils.getTempFile("sat",".lp")
       Utils.writeToFile(f, "append")(
          p => List(e,exConstr,t,s"\n#include "+"\""+globals.BK_WHOLE_EC+"\".\n") foreach p.println
       )

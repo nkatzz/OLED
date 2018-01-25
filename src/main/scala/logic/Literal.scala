@@ -19,7 +19,7 @@ object Literal {
 
   /* Parse a string into a literal, An optional mode atom may be provided. */
 
-  def toLiteral(lit: String, mode: String = ""): Literal = {
+  def parse(lit: String, mode: String = ""): Literal = {
     val p = new ClausalLogicParser
     mode match {
       case "" => p.getParseResult(p.parse(p.literal, lit)).asInstanceOf[Literal]
@@ -105,8 +105,8 @@ object Literal {
 case class Literal(functor: String = "", terms: List[Expression] = Nil, isNAF: Boolean = false,
                    modeAtom: ModeAtom = ModeAtom("", Nil), typePreds: List[String] = Nil) extends Expression {
 
-  require(if (functor != "") !functor.toCharArray()(0).isUpper else true)
-
+  // No need. Plus messes up MLN <--> ASP
+  //require(if (functor != "") !functor.toCharArray()(0).isUpper else true)
 
   lazy val arity = terms.length
 

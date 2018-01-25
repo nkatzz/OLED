@@ -70,7 +70,7 @@ object ParseCAVIAR extends ClausalLogicParser {
           yield scala.io.Source.fromFile(f).getLines().filter(p => !p.startsWith("%"))).toList.flatten.mkString.replaceAll("\\s","").split("\\.").toList
       val parsed = contents.flatMap(x => parseAll(caviarParser(0),x).getOrElse(List(""))).filter(_!="").asInstanceOf[List[Atom]]
       //println(parsed map (_.atoms))
-      val allAtoms = parsed flatMap (_.atoms) map (x => Literal.toLiteral(x))
+      val allAtoms = parsed flatMap (_.atoms) map (x => Literal.parse(x))
       val times = allAtoms.map(_.terms.reverse.head.tostring).distinct.length
       //println(times.length)
       val ids = parsed.flatMap(_.atoms).flatMap(z => idPattern.findAllIn(z).toList).distinct.length

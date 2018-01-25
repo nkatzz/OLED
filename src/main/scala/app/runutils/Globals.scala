@@ -1,5 +1,6 @@
 package app.runutils
 
+import logic.{Clause, Theory}
 import utils.lookaheads._
 import utils.parsers.ModesParser
 
@@ -90,11 +91,24 @@ object Globals {
       // Weights on examples
       "tp-weight" -> "1",
       "fp-weight" -> "1",
-      "fn-weight" -> "1"
+      "fn-weight" -> "1",
+      "with-inertia" -> "false"
     )
 
   // if jep is used "UNSAT" else "UNSATISFIABLE"
   def UNSAT = if (glvalues("with-jep").toBoolean) "UNSAT" else "UNSATISFIABLE"
+
+  // This is a storage of the current initiation/termination
+  // parts of the theory. These fields are used by the monolithic version
+  // of OLED only, when learning with inertia (from edge interval points)
+  // to get the joint theory and see if it satifsifes each new example. Abduction
+  // and new clauses are generated if not.
+  var CURRENT_THEORY_INITIATED: Vector[Clause] = Vector[Clause]()
+  var CURRENT_THEORY_TERMINATED: Vector[Clause] = Vector[Clause]()
+
+  def getCurrentJointTheory() = {
+    Theory((CURRENT_THEORY_INITIATED ++ CURRENT_THEORY_TERMINATED).toList)
+  }
 
 }
 
@@ -115,7 +129,8 @@ class Globals(val entryPath: String, val fromDB: String) { //extends ModesParser
 
   val BK_INITIATED_ONLY =  s"$inputPath/bk-initiated-only.lp"
   val BK_TERMINATED_ONLY = s"$inputPath/bk-terminated-only.lp"
-  val BK_OLED_WITH_INERTIA = s"$inputPath/bk-oled-with-inertia.lp"
+  val ABDUCE_WITH_INERTIA = s"$inputPath/abduce-with-inertia.lp"
+  val INITIATED_ONLY_INERTIA = s"$inputPath/initiated-only-with-inertia.lp"
   val BK_INITIATED_ONLY_MARKDED = s"$inputPath/bk-score-initiated.lp"
   val BK_TERMINATED_ONLY_MARKDED = s"$inputPath/bk-score-terminated.lp"
   val BK_WHOLE_EC = s"$inputPath/bk.lp"

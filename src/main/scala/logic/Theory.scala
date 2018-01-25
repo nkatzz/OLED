@@ -218,7 +218,7 @@ case class Theory(clauses: List[Clause] = List()) extends Expression with LazyLo
         }
 
         val parse = (atom: String) => {
-          val tolit = Literal.toLiteral(atom)
+          val tolit = Literal.parse(atom)
           val (what, hashCode, count) = (tolit.functor, tolit.terms.head.tostring, tolit.terms.tail.head.tostring)
           (what, hashCode, count)
         }
@@ -383,11 +383,18 @@ case class Theory(clauses: List[Clause] = List()) extends Expression with LazyLo
         // If we are learning the initiatedAt part of the the theory, then we must start growing
         // a new rule if we have FNs, i.e. no initiatedAt rule in the current hypothesis fires,
         // and fluents are not initiated when they should.
-        case "initiatedAt" => (globals.INCLUDE_BK(globals.BK_INITIATED_ONLY), globals.FNS_RULES,globals.SHOW_FNS_ARITY_1)
+        case "initiatedAt" =>
+          if (Globals.glvalues("with-inertia").toBoolean) {
+            (globals.INCLUDE_BK(globals.INITIATED_ONLY_INERTIA), globals.FNS_RULES,globals.SHOW_FNS_ARITY_1)
+          } else {
+            (globals.INCLUDE_BK(globals.BK_INITIATED_ONLY), globals.FNS_RULES,globals.SHOW_FNS_ARITY_1)
+          }
+
         // If we are learning the terminatedAt part of the the theory, then we must start growing
         // a new rule if we have FPs, i.e. no terminatedAt rule in the current hypothesis fires,
         // and fluents are not terminated when they should.
-        case "terminatedAt" => (globals.INCLUDE_BK(globals.BK_TERMINATED_ONLY), globals.FPS_RULES,globals.SHOW_FPS_ARITY_1)
+        case "terminatedAt" =>
+          (globals.INCLUDE_BK(globals.BK_TERMINATED_ONLY), globals.FPS_RULES,globals.SHOW_FPS_ARITY_1)
         // In this case no theory has been generated yet. We therefore check if the current example
         // satisfies the empty theory with the plain isSAT method. To do that, we use the whole set
         // of EC axioms in the BK. Also, coverage directives (normally fps, tns etc) are coverage
@@ -674,7 +681,7 @@ case class Theory(clauses: List[Clause] = List()) extends Expression with LazyLo
       val answerSet = ASP.solve(task = Globals.INFERENCE, aspInputFile = new File(path), jep=jep)
       if(answerSet != Nil) {
         val f = (a: String) => {
-          val tolit = Literal.toLiteral(a)
+          val tolit = Literal.parse(a)
           val (i, j) = (tolit.terms.head.tostring.toInt, tolit.terms.tail.head.tostring.toInt)
           (i,j)
         }
