@@ -137,7 +137,7 @@ object CMDArgs extends LazyLogging {
     Arg(name = "--min-pos-covered", valueType = "Int", text = "Require of a rule to cover a minimum number of positives (set to zero to ignore).", default = "0"),
     Arg(name = "--mailbox-check", valueType = "Int", text = "Number of mini batches to check before returning to idle state to check mailbox (for the distributed version).", default = "1"),
     Arg(name = "--shuffle-data", valueType = "Boolean", text = "If true the data are shuffled each time they are seen (used for order effects).", default = "false"),
-    Arg(name = "--showrefs", valueType = "Boolean", text = "If true all candidate refinements are printed out during learning.", default = "true"),
+    Arg(name = "--showrefs", valueType = "Boolean", text = "If true all candidate refinements are printed out during learning.", default = "false"),
     Arg(name = "--prune-after", valueType = "Int", text = "Minimum number of examples after which a bad rule may be pruned.", default = "100000"),
     Arg(name = "--mongo-collection", valueType = "String", text = "A mongo collection containing the data.", default = "examples"),
     Arg(name = "--data-limit", valueType = "Int", text = "Fetch that-many data from the db to learn from (default is max integer).", default = s"${Double.PositiveInfinity.toInt}"),
