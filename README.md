@@ -15,7 +15,7 @@ This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you a
 
 The manual that comes with the source code contains detailed instructions. In sort:
 
-* Clone of download the source code. Open a terminal and navigate to the source code location. In what follows we'll refer to this directory by `/oledhome`
+* Clone or download the source code. Open a terminal and navigate to the source code location. In what follows we'll refer to this directory by `/oledhome`
 * `cp -r OLED/install-scripts .`
 * `cd install-scripts`
 * `./install.sh`
