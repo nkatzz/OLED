@@ -50,24 +50,27 @@
 \begin{itemize}
 \item Clone of download the source code from \url{https://github.com/nkatzz/OLED}. 
 \item Open a terminal and navigate to the location where the source code is cloned. In what follows we'll refer to this directory by \home.
-\item From inside \home \ type in the terminal: \\ \texttt{cp -r OLED/install-scripts .}\\
-Your \home \ should now look like this:
-
-\begin{figure}[h]
-\centering
-\includegraphics[width=0.2\textwidth]{./figures/oledhome-1}
-\label{fig:oled_schema}
-\end{figure}  
-
-\item cd into the install-scripts and type:\\
+\item From inside \home \ type in the terminal: \\ \texttt{cp -r OLED/install-scripts .}
+\item cd into the install-scripts folder and type:\\
 \texttt{./install.sh}\\
 You will need sudo priviledges to run the install script. The whole process will take some time to complete.
-\item If all goes well your \home \ should now look like this:\\
-ADD A SCREENSHOT
+\item If all goes well your \home \ should now look as in Figure \ref{fig:install}:
+
 \item Modify paths.
 
 \end{itemize}
 
+
+
+
+ 
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.5\textwidth]{./figures/oledhome-2}
+\caption{Post-installation structure of your \home.}%
+\label{fig:install}
+\end{figure}
 
 \subsection*{Parsing CAVIAR Into Mongo}
 \begin{itemize}

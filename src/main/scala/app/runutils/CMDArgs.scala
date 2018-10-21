@@ -123,7 +123,7 @@ object CMDArgs extends LazyLogging {
     Arg(name = "--spdepth", valueType = "Int", text = "Specialization depth. All specializations of a rule up to this length are tried simultaneously.", default = "1"),
     Arg(name = "--ties", valueType = "Double", text = "Tie-breaking threshold.", default = "0.05"),
     Arg(name = "--repfor", valueType = "Int", text = "Re-see the data this-many times. ", default = "1"),
-    Arg(name = "--chunksize", valueType = "Int", text = "Mini-batch size. ", default = "10"),
+    Arg(name = "--chunksize", valueType = "Int", text = "Mini-batch size. ", default = "1"),
     Arg(name = "--onlineprune", valueType = "Boolean", text = "If true bad rules are pruned in an online fashion.", default = "false"),
     Arg(name = "--postprune", valueType = "Boolean", text = "If true bad rules are pruned after learning terminates.", default = "true"),
     Arg(name = "--try-more-rules", valueType = "Boolean", text = "If true, a larger number of rules will be generated.", default = "false"),
