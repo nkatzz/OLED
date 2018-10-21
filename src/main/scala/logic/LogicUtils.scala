@@ -1,7 +1,6 @@
 package logic
 
 import app.runutils.Globals
-import jep.Jep
 import logic.Examples.Example
 import utils.{ASP, Utils}
 import xhail.Xhail
@@ -25,6 +24,17 @@ object LogicUtils {
     }
     compressed.toList
   }
+
+  def compressTheory_RemoveSubsumers(kernel: List[Clause]): List[Clause] = {
+    val compressed = new ListBuffer[Clause]
+    val included = (c: Clause) => compressed.toList.exists(x => c.thetaSubsumes(x))
+    for (c <- kernel) {
+      if (!included(c)) compressed += c
+    }
+    compressed.toList
+  }
+
+
   //*/
 
   /*
@@ -39,7 +49,7 @@ object LogicUtils {
   */
 
   def generateKernel(examples: Map[String,List[String]], fromWeakExmpl: Boolean = false,
-                     jep: Jep, learningTerminatedOnly: Boolean=false, bkFile: String, globals: Globals) = {
+                     learningTerminatedOnly: Boolean=false, bkFile: String, globals: Globals) = {
 
     val infile = Utils.getTempFile("example", ".lp")
     val f = (x: String) => if (x.endsWith(".")) x else s"$x."
@@ -47,7 +57,7 @@ object LogicUtils {
     Utils.writeToFile(infile, "overwrite") { p => interpretation.foreach(p.println) }
     var (kernel, varKernel) =
       Xhail.runXhail(fromFile = infile.getAbsolutePath, kernelSetOnly = true,
-        fromWeakExmpl = fromWeakExmpl, jep=jep, learningTerminatedAtOnly=learningTerminatedOnly, bkFile=bkFile, globals=globals)
+        fromWeakExmpl = fromWeakExmpl, learningTerminatedAtOnly=learningTerminatedOnly, bkFile=bkFile, globals=globals)
     if (fromWeakExmpl) {
       varKernel = varKernel.map (x => Clause.updateField(x, fromWeakExample = true))
     }
@@ -56,17 +66,16 @@ object LogicUtils {
 
   /*The only difference is that the examples are provided with a file. I have to
   * fix this, it's stupid to duplicate code like that.*/
-  def generateKernel2(examplesFile: java.io.File, jep: Jep, bkFile: String, globals: Globals) = {
+  def generateKernel2(examplesFile: java.io.File, bkFile: String, globals: Globals) = {
     val (kernel, varKernel) =
-      Xhail.runXhail(fromFile = examplesFile.getAbsolutePath, kernelSetOnly = true,
-        fromWeakExmpl = false, jep=jep, learningTerminatedAtOnly=false, bkFile=bkFile, globals=globals)
+      Xhail.runXhail(fromFile = examplesFile.getAbsolutePath, kernelSetOnly = true, bkFile=bkFile, globals=globals)
     (kernel,varKernel)
   }
 
 
-  def isSAT(theory: Theory, example: Example, globals: Globals, F: (Theory, Example, Globals) => String, jep: Jep): Boolean = {
+  def isSAT(theory: Theory, example: Example, globals: Globals, F: (Theory, Example, Globals) => String): Boolean = {
     val f = F(theory, example, globals)
-    val out = ASP.solve(Globals.CHECKSAT, Map(), new java.io.File(f), example.toMapASP, jep = jep)
+    val out = ASP.solve(Globals.CHECKSAT, Map(), new java.io.File(f), example.toMapASP)
     if (out != Nil && out.head == AnswerSet.UNSAT) false else true
   }
 

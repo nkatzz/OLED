@@ -1,7 +1,6 @@
 package oled.functions
 
 import app.runutils.{Globals, RunningOptions}
-import jep.Jep
 import logic.Examples.Example
 import logic.{Clause, Theory}
 import oled.distributed.Structures.ClauseStats
@@ -12,8 +11,8 @@ import oled.distributed.Structures.ClauseStats
 
 object NonBlockingOLEDFunctions extends CoreFunctions {
 
-  def generateNewRules(topTheory: Theory, e: Example, jep: Jep, initorterm: String, globals: Globals, otherNodeNames: List[String]) = {
-    val bcs_ = generateNewBottomClauses(topTheory, e, jep, initorterm, globals)
+  def generateNewRules(topTheory: Theory, e: Example, initorterm: String, globals: Globals, otherNodeNames: List[String]) = {
+    val bcs_ = generateNewBottomClauses(topTheory, e, initorterm, globals)
     val bcs = bcs_.filter(p => p.head.functor.contains(initorterm))
     bcs map { x =>
       val c = Clause(head=x.head, body = List())
@@ -28,7 +27,7 @@ object NonBlockingOLEDFunctions extends CoreFunctions {
     }
   }
 
-  override def showInfo(c: Clause, c1: Clause, c2: Clause, hoeffding: Double, observedDiff: Double, n: Int, showRefs: Boolean) = {
+  def showInfo(c: Clause, c1: Clause, c2: Clause, hoeffding: Double, observedDiff: Double, n: Int, showRefs: Boolean) = {
 
     val score = (clause: Clause) => clause.distScore
 

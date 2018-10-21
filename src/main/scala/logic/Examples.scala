@@ -12,12 +12,6 @@ import utils.DataUtils.Data
 object Examples {
 
 
-
-
-
-
-
-
   object Example {
 
     val f_annot = (x:DBObject) =>

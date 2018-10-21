@@ -5,8 +5,6 @@ import com.typesafe.scalalogging.LazyLogging
 import logic.Examples.Example
 import utils.ASP
 import utils.Utils
-import jep.Jep
-
 import scala.collection.mutable.ListBuffer
 import scala.util.control.Breaks
 
@@ -191,7 +189,7 @@ object Rules extends LazyLogging{
 
   def getRefinedProgram(incRule: InconstistentRule,
                         retainedRules: Theory,
-                        newRules: Theory, examples: Example, jep: Jep, globals: Globals): InconstistentRule = {
+                        newRules: Theory, examples: Example, globals: Globals): InconstistentRule = {
     // Search for a refined program that subsumes the support set
     def search: InconstistentRule = {
       val accum = new ListBuffer[List[InconstistentRule]]
@@ -200,7 +198,7 @@ object Rules extends LazyLogging{
         val (_,_,_,_,defeasibleRule,use3Map) =
           ASP.inductionASPProgram( retained = retainedRules.extendUnique(newRules),
             findAllRefs = (incRule.rule,ssc), examples = examples.toMapASP, aspInputFile = file, globals = globals)
-        val answerSets = ASP.solve(Globals.FIND_ALL_REFMS, use3Map, file, examples.toMapASP, jep=jep)
+        val answerSets = ASP.solve(Globals.FIND_ALL_REFMS, use3Map, file, examples.toMapASP)
         if (answerSets.head != AnswerSet.UNSAT){
           val inc = (answerSets map (x => getInconsistentRules(x.atoms, Theory(incRule.rule), use3Map))).flatten
           accum += inc
@@ -223,12 +221,12 @@ object Rules extends LazyLogging{
 
     // Use this for the new search for minimal refinement (the one that gives the whole support set)
     // Here prior theory is an inconsistent rule as a single-clause theory.
-    def tryToRefine(priorTheory: Theory, retained: Theory, examples: Example, jep: Jep, globals: Globals): List[AnswerSet] = {
+    def tryToRefine(priorTheory: Theory, retained: Theory, examples: Example, globals: Globals): List[AnswerSet] = {
       val file = Utils.getTempFile("search",".lp")
       val (_,_,defeasiblePrior, use3Map,_,_) =
         ASP.inductionASPProgram(priorTheory = priorTheory, retained = retained,
           examples = examples.toMapASP, aspInputFile = file, globals=globals)
-      val answerSets = ASP.solve(Globals.FIND_ALL_REFMS, use3Map, file, examples.toMapASP, jep=jep)
+      val answerSets = ASP.solve(Globals.FIND_ALL_REFMS, use3Map, file, examples.toMapASP)
       val inc = (answerSets map (x => getInconsistentRules(x.atoms, priorTheory, use3Map))).flatten
       answerSets
     }
@@ -243,7 +241,7 @@ object Rules extends LazyLogging{
         logger.info(s"Example ${examples.time}: Searching for minimal refinement")
         //search
 
-        val answerSets = tryToRefine(priorTheory = Theory(incRule.rule), retained = retainedRules.extendUnique(newRules), examples = examples, jep=jep, globals=globals)
+        val answerSets = tryToRefine(priorTheory = Theory(incRule.rule), retained = retainedRules.extendUnique(newRules), examples = examples, globals=globals)
         //InconstistentRule(incRule.rule, Theory(refinement))
         incRule // Just in order for the code to compile for debugging.
       }
@@ -256,12 +254,12 @@ object Rules extends LazyLogging{
   // Use this for the new search for minimal refinement (the one that gives the whole support set)
   // Here prior theory is an inconsistent rule as a single-clause theory.
   def refineRule(incRule: InconstistentRule, retained: Theory,
-                 e: Example, withSupport:String = "fullSupport", jep: Jep, globals: Globals): Either[String,List[InconstistentRule]] = {
+                 e: Example, withSupport:String = "fullSupport", globals: Globals): Either[String,List[InconstistentRule]] = {
     val file = Utils.getTempFile("search",".lp")
     val (_,_,_,use3Map,_,_) = ASP.inductionASPProgram(
       priorTheory = Theory(incRule.rule), retained = retained,
       examples = e.toMapASP, aspInputFile = file, use3WithWholeSupport = true, withSupport = withSupport, globals=globals)
-    val answerSets = ASP.solve(Globals.FIND_ALL_REFMS, use3Map, file, e.toMapASP, jep=jep)
+    val answerSets = ASP.solve(Globals.FIND_ALL_REFMS, use3Map, file, e.toMapASP)
     val refined =
     answerSets match {
       case Nil =>
@@ -285,7 +283,7 @@ object Rules extends LazyLogging{
 
 
   def getRefined(incs: List[InconstistentRule], retainedRules: Theory,
-                 newRules: Theory, e: Example, withSupport:String = "fullSupport", jep: Jep, globals: Globals) = {
+                 newRules: Theory, e: Example, withSupport:String = "fullSupport", globals: Globals) = {
     val retained = retainedRules.extendUnique(newRules)
     var refined = List[Theory]()
 
@@ -296,7 +294,7 @@ object Rules extends LazyLogging{
     //retained.extend(Theory(p.initialRefinement))
     for (incRule <- incs) {
       if (searchMore(incRule,Theory(incRule.initialRefinement))){
-        val r = refineRule(incRule,retained,e,withSupport=withSupport, jep=jep, globals=globals)
+        val r = refineRule(incRule,retained,e,withSupport=withSupport, globals=globals)
         val z = r match {
           case Left(x) =>
             logger.error(x)

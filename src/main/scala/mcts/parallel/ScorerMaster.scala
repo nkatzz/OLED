@@ -3,7 +3,6 @@ package mcts.parallel
 import akka.actor.{Actor, Props}
 import app.runutils.Globals
 import app.runutils.IOHandling.Source
-import jep.Jep
 import logic.Examples.Example
 import logic.Theory
 
@@ -12,7 +11,6 @@ import logic.Theory
   */
 
 class ScorerMaster[T <: Source](globals: Globals,
-                                jep: Jep,
                                 options: T,
                                 dataFunction: T => Iterator[Example]) extends Actor {
 
@@ -35,7 +33,7 @@ class ScorerMaster[T <: Source](globals: Globals,
       //theories.map(x => stringTheory(x)).grouped(jobsPerCore) foreach { jobs =>
       theories.grouped(jobsPerCore) foreach { jobs =>
         jobs foreach { theory =>
-          context.actorOf(Props(new ScorerSlave(globals, jep, options, dataFunction)), name = s"scorer-slave-$i") ! theory
+          context.actorOf(Props(new ScorerSlave(globals, options, dataFunction)), name = s"scorer-slave-$i") ! theory
           i += 1
         }
       }

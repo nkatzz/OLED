@@ -3,7 +3,6 @@ package mcts.parallel
 import akka.actor.{ActorSystem, Props}
 import app.runners.MLNDataHandler.MLNDataOptions
 import app.runutils.Globals
-import jep.Jep
 import mcts.HillClimbing.{constructBottomTheory, generateChildrenNodes, getData}
 import mcts.RootNode
 
@@ -23,19 +22,17 @@ object Tests extends App {
 
   val opts = new MLNDataOptions(foldPath, chunkSize)
 
-  val jep = new Jep()
-
   val globals = new Globals("/home/nkatz/dev/iled/datasets/CaviarMLN", "")
 
-  val bottomTheory = constructBottomTheory(getData(opts), jep, globals)
+  val bottomTheory = constructBottomTheory(getData(opts), globals)
 
   val rootNode = RootNode()
 
-  val newTheories = generateChildrenNodes(rootNode.theory, bottomTheory, getData(opts), jep, globals)
+  val newTheories = generateChildrenNodes(rootNode.theory, bottomTheory, getData(opts), globals)
 
   val system = ActorSystem("ActorSystem")
 
-  val scorer = system.actorOf(Props(new ScorerMaster(globals, jep, opts, getData)))
+  val scorer = system.actorOf(Props(new ScorerMaster(globals, opts, getData)))
 
   scorer ! newTheories
 

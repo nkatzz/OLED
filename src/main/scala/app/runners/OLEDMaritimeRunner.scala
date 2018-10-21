@@ -7,7 +7,7 @@ import com.mongodb.casbah.Imports.MongoDBObject
 import com.mongodb.casbah.Imports.DBObject
 import com.mongodb.casbah.Imports._
 import com.mongodb.casbah.MongoClient
-import data_handling.maritime_data.yet_another_attempt.MaritimeToMongo.{LLEMap, populateLLEsMap, populatePortsMap, populateSpeedLimitsMap, portsMap, speedLimitsMap}
+import datautils.maritime_data.yet_another_attempt.MaritimeToMongo.{LLEMap, populateLLEsMap, populatePortsMap, populateSpeedLimitsMap, portsMap, speedLimitsMap}
 import logic.Examples.Example
 import oled.single_core.Master
 

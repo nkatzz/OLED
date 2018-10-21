@@ -4,7 +4,6 @@ import akka.actor.{Actor, PoisonPill}
 import app.runutils.IOHandling.Source
 import app.runutils.RunningOptions
 import com.madhukaraphatak.sizeof.SizeEstimator
-import jep.Jep
 import logic.Examples.Example
 import logic.{Clause, Theory}
 import oled.distributed.Structures._
@@ -33,7 +32,6 @@ class Node[T <: Source](val otherNodesNames: List[String],
   // Get the training data from the current database
   def getTrainData = trainingDataFunction(trainingDataOptions)
 
-  val jep = new Jep()
   private var data = Iterator[Example]()
   private var currentTheory = List[Clause]()
 
@@ -186,7 +184,6 @@ class Node[T <: Source](val otherNodesNames: List[String],
         if (this.repeatFor > 0) {
           self ! "start-over"
         } else if (this.repeatFor == 0) {
-          this.jep.close()
           this.finishedAndSentTheory = true
           logger_info(s"$showState Sending the theory to the top-level actor")
           context.parent ! new NodeDoneMessage(self.path.name)
@@ -194,7 +191,7 @@ class Node[T <: Source](val otherNodesNames: List[String],
           throw new RuntimeException("This should never have happened (repeatfor is now negative?)")
         }
       } else {
-        self ! processBatch(chunk, this.jep, this.slf4jLogger)
+        self ! processBatch(chunk, this.slf4jLogger)
       }
 
 
@@ -560,7 +557,7 @@ class Node[T <: Source](val otherNodesNames: List[String],
   * batch, while the second list contains all rules that are about to be
   * expanded.
   * */
-  def processBatch(exmpls: Iterator[Example], jep: Jep, logger: org.slf4j.Logger): BatchProcessResult = {
+  def processBatch(exmpls: Iterator[Example], logger: org.slf4j.Logger): BatchProcessResult = {
 
     def filterTriedRules(newRules: List[Clause]) = {
       val out = newRules.filter{ newRule =>
@@ -576,9 +573,9 @@ class Node[T <: Source](val otherNodesNames: List[String],
       var newTopTheory = Theory(this.currentTheory)
       val (newRules_, expansionCandidateRules_) = exmpls.foldLeft(List[Clause](), List[Clause]()) { (x, e) =>
         var (newRules, expansionCandidateRules) = (x._1, x._2)
-        val startNew = newTopTheory.growNewRuleTest(e, this.jep, initorterm, this.inputParameters.globals)
+        val startNew = newTopTheory.growNewRuleTest(e, initorterm, this.inputParameters.globals)
         if (startNew) {
-          newRules = generateNewRules(newTopTheory, e, jep, initorterm, this.inputParameters.globals, this.otherNodesNames)
+          newRules = generateNewRules(newTopTheory, e, initorterm, this.inputParameters.globals, this.otherNodesNames)
 
           // Just to be on the same side...
           newRules.filter(x => x.head.functor == this.initorterm)
@@ -586,7 +583,7 @@ class Node[T <: Source](val otherNodesNames: List[String],
           newTopTheory = Theory(newTopTheory.clauses ++ newRules)
         }
         if (newTopTheory.clauses.nonEmpty) {
-          newTopTheory.scoreRules(e, this.jep, this.inputParameters.globals)
+          newTopTheory.scoreRules(e, this.inputParameters.globals)
         }
         for (rule <- newTopTheory.clauses) {
           val (delta, ties, seen) = (inputParameters.delta, inputParameters.breakTiesThreshold, inputParameters.minSeenExmpls)

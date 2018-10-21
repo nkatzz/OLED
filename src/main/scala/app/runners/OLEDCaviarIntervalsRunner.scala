@@ -4,7 +4,7 @@ import akka.actor.{ActorSystem, Props}
 import app.runutils.CMDArgs
 import app.runutils.IOHandling.MongoSource
 import com.mongodb.casbah.{MongoClient, MongoCollection}
-import data_handling.caviar_intervals.{MeetingTrainingData, MovingTrainingData}
+import datautils.caviar_intervals.{MeetingTrainingData, MovingTrainingData}
 import logic.Examples.Example
 import oled.single_core.Master
 import utils.CaviarUtils
@@ -58,7 +58,7 @@ object OLEDCaviarIntervalsRunner {
           targetConcept = runningOptions.targetHLE,
           sortDbByField = "time",
           trainSetid = trainSetId,
-          randomOrder = false)
+          randomOrder = runningOptions.randomOrder)
       val testingDataOptions = trainingDataOptions
       val trainingDataFunction: DataOptions => Iterator[Example] = getTrainingData
       val testingDataFunction: DataOptions => Iterator[Example] = getTestingData

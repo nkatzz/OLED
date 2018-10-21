@@ -9,9 +9,7 @@ import logic.Modes._
 import logic.Rules._
 import logic._
 import utils.{ASP, MongoUtils, Utils}
-import jep.Jep
 import utils.parsers.ASPResultsParser
-
 import scala.collection.mutable.ListBuffer
 import scala.io.Source
 import scala.util.matching.Regex
@@ -29,12 +27,10 @@ object Xhail extends ASPResultsParser with LazyLogging {
   def main(args: Array[String]) {
     Globals.glvalues("perfect-fit") = "false"
     //Core.setGlobalParams(args)
-    val jep = new Jep()
     val entryPath = args(0)
     val fromDB = args(1)
     val globals = new Globals(entryPath, fromDB)
-    runXhail(fromDB = fromDB, jep=jep, bkFile = globals.BK_WHOLE_EC, globals=globals)
-    jep.close()
+    runXhail(fromDB = fromDB, bkFile = globals.BK_WHOLE_EC, globals=globals)
   }
 
   def runXhail(fromFile: String = "",
@@ -44,7 +40,6 @@ object Xhail extends ASPResultsParser with LazyLogging {
                learningTerminatedAtOnly: Boolean = false,
                //keepAbducedPreds: String = "all",
                fromWeakExmpl:Boolean = false,
-               jep: Jep,
                bkFile: String,
                globals: Globals): (List[Clause],List[Clause]) = {
 
@@ -65,7 +60,7 @@ object Xhail extends ASPResultsParser with LazyLogging {
 
     val aspFile: File = Utils.getTempFile("aspinput", ".lp", "", deleteOnExit = true)
     val abdModels: List[AnswerSet] =
-      abduce("modehs", examples = examples, learningTerminatedAtOnly = learningTerminatedAtOnly, fromWeakExmpl = fromWeakExmpl, jep=jep, bkFile = bkFile, globals=globals)
+      abduce("modehs", examples = examples, learningTerminatedAtOnly = learningTerminatedAtOnly, fromWeakExmpl = fromWeakExmpl, bkFile = bkFile, globals=globals)
     //if (abdModel != Nil) logger.info("Created Delta set")
     //println(abdModels)
     val (kernel, varKernel) = abdModels match {
@@ -84,22 +79,22 @@ object Xhail extends ASPResultsParser with LazyLogging {
             */
             if(learningTerminatedAtOnly) abdModels.head.atoms.filter(_.contains("terminatedAt")) else abdModels.head.atoms
             //if(learningTerminatedAtOnly) abdModels.head.atoms.filter(_.contains("terminatedAt")) else abdModels.head.atoms.filter(_.contains("initiatedAt"))
-          generateKernel(abduced, examples = examples, aspInputFile = aspFile, jep=jep, bkFile=bkFile, globals=globals)
+          generateKernel(abduced, examples = examples, aspInputFile = aspFile, bkFile=bkFile, globals=globals)
         } else {
-          return iterativeSearch(abdModels,examples,jep,kernelSetOnly,bkFile,globals) // this is used from ILED to find a kernel with iterative search
+          return iterativeSearch(abdModels, examples, kernelSetOnly, bkFile, globals) // this is used from ILED to find a kernel with iterative search
         }
     }
-    if (!kernelSetOnly) findHypothesis(varKernel, examples = examples, jep=jep, globals=globals)
+    if (!kernelSetOnly) findHypothesis(varKernel, examples = examples, globals=globals)
     (kernel, varKernel)
   }
 
 
-  def iterativeSearch(models: List[AnswerSet], e: Map[String, List[String]], jep: Jep, kernelSetOnly: Boolean, bkFile: String, globals: Globals) = {
+  def iterativeSearch(models: List[AnswerSet], e: Map[String, List[String]], kernelSetOnly: Boolean, bkFile: String, globals: Globals) = {
 
-    val findHypothesisIterativeSearch = (varKernel: List[Clause], examples: Map[String, List[String]], jep: Jep) => {
+    val findHypothesisIterativeSearch = (varKernel: List[Clause], examples: Map[String, List[String]]) => {
       val aspFile: File = Utils.getTempFile("aspInduction", ".lp", "", deleteOnExit = true)
       val (_, use2AtomsMap,_,_,_,_) = ASP.inductionASPProgram(kernelSet=Theory(varKernel),examples=examples,aspInputFile=aspFile,globals=globals)
-      ASP.solve(Globals.SEARCH_MODELS,use2AtomsMap,examples=examples,aspInputFile=aspFile,jep=jep)
+      ASP.solve(Globals.SEARCH_MODELS,use2AtomsMap,examples=examples,aspInputFile=aspFile)
     }
 
     var foundHypothesis = false
@@ -111,8 +106,8 @@ object Xhail extends ASPResultsParser with LazyLogging {
       }
       val model = models(modelCounter)
       logger.info("Trying and alternative adbuctive explanation:")
-      kernel = generateKernel(model.atoms,examples=e,aspInputFile=Utils.getTempFile("iterSearch","lp"),jep=jep, bkFile=bkFile, globals=globals)
-      val tryNew = findHypothesisIterativeSearch(kernel._2,e,jep)
+      kernel = generateKernel(model.atoms, examples=e, aspInputFile=Utils.getTempFile("iterSearch","lp"), bkFile=bkFile, globals=globals)
+      val tryNew = findHypothesisIterativeSearch(kernel._2, e)
       if (tryNew.nonEmpty && tryNew.head!=AnswerSet.UNSAT) {
         foundHypothesis = true
       } else {
@@ -120,7 +115,7 @@ object Xhail extends ASPResultsParser with LazyLogging {
       }
       modelCounter = modelCounter+1
     }
-    if (!kernelSetOnly) findHypothesis(kernel._2,examples=e,jep=jep, globals=globals)
+    if (!kernelSetOnly) findHypothesis(kernel._2,examples=e, globals=globals)
     kernel
   }
 
@@ -148,11 +143,11 @@ object Xhail extends ASPResultsParser with LazyLogging {
              examples: Map[String, List[String]],
              learningTerminatedAtOnly: Boolean = false,
              fromWeakExmpl:Boolean = false,
-             jep: Jep, bkFile: String, globals: Globals): List[AnswerSet] = {
+             bkFile: String, globals: Globals): List[AnswerSet] = {
 
     val aspFile: File = Utils.getTempFile("aspinput", ".lp", "", deleteOnExit = true)
     val varbedExmplPatterns = globals.EXAMPLE_PATTERNS
-    def getASPinput(jep: Jep) = {
+    def getASPinput() = {
       globals.MODEHS match {
         case Nil => throw new RuntimeException("No Mode Declarations found.")
         case _ =>
@@ -212,7 +207,7 @@ object Xhail extends ASPResultsParser with LazyLogging {
       }
     }
     abducibles match {
-      case "modehs" => getASPinput(jep)
+      case "modehs" => getASPinput()
       /* This is for the case where abducibles are explicitly given.
        *
        * @todo: Implement this logic
@@ -221,7 +216,7 @@ object Xhail extends ASPResultsParser with LazyLogging {
       case _: List[Any] => throw new AbductionException("This logic has not been implemented yet.")
       case _ => throw new AbductionException("You need to specify the abducible predicates.")
     }
-    ASP.solve(Globals.ABDUCTION,examples=examples,aspInputFile=aspFile,fromWeakExmpl=fromWeakExmpl,jep=jep)
+    ASP.solve(Globals.ABDUCTION,examples=examples,aspInputFile=aspFile,fromWeakExmpl=fromWeakExmpl)
   }
 
   /**
@@ -236,7 +231,7 @@ object Xhail extends ASPResultsParser with LazyLogging {
   def generateKernel(abdModel: List[String],
                      alternativePath: String = "",
                      examples: Map[String, List[String]],
-                     aspInputFile: java.io.File, jep: Jep, bkFile: String, globals: Globals): (List[Clause], List[Clause]) = {
+                     aspInputFile: java.io.File, bkFile: String, globals: Globals): (List[Clause], List[Clause]) = {
 
     //val bkFile = globals.BK_WHOLE_EC
 
@@ -282,7 +277,7 @@ object Xhail extends ASPResultsParser with LazyLogging {
         program = p ++ groundModes ++ List("\n\n#show ground/2."),
         writeToFile = aspInputFile.getCanonicalPath)
 
-      val q = ASP.solve("getQueries", examples = examples, aspInputFile = aspInputFile, jep=jep)
+      val q = ASP.solve("getQueries", examples = examples, aspInputFile = aspInputFile)
       /*
       val result =
         (for (x <- q.head.atoms;
@@ -345,17 +340,20 @@ object Xhail extends ASPResultsParser with LazyLogging {
             program ++
             List(s"\n#include "+"\""+bkFile+"\".") ++
             List("\n#show.\n") ++ deduce, writeToFile = aspInputFile.getCanonicalPath)
-        solution = ASP.solve("deduction", examples = examples, aspInputFile = aspInputFile, jep=jep)
+        solution = ASP.solve("deduction", examples = examples, aspInputFile = aspInputFile)
         if (solution.nonEmpty) {
           val f = (x: (Expression, Expression)) => {
             val mode = globals.MODEBS(x._1.asInstanceOf[Constant].name.toInt)
             val lit =
-              if (mode.isNAF) Literal.toLiteral2(x._2.asInstanceOf[Literal]).negated
-              else Literal.toLiteral2(x._2.asInstanceOf[Literal]).nonNegated
+              if (mode.isNAF) {
+                Literal.toLiteral2(x._2.asInstanceOf[Literal]).negated
+              } else {
+                Literal.toLiteral2(x._2.asInstanceOf[Literal]).nonNegated
+              }
             Literal.toLiteral2(lit, mode)
           }
 
-          val b = solution.head.atoms.asInstanceOf[List[String]].distinct map (
+          val _b = solution.head.atoms.asInstanceOf[List[String]].distinct map (
             x => Literal.parse(x)
             ) map (
             x => (x.terms.head, x.terms(1))
@@ -363,6 +361,15 @@ object Xhail extends ASPResultsParser with LazyLogging {
             //x => Literal.toLiteral2(x._2.asInstanceOf[Literal], Core.modebs(x._1.asInstanceOf[Constant].name.toInt))
             x => f(x)
             )
+
+
+          ///*
+          val b = _b.filter{x =>
+           x.functor!="close" || (x.functor == "close" && x.terms(0).name != x.terms(1).name)
+          }
+          //*/
+
+          //val b = _b
 
           for (k <- b) {
             //if (!body.contains(k)) body ++= b
@@ -386,7 +393,10 @@ object Xhail extends ASPResultsParser with LazyLogging {
     val nonEmptyVarKernel = compressed.filter(x => x.body.nonEmpty)
     //val nonEmptyKernel = kernelSet.filter(x => x.body.nonEmpty)
     if (nonEmptyVarKernel.nonEmpty) {
-      logger.info("Created Kernel set")
+      //logger.info(s"Created Kernel set:\n${nonEmptyVarKernel.map(x => x.tostring).mkString("\n")}")
+
+      logger.info(s"Created Kernel set")
+
       logger.debug("\n------------------------------------------------------------------------------------\n" +
         s"Kernel Set (Ground---Variabilized($vlength clauses)---Compressed($clength clauses)):" +
         "\n------------------------------------------------------------------------------------\n" +
@@ -407,7 +417,7 @@ object Xhail extends ASPResultsParser with LazyLogging {
     compressed.toList
   }
 
-  def findHypothesis(varKernel: List[Clause], examples: Map[String, List[String]], jep: Jep, globals: Globals) = {
+  def findHypothesis(varKernel: List[Clause], examples: Map[String, List[String]], globals: Globals) = {
 
 
     Globals.glvalues("perfect-fit") = "false"
@@ -418,7 +428,7 @@ object Xhail extends ASPResultsParser with LazyLogging {
       ASP.inductionASPProgram(kernelSet = Theory(varKernel), examples = examples, aspInputFile = aspFile, globals=globals)
     logger.info("Searching the Kernel Set for a hypothesis")
 
-    val models = ASP.solve("xhail", use2AtomsMap, examples = examples, aspInputFile = aspFile, jep=jep)
+    val models = ASP.solve("xhail", use2AtomsMap, examples = examples, aspInputFile = aspFile)
     // I only keep the final, most compressive hypothesis.
     // To see and evaluate all discovered hypothese simply iterate over the models
     models foreach println

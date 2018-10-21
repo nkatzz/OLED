@@ -22,7 +22,7 @@ object CMDArgs extends LazyLogging {
 
     val split = args map { x => val z = x.replaceAll("\\s", "").split("=")  ; (z(0),z(1)) }
 
-    def getMatchingArgumentValue(argname: String) = {
+    def getMatchingArgumentValue(argname: String): Any = {
       val arg = arguments.find(x => x.name == argname).getOrElse(throw new RuntimeException("Argument not found."))
       val value = arg.valueType match {
         case "String" => split.find(x => x._1 == arg.name).getOrElse( ("", arg.default) )._2.toString
@@ -70,6 +70,16 @@ object CMDArgs extends LazyLogging {
     val fpWeight = getMatchingArgumentValue("--fps-weight")
     val fnWeight = getMatchingArgumentValue("--fns-weight")
     val withInertia = getMatchingArgumentValue("--with-inertia")
+    val weightLearn = getMatchingArgumentValue("--weight-learning")
+    val mlnWeightThreshold = getMatchingArgumentValue("--mln-weight-at-least")
+    val parallelClauseEval = getMatchingArgumentValue("--parallel-clause-eval")
+    val adagradDelta = getMatchingArgumentValue("--ada-delta")
+    val adaLearnRate = getMatchingArgumentValue("--ada-learn-rate")
+    val adaRegularization = getMatchingArgumentValue("--ada-regularization")
+    val adaLossFunction = getMatchingArgumentValue("--ada-loss-function")
+    val withEventCalculus = getMatchingArgumentValue("--with-ec")
+    val showStats = getMatchingArgumentValue("--show-stats")
+    val saveTheoryTo = getMatchingArgumentValue("--saveto")
 
     //-------------
     // Global sets:
@@ -81,6 +91,8 @@ object CMDArgs extends LazyLogging {
     Globals.glvalues("fp-weight") = fpWeight.toString
     Globals.glvalues("fn-weight") = fnWeight.toString
     Globals.glvalues("with-inertia") = withInertia.toString
+    Globals.glvalues("weight-learning") = weightLearn.toString
+    Globals.glvalues("with-ec") = withEventCalculus.toString
 
     // show the params:
     logger.info(s"\nRunning with options:\n${map.map{ case (k, v) => s"$k=$v" }.mkString(" ")}\n")
@@ -94,7 +106,10 @@ object CMDArgs extends LazyLogging {
       evaluate_existing.toString, fromDB.toString, globals, minEvaluatedOn.toString.toInt, cores.toString.toInt,
       shuffleData.toString.toBoolean, showRefs.toString.toBoolean, pruneAfter.toString.toInt, mongoCol.toString,
       dataLimit.toString.toInt, tpWeight.toString.toInt, fpWeight.toString.toInt, fnWeight.toString.toInt,
-      withInertia.toString.toBoolean)
+      withInertia.toString.toBoolean, weightLearn.toString.toBoolean, mlnWeightThreshold.toString.toDouble,
+      parallelClauseEval.toString.toBoolean, adagradDelta.toString.toDouble,adaLearnRate.toString.toDouble,
+      adaRegularization.toString.toDouble, adaLossFunction.toString, withEventCalculus.toString.toBoolean,
+      showStats.toString.toBoolean, saveTheoryTo.toString)
   }
 
   val arguments = Vector(
@@ -112,7 +127,7 @@ object CMDArgs extends LazyLogging {
     Arg(name = "--onlineprune", valueType = "Boolean", text = "If true bad rules are pruned in an online fashion.", default = "false"),
     Arg(name = "--postprune", valueType = "Boolean", text = "If true bad rules are pruned after learning terminates.", default = "true"),
     Arg(name = "--try-more-rules", valueType = "Boolean", text = "If true, a larger number of rules will be generated.", default = "false"),
-    Arg(name = "--target", valueType = "String", text = "The target concept. This is used in case the training data contain more than on target concept", default = "None"),
+    Arg(name = "--target", valueType = "String", text = "The target concept. This is used in case the training data contain more than one target concept", default = "None"),
     Arg(name = "--trainset", valueType = "Int", text = "Number of training-testing set pair (this is used in a cross-validation setting).", default = "1"),
     Arg(name = "--randorder", valueType = "Boolean", text = "If true the training data are given in random order.", default = "true"),
     Arg(name = "--scorefun", valueType = "String", text = "Specify a scoring function. Available values are 'default' (uses precision-recall), 'foilgain', 'fscore'.", default = "default"),
@@ -129,9 +144,19 @@ object CMDArgs extends LazyLogging {
     Arg(name = "--tps-weight", valueType = "Int", text = "Weight on true positive instances.", default = "1"),
     Arg(name = "--fps-weight", valueType = "Int", text = "Weight on false positive instances.", default = "1"),
     Arg(name = "--fns-weight", valueType = "Int", text = "Weight on false negative instances.", default = "10"),
-    Arg(name = "--with-inertia", valueType = "Boolean", text = "If true learns with inertia from edge interval points only.", default = "false")
+    Arg(name = "--with-inertia", valueType = "Boolean", text = "If true learns with inertia from edge interval points only.", default = "false"),
+    Arg(name = "--weight-learning", valueType = "Boolean", text = "If true use AdaGrad to learn weighted clauses.", default = "false"),
+    Arg(name = "--mln-weight-at-least", valueType = "Double", text = "Remove rules with mln-weight lower than this.", default = "0.1"),
+    Arg(name = "--parallel-clause-eval", valueType = "Boolean", text = "Evaluate clauses in parallel during weight learning.", default = "false"),
+    Arg(name = "--ada-delta", valueType = "Double", text = "Delta parameter for AdaGrad (weight learning).", default = "1.0"),
+    Arg(name = "--ada-learn-rate", valueType = "Double", text = "Learning rate parameter (eta) for AdaGrad (weight learning).", default = "1.0"),
+    Arg(name = "--ada-regularization", valueType = "Double", text = "Regularization parameter (lambda) for AdaGrad (weight learning).", default = "0.01"),
+    Arg(name = "--ada-loss-function", valueType = "String", text = "Loss function for AdaGrad. Either 'default' (for predictive loss) or 'custom'", default = "default"),
+    Arg(name = "--with-ec", valueType = "Boolean", text = "Learning using the Event Calculus in the Background knowledge.", default = "true"),
+    Arg(name = "--show-stats", valueType = "Boolean", text = "If true performance stats are printed out.", default = "false"),
+    Arg(name = "--saveto", valueType = "String", text = "Path to a file to wtite the learnt theory to.", default = "")
   )
-
+//--with-ec
 
   def splitString(s: String, l: Int, chunks: Vector[String]): Vector[String] = {
     s.length > l match {
@@ -202,6 +227,16 @@ class RunningOptions(val entryPath: String,
                      val tpWeight: Int,
                      val fpWeight: Int,
                      val fnWeight: Int,
-                     val withInertia: Boolean)
+                     val withInertia: Boolean,
+                     val weightLean: Boolean,
+                     val mlnWeightThreshold: Double,
+                     val parallelClauseEval: Boolean,
+                     val adaGradDelta: Double,
+                     val adaLearnRate: Double,
+                     val adaRegularization: Double,
+                     val adaLossFunction: String,
+                     val withEventCalculs: Boolean,
+                     val showStats: Boolean,
+                     val saveTheoryTo: String)
 
 

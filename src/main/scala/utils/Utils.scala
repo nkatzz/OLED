@@ -1,17 +1,23 @@
 package utils
 
-import java.io.{File, FileWriter, BufferedWriter}
+import java.io.{BufferedWriter, File, FileWriter}
+import java.util.UUID
+
 import com.typesafe.scalalogging.LazyLogging
 import logic.Examples.{Example, ExamplePair}
 import logic.Exceptions.MyParsingException
 import parsers.ASPResultsParser
+
 import scala.annotation.tailrec
 import scala.math._
 import scala.util.Random
 import com.mongodb.casbah.Imports._
+
 import scala.collection.mutable.ListBuffer
 import scala.io.Source
 import logic._
+
+
 
 
 object Utils extends ASPResultsParser with LazyLogging{
@@ -138,9 +144,9 @@ object Utils extends ASPResultsParser with LazyLogging{
    }
 
    def createOrClearFile(path: String): String = {
-      val myFile = new java.io.File(path);
+      val myFile = new java.io.File(path)
       if (!myFile.exists()) {
-         myFile.createNewFile();
+         myFile.createNewFile()
       } else {
          clearFile(path)
       }
@@ -172,8 +178,8 @@ object Utils extends ASPResultsParser with LazyLogging{
 
     var file: java.io.File = new java.io.File("")
     directory match {
-      case "" => file = java.io.File.createTempFile(prefix,suffix)
-      case _ => file = java.io.File.createTempFile(prefix,suffix,new java.io.File(directory))
+      case "" => file = java.io.File.createTempFile(s"$prefix-${System.currentTimeMillis()}-${UUID.randomUUID.toString}",suffix)
+      case _ => file = java.io.File.createTempFile(s"$prefix-${System.currentTimeMillis()}-${UUID.randomUUID.toString}",suffix,new java.io.File(directory))
     }
     if (deleteOnExit) file.deleteOnExit()
     file
@@ -188,6 +194,14 @@ object Utils extends ASPResultsParser with LazyLogging{
       w.write(in)
       w.close()
    }
+
+
+  def deleteRecursively(file: File): Unit = {
+    if (file.isDirectory)
+      file.listFiles.foreach(deleteRecursively)
+    if (file.exists && !file.delete)
+      throw new Exception(s"Unable to delete ${file.getAbsolutePath}")
+  }
 
 
   def getInnerDirs(dir: String):List[File] = {
@@ -521,8 +535,8 @@ object Utils extends ASPResultsParser with LazyLogging{
   }
 
 
-  def hoeffding(delta: Double, n: Int) = {
-    sqrt(scala.math.log(1.0 / delta) / (2 * n))
+  def hoeffding(delta: Double, n: Int, range: Double = 1.0) = {
+    sqrt(scala.math.pow(range, 2) * scala.math.log(1.0 / delta) / (2 * n))
     // For the following, check p.3 of
     // Rutkowski, Leszek, et al. "Decision trees for mining data streams based on the McDiarmid's bound."
     // IEEE Transactions on Knowledge and Data Engineering 25.6 (2013): 1272-1279.

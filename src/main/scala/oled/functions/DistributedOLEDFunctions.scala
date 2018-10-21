@@ -1,14 +1,9 @@
 package oled.functions
 
 import app.runutils.{Globals, RunningOptions}
-import com.mongodb.casbah.MongoCollection
-import jep.Jep
 import logic.Examples.Example
 import logic.{Clause, Literal, Theory}
 import oled.distributed.Structures.ClauseStats
-import utils.{ASP, CaviarUtils, Utils}
-import utils.DataUtils.{DataAsExamples, DataAsIntervals, DataFunction, TrainingSet}
-import utils.Implicits._
 
 /**
   * Created by nkatz on 6/21/17.
@@ -22,8 +17,8 @@ import utils.Implicits._
 
 object DistributedOLEDFunctions extends CoreFunctions {
 
-  def generateNewRules(topTheory: Theory, e: Example, jep: Jep, initorterm: String, globals: Globals, otherNodeNames: List[String]) = {
-    val bcs_ = generateNewBottomClauses(topTheory, e, jep, initorterm, globals)
+  def generateNewRules(topTheory: Theory, e: Example, initorterm: String, globals: Globals, otherNodeNames: List[String]) = {
+    val bcs_ = generateNewBottomClauses(topTheory, e, initorterm, globals)
     val bcs = bcs_.filter(p => p.head.functor.contains(initorterm))
     bcs map { x =>
       val c = Clause(head=x.head, body = List())

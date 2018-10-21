@@ -9,7 +9,6 @@ import com.mongodb.casbah.MongoClient
 import com.mongodb.casbah.commons.MongoDBObject
 import logic.Examples.{Example, ExampleBatch}
 import logic.{Constant, Literal}
-import jep.Jep
 import logic.Examples.Example
 
 import scala.collection.mutable.ListBuffer
@@ -398,8 +397,6 @@ object CaviarUtils {
     }
 
     val file = Utils.getTempFile("generate",".lp")
-    val jep = new Jep()
-
 
     val db = new Database(CaviarDB,"examples")
     db.collection.find().sort(MongoDBObject("time" -> 1)).foldLeft(List[String]()){ (priorAnnotation, newExmpl) =>
@@ -413,7 +410,7 @@ object CaviarUtils {
       val in  = narrative ++ priorAnnotation.map(x => x+".") ++ List(s"time(${e.time.toInt+40}).")
       val content = in.mkString("\n") + gl.INCLUDE_BK(gl.BK_WHOLE_EC) + gl.INCLUDE_BK(handCraftedRules) + show
       Utils.writeLine(content,file.getCanonicalPath,"overwrite")
-      val out = ASP.solve(task = Globals.INFERENCE, aspInputFile = file, jep=jep)
+      val out = ASP.solve(task = Globals.INFERENCE, aspInputFile = file)
 
       val prior =
         if (out.nonEmpty)  {
@@ -434,7 +431,6 @@ object CaviarUtils {
       collection.insert(entry)
       next
     }
-    jep.close()
   }
 
 

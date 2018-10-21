@@ -1,9 +1,7 @@
 package mcts.parallel
 
 import java.util.UUID
-
 import app.runutils.Globals
-import jep.Jep
 import logic.Examples.Example
 import logic.{Literal, Theory}
 import utils.{ASP, Utils}
@@ -14,15 +12,15 @@ import utils.{ASP, Utils}
 
 object Eval {
 
-  def crossVal(t: Theory, jep: Jep, data: Iterator[Example], globals: Globals) = {
+  def crossVal(t: Theory, data: Iterator[Example], globals: Globals) = {
     while (data.hasNext) {
       val e = data.next()
       val s = t.clauses.map(x => x.withTypePreds(globals).tostring).mkString("\n")
-      evaluateTheory(t, s, e, jep, globals)
+      evaluateTheory(t, s, e, globals)
     }
   }
 
-  def evaluateTheory(theory: Theory, stringTheory: String, e: Example, jep: Jep, globals: Globals): Unit = {
+  def evaluateTheory(theory: Theory, stringTheory: String, e: Example, globals: Globals): Unit = {
     val varbedExmplPatterns = globals.EXAMPLE_PATTERNS_AS_STRINGS
     val coverageConstr = s"${globals.TPS_RULES}\n${globals.FPS_RULES}\n${globals.FNS_RULES}"
     val show = globals.SHOW_TPS_ARITY_1 + globals.SHOW_FPS_ARITY_1 + globals.SHOW_FNS_ARITY_1
@@ -30,7 +28,7 @@ object Eval {
     val program = ex + globals.INCLUDE_BK(globals.BK_CROSSVAL) + stringTheory + coverageConstr + show
     val f = Utils.getTempFile(s"eval-theory-${UUID.randomUUID().toString}-${System.currentTimeMillis()}", ".lp")
     Utils.writeLine(program, f.getCanonicalPath, "overwrite")
-    val answerSet = ASP.solve(task = Globals.INFERENCE, aspInputFile = f, jep=jep)
+    val answerSet = ASP.solve(task = Globals.INFERENCE, aspInputFile = f)
     if (answerSet.nonEmpty) {
       val atoms = answerSet.head.atoms
       atoms.foreach { a=>

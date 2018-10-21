@@ -1,10 +1,8 @@
 package mcts
 
-import app.runners.MLNDataHandler.MLNDataOptions
 import app.runutils.Globals
 import com.mongodb.casbah.Imports.{BasicDBList, BasicDBObject}
 import com.mongodb.casbah.MongoClient
-import jep.Jep
 import logic.Examples.Example
 import logic.Theory
 import com.mongodb.casbah.Imports._
@@ -24,8 +22,6 @@ object MathExchange extends App with LazyLogging {
   Globals.glvalues("perfect-fit") = "false"
 
   val chunkSize = 10
-
-  val jep = new Jep()
 
   val globals = new Globals("/home/nkatz/dev/MathExchange-for-OLED", "MathExchange")
 
@@ -47,7 +43,7 @@ object MathExchange extends App with LazyLogging {
     }
   }
 
-  val bottomTheory = HillClimbing.constructBottomTheory(data.toIterator, jep, globals)
+  val bottomTheory = HillClimbing.constructBottomTheory(data.toIterator, globals)
 
   println(bottomTheory.tostring)
 
@@ -59,7 +55,7 @@ object MathExchange extends App with LazyLogging {
 
   val rootNode = RootNode()
 
-  generateAndScoreChildren(rootNode, bottomTheory, jep, globals, data, 0)
+  generateAndScoreChildren(rootNode, bottomTheory, globals, data, 0)
 
 
 
@@ -67,7 +63,7 @@ object MathExchange extends App with LazyLogging {
     logger.info(s"Iteration $iterCount")
     val bestChild = rootNode.descendToBestChild(exploreRate)
     logger.info(s"Best leaf node selected (MCTS score: ${bestChild.getMCTSScore(exploreRate)} | id: ${bestChild.id}):\n${bestChild.theory.tostring}")
-    val newNodes = generateAndScoreChildren(bestChild, bottomTheory, jep, globals, data, iterCount)
+    val newNodes = generateAndScoreChildren(bestChild, bottomTheory, globals, data, iterCount)
     val bestChildNode = newNodes.maxBy( x => f1(x.theory) )
 
     bestChildNode.propagateReward(f1(bestChildNode.theory))
@@ -89,15 +85,15 @@ object MathExchange extends App with LazyLogging {
   logger.info("Done")
   logger.info("Cross-validation...")
   val theory_ = Theory(bestNode.theory.clauses).compress
-  crossVal(theory_, jep, data.toIterator, "", globals) // generate new theory to clear the stats counter
+  crossVal(theory_, data.toIterator, "", globals) // generate new theory to clear the stats counter
   logger.info(s"F1-score on test set: ${theory_.stats._6}")
 
 
 
-  def generateAndScoreChildren(fromNode: TreeNode, bottomTheory: Theory, jep: Jep, gl: Globals, data: List[Example], iterationCount: Int) = {
+  def generateAndScoreChildren(fromNode: TreeNode, bottomTheory: Theory, gl: Globals, data: List[Example], iterationCount: Int) = {
     require(fromNode.isLeafNode())
-    val newTheories = generateChildrenNodes(fromNode.theory, bottomTheory, data.toIterator, jep, gl)
-    scoreNodes(newTheories, jep, gl, data)
+    val newTheories = generateChildrenNodes(fromNode.theory, bottomTheory, data.toIterator, gl)
+    scoreNodes(newTheories, gl, data)
     // The depth is used in the id generation of the children nodes.
     val depth = fromNode.getDepth() + 1
     val newNodes = newTheories.foldLeft(1, Vector[InnerNode]()) { (x, theory) =>
@@ -121,10 +117,10 @@ object MathExchange extends App with LazyLogging {
     newNodes
   }
 
-  def scoreNodes(children: Vector[Theory], jep: Jep, gl: Globals, data: List[Example]) = {
+  def scoreNodes(children: Vector[Theory], gl: Globals, data: List[Example]) = {
     logger.info("Scoring children nodes")
     children.foreach { childNode =>
-      crossVal(childNode, jep, data.toIterator, "", gl)
+      crossVal(childNode, data.toIterator, "", gl)
     }
     //children.foreach(x => println(x.tostring + " " + x.stats._6))
   }

@@ -4,7 +4,6 @@ import akka.actor.{Actor, Props}
 import app.runutils.IOHandling.Source
 import app.runutils.{Globals, RunningOptions}
 import com.typesafe.scalalogging.LazyLogging
-import jep.Jep
 import logic.Examples.Example
 import logic.{Clause, LogicUtils, Theory}
 import oled.distributed.Structures.{FinalTheoryMessage, Initiated, Terminated}
@@ -99,12 +98,11 @@ class Dispatcher[T <: Source](val dataOptions: List[(T, T => Iterator[Example])]
         /*------------------*/
         //val filtered = Theory(compressed.clauses.filter(x => x.tps > 50))
         val filtered = compressed
-        val crossValJep = new Jep()
 
         val data = testingDataFunction(testingDataOptions)
 
         val (tps,fps,fns,precision,recall,fscore) =
-          crossVal(filtered, crossValJep, data = data, handCraftedTheoryFile = inputParams.evalth, globals = inputParams.globals, inps = inputParams)
+          crossVal(filtered, data = data, handCraftedTheoryFile = inputParams.evalth, globals = inputParams.globals, inps = inputParams)
 
         val time = Math.max(this.initTrainingTime.toDouble, this.termTrainingTime.toDouble)
 
@@ -119,7 +117,6 @@ class Dispatcher[T <: Source](val dataOptions: List[(T, T => Iterator[Example])]
         logger.info(s"\nDone. Theory found:\n ${filtered.showWithStats}")
         logger.info(s"Mean time per batch: ${Globals.timeDebug.sum/Globals.timeDebug.length}")
         logger.info(s"Total batch time: ${Globals.timeDebug.sum}")
-        crossValJep.close()
 
         context.system.terminate()
       }

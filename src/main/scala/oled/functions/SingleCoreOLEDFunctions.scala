@@ -2,7 +2,6 @@ package oled.functions
 
 import app.runutils.{Globals, RunningOptions}
 import com.mongodb.casbah.MongoClient
-import jep.Jep
 import logic.Examples.Example
 import logic.{AnswerSet, Clause, Theory}
 import utils.ASP.getCoverageDirectives
@@ -53,16 +52,16 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
   }
 
 
-  def reScore(params: RunningOptions, data: Iterator[Example], theory: Theory, targetClass: String, jep: Jep, logger: org.slf4j.Logger) = {
+  def reScore(params: RunningOptions, data: Iterator[Example], theory: Theory, targetClass: String, logger: org.slf4j.Logger) = {
     theory.clauses foreach (p => p.clearStatistics) // zero all counters before re-scoring
     for (x <- data) {
-      theory.scoreRules(x, jep, params.globals, postPruningMode = true)
+      theory.scoreRules(x, params.globals, postPruningMode = true)
     }
     logger.debug( theory.clauses map { p => s"score: ${p.score}, tps: ${p.tps}, fps: ${p.fps}, fns: ${p.fns}\n${p.tostring}" } mkString "\n" )
   }
 
-  def generateNewRules(topTheory: Theory, e: Example, jep: Jep, initorterm: String, globals: Globals) = {
-    val bcs = generateNewBottomClauses(topTheory, e, jep, initorterm, globals)
+  def generateNewRules(topTheory: Theory, e: Example, initorterm: String, globals: Globals) = {
+    val bcs = generateNewBottomClauses(topTheory, e, initorterm, globals)
     bcs map { x =>
       val c = Clause(head=x.head, body = List())
       c.addToSupport(x)
@@ -70,10 +69,10 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
     }
   }
 
-  def reScoreAndPrune(inps: RunningOptions, data: Iterator[Example], finalTheory: Theory, targetClass: String, jep: Jep, logger: org.slf4j.Logger) = {
+  def reScoreAndPrune(inps: RunningOptions, data: Iterator[Example], finalTheory: Theory, targetClass: String, logger: org.slf4j.Logger) = {
     logger.info(s"Starting post-pruning for $targetClass")
     logger.info(s"Rescoring $targetClass theory")
-    if (finalTheory != Theory()) reScore(inps, data, finalTheory, targetClass, jep, logger)
+    if (finalTheory != Theory()) reScore(inps, data, finalTheory, targetClass, logger)
     logger.info(s"\nLearned hypothesis (before pruning):\n${finalTheory.showWithStats}")
     val pruned = finalTheory.clauses.filter(x => x.score > inps.pruneThreshold && x.seenExmplsNum > inps.minEvalOn)
     logger.debug(s"\nPruned hypothesis:\n${pruned.showWithStats}")
@@ -81,7 +80,7 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
   }
 
   /* Used by the monolithic OLED when learning with inertia.*/
-  def check_SAT_withInertia(theory: Theory, example: Example, globals: Globals, jep: Jep): Boolean = {
+  def check_SAT_withInertia(theory: Theory, example: Example, globals: Globals): Boolean = {
     val e = (example.annotationASP ++ example.narrativeASP).mkString("\n")
     val exConstr = getCoverageDirectives(withCWA = Globals.glvalues("cwa"), globals = globals).mkString("\n")
     val t = theory.map(x => x.withTypePreds(globals).tostring).mkString("\n")
@@ -90,7 +89,7 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
       p => List(e,exConstr,t,s"\n#include "+"\""+globals.ABDUCE_WITH_INERTIA+"\".\n") foreach p.println
     )
     val inFile = f.getCanonicalPath
-    val out = ASP.solve(Globals.CHECKSAT, Map(), new java.io.File(inFile), example.toMapASP, jep = jep)
+    val out = ASP.solve(Globals.CHECKSAT, Map(), new java.io.File(inFile), example.toMapASP)
     if (out != Nil && out.head == AnswerSet.UNSAT){
       false
     } else {
@@ -135,9 +134,10 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
   // to every mistake, specializing immediately, so in the absence of noise, we quickly
   // learn the correct definitions. (Note that in any case, if there is noise
   // in the strongly-initiated setting, there is not chance to learn anything.
-  def isSat(example: Example, globals: Globals, jep: Jep) = {
+  // See also the related comment in Globals.scala
+  def isSat(example: Example, globals: Globals) = {
     val jointTheory = Theory((Globals.CURRENT_THEORY_INITIATED ++ Globals.CURRENT_THEORY_TERMINATED).toList)
-    check_SAT_withInertia(jointTheory, example, globals, jep)
+    check_SAT_withInertia(jointTheory, example, globals)
   }
 
 }

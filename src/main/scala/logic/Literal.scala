@@ -6,7 +6,7 @@ import scala.collection.mutable.ListBuffer
 import scala.util.control.Breaks
 import logic.Modes._
 import logic.Exceptions._
-import utils.parsers.{ClausalLogicParser, ModesParser}
+import utils.parsers.{ClausalLogicParser, ModesParser, PB2LogicParser}
 
 
 /**
@@ -18,13 +18,23 @@ object Literal {
   val empty = Literal()
 
   /* Parse a string into a literal, An optional mode atom may be provided. */
-
   def parse(lit: String, mode: String = ""): Literal = {
     val p = new ClausalLogicParser
     mode match {
       case "" => p.getParseResult(p.parse(p.literal, lit)).asInstanceOf[Literal]
       case _ =>
         val l = p.getParseResult(p.parse(p.literal, lit)).asInstanceOf[Literal]
+        val m = getModeAtom(mode)
+        Literal(functor = l.functor, terms = l.terms, isNAF = l.isNAF, modeAtom = m)
+    }
+  }
+
+  /* As above, using the Parboiled2 parser (faster). */
+  def parseWPB2(lit: String, mode: String = "") = {
+    mode match {
+      case "" => PB2LogicParser.parseAtom(lit).asInstanceOf[Literal]
+      case _ =>
+        val l = PB2LogicParser.parseAtom(lit).asInstanceOf[Literal]
         val m = getModeAtom(mode)
         Literal(functor = l.functor, terms = l.terms, isNAF = l.isNAF, modeAtom = m)
     }
@@ -59,6 +69,65 @@ object Literal {
     val p = new ModesParser
     p.getParseResult(p.parseModes(p.modeb, atom))
   }
+
+  /* Converts a ground literal in ASP format into MLN format.
+   *
+   * E.g. initiatedAt(meeting(id1, id2),2000) --> InitiatedAt(Meeting_id1_id2,2000)
+   *
+   * This does not work for variabilized literals (throws an exception).
+   * Variabilized literals are only used (at the MLN side) in rules.
+   * */
+  def toMLNFlat(l: Literal) = {
+
+    def formFlatConstTerm(funct: String, args: List[Expression]) = {
+      val t = s"${funct.capitalize}_${args.map(z => z.name.capitalize).mkString("_")}"
+      Constant(t)
+    }
+
+    def flatten(l: Literal): List[Constant] = {
+      val flattenInner = l.terms.foldLeft(List[Constant]()) { (stack, currentTerm) =>
+        currentTerm match {
+          case x: Constant => stack :+ Constant(x.name.capitalize)
+          // No variables, this only applies to ground clauses.
+          case x: Variable => throw new RuntimeException(s"Found variable: $x while transforming ${l.tostring} to MLN flattened form.")
+          case x: Literal =>
+            if (x.terms.forall(_.isConstant)) {
+              stack :+ formFlatConstTerm(x.functor, x.terms)
+            } else {
+              val f = flatten(x)
+              stack :+ formFlatConstTerm(x.functor, f)
+            }
+        }
+      }
+      flattenInner
+    }
+
+    val flat = flatten(l)
+    Literal(l.functor.capitalize, flat, isNAF = l.isNAF, derivedFrom = l.derivedFrom)
+  }
+
+  /* Converts a variabilized literal (part of an ASP rule) into a variabilized literal in MLN format.
+   * E.g. initiatedAt(meeting(X0, X1), X2) --> InitiatedAt(meeting(x0, x1), x2)
+   * */
+  def toMLNClauseLiteral(l: Literal) = {
+
+    def handleInner(l: Literal): List[Expression] = {
+      val inner = l.terms.foldLeft(List[Expression]()) { (stack, currentTerm) =>
+        currentTerm match {
+          case x: Constant => stack :+ Constant(x.name.capitalize)
+          case x: Variable => stack :+ Constant(x.name.take(1).toLowerCase() + x.name.drop(1))
+          case x: Literal =>
+            val z = handleInner(x)
+            stack :+ Literal(functor = x.functor, terms = z, isNAF = x.isNAF)
+        }
+      }
+      inner
+    }
+    val toMLN = handleInner(l)
+    Literal(l.functor.capitalize, toMLN, isNAF = l.isNAF, derivedFrom = l.derivedFrom)
+  }
+
+
 
   def types(l: String, mode: ModeAtom, globals: Globals) = {
     def terms(lit: Literal): List[Expression] = {
@@ -98,17 +167,22 @@ object Literal {
   * literal with additional information (types/sorts of constants/variables, input or output variables), which is used in the
   * process of variabilizing the clause in which this literal belongs.
   * @param typePreds an (optional) list of typing predicates, extracted from a matching mode declaration,
-  *  for the literal's variables and constants
+  *  for the literal's variables and constants.
+  *
+  * @param derivedFrom is the id of the lifted clause from which this atom is proved. This is used for weight learning with AdaGrad.
   *
   */
 
 case class Literal(functor: String = "", terms: List[Expression] = Nil, isNAF: Boolean = false,
-                   modeAtom: ModeAtom = ModeAtom("", Nil), typePreds: List[String] = Nil) extends Expression {
+                   modeAtom: ModeAtom = ModeAtom("", Nil), typePreds: List[String] = Nil, derivedFrom: Int = 0) extends Expression {
 
   // No need. Plus messes up MLN <--> ASP
   //require(if (functor != "") !functor.toCharArray()(0).isUpper else true)
 
-  lazy val arity = terms.length
+  /* TODO comment */
+  var mlnTruthValue: Boolean = false
+
+  lazy val arity: Int = terms.length
 
   lazy val negated = Literal(functor = this.functor, terms = this.terms, isNAF = true, modeAtom = this.modeAtom, typePreds = this.typePreds)
 
@@ -130,12 +204,24 @@ case class Literal(functor: String = "", terms: List[Expression] = Nil, isNAF: B
   override val tostring: String = terms match {
     case List() => functor
     case _ =>
-      val prefix = if (isNAF) s"not $functor" else functor;
+      val prefix = if (isNAF) s"not $functor" else functor
       prefix + "(" + (for (
         a <- terms; x = a match {
         case x @ (_: Constant | _: Variable | _: Literal | _: PosLiteral) => x
-        case _ => throw new LogicException("Unxpected type of inner term while parsing Literal.")
+        case _ => throw new LogicException(s"Unexpected type of inner term while parsing Literal: $this")
       }
+      ) yield x.tostring).mkString(",") + ")"
+  }
+
+  lazy val tostring_no_NAF: String = terms match {
+    case List() => functor
+    case _ =>
+      val prefix = if (isNAF) s"not_$functor" else functor
+      prefix + "(" + (for (
+        a <- terms; x = a match {
+          case x @ (_: Constant | _: Variable | _: Literal | _: PosLiteral) => x
+          case _ => throw new LogicException(s"Unexpected type of inner term while parsing Literal: $this")
+        }
       ) yield x.tostring).mkString(",") + ")"
   }
 
@@ -149,6 +235,18 @@ case class Literal(functor: String = "", terms: List[Expression] = Nil, isNAF: B
         case _ => throw new LogicException("Unxpected type of inner term while parsing Literal.")
       }
       ) yield x.tostringQuote).mkString(",") + ")"
+  }
+
+  lazy val tostring_mln: String = terms match {
+    case List() => functor
+    case _ =>
+      val prefix = if (isNAF) s"!$functor" else functor
+      prefix + "(" + (for (
+        a <- terms; x = a match {
+          case x @ (_: Constant | _: Variable | _: Literal | _: PosLiteral) => x
+          case _ => throw new LogicException(s"Unexpected type of inner term while parsing Literal: $this")
+        }
+      ) yield x.tostring).mkString(",") + ")"
   }
 
   /**
@@ -298,8 +396,9 @@ case class Literal(functor: String = "", terms: List[Expression] = Nil, isNAF: B
 
 
 
-  def getPlmrkTerms: (List[Expression], List[Expression], List[Expression]) =
+  def getPlmrkTerms: (List[Expression], List[Expression], List[Expression]) = {
     getPlmrkTerms(List(), List(), List(), this.terms zip this.modeAtom.args)
+  }
 
   /**
     * Extracts the terms of the literal marked as input-output or ground terms.
@@ -339,30 +438,52 @@ case class Literal(functor: String = "", terms: List[Expression] = Nil, isNAF: B
     }
   }
 
-  /**
-    * Skolemize this literal (replace all variables with skolem constants)
-    */
+  def toMLN = {
+    val mlnTerms = this.termsToMLN
+    Literal(functor = this.functor.capitalize, terms = mlnTerms, isNAF = this.isNAF)
+  }
 
+  private def termsToMLN: List[Expression] = {
+    //var temp = new ListBuffer[Expression]
+    this.terms map { x =>
+      x match {
+        // variables are always of the form X0, X1, X2 etc, so turning them to lower case
+        // simply converts the X, no other changes.
+        case y: Variable => Constant(y.name.toLowerCase)
+        case y: Constant => Constant(y.name.capitalize)
+        case y: Literal =>
+          val l = y
+          val m = l.termsToMLN
+          Literal(functor = l.functor, terms = m, isNAF = l.isNAF)
+      }
+    }
+  }
+
+
+
+  /* Skolemize this literal (replace all variables with skolem constants) */
   def skolemize(skolems: Map[String, String], accum: ListBuffer[Expression] = ListBuffer[Expression]()): ListBuffer[Expression] = {
     var temp = new ListBuffer[Expression]
     def keyExists = (x: Any) => if (skolems.keySet.exists(_ == x)) true else false
     def append = (x: Expression) => temp += x
     for (x <- this.terms) x match {
+
       case y: Variable =>
         val name = y.name
         if (keyExists(name)) append(Constant(skolems(name)))
-        else
-          throw new LogicException("Skolemise: Found a variable without corresponding skolem constant.")
+        else throw new LogicException("Skolemise: Found a variable without corresponding skolem constant.")
+
       case y: Constant =>
         val name = y.name
         if (keyExists(name)) append(Constant(skolems(name)))
-        else
-          throw new LogicException("Skolemise: Found a constant without corresponding skolem constant.")
+        else throw new LogicException("Skolemise: Found a constant without corresponding skolem constant.")
+
       case y: Literal =>
         val l = y
         val m = l.skolemize(skolems, temp)
         val toLit = Literal(functor = l.functor, terms = m.toList, isNAF = l.isNAF)
         temp += toLit
+
       case _ => throw new LogicException("Skolemise: Unexpected type.")
     }
     temp
@@ -511,6 +632,14 @@ case class Literal(functor: String = "", terms: List[Expression] = Nil, isNAF: B
 
 }
 
+
+/*
+case class GroundMLNClause(atoms: Vector[Literal], derivedFrom: Int) {
+
+}
+*/
+
+
 /**
   * This is a helper class for the representation of non-negated literals.
   */
@@ -535,7 +664,7 @@ object AnswerSet {
   def empty = new AnswerSet(List[String]())
 }
 
-case class AnswerSet(val atoms: List[String]) {
+case class AnswerSet(atoms: List[String]) {
 
   val isEmpty = atoms == List()
 

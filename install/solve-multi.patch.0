@@ -1,0 +1,347 @@
+Index: libgringo/gringo/control.hh
+===================================================================
+--- libgringo/gringo/control.hh	(revision 10322)
++++ libgringo/gringo/control.hh	(working copy)
+@@ -173,9 +173,10 @@
+     virtual DomainProxy &getDomain() = 0;
+ 
+     virtual void ground(GroundVec const &vec, Any &&context) = 0;
+-    virtual SolveResult solve(ModelHandler h, Assumptions &&assumptions) = 0;
+-    virtual SolveFuture *solveAsync(ModelHandler mh, FinishHandler fh, Assumptions &&assumptions) = 0;
+-    virtual SolveIter *solveIter(Assumptions &&assumptions) = 0;
++    virtual void prepareSolve(Assumptions &&assumptions) = 0;
++    virtual SolveResult solve(ModelHandler h) = 0;
++    virtual SolveFuture *solveAsync(ModelHandler mh, FinishHandler fh) = 0;
++    virtual SolveIter *solveIter() = 0;
+     virtual void add(std::string const &name, FWStringVec const &params, std::string const &part) = 0;
+     virtual void load(std::string const &filename) = 0;
+     virtual Value getConst(std::string const &name) = 0;
+Index: libgringo/src/lua.cc
+===================================================================
+--- libgringo/src/lua.cc	(revision 10322)
++++ libgringo/src/lua.cc	(working copy)
+@@ -1046,6 +1046,7 @@
+             mIndex = lua_gettop(L);
+         }
+         Control::Assumptions *ass = getAssumptions(L, assIdx);
++        protect<void>(L, [&ctl, ass]() { ctl.prepareSolve(std::move(*ass)); });
+         lua_pushinteger(L, protect<int>(L, [L, &ctl, model, ass, mhIndex, mIndex]() {
+             return (int)ctl.solve(!model ? Control::ModelHandler(nullptr) : [L, model, mhIndex, mIndex](Gringo::Model const &m) -> bool {
+                 LuaClear lc(L);
+@@ -1057,7 +1058,7 @@
+                 Location loc("<on_model>", 1, 1, "<on_model>", 1, 1);
+                 handleError(L, loc, code, "error in model callback");
+                 return lua_type(L, -1) == LUA_TNIL || lua_toboolean(L, -1);
+-            }, std::move(*ass));
++            });
+         }));
+         return 1;
+     }
+@@ -1075,6 +1076,7 @@
+         int mhIndex = !lua_isnone(L, 3) && !lua_isnil(L, 3) ? 3 : 0;
+         int fhIndex = !lua_isnone(L, 4) && !lua_isnil(L, 4) ? 4 : 0;
+         Control::Assumptions *ass = getAssumptions(L, assIdx);
++        protect<void>(L, [&ctl, ass]() { ctl.prepareSolve(std::move(*ass)); });
+         auto &future = *(Gringo::SolveFuture **)lua_newuserdata(L, sizeof(Gringo::SolveFuture*));
+         lua_State *M = nullptr;
+         if (mhIndex || fhIndex) {
+@@ -1097,7 +1099,7 @@
+             lua_xmove(L, M, 1);
+             fhIndex = lua_gettop(M);
+         }
+-        future = protect<Gringo::SolveFuture*>(L, [&ctl, model, mhIndex, fhIndex, ass, M]() {
++        future = protect<Gringo::SolveFuture*>(L, [&ctl, model, mhIndex, fhIndex, M]() {
+             auto mh = !mhIndex ? Control::ModelHandler(nullptr) : [M, mhIndex, model](Gringo::Model const &m) -> bool {
+                 LuaClear lc(M);
+                 lua_pushcfunction(M, luaTraceback);
+@@ -1119,7 +1121,7 @@
+                 Location loc("<on_finish>", 1, 1, "<on_finish>", 1, 1);
+                 handleError(M, loc, code, "error in model callback");
+             };
+-            return ctl.solveAsync(mh, fh, std::move(*ass));
++            return ctl.solveAsync(mh, fh);
+         });
+         luaL_getmetatable(L, "gringo.SolveFuture");
+         lua_setmetatable(L, -2);
+@@ -1131,8 +1133,9 @@
+         lua_unsetuservaluefield(L, 1, "stats");
+         int assIdx  = !lua_isnone(L, 2) && !lua_isnil(L, 2) ? 2 : 0;
+         Control::Assumptions *ass = getAssumptions(L, assIdx);
++        protect<void>(L, [&ctl, ass]() { ctl.prepareSolve(std::move(*ass)); });
+         auto &iter = *(Gringo::SolveIter **)lua_newuserdata(L, sizeof(Gringo::SolveIter*));
+-        iter = protect<Gringo::SolveIter*>(L, [&ctl, ass]() { return ctl.solveIter(std::move(*ass)); });
++        iter = protect<Gringo::SolveIter*>(L, [&ctl]() { return ctl.solveIter(); });
+         luaL_getmetatable(L, "gringo.SolveIter");
+         lua_setmetatable(L, -2);
+         return 1;
+Index: libgringo/src/python.cc
+===================================================================
+--- libgringo/src/python.cc	(revision 10322)
++++ libgringo/src/python.cc	(working copy)
+@@ -2069,11 +2069,12 @@
+         Gringo::SolveFuture *future;
+         Object omh(mh, true);
+         Object ofh(fh, true);
+-        if (!protect([self, omh, ofh, &future, &ass]() {
++        if (!protect([self, &ass]() { self->ctl->prepareSolve(std::move(ass)); })) { return nullptr; }
++        if (!protect([self, omh, ofh, &future]() {
++            PyUnblock unblock;
+             future = (self->ctl->solveAsync(
+                 omh == Py_None ? Control::ModelHandler(nullptr) : [omh](Gringo::Model const &m) -> bool { PyBlock b; (void)b; return on_model(m, omh); },
+-                ofh == Py_None ? Control::FinishHandler(nullptr) : [ofh](Gringo::SolveResult ret, bool canceled) -> void { PyBlock b; (void)b; on_finish(ret, canceled, ofh); },
+-                std::move(ass)
++                ofh == Py_None ? Control::FinishHandler(nullptr) : [ofh](Gringo::SolveResult ret, bool canceled) -> void { PyBlock b; (void)b; on_finish(ret, canceled, ofh); }
+             ));
+         })) { return nullptr; }
+         PyObject *ret = SolveFuture::new_(*future);
+@@ -2088,8 +2089,12 @@
+         if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O", const_cast<char **>(kwlist), &pyAss)) { return nullptr; }
+         Gringo::Control::Assumptions ass;
+         if (!getAssumptions(pyAss, ass)) { return nullptr; }
++        if (!protect([self, &ass]() { self->ctl->prepareSolve(std::move(ass)); })) { return nullptr; }
+         Gringo::SolveIter *iter;
+-        if (!protect([self, &iter, &ass]() { iter = (self->ctl->solveIter(std::move(ass))); })) { return nullptr; }
++        if (!protect([self, &iter]() {
++            PyUnblock unblock;
++            iter = self->ctl->solveIter();
++        })) { return nullptr; }
+         PyObject *ret = SolveIter::new_(*iter);
+         return ret;
+     }
+@@ -2104,11 +2109,11 @@
+         Gringo::SolveResult ret;
+         Gringo::Control::Assumptions ass;
+         if (!getAssumptions(pyAss, ass)) { return nullptr; }
+-        if (!protect([self, mh, &ret, &ass]() {
++        if (!protect([self, &ass]() { self->ctl->prepareSolve(std::move(ass)); })) { return nullptr; }
++        if (!protect([self, mh, &ret]() {
+             PyUnblock unblock;
+             ret = (self->ctl->solve(
+-                mh == Py_None ? Control::ModelHandler(nullptr) : [mh](Gringo::Model const &m) { PyBlock block; return on_model(m, Object(mh, true)); },
+-                std::move(ass)
++                mh == Py_None ? Control::ModelHandler(nullptr) : [mh](Gringo::Model const &m) { PyBlock block; return on_model(m, Object(mh, true)); }
+             ));
+         })) { return nullptr; }
+         return SolveResult::get(ret);
+Index: app/example/main.cc
+===================================================================
+--- app/example/main.cc	(revision 10322)
++++ app/example/main.cc	(working copy)
+@@ -24,16 +24,18 @@
+ void example1() { 
+     std::vector<char const *> args{"clingo", "-e", "brave", nullptr};
+     DefaultGringoModule module;
+-    ClingoLib lib(module, args.size() - 2, args.data());
++    Gringo::Scripts scripts(module);
++    ClingoLib lib(scripts, args.size() - 2, args.data());
+     lib.add("base", {}, "a :- not b. b :- not a.");
+     lib.ground({{"base", {}}}, nullptr);
++    lib.prepareSolve({});
+     lib.solve([](Gringo::Model const &m) {
+         for (auto &atom : m.atoms(Gringo::Model::SHOWN)) {
+             std::cout << atom << " "; 
+         }
+         std::cout << std::endl;
+         return true; 
+-    }, {});
++    });
+ }
+ 
+ int main() {
+Index: app/gringo/main.cc
+===================================================================
+--- app/gringo/main.cc	(revision 10322)
++++ app/gringo/main.cc	(working copy)
+@@ -168,8 +168,10 @@
+     }
+     virtual void onModel(Gringo::Model const &) { }
+     virtual bool blocked() { return false; }
+-    virtual Gringo::SolveResult solve(ModelHandler, Assumptions &&ass) {
++    virtual void prepareSolve(Assumptions &&ass) {
+         if (!ass.empty()) { std::cerr << "warning: the lparse format does not support assumptions" << std::endl; }
++    }
++    virtual Gringo::SolveResult solve(ModelHandler) {
+         if (!grounded) {
+             if (incremental) { out.incremental(); }
+         }
+@@ -177,10 +179,10 @@
+         out.finish();
+         return Gringo::SolveResult::UNKNOWN;
+     }
+-    virtual Gringo::SolveIter *solveIter(Assumptions &&) { 
++    virtual Gringo::SolveIter *solveIter() {
+         throw std::runtime_error("solving not supported in gringo");
+     }
+-    virtual Gringo::SolveFuture *solveAsync(ModelHandler, FinishHandler, Assumptions &&) { throw std::runtime_error("solving not supported in gringo"); }
++    virtual Gringo::SolveFuture *solveAsync(ModelHandler, FinishHandler) { throw std::runtime_error("solving not supported in gringo"); }
+     virtual Gringo::Statistics *getStats() { throw std::runtime_error("statistics not supported in gringo (yet)"); }
+     virtual void assignExternal(Gringo::Value ext, Gringo::TruthValue val) { 
+         Gringo::PredicateDomain::element_type *atm = out.find2(ext);
+@@ -323,7 +325,8 @@
+             Gringo::Control::GroundVec parts;
+             parts.emplace_back("base", FWValVec{});
+             inc.ground(parts, Gringo::Any());
+-            inc.solve(nullptr, {});
++            inc.prepareSolve({});
++            inc.solve(nullptr);
+         }
+     }
+ 
+Index: libclingo/src/clingocontrol.cc
+===================================================================
+--- libclingo/src/clingocontrol.cc	(revision 10322)
++++ libclingo/src/clingocontrol.cc	(working copy)
+@@ -203,7 +203,8 @@
+         Gringo::Control::GroundVec parts;
+         parts.emplace_back("base", Gringo::FWValVec{});
+         ground(parts, Gringo::Any());
+-        solve(nullptr, {});
++        prepareSolve({});
++        solve(nullptr);
+     }
+ }
+ bool ClingoControl::onModel(Clasp::Model const &m) {
+@@ -284,11 +285,18 @@
+ Gringo::ConfigProxy &ClingoControl::getConf() {
+     return *this;
+ }
+-Gringo::SolveIter *ClingoControl::solveIter(Assumptions &&ass) {
++void ClingoControl::prepareSolve(Assumptions &&ass) {
++    if (!grounded) {
++        if (incremental) { out->incremental(); }
++    }
++    grounded = false;
++    if (update()) { out->finish(); }
++    ass_ = toLparseAssumptions(std::move(ass));
++}
++Gringo::SolveIter *ClingoControl::solveIter() {
+     if (!clingoMode_) { throw std::runtime_error("solveIter is not supported in gringo gringo mode"); }
+ #if WITH_THREADS
+     prepare_(nullptr, nullptr);
+-    clasp->assume(toClaspAssumptions(std::move(ass)));
+     solveIter_ = Gringo::gringo_make_unique<ClingoSolveIter>(clasp->startSolveAsync(), static_cast<Clasp::Asp::LogicProgram&>(*clasp->program()), *out, clasp->ctx);
+     return solveIter_.get();
+ #else
+@@ -296,11 +304,10 @@
+     throw std::runtime_error("solveIter requires clingo to be build with thread support");
+ #endif
+ }
+-Gringo::SolveFuture *ClingoControl::solveAsync(ModelHandler mh, FinishHandler fh, Assumptions &&ass) {
++Gringo::SolveFuture *ClingoControl::solveAsync(ModelHandler mh, FinishHandler fh) {
+     if (!clingoMode_) { throw std::runtime_error("solveAsync is not supported in gringo gringo mode"); }
+ #if WITH_THREADS
+     prepare_(mh, fh);
+-    clasp->assume(toClaspAssumptions(std::move(ass)));
+     solveFuture_ = Gringo::gringo_make_unique<ClingoSolveFuture>(clasp->solveAsync(nullptr));
+     return solveFuture_.get();
+ #else
+@@ -314,11 +321,6 @@
+     return clasp->solving();
+ }
+ void ClingoControl::prepare_(Gringo::Control::ModelHandler mh, Gringo::Control::FinishHandler fh) {
+-    if (!grounded) {
+-        if (incremental) { out->incremental(); }
+-    }
+-    grounded = false;
+-    if (update()) { out->finish(); }
+     if (clingoMode_) {
+ #if WITH_THREADS
+         solveIter_    = nullptr;
+@@ -331,35 +333,45 @@
+         if (pgf_) { pgf_(*prg); }
+         clasp->prepare(enableEnumAssupmption_ ? Clasp::ClaspFacade::enum_volatile : Clasp::ClaspFacade::enum_static);
+         if (psf_) {  psf_(*clasp);}
++        clasp->assume(toClaspAssumptions(std::move(ass_)));
+     }
+ }
+ 
+-Clasp::LitVec ClingoControl::toClaspAssumptions(Gringo::Control::Assumptions &&ass) const {
+-    Clasp::LitVec outAss;
++std::vector<int> ClingoControl::toLparseAssumptions(Gringo::Control::Assumptions &&ass) const {
++    std::vector<int> outAss;
+ 	if (!clingoMode_ || !clasp->program()) { return outAss; }
+-	const Clasp::Asp::LogicProgram* prg = static_cast<const Clasp::Asp::LogicProgram*>(clasp->program());
+     for (auto &x : ass) {
+         auto atm = out->find2(x.first);
+         if (atm && atm->second.hasUid()) {
+-            Clasp::Literal lit = prg->getLiteral(atm->second.uid());
+-            outAss.push_back(x.second ? lit : ~lit);
++            int uid = atm->second.uid();
++            outAss.push_back(x.second ? uid : -uid);
+         }
+         else if (x.second) {
+-            Clasp::Literal lit = prg->getLiteral(1);
+-            outAss.push_back(lit);
++            outAss.push_back(1);
+             break;
+         }
+     }
+     return outAss;
++
+ }
++Clasp::LitVec ClingoControl::toClaspAssumptions(std::vector<int> &&ass) const {
++    Clasp::LitVec outAss;
++	const Clasp::Asp::LogicProgram* prg = static_cast<const Clasp::Asp::LogicProgram*>(clasp->program());
++    for (auto &x : ass) {
++        Clasp::Literal lit = prg->getLiteral(std::abs(x));
++        outAss.push_back(x > 0 ? lit : ~lit);
++    }
++    ass.clear();
++    return outAss;
++}
+ 
+-Gringo::SolveResult ClingoControl::solve(ModelHandler h, Assumptions &&ass) {
++Gringo::SolveResult ClingoControl::solve(ModelHandler h) {
+     prepare_(h, nullptr);
+-    clasp->assume(toClaspAssumptions(std::move(ass)));
+     return clingoMode_ ? convert(clasp->solve(nullptr)) : Gringo::SolveResult::UNKNOWN;
+ }
+ 
+ void ClingoControl::cleanupDomains() {
++    prepareSolve({});
+     prepare_(nullptr, nullptr);
+     if (clingoMode_) {
+         Clasp::Asp::LogicProgram &prg = static_cast<Clasp::Asp::LogicProgram&>(*clasp->program());
+Index: libclingo/clingo/clingocontrol.hh
+===================================================================
+--- libclingo/clingo/clingocontrol.hh	(revision 10322)
++++ libclingo/clingo/clingocontrol.hh	(working copy)
+@@ -230,7 +230,8 @@
+     void onFinish(Clasp::ClaspFacade::Result ret);
+     bool update();
+ 
+-    Clasp::LitVec toClaspAssumptions(Gringo::Control::Assumptions &&ass) const;
++    Clasp::LitVec toClaspAssumptions(std::vector<int> &&ass) const;
++    std::vector<int> toLparseAssumptions(Gringo::Control::Assumptions &&ass) const;
+     
+     // {{{2 DomainProxy interface
+ 
+@@ -257,7 +258,8 @@
+     virtual void ground(Gringo::Control::GroundVec const &vec, Gringo::Any &&context);
+     virtual void add(std::string const &name, Gringo::FWStringVec const &params, std::string const &part);
+     virtual void load(std::string const &filename);
+-    virtual Gringo::SolveResult solve(ModelHandler h, Assumptions &&ass);
++    virtual void prepareSolve(Assumptions &&ass);
++    virtual Gringo::SolveResult solve(ModelHandler h);
+     virtual bool blocked();
+     virtual std::string str();
+     virtual void assignExternal(Gringo::Value ext, Gringo::TruthValue);
+@@ -267,8 +269,8 @@
+     virtual void useEnumAssumption(bool enable);
+     virtual bool useEnumAssumption();
+     virtual void cleanupDomains();
+-    virtual Gringo::SolveIter *solveIter(Assumptions &&ass);
+-    virtual Gringo::SolveFuture *solveAsync(ModelHandler mh, FinishHandler fh, Assumptions &&ass);
++    virtual Gringo::SolveIter *solveIter();
++    virtual Gringo::SolveFuture *solveAsync(ModelHandler mh, FinishHandler fh);
+ 
+     // }}}2
+ 
+@@ -286,6 +288,7 @@
+     Clasp::Cli::ClaspCliConfig                             &claspConfig_;
+     PostGroundFunc                                          pgf_;
+     PreSolveFunc                                            psf_;
++    std::vector<int>                                        ass_;
+ #if WITH_THREADS
+     std::unique_ptr<ClingoSolveFuture> solveFuture_;
+     std::unique_ptr<ClingoSolveIter>   solveIter_;

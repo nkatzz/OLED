@@ -1,17 +1,11 @@
 package utils
 
 import java.io.File
-import java.util
-
-import app.runutils.Globals
+import app.runutils.{Globals, RunningOptions}
 import com.typesafe.scalalogging._
-
-import scala.collection.JavaConverters._
 import parsers.ASPResultsParser
 import logic._
-import jep.Jep
 import logic.Examples._
-
 import scala.io.Source
 import scala.sys.process._
 
@@ -264,8 +258,7 @@ object ASP extends ASPResultsParser with LazyLogging {
              useAtomsMap: Map[String, Literal] = Map[String, Literal](),
              aspInputFile: java.io.File = new File(""),
              examples: Map[String, List[String]] = Map(),
-             fromWeakExmpl:Boolean = false,
-             jep: Jep): List[AnswerSet] = {
+             fromWeakExmpl:Boolean = false): List[AnswerSet] = {
 
   /*
 
@@ -388,13 +381,71 @@ object ASP extends ASPResultsParser with LazyLogging {
      */
 
      if (Globals.glvalues("with-jep").toBoolean) {
-       solveASP(jep,task,aspInputFile.getCanonicalPath,fromWeakExmpl)
+       //solveASP(task,aspInputFile.getCanonicalPath,fromWeakExmpl)
+       solveASPNoJep(task,aspInputFile.getCanonicalPath,fromWeakExmpl)
      } else {
        solveASPNoJep(task,aspInputFile.getCanonicalPath,fromWeakExmpl)
      }
 
    }
 
+
+
+  /*
+  def solveMLNGrounding(aspFile: String) = {
+    val with_atom_undefiend = "-Wno-atom-undefined"
+    val cores = Runtime.getRuntime.availableProcessors
+    val aspCores = s"-t$cores"
+    val mode = ""
+    val command = Seq("clingo", aspFile, mode, with_atom_undefiend, aspCores)
+    val result = command.mkString(" ").lineStream_!.toVector
+    result
+  }
+  */
+
+
+
+
+  def solveMLNGrounding(inps: RunningOptions, e: Example,
+                        groundingDirectives: Vector[(Clause, Clause, Clause)],
+                        targetClass: String): Array[String] = {
+
+    val q = groundingDirectives.map(a => s"${a._1.tostring}\n${a._2.tostring}\n${a._3.tostring}" ).mkString("\n")
+
+    val cwd = System.getProperty("user.dir") // Current working dir
+
+    val aspBKPath =
+      if (targetClass == "initiatedAt") s"${inps.entryPath}/ASP/ground-initiated.lp"
+      else s"${inps.entryPath}/ASP/ground-terminated.lp"
+
+    val all = (e.annotationASP ++ e.narrativeASP ++ List(s"""$q\n#include "$aspBKPath".""")) .mkString("\n")
+    val f = Utils.getTempFile("ground", ".lp")
+    Utils.writeLine(all, f.getCanonicalPath, "overwrite")
+
+    val cores = Runtime.getRuntime.availableProcessors
+
+    //val aspHandlingScript = s"$cwd/asp/grounding.py"
+    //val command = Seq("python", aspHandlingScript, s"aspfile=${f.getCanonicalPath}", s"cores=$cores")
+    val command = Seq("clingo", f.getCanonicalPath , "-Wno-atom-undefined", s"-t$cores", "--verbose=0").mkString(" ")
+
+
+
+    val result = command.lineStream_!
+    val results = result.toVector
+
+    /*
+    val processLine = (x: String) => parseAll(aspResult, x.replaceAll("\\s", "")) match {
+      case Success(result, _) => result
+      case f => None
+    }
+    */
+
+    val atoms = results(0)
+    val status = results(1)
+    if (status == "UNSATISFIABLE") throw new RuntimeException("UNSATISFIABLE program!")
+
+    atoms.split(" ")
+  }
 
 
 
@@ -514,96 +565,6 @@ object ASP extends ASPResultsParser with LazyLogging {
   }
 
 
-  def solveASP(jep: Jep, task: String, aspFile: String, fromWeakExmpl: Boolean = false): List[AnswerSet] = {
-
-    jep.runScript(Globals.ASPHandler)
-    val file = aspFile.asInstanceOf[AnyRef]
-    val _task = task.asInstanceOf[AnyRef]
-    val solvem =
-      if(task == Globals.ABDUCTION && Globals.glvalues("iter-deepening").toBoolean) {
-        s"${Globals.glvalues("iterations")}".asInstanceOf[AnyRef]
-      } else {
-        "all".asInstanceOf[AnyRef]
-      }
-
-    val solve = jep.invoke("run", file, solvem, _task).asInstanceOf[util.HashMap[String, util.ArrayList[String]]]
-
-    //jep.eval(s"x = run('$file', '$solvem', '${_task}')")
-    //val solve = jep.getValue("x").asInstanceOf[util.HashMap[String, util.ArrayList[String]]]
-    //jep.eval("del x")
-
-    /*
-    jep.eval(s"asp = ASPHandler('$file', '$solvem', '${_task}')")
-    jep.eval("asp.solve()")
-    jep.eval(s"x = run(asp)")
-    val solve = jep.getValue("x").asInstanceOf[util.HashMap[String, util.ArrayList[String]]]
-    //jep.eval("asp.clear()")
-    jep.eval("del x")
-    jep.eval("del asp")
-    */
-
-    val status = solve.get("status").asScala.head
-    //val status = "SAT"
-    val _models = solve.get("models").asScala.toList.reverse // we need the last (and most minimal) models first
-
-
-    //=========================================================================
-    // This is a quick fix to get the result for abduction when
-    // perfect-fit=false. In this case numerous models are
-    // returned, and often the empty one is the optimal (smallest).
-    // But the empty one will be filtered out by the code val models = _models
-    // and we'll end up doing extra stuff with other models for no real reason
-    // I'm just adding this as a quick & dirty fix to make sure that nothing
-    // else breaks.
-    //=========================================================================
-    //-------------------------------------------------------------------------
-    if (task == Globals.ABDUCTION && _models.head == "") return Nil
-    //-------------------------------------------------------------------------
-    val models = _models filter (x => x.replaceAll("\\s", "") != "")
-    if(status == Globals.UNSAT) {
-      task match {
-        case Globals.CHECKSAT => return List(AnswerSet.UNSAT)
-        case _ =>
-          task match {
-            // we need this in order to remove inconsistent weak support rules
-            case Globals.FIND_ALL_REFMS => return List(AnswerSet.UNSAT)
-            // searching alternative abductive explanations with iterative search
-            case Globals.SEARCH_MODELS => return List(AnswerSet.UNSAT)
-            case Globals.INFERENCE => return List(AnswerSet.UNSAT)
-            case Globals.SCORE_RULES=> return List(AnswerSet.UNSAT)
-            case Globals.GROW_NEW_RULE_TEST=> return List(AnswerSet.UNSAT)
-            case (Globals.ABDUCTION | Globals.ILED) =>
-              // some times a kernel cannot be created from garbage (weak) data points
-              // but we don't want a failure in this case. Same holds when generalizing
-              // a kernel from a weak data point, to gen a new rule, but end up in an
-              // UNSAT program. We don't want a crash in this case either, we simply want
-              // to quit learning from the particular example and move on.
-              if (fromWeakExmpl ) {
-                if (task == Globals.ILED) logger.info("Failed to learn something from that...")
-                return Nil
-              } else {
-                /* Perhaps there's no need to crash because the solver get stuck with something... Learning sound stuff in a past no one wants to return to */
-                logger.info(s"\nTask: $task -- Abduction failed (UNSATISFIABLE program)")
-                /*
-                logger.error(s"\nTask: $task -- Ended up with an UNSATISFIABLE program")
-                val program = Source.fromFile(aspFile).getLines.toList.mkString("\n")
-                throw new RuntimeException(s"\nTask: $task -- Ended up with an UNSATISFIABLE program:\n$program")
-                */
-              }
-            case _ =>
-              logger.info(s"\nTask: $task -- Abduction failed (UNSATISFIABLE program)")
-              /*
-              logger.error(s"\nTask: $task -- Ended up with an UNSATISFIABLE program")
-              val program = Source.fromFile(aspFile).getLines.toList.mkString("\n")
-              throw new RuntimeException(s"\nTask: $task -- Ended up with an UNSATISFIABLE program:\n$program")
-              */
-          }
-
-      }
-    }
-    if (models.isEmpty) Nil
-    else models map (x => AnswerSet(x.split(" ").toList))
-  }
 
 
 
@@ -719,7 +680,7 @@ object ASP extends ASPResultsParser with LazyLogging {
     *
     */
 
-   def inference(p: Expression, e: Example, jep: Jep, globals: Globals): AnswerSet = {
+   def inference(p: Expression, e: Example, globals: Globals): AnswerSet = {
      val f = (p: Expression) => p match {
         case x: Clause => x.withTypePreds(globals).tostring
         case x: Theory => (x.clauses map (z => z.withTypePreds(globals).tostring)).mkString("\n")
@@ -730,7 +691,7 @@ object ASP extends ASPResultsParser with LazyLogging {
          "\n" + f(p)+ globals.EXAMPLE_PATTERNS.map(x => s"\n#show ${x.tostring}:${x.tostring}.").mkString("\n")
      ASP.toASPprogram(program = List(aspProgram),
        writeToFile = file.getCanonicalPath)
-     val covers = ASP.solve("inference",aspInputFile = file, jep=jep)
+     val covers = ASP.solve("inference",aspInputFile = file)
      covers.head
    }
 

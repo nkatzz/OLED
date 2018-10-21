@@ -1,0 +1,63 @@
+\documentclass[12pt]{article}
+\usepackage{lingmacros}
+\usepackage{tree-dvips}
+\usepackage{url}
+
+\usepackage{pgfplotstable}
+\usepackage{pgfplots}
+\pgfplotsset{compat = 1.3}
+\usepackage{subfig}
+
+\usepackage{amssymb}
+\setcounter{tocdepth}{3}
+\usepackage{graphicx}
+
+\usepackage{times}
+\usepackage{graphicx}
+\usepackage{latexsym}
+\usepackage{algorithm}
+\usepackage{float}
+\usepackage[noend]{algpseudocode}
+\usepackage{amssymb}
+\usepackage{amsmath,amsthm} 
+\usepackage{amsfonts}
+%%%%%%%\usepackage{mathtools}
+\usepackage{verbatim} 
+\usepackage{longtable}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{epstopdf}
+\usepackage{longtable}
+\usepackage{pgfpages}
+\usepackage{multirow}
+\usepackage{varwidth}
+%\usepackage{tabularx} % for aligning & numbering equations on the same line
+%\usepackage{enumitem}
+\usepackage{pifont}
+
+\begin{document}
+
+\section*{Notes}
+
+These are preliminary notes for things to remember.
+
+\subsection*{Parsing CAVIAR Into Mongo}
+\begin{itemize}
+\item Download the dataset from here: \scriptsize
+ \url{http://users.iit.demokritos.gr/~nkatz/data/CAVIAR-abrupt-original.tar.gz} \normalsize 
+\item Run: \\
+\scriptsize \texttt{java -cp oled.jar:/lib/jep-3.6.3.jar -Djava.library.path=/opt/jep-home/lib/python/jep data\_handling.ParseCAVIAR /path/to/unzipped.dataset dbname} \normalsize \\
+For example: \\
+\scriptsize \texttt{java -cp oled.jar:/lib/jep-3.6.3.jar -Djava.library.path=/opt/jep-home/lib/python/jep data\_handling.ParseCAVIAR /home/nkatz/dev/CAVIAR-abrupt-original caviar} \normalsize
+\end{itemize}
+
+\subsection*{Building LoMRF}
+Run sbt from within the \texttt{auxlib} folder and do \texttt{publishLocal}. Then run sbt from within the LoMRF folder and do \texttt{publishLocal}.
+
+\subsection*{\texttt{.profile}}
+\begin{figure*}[h]
+\centering
+\includegraphics[width=\textwidth]{./figures/profile-example.png}
+\end{figure*} 
+
+\end{document}

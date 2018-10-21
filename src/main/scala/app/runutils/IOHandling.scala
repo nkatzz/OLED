@@ -12,7 +12,7 @@ import utils.DataUtils.Interval
 object IOHandling {
 
   // TODO
-  // Currently used bt the maritime runner
+  // Currently used by the maritime runner
   trait Source
 
   trait MongoSource extends Source {

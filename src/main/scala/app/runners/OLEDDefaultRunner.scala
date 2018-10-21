@@ -38,7 +38,12 @@ object OLEDDefaultRunner {
       System.exit(-1)
     } else {
       val runningOptions = CMDArgs.getOLEDInputArgs(args)
-      val trainingDataOptions = new DefaultMongoDataOptions(dbName = runningOptions.db, collectionName = runningOptions.mongoCollection, chunkSize = runningOptions.chunkSize, limit = runningOptions.dataLimit, targetConcept = runningOptions.targetHLE, sortDbByField = "time")
+      val trainingDataOptions =
+        new DefaultMongoDataOptions(dbName = runningOptions.db,
+          collectionName = runningOptions.mongoCollection,
+          chunkSize = runningOptions.chunkSize,
+          limit = runningOptions.dataLimit,
+          targetConcept = runningOptions.targetHLE, sortDbByField = "None")
       val testingDataOptions = trainingDataOptions
       val trainingDataFunction: DefaultMongoDataOptions => Iterator[Example] = getMongoData
       val testingDataFunction: DefaultMongoDataOptions => Iterator[Example] = getMongoData
@@ -59,6 +64,7 @@ object OLEDDefaultRunner {
                                 val examplesIds: List[String] = Nil) extends MongoSource
 
   def getMongoData(opts: DefaultMongoDataOptions): Iterator[Example] = {
+
     val mc = MongoClient()
     val collection: MongoCollection = mc(opts.dbName)(opts.collectionName)
 

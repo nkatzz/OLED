@@ -4,7 +4,6 @@ import app.runners.MLNDataHandler
 import app.runners.MLNDataHandler.MLNDataOptions
 import app.runutils.Globals
 import com.typesafe.scalalogging.LazyLogging
-import jep.Jep
 import logic.Theory
 import mcts.HillClimbing.{constructBottomTheory, generateChildrenNodes, getData, scoreNodes, crossVal}
 
@@ -33,11 +32,9 @@ object MCTS_FOL extends LazyLogging{
 
     val opts = new MLNDataOptions(foldPath, chunkSize)
 
-    val jep = new Jep()
+    val globals = new Globals("/home/nkatz/dev/iled/datasets/CaviarMLN/move", "")
 
-    val globals = new Globals("/home/nkatz/dev/iled/datasets/CaviarMLN", "")
-
-    val bottomTheory = constructBottomTheory(getData(opts), jep, globals)
+    val bottomTheory = constructBottomTheory(getData(opts), globals)
 
     val iterations = 4
 
@@ -48,7 +45,7 @@ object MCTS_FOL extends LazyLogging{
     val rootNode = RootNode()
 
     // Generate the 1rst-level children.
-    generateAndScoreChildren(rootNode, bottomTheory, jep, globals, opts, 0)
+    generateAndScoreChildren(rootNode, bottomTheory, globals, opts, 0)
 
     // Descent down the tree a few times and return the best
     // theory from the last iteration.
@@ -56,7 +53,7 @@ object MCTS_FOL extends LazyLogging{
       logger.info(s"Iteration $iterCount")
       val bestChild = rootNode.descendToBestChild(exploreRate)
       logger.info(s"Best leaf node selected (MCTS score: ${bestChild.getMCTSScore(exploreRate)} | id: ${bestChild.id}):\n${bestChild.theory.tostring}")
-      val newNodes = generateAndScoreChildren(bestChild, bottomTheory, jep, globals, opts, iterCount)
+      val newNodes = generateAndScoreChildren(bestChild, bottomTheory, globals, opts, iterCount)
       val bestChildNode = newNodes.maxBy( x => f1(x.theory) )
       bestChildNode.propagateReward(f1(bestChildNode.theory))
       if (theorySearchedLast.theory == Theory()) {
@@ -77,15 +74,15 @@ object MCTS_FOL extends LazyLogging{
     logger.info("Cross-validation...")
     val testSet = MLNDataHandler.getTestingData(opts)
     val theory_ = Theory(bestNode.theory.clauses).compress
-    crossVal(theory_, jep, testSet, "", globals) // generate new theory to clear the stats counter
+    crossVal(theory_, testSet, "", globals) // generate new theory to clear the stats counter
     logger.info(s"F1-score on test set: ${theory_.stats._6}")
 
   }
 
-  def generateAndScoreChildren(fromNode: TreeNode, bottomTheory: Theory, jep: Jep, gl: Globals, opts: MLNDataOptions, iterationCount: Int) = {
+  def generateAndScoreChildren(fromNode: TreeNode, bottomTheory: Theory, gl: Globals, opts: MLNDataOptions, iterationCount: Int) = {
     require(fromNode.isLeafNode())
-    val newTheories = generateChildrenNodes(fromNode.theory, bottomTheory, getData(opts), jep, gl)
-    scoreNodes(newTheories, jep, gl, opts)
+    val newTheories = generateChildrenNodes(fromNode.theory, bottomTheory, getData(opts), gl)
+    scoreNodes(newTheories, gl, opts)
     // The depth is used in the id generation of the children nodes.
     val depth = fromNode.getDepth() + 1
     val newNodes = newTheories.foldLeft(1, Vector[InnerNode]()) { (x, theory) =>

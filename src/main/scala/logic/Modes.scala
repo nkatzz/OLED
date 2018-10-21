@@ -5,8 +5,6 @@ import logic.Exceptions._
 
 object Modes {
   
-
-
    case class PosPlmrk(override val _type: String) extends Expression {
       override val tostring = "+" + _type
       override def tostringQuote = this.tostring
@@ -20,8 +18,6 @@ object Modes {
       override def tostringQuote = this.tostring
    }
    
-
-
    case class ModeAtom(functor: String, args: List[Expression], isNAF:Boolean = false) extends Expression {
 
       val arity = this.args.length
@@ -78,10 +74,9 @@ object Modes {
        */
 
       def varbed: Literal = {
-         val lit = Literal(functor = this.functor)
+         //val lit = Literal(functor = this.functor)
          val (varbed, ttypes, _) = variabilize(List(Literal(functor = this.functor)), this.args, List(), 0)
          Literal(functor = varbed.head.functor, terms = varbed.head.terms, isNAF = this.isNAF, typePreds = ttypes, modeAtom = this)
-
       }
 
       /**

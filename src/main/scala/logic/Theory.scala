@@ -4,10 +4,9 @@ import java.io.File
 
 import app.runutils.Globals
 import com.typesafe.scalalogging.LazyLogging
-//import iled.core.{Core, Iled}
 import logic.Examples.Example
 import utils.{Utils, ASP}
-import jep.Jep
+
 
 import scala.collection.mutable.ListBuffer
 
@@ -112,7 +111,7 @@ case class Theory(clauses: List[Clause] = List()) extends Expression with LazyLo
 
 
   /* Used when learning rules separately. */
-  def scoreRules(example: Example, jep: Jep, globals: Globals, postPruningMode: Boolean = false) : Unit = {
+  def scoreRules(example: Example, globals: Globals, postPruningMode: Boolean = false) : Unit = {
     val targetClass = getTargetClass
     // If a rule has just been expanded its refinements are empty, so generate new
     if (!postPruningMode) {
@@ -147,7 +146,8 @@ case class Theory(clauses: List[Clause] = List()) extends Expression with LazyLo
     //println(s"rules being evaluated: ${allRules.size}")
     //--------------------------------------------------------
 
-    val show = globals.SHOW_TPS_ARITY_2 + globals.SHOW_FPS_ARITY_2 + globals.SHOW_FNS_ARITY_2 + globals.SHOW_TIME + globals.SHOW_INTERPRETATIONS_COUNT
+    val show = globals.SHOW_TPS_ARITY_2 + globals.SHOW_FPS_ARITY_2 + globals.SHOW_FNS_ARITY_2 +
+      globals.SHOW_TIME + globals.SHOW_INTERPRETATIONS_COUNT
     val include = {
       targetClass match {
         case "initiatedAt" => globals.INCLUDE_BK(globals.BK_INITIATED_ONLY_MARKDED)
@@ -155,10 +155,10 @@ case class Theory(clauses: List[Clause] = List()) extends Expression with LazyLo
       }
     }
     val all = e + include + exmplCountRules + markedProgram + show
-    val f = Utils.getTempFile("isConsistent",".lp",deleteOnExit = true)
+    val f = Utils.getTempFile(s"isConsistent",".lp")
     Utils.writeToFile(f, "append")(p => List(all) foreach p.println)
     val path = f.getCanonicalPath
-    val answerSet = ASP.solve(task = Globals.SCORE_RULES, aspInputFile = new File(path), jep=jep)
+    val answerSet = ASP.solve(task = Globals.SCORE_RULES, aspInputFile = new File(path))
 
     answerSet match {
       case Nil =>
@@ -169,19 +169,18 @@ case class Theory(clauses: List[Clause] = List()) extends Expression with LazyLo
           val coverageCounts = x._2
           if(y.startsWith("tps") || y.startsWith("fps") || y.startsWith("fns")) {
             (exCount,coverageCounts :+ y)
-          //} else if (y.startsWith("times")) {
-          //  (timesCount :+ y, interpretationsCount, coverageCounts)
-          } else if (y.startsWith("exampleGrounding")) {
+
+          } else if (y.startsWith("countGroundings")) {
             (exCount :+ y, coverageCounts)
           } else {
             throw new RuntimeException(s"Don't know what to do with what the solver" +
-              s" returned.\nExpected tps/2,fps/2,fns/2,exampleGrounding/1 got\n${answerSet.head.atoms}")
+              s" returned.\nExpected tps/2,fps/2,fns/2,countGroundings/1 got\n${answerSet.head.atoms}")
           }
         }
 
         /*
         *
-        * Don't throw this exception. There are cases where we do not hace any groundings.
+        * Don't throw this exception. There are cases where we do not have any groundings.
         * For instance consider this example from the maritime domain: We are learning the concept
         * terminatedAt(highSpeedIn(Vessel,Area),Time) and an example comes with no area in it.
         * Then there are no groundings and, correctly, the "seen examples" from our existing rules
@@ -189,28 +188,17 @@ case class Theory(clauses: List[Clause] = List()) extends Expression with LazyLo
         * */
         //if (exampleCounts.isEmpty) throw new RuntimeException("No example count returned")
 
-
-
-        /*=====================================
-         We need to get the count of different
-         interpretations. This is application-
-         specific. For instance in CAVIAR it is
-         equal to the the 2-combinations of
-         time points by persons.
-
-         Need to find a generic way to handle
-         this, although in the general case we
-         may assume that the interpretations
-         are passed in correctly (e.g. each
-         interpretation has only two persons
-         in the CAVIAR case) and we can simply
-         count them. For now I'll use the patch
-         below to get the persons and calculate
-         the combinations.
-         =====================================*/
+        // Normally, only one countGroundings/1 atom should be returned, with the number of
+        // target concept groundings as its argument. If we have more than one target concept
+        // then we could have more such atoms, but OLED does not handle that.
+        if (exampleCounts.length > 1)
+          throw new RuntimeException(s"Only one countGroundings/1 atom was expected, got ${exampleCounts.mkString(" ")} instead.")
 
         // increase the count for seen examples
-        val c = exampleCounts.size
+        //val c = exampleCounts.size
+
+        val c = exampleCounts.head.split("\\(")(1).split("\\)")(0).toInt
+
         this.clauses foreach { x =>
           x.seenExmplsNum +=  c //times//*100 // interps
           x.refinements.foreach(y => y.seenExmplsNum += c)
@@ -222,19 +210,16 @@ case class Theory(clauses: List[Clause] = List()) extends Expression with LazyLo
           val (what, hashCode, count) = (tolit.functor, tolit.terms.head.tostring, tolit.terms.tail.head.tostring)
           (what, hashCode, count)
         }
+
         val updateCounts = (what: String, hashCode: String, count: String) => {
           val clause = markedMap(hashCode)
-
-          if(what == "fns" && count.toInt > 0) {
-            val stop = "stop"
-          }
-
           what match {
             case "tps" => clause.tps += count.toInt
             case "fps" => clause.fps += count.toInt
             case "fns" => clause.fns += count.toInt
           }
         }
+
         coverageCounts foreach { x =>
           val (what, hashCode, count) = parse(x)
           updateCounts(what, hashCode, count)
@@ -258,7 +243,7 @@ case class Theory(clauses: List[Clause] = List()) extends Expression with LazyLo
   def score = fscore
 
   /* Score this theory as a whole */
-  def score(example: Example, jep: Jep, globals: Globals, postPruningMode: Boolean = false) = {
+  def score(example: Example, globals: Globals, postPruningMode: Boolean = false) = {
     val e = (example.annotationASP ++ example.narrativeASP).mkString("\n")
     val include = globals.INCLUDE_BK(globals.BK_WHOLE_EC)
     val exmplCountRules = globals.EXAMPLE_COUNT_RULE
@@ -270,7 +255,7 @@ case class Theory(clauses: List[Clause] = List()) extends Expression with LazyLo
     val f = Utils.getTempFile("isConsistent",".lp",deleteOnExit = true)
     Utils.writeToFile(f, "append")(p => List(all) foreach p.println)
     val path = f.getCanonicalPath
-    val answerSet = ASP.solve(task = Globals.SCORE_RULES, aspInputFile = new File(path), jep=jep)
+    val answerSet = ASP.solve(task = Globals.SCORE_RULES, aspInputFile = new File(path))
 
     //val (exampleCounts, tpss, fpss, fnss) = (List[String](), List[String](), List[String](), List[String]())
 
@@ -361,7 +346,7 @@ case class Theory(clauses: List[Clause] = List()) extends Expression with LazyLo
 
   */
 
-  def growNewRuleTest(e: Example, jep: Jep, target: String, globals: Globals): Boolean = {
+  def growNewRuleTest(e: Example, target: String, globals: Globals): Boolean = {
     // we already have the target with the input (the target parameter).
     // But the one from the input is used only in case of an empty theory. In
     // other cases we get the target class by looking at the rules' heads,
@@ -370,12 +355,12 @@ case class Theory(clauses: List[Clause] = List()) extends Expression with LazyLo
     // of initiatedAt and terminated rules in the theory.)
     val targetClass = getTargetClass
 
-    def solve(program: String, jep: Jep): List[AnswerSet] = {
+    def solve(program: String): List[AnswerSet] = {
       val f = Utils.getTempFile(s"growNewRuleTest-for-$target",".lp")
       Utils.writeToFile(f, "append")(p => List(program) foreach p.println)
       val path = f.getCanonicalPath
       //ASP.solve(task = Core.INFERENCE, aspInputFile = new File(path), jep=jep)
-      ASP.solve(task = Globals.GROW_NEW_RULE_TEST, aspInputFile = new File(path), jep=jep)
+      ASP.solve(task = Globals.GROW_NEW_RULE_TEST, aspInputFile = new File(path))
     }
 
     val (includeBKfile,failedTestDirective,show) = {
@@ -426,7 +411,7 @@ case class Theory(clauses: List[Clause] = List()) extends Expression with LazyLo
 
     //val timeStart = System.nanoTime()
 
-    val answerSet = solve(program,jep)
+    val answerSet = solve(program)
 
     //val timeEnd = System.nanoTime()
 
@@ -445,14 +430,14 @@ case class Theory(clauses: List[Clause] = List()) extends Expression with LazyLo
 
 
 
-  def growNewRuleTestWholeTheories(e: Example, jep: Jep, globals: Globals): Boolean = {
+  def growNewRuleTestWholeTheories(e: Example, globals: Globals): Boolean = {
 
-    def solve(program: String, jep: Jep): List[AnswerSet] = {
+    def solve(program: String): List[AnswerSet] = {
       val f = Utils.getTempFile(s"growNewRuleTest",".lp",deleteOnExit = true)
       Utils.writeToFile(f, "append")(p => List(program) foreach p.println)
       val path = f.getCanonicalPath
       //ASP.solve(task = Core.INFERENCE, aspInputFile = new File(path), jep=jep)
-      ASP.solve(task = Globals.GROW_NEW_RULE_TEST, aspInputFile = new File(path), jep=jep)
+      ASP.solve(task = Globals.GROW_NEW_RULE_TEST, aspInputFile = new File(path))
     }
 
     val (includeBKfile,failedTestDirective,show) = {
@@ -469,7 +454,7 @@ case class Theory(clauses: List[Clause] = List()) extends Expression with LazyLo
     val failure = (atoms: List[String]) => atoms.exists(p => p.startsWith("fns") || p.startsWith("fps"))
 
     //val timeStart = System.nanoTime()
-    val answerSet = solve(program,jep)
+    val answerSet = solve(program)
     //val timeEnd = System.nanoTime()
 
     //println(s"growNewRuleTest solving time: ${(timeEnd-timeStart)/1000000000.0}")
@@ -647,7 +632,7 @@ case class Theory(clauses: List[Clause] = List()) extends Expression with LazyLo
     LogicUtils.updateSupport(this, kernel, fromWeakExample = fromWeakExample)
   }
 
-  def clearSupports(e: Example, jep: Jep, globals: Globals) = { // it also removes inconsistent weak rules
+  def clearSupports(e: Example, globals: Globals) = { // it also removes inconsistent weak rules
 
     // Don't throw away weak rules before trying to refine them
 
@@ -678,7 +663,7 @@ case class Theory(clauses: List[Clause] = List()) extends Expression with LazyLo
     ///* // This delegates consistency checking for all rules at once to the ASP solver
     if (consistents != Nil) {
       val path = ASP.isConsistent_program_Marked(Theory(consistents), e, globals)
-      val answerSet = ASP.solve(task = Globals.INFERENCE, aspInputFile = new File(path), jep=jep)
+      val answerSet = ASP.solve(task = Globals.INFERENCE, aspInputFile = new File(path))
       if(answerSet != Nil) {
         val f = (a: String) => {
           val tolit = Literal.parse(a)
@@ -741,10 +726,10 @@ class PriorTheory(val retainedRules: Theory = Theory(),
     LogicUtils.updateSupport(this.refinedRules,kernel,fromWeakExample)
   }
 
-  override def clearSupports(e: Example, jep: Jep, globals: Globals) = {
-    val news = this.newRules.clearSupports(e,jep,globals)
-    val ret = this.retainedRules.clearSupports(e,jep,globals)
-    val ref = this.refinedRules.clearSupports(e,jep,globals)
+  override def clearSupports(e: Example, globals: Globals) = {
+    val news = this.newRules.clearSupports(e,globals)
+    val ret = this.retainedRules.clearSupports(e,globals)
+    val ref = this.refinedRules.clearSupports(e,globals)
     new PriorTheory(retainedRules=ret,newRules=news,refinedRules=ref)
   }
 

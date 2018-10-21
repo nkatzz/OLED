@@ -3,9 +3,6 @@
  *
  */
 
-
-
-
 package logic
 
 trait Expression {

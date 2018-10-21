@@ -6,6 +6,12 @@ import logic._
 import scala.util.parsing.combinator.JavaTokenParsers
 
 
+object Test1 extends App {
+  val p = new ClausalLogicParser
+  val x = p.parse(p.literal, "initiatedAt(meeting(a(p,test(c,X,59,e(xmymz))),X,45),T)").getOrElse(throw new RuntimeException)
+  println(x.tostring)
+}
+
 class ClausalLogicParser extends JavaTokenParsers {
 
    def lowerCaseIdent: Parser[String] = """[a-z][a-zA-Z0-9_]*""".r
@@ -23,11 +29,11 @@ class ClausalLogicParser extends JavaTokenParsers {
    def innerTerms: Parser[List[Expression]] = "(" ~> repsep(term, ",") <~ ")"
    def literal: Parser[Literal] = (
       naf ~ lowerCaseIdent ~ innerTerms ^^ { case naf ~ functor ~ inner => Literal(functor = functor, terms = inner, isNAF = true) }
-      | lowerCaseIdent ~ innerTerms ^^ { case functor ~ inner => Literal(functor = functor, terms = inner, isNAF = false) })
+      | lowerCaseIdent ~ innerTerms ^^ { case functor ~ inner => Literal(functor = functor, terms = inner) })
    def atom: Parser[PosLiteral] = lowerCaseIdent ~ innerTerms ^^ { case functor ~ inner => PosLiteral(functor = functor, terms = inner) }
    def clauseHead: Parser[PosLiteral] = atom
    def clauseBody: Parser[List[Literal]] = repsep(literal, ",")
-   def clause: Parser[Clause] = clauseHead ~ iff ~ clauseBody ^^ { case head ~ iff ~ body => Clause(head, body) }
+   def clause: Parser[Clause] = clauseHead ~ iff ~ clauseBody  ^^ { case head ~ iff ~ body => Clause(head, body)}
 
    def parseOutput(parser: Parser[Expression], expression: String): Expression = {
       getParseResult(parse(parser, expression))

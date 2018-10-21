@@ -21,9 +21,14 @@
         <appender-ref ref="STDOUT"/>
     </logger>
 
+    <logger name="lomrf" level="error">
+        <appender-ref ref="STDOUT"/>
+    </logger>
+
     <!-- <root level="debug"> -->
     <root level="info">
         <appender-ref ref="STDOUT" />
         <appender-ref ref="FILE" />
     </root>
+
 </configuration>

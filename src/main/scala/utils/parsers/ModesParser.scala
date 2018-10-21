@@ -14,6 +14,7 @@ final class ModesParser extends JavaTokenParsers {
    def mh: Parser[String] = "modeh" ^^ { x => x }
    def mb: Parser[String] = "modeb" ^^ { x => x }
    def ep: Parser[String] = "examplePattern" ^^ { x => x }
+   def ip: Parser[String] = "inputPredicate" ^^ { x => x }
    def posplmrk: Parser[PosPlmrk] = "+" ~ lowerCaseIdent ^^ { case "+" ~ x => PosPlmrk(x) }
    def negplmrk: Parser[NegPlmrk] = "-" ~ lowerCaseIdent ^^ { case "-" ~ x => NegPlmrk(x) }
    def constplmrk: Parser[ConstPlmrk] = "#" ~ lowerCaseIdent ^^ { case "#" ~ x => ConstPlmrk(x) }
@@ -29,6 +30,7 @@ final class ModesParser extends JavaTokenParsers {
    def modeb: Parser[ModeAtom] = mb ~ "(" ~ modeAtom ~ (")"|").") ^^ { case mb ~ "(" ~ m ~ (")"|").") => m }
    def mode: Parser[ModeAtom] = modeh | modeb
    def exmplPattern: Parser[ModeAtom] = ep ~ "(" ~ modeAtom ~ (")"|").") ^^ { case ep ~ "(" ~ m ~ (")"|").") => m }
+   def inputPred: Parser[ModeAtom] = ip ~ "(" ~ modeAtom ~ (")"|").") ^^ { case ep ~ "(" ~ m ~ (")"|").") => m }
 
    def parseModes(parser: Parser[ModeAtom], expression: String): Option[ModeAtom] = {
       parseAll(parser, expression) match {

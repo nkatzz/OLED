@@ -1,5 +1,6 @@
 package logic
 
+import java.text.DecimalFormat
 import java.util.UUID
 
 import app.runutils.Globals
@@ -7,13 +8,11 @@ import logic.Examples.Example
 import oled.distributed.Structures.ClauseStats
 import logic.Exceptions._
 import utils.{ASP, Utils}
-import jep.Jep
 import oled.distributed.Structures
-
 import scala.collection.mutable.ListBuffer
 import scala.util.Random
 import utils.ClauseImplicits._
-import utils.parsers.ClausalLogicParser
+import utils.parsers.{ClausalLogicParser, PB2LogicParser}
 
 /**
  * Companion object
@@ -41,27 +40,35 @@ object Clause {
 
   /* Parses a string into a Clause. */
 
-  def toClause(cl: String): Clause = {
+  def parse(cl: String): Clause = {
     val p = new ClausalLogicParser
     p.getParseResult(p.parse(p.clause, cl)).asInstanceOf[Clause]
   }
 
+  def parseWPB2(cl: String) = PB2LogicParser.parseClause(cl).asInstanceOf[Clause]
+
+  def toMLNFlat(c: Clause) = {}
+
+
+
 }
 
-case class Clause(head: PosLiteral = PosLiteral(), body: List[Literal] = Nil, fromWeakExample: Boolean = false,
-                  var supportSet: Theory = Theory(), uuid: String = UUID.randomUUID.toString) extends Expression {
+case class Clause(head: PosLiteral = PosLiteral(),
+                  body: List[Literal] = Nil,
+                  fromWeakExample: Boolean = false,
+                  var supportSet: Theory = Theory(),
+                  uuid: String = UUID.randomUUID.toString) extends Expression {
 
 
-  var parentClause = Clause.empty
-
-  // This is used in the distributed version of oled
-  //val uuid = UUID.randomUUID.toString
-
+  var parentClause: Clause = Clause.empty
 
   // This field is used by the distributed version of oled.
   // It is a (k,v) map, where each k is the id (name) of one of the other nodes N and
   // v is a Structures.Stats instance carrying the current counts from N.
   var countsPerNode = scala.collection.mutable.Map[String, Structures.ClauseStats]()
+
+  var mlnWeight: Double = 0.0
+  var subGradient: Double = 0.0
 
   // These variables store the total current counts from all nodes.
   // These are also used in the distributed setting.
@@ -144,26 +151,36 @@ case class Clause(head: PosLiteral = PosLiteral(), body: List[Literal] = Nil, fr
 
   def recall: Double = tps.toFloat*tpw / ( tps*tpw + fns*fnw)
 
-  def fscore: Double = if (this.precision+this.recall == 0) 0.0 else (2*this.precision*this.recall)/(this.precision+this.recall)
+  def fscore: Double =
+    if (this.precision+this.recall == 0) 0.0
+    else (2*this.precision*this.recall)/(this.precision+this.recall)
 
   def compressionInit = (tps*tpw - fps*fpw - (this.body.length + 1)).toDouble
 
   def compressionTerm = (tps*tpw - (fns*fns) - (this.body.length + 1)).toDouble
 
-  def tpsRelativeFrequency = if (this.tps == 0 || this.parentClause.tps == 0) 0.0 else this.tps.toDouble*tpw/this.parentClause.tps*tpw
+  def tpsRelativeFrequency =
+    if (this.tps == 0 || this.parentClause.tps == 0) 0.0
+    else this.tps.toDouble*tpw/this.parentClause.tps*tpw
 
   def foilGainInit = {
     val nonzero = 0.0000006
     val adjust = (x: Double) => if (x.isNaN || x == 0.0) nonzero else x
-    //tps * (Math.log(adjust(precision)) - Math.log(adjust(parentClause.precision)))
-    tpsRelativeFrequency * (Math.log(adjust(precision)) - Math.log(adjust(parentClause.precision)))
+    // How can this be normalized so we get a range in [0,1]???
+    // Remember also that if you use this, the parent rule should not be included
+    // in the calculation of the best-scoring rule, since it will always win
+    tps * (Math.log(adjust(precision)) - Math.log(adjust(parentClause.precision)))
+    //tpsRelativeFrequency * (Math.log(adjust(precision)) - Math.log(adjust(parentClause.precision)))
   }
 
   def foilGainTerm = {
     val nonzero = 0.0000006
     val adjust = (x: Double) => if (x.isNaN || x == 0.0) nonzero else x
-    //tps * (Math.log(adjust(recall)) - Math.log(adjust(parentClause.recall)))
-    tpsRelativeFrequency * (Math.log(adjust(recall)) - Math.log(adjust(parentClause.recall)))
+    // How can this be normalized so we get a range in [0,1]???
+    // Remember also that if you use this, the parent rule should not be included
+    // in the calculation of the best-scoring rule, since it will always win
+    tps * (Math.log(adjust(recall)) - Math.log(adjust(parentClause.recall)))
+    //tpsRelativeFrequency * (Math.log(adjust(recall)) - Math.log(adjust(parentClause.recall)))
   }
 
   def foilInfoGainInit = {
@@ -218,7 +235,13 @@ case class Clause(head: PosLiteral = PosLiteral(), body: List[Literal] = Nil, fr
 
     // The - sign is to sort with decreasing order (default is with increasing)
     // Also sort clauses by length, so that sorter clauses be preferred over longer ones with the same score
-    val allSorted = (List(this) ++ this.refinements).sortBy { x => (- x.score, x.body.length+1) }
+    val allSorted =
+      if (Globals.scoringFunction == "foilgain")
+        // The parent rule should not be included here (otherwise it will always win, see the foil gain formula)
+        this.refinements.sortBy { x => (- x.score, - x.mlnWeight, x.body.length+1) }
+      else
+        (List(this) ++ this.refinements).sortBy { x => (- x.score, - x.mlnWeight, x.body.length+1) }
+
     val bestTwo = allSorted.take(2)
 
     //val (best,secondBest) = (bestTwo.head,bestTwo.tail.head)
@@ -315,6 +338,7 @@ case class Clause(head: PosLiteral = PosLiteral(), body: List[Literal] = Nil, fr
     if (this.head.functor == "initiatedAt") {
       Globals.scoringFunction match {
         case "default" => if (!precision.isNaN) precision else 0.0
+        //case "default" => if (!precision.isNaN)  (1.0 - 1.0/(1.0+tps.toDouble)) * precision else 0.0
         case "foilgain" => foilGainInit
         case "fscore" => fscore
         case _ => throw new RuntimeException("Error: No scoring function given.")
@@ -327,6 +351,7 @@ case class Clause(head: PosLiteral = PosLiteral(), body: List[Literal] = Nil, fr
     } else if (this.head.functor == "terminatedAt") {
       Globals.scoringFunction match {
         case "default" => if (!recall.isNaN) recall else 0.0
+        //case "default" => if (!recall.isNaN) (1.0 - 1.0/(1.0+tps.toDouble)) * recall else 0.0
         case "foilgain" => foilGainTerm
         case "fscore" => fscore
         case _ => throw new RuntimeException("Error: No scoring function given.")
@@ -389,12 +414,17 @@ case class Clause(head: PosLiteral = PosLiteral(), body: List[Literal] = Nil, fr
     0.0
   }
 
+  def format(x: Double) = {
+    val defaultNumFormat = new DecimalFormat("0.############")
+    defaultNumFormat.format(x)
+  }
+
   def showWithStats = {
     val scoreFunction = if (! Globals.glvalues("distributed").toBoolean) this.score else this.distScore
     val (tps_, fps_, fns_) =
       if(! Globals.glvalues("distributed").toBoolean) (tps*tpw, fps*fpw, fns*fnw)
       else (this.getTotalTPs, this.getTotalFPs, this.getTotalFNs)
-    s"score:" + s" $scoreFunction, tps: $tps_, fps: $fps_, fns: $fns_ Evaluated on: ${this.getTotalSeenExmpls} examples\n$tostring"
+    s"score:" + s" $scoreFunction, tps: $tps_, fps: $fps_, fns: $fns_ | MLN-weight: ${format(this.mlnWeight)} Evaluated on: ${this.getTotalSeenExmpls} examples\n$tostring"
   }
 
   def showWithStats_NoEC = {
@@ -422,23 +452,6 @@ case class Clause(head: PosLiteral = PosLiteral(), body: List[Literal] = Nil, fr
     this.seenExmplsNum = exmplsCount
   }
 
-  // This variable stores a set of constructed
-  // refinements. This is used in case this clause
-  // is a support set clause (so it's always an empty
-  // list in case this is a regular clause). Also,
-  // this variable is used only in the noise-tolerant
-  // version. It stores the refinements of a parent rule
-  // that have been already generated (and scored) from this
-  // support set rule.
-
-  // Haven't decided the final type of this var.
-  // I don't know if the Refinement class will be
-  // of any use.
-
-
-
-
-
 
   /* generates candidate refinements for the Hoeffding test.
      The otherNodesNames is used only in the distributed setting. */
@@ -454,6 +467,9 @@ case class Clause(head: PosLiteral = PosLiteral(), body: List[Literal] = Nil, fr
     val flattend = refinementsSets.flatten
     flattend.foreach{ refinement =>
       refinement.parentClause = this
+      //------------------------------------
+      refinement.mlnWeight = this.mlnWeight
+      //------------------------------------
       val newMap = scala.collection.mutable.Map[String, ClauseStats]()
       if (Globals.glvalues("distributed").toBoolean) {
         // Just to be on the safe side in the distributed case
@@ -467,7 +483,8 @@ case class Clause(head: PosLiteral = PosLiteral(), body: List[Literal] = Nil, fr
   }
 
   def marked(globals: Globals) = {
-    Clause(head=Literal(functor = "marked", terms=List(this.##.toString, this.head)),body=this.withTypePreds(globals).body)
+    Clause(head=Literal(functor = "marked", terms=List(this.##.toString, this.head)),
+      body=this.withTypePreds(globals).body)
   }
 
   val isEmpty = this == Clause.empty
@@ -509,21 +526,21 @@ case class Clause(head: PosLiteral = PosLiteral(), body: List[Literal] = Nil, fr
   // this rule entails in w. Then its support needs
   // to be updated by 'encoding' the uncovered examples
   // with a set of new lifted bottom clauses.
-  def supportNeedsUpdate(e: Example, jep: Jep, globals: Globals): Boolean = {
-    val coversThis = ASP.inference(this,e, jep=jep, globals=globals).atoms.toSet // what this covers
+  def supportNeedsUpdate(e: Example, globals: Globals): Boolean = {
+    val coversThis = ASP.inference(this,e, globals=globals).atoms.toSet // what this covers
     val noUpdate = this.supportSet.clauses.exists(
-        p => ASP.inference(p, e, jep=jep, globals=globals).atoms.toSet == coversThis // then no update is needed
+        p => ASP.inference(p, e, globals=globals).atoms.toSet == coversThis // then no update is needed
       )
     ! noUpdate
   }
 
-  def isConsistent(e: Example, jep: Jep, globals: Globals): Boolean = {
-    LogicUtils.isSAT(Theory(List(this)), e, globals, ASP.isConsistent_program, jep=jep)
+  def isConsistent(e: Example, globals: Globals): Boolean = {
+    LogicUtils.isSAT(Theory(List(this)), e, globals, ASP.isConsistent_program)
   }
 
   override def tostringQuote = this.tostring
 
-  override val tostring = this.toStrList match {
+  override lazy val tostring = this.toStrList match {
     case List() => throw new LogicException("Cannot generate a Clause object for the empty clause")
     case h :: ts =>
       ts.length match {
@@ -549,6 +566,64 @@ case class Clause(head: PosLiteral = PosLiteral(), body: List[Literal] = Nil, fr
             if (ts.indexOf(x) == ts.length - 1) s"$x."
             else s"$x,").mkString("")
       }
+  }
+
+  /* No new line after each literal, no final ".", "^" instead of "," for conjunctions. */
+  def tostring_MLN(id: Int) = {
+
+    def format(x: Double) = {
+      val defaultNumFormat = new DecimalFormat("0.############")
+      defaultNumFormat.format(x)
+    }
+    val markedHead = PosLiteral(this.head.functor, terms = this.head.terms :+ Constant(s"ruleId_$id"))
+    (List(markedHead.asLiteral) ++ this.body).map(x => x.toMLN).map(x => x.tostring) match {
+      case List() => throw new LogicException("Cannot generate a Clause object for the empty clause")
+      case h :: ts =>
+        ts.length match {
+          case 0 => format(this.mlnWeight) + " " + h
+          case 1 => (format(this.mlnWeight) + " " + h + " :- " + ts.head).replaceAll("not ", "!")
+          case _ =>
+            format(this.mlnWeight) + " " + h + " :- " + (for (x <- ts) yield
+              if (ts.indexOf(x) == ts.length - 1) s"$x" else s"$x ^ ").mkString("").replaceAll("not ", "!")
+        }
+    }
+  }
+
+  /* The id term is already given. */
+  def tostring_MLN_1() = {
+
+    def format(x: Double) = {
+      val defaultNumFormat = new DecimalFormat("0.############")
+      defaultNumFormat.format(x)
+    }
+    //val markedHead = PosLiteral(this.head.functor, terms = this.head.terms)
+
+    this.toLiteralList.map(x => x.toMLN).map(x => x.tostring) match {
+      case List() => throw new LogicException("Cannot generate a Clause object for the empty clause")
+      case h :: ts =>
+        ts.length match {
+          case 0 => format(this.mlnWeight) + " " + h
+          case 1 => (format(this.mlnWeight) + " " + h + " :- " + ts.head).replaceAll("not ", "!")
+          case _ =>
+            format(this.mlnWeight) + " " + h + " :- " + (for (x <- ts) yield
+              if (ts.indexOf(x) == ts.length - 1) s"$x" else s"$x ^ ").mkString("").replaceAll("not ", "!")
+        }
+    }
+  }
+
+  def to_MLNClause() = {
+    val litsToMLN = this.toLiteralList.map(x => Literal.toMLNClauseLiteral(x).tostring)
+    litsToMLN match {
+      case List() => throw new LogicException("Cannot generate a Clause object for the empty clause")
+      case h :: ts =>
+        ts.length match {
+          case 0 => format(this.mlnWeight) + " " + h
+          case 1 => (format(this.mlnWeight) + " " + h + " :- " + ts.head).replaceAll("not ", "!")
+          case _ =>
+            format(this.mlnWeight) + " " + h + " :- " + (for (x <- ts) yield
+              if (ts.indexOf(x) == ts.length - 1) s"$x" else s"$x ^ ").mkString("").replaceAll("not ", "!")
+        }
+    }
   }
 
   def varbed: Clause = {
@@ -611,6 +686,8 @@ case class Clause(head: PosLiteral = PosLiteral(), body: List[Literal] = Nil, fr
    */
 
   def toStrList: List[String] = List(head.tostring) ++ (for (x <- body) yield x.tostring)
+
+  def toStrList_no_NAF: List[String] = List(head.tostring) ++ (for (x <- body) yield x.tostring_no_NAF)
 
   def literals: List[Literal] = List(this.head.asLiteral) ++ this.body
 

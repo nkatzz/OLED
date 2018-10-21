@@ -3,8 +3,8 @@ package app.runners
 import akka.actor.{ActorSystem, Props}
 import app.runners.OLEDMaritimeRunner._
 import app.runutils.{CMDArgs, Globals}
-import data_handling.caviar_intervals.MeetingTrainingDistributed
-import data_handling.maritime_data.yet_another_attempt.MaritimeToMongo.{populatePortsMap, populateSpeedLimitsMap}
+import datautils.caviar_intervals.MeetingTrainingDistributed
+import datautils.maritime_data.yet_another_attempt.MaritimeToMongo.{populatePortsMap, populateSpeedLimitsMap}
 import logic.Examples.Example
 import oled.distributed.{Dispatcher, Utils}
 import utils.DataUtils.DataAsIntervals

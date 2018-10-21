@@ -8,7 +8,6 @@ import app.runners.MLNDataHandler.MLNDataOptions
 import app.runutils.Globals
 import com.typesafe.scalalogging.LazyLogging
 import iled.ILED
-import jep.Jep
 import logic.Examples.Example
 import logic.{Literal, PriorTheory, Rules, Theory}
 import mcts.HillClimbing.{getData, crossVal}
@@ -38,10 +37,9 @@ object MCTS_FOL_Online extends LazyLogging{
     /*-----------------------------------------------*/
 
     val foldPath = "/home/nkatz/dev/CAVIAR_MLN/CAVIAR_MLN/move/fold_2"
-    val chunkSize = 50
+    val chunkSize = 500
     val opts = new MLNDataOptions(foldPath, chunkSize)
-    val jep = new Jep()
-    val globals = new Globals("/home/nkatz/dev/iled/datasets/CaviarMLN", "")
+    val globals = new Globals("/home/nkatz/dev/iled/datasets/CaviarMLN/move", "")
 
     val exploreRate = 0.005 //1.0/Math.sqrt(2) //
 
@@ -65,11 +63,11 @@ object MCTS_FOL_Online extends LazyLogging{
         // First, generate a new kernel set from the new example and a new theory from it,
         // without assuming any prior theory T. If there is no equivalent theory in the first
         // level of children of the root node, add T as a node there (so, expand the tree horizontally)
-        val newLevelOneNode = generateChildNode(rootNode.theory, exmpl, jep, globals)
+        val newLevelOneNode = generateChildNode(rootNode.theory, exmpl, globals)
         if (newLevelOneNode != Theory()) {
           if (rootNode.children.forall(p => !(p.theory.thetaSubsumes(newLevelOneNode) && newLevelOneNode.thetaSubsumes(p.theory)) )) {
-            println("ADDED NEW LEVEL 1")
-            val score = scoreNode(newLevelOneNode, exmpl, jep, globals, opts)
+            logger.info("Added new child at level 1 (tree expanded horizontally).")
+            val score = scoreNode(newLevelOneNode, exmpl, globals, opts)
             val n = InnerNode("new-level-1-node", newLevelOneNode, rootNode)
             n.updateRewards(score)
             n.incrementVisits()
@@ -81,7 +79,7 @@ object MCTS_FOL_Online extends LazyLogging{
         if (rootNode.children.nonEmpty) {
           val bestChild = rootNode.descendToBestChild(exploreRate)
           //logger.info(s"Best leaf node selected (MCTS score: ${bestChild.getMCTSScore(exploreRate)} | id: ${bestChild.id}):\n${bestChild.theory.tostring}")
-          val newNode = generateAndScoreChildren(bestChild, exmpl, jep, globals, opts, exmplsCount)
+          val newNode = generateAndScoreChildren(bestChild, exmpl, globals, opts, exmplsCount)
 
           if (newNode != bestChild) {
             logger.info(s"\nLeaf node: (MCTS score: ${bestChild.getMCTSScore(exploreRate)} |" +
@@ -110,20 +108,20 @@ object MCTS_FOL_Online extends LazyLogging{
     logger.info("Cross-validation...")
     val testSet = MLNDataHandler.getTestingData(opts)
     val theory_ = Theory(finalTheory.clauses).compress // generate new theory to clear the stats counter
-    crossVal(theory_, jep, testSet, "", globals)
+    crossVal(theory_, testSet, "", globals)
     logger.info(s"F1-score on test set: ${theory_.stats._6} | (tps, fps, fns) = (${theory_.stats._1}, ${theory_.stats._2}, ${theory_.stats._3})")
 
   }
 
-  def generateAndScoreChildren(fromNode: TreeNode, exmpl: Example, jep: Jep, gl: Globals, opts: MLNDataOptions, iterationCount: Int) = {
+  def generateAndScoreChildren(fromNode: TreeNode, exmpl: Example, gl: Globals, opts: MLNDataOptions, iterationCount: Int) = {
     require(fromNode.isLeafNode())
-    val childTheory = generateChildNode(fromNode.theory, exmpl, jep, gl)
+    val childTheory = generateChildNode(fromNode.theory, exmpl, gl)
     // The depth is used in the id generation of the children nodes.
     val depth = fromNode.getDepth() + 1
     if (childTheory != Theory()) {
 
-      val score1 = scoreNode(childTheory, exmpl, jep, gl, opts)
-      val score2 = scoreNode(fromNode.theory, exmpl, jep, gl, opts)
+      val score1 = scoreNode(childTheory, exmpl, gl, opts)
+      val score2 = scoreNode(fromNode.theory, exmpl, gl, opts)
 
       if (score1 > score2) {
         val id = s"$iterationCount-$depth-1"
@@ -135,31 +133,31 @@ object MCTS_FOL_Online extends LazyLogging{
         newNode.propagateReward(score)
         newNode
       } else {
-        scoreAreReturnNode(fromNode, exmpl, jep, gl, opts)
+        scoreAreReturnNode(fromNode, exmpl, gl, opts)
       }
     } else {
-      scoreAreReturnNode(fromNode, exmpl, jep, gl, opts)
+      scoreAreReturnNode(fromNode, exmpl, gl, opts)
     }
 
   }
 
-  def scoreAreReturnNode(node: TreeNode, exmpl: Example, jep: Jep, gl: Globals, opts: MLNDataOptions) = {
-    val score = scoreNode(node.theory, exmpl, jep, gl, opts)
+  def scoreAreReturnNode(node: TreeNode, exmpl: Example, gl: Globals, opts: MLNDataOptions) = {
+    val score = scoreNode(node.theory, exmpl, gl, opts)
     node.updateRewards(score)
     node.incrementVisits()
     node.propagateReward(score)
     node
   }
 
-  def scoreNode(node: Theory, exmpl: Example, jep: Jep, gl: Globals, opts: MLNDataOptions) = {
+  def scoreNode(node: Theory, exmpl: Example, gl: Globals, opts: MLNDataOptions) = {
     //logger.info("Scoring child node")
-    evaluateTheory(node, exmpl, jep, "", gl)
+    evaluateTheory(node, exmpl, "", gl)
     //evaluateTheory(parentNode, exmpl, jep, "", gl)
     val score = node.fscore
     score
   }
 
-  def evaluateTheory(theory: Theory, e: Example, jep: Jep, handCraftedTheoryFile: String = "", globals: Globals): Unit = {
+  def evaluateTheory(theory: Theory, e: Example, handCraftedTheoryFile: String = "", globals: Globals): Unit = {
 
     val varbedExmplPatterns = globals.EXAMPLE_PATTERNS_AS_STRINGS
     val coverageConstr = s"${globals.TPS_RULES}\n${globals.FPS_RULES}\n${globals.FNS_RULES}"
@@ -174,7 +172,7 @@ object MCTS_FOL_Online extends LazyLogging{
     val program = ex + globals.INCLUDE_BK(globals.BK_CROSSVAL) + t + coverageConstr + show
     val f = Utils.getTempFile(s"eval-theory-${UUID.randomUUID().toString}-${System.currentTimeMillis()}", ".lp")
     Utils.writeLine(program, f.getCanonicalPath, "overwrite")
-    val answerSet = ASP.solve(task = Globals.INFERENCE, aspInputFile = f, jep=jep)
+    val answerSet = ASP.solve(task = Globals.INFERENCE, aspInputFile = f)
     if (answerSet.nonEmpty) {
       val atoms = answerSet.head.atoms
       atoms.foreach { a=>
@@ -190,10 +188,10 @@ object MCTS_FOL_Online extends LazyLogging{
   }
 
 
-  def generateChildNode(currentNode: Theory, currentExample: Example, jep: Jep, gl: Globals) = {
+  def generateChildNode(currentNode: Theory, currentExample: Example, gl: Globals) = {
     //logger.info("Generating children nodes")
     //println(s"Generating children at example ${currentExample.time}")
-    val isSat = ILED.isSAT(currentNode, currentExample, ASP.check_SAT_Program, jep, gl)
+    val isSat = ILED.isSAT(currentNode, currentExample, ASP.check_SAT_Program, gl)
     if (isSat) {
       Theory()
     } else {
@@ -201,11 +199,12 @@ object MCTS_FOL_Online extends LazyLogging{
       val infile = Utils.getTempFile("example", ".lp")
       Utils.writeToFile(infile, "overwrite") { p => interpretation.foreach(p.println) }
       val bk = gl.BK_WHOLE_EC
-      val (_, varKernel) = Xhail.runXhail(fromFile=infile.getAbsolutePath, kernelSetOnly=true, jep=jep, bkFile=bk, globals=gl)
+      val (_, varKernel) = Xhail.runXhail(fromFile=infile.getAbsolutePath, kernelSetOnly=true, bkFile=bk, globals=gl)
       val aspFile: File = utils.Utils.getTempFile("aspInduction", ".lp")
       val (_, use2AtomsMap, defeasible, use3AtomsMap, _, _) =
-        ASP.inductionASPProgram(kernelSet = Theory(varKernel), priorTheory = currentNode, examples = currentExample.toMapASP, aspInputFile = aspFile, globals = gl)
-      val answerSet = ASP.solve("iled", use2AtomsMap ++ use3AtomsMap, aspFile, currentExample.toMapASP, fromWeakExmpl=false, jep)
+        ASP.inductionASPProgram(kernelSet = Theory(varKernel),
+          priorTheory = currentNode, examples = currentExample.toMapASP, aspInputFile = aspFile, globals = gl)
+      val answerSet = ASP.solve("iled", use2AtomsMap ++ use3AtomsMap, aspFile, currentExample.toMapASP)
       if (answerSet != Nil) {
         val newRules = Rules.getNewRules(answerSet.head.atoms, use2AtomsMap)
         ILED.updateSupport(newRules, Theory(varKernel))

@@ -1,12 +1,11 @@
 package oled.functions
 
+import java.text.DecimalFormat
+
 import app.runutils.{Globals, RunningOptions}
-import com.mongodb.casbah.MongoCollection
-import jep.Jep
+import com.mongodb.casbah.MongoClient
 import logic.Examples.Example
 import logic._
-import utils.ASP.getCoverageDirectives
-import utils.DataUtils.{DataAsExamples, DataAsIntervals, DataFunction, TrainingSet}
 import utils._
 import utils.Implicits._
 
@@ -24,14 +23,14 @@ trait CoreFunctions {
     * */
 
 
-  def filterTriedRules(T: Theory, newRules: List[Clause], logger: org.slf4j.Logger) = {
+  def filterTriedRules(T: Theory, newRules: Iterable[Clause], logger: org.slf4j.Logger) = {
     val out = newRules.filter { newRule =>
       val bottomClauses = T.clauses.map(x => x.supportSet.clauses.head)
       val bottom = newRule.supportSet.clauses.head
       //!bottomClauses.exists(x => x.thetaSubsumes(bottom) && bottom.thetaSubsumes(x))
       !bottomClauses.exists(x => x.thetaSubsumes(bottom)) // this suffices for it to be excluded.
     }
-    if (out.length != newRules.length) logger.info("Dropped new clause (repeated bottom clause)")
+    if (out.size != newRules.size) logger.info("Dropped new clause (repeated bottom clause)")
     out
   }
 
@@ -87,21 +86,20 @@ trait CoreFunctions {
     Theory(keep)
   }
 
-  def generateNewBottomClauses(topTheory: Theory, e: Example, jep: Jep, initorterm: String, globals: Globals) = {
+  def generateNewBottomClauses(topTheory: Theory, e: Example, initorterm: String, globals: Globals) = {
 
     val terminatedOnly = if(initorterm == "terminatedAt") true else false
     val specialBKfile = if(initorterm=="initiatedAt") globals.BK_INITIATED_ONLY else globals.BK_TERMINATED_ONLY
     val (_, varKernel) =
-      LogicUtils.generateKernel(e.toMapASP, jep=jep,
-        learningTerminatedOnly = terminatedOnly, bkFile = specialBKfile, globals=globals)
+      LogicUtils.generateKernel(e.toMapASP, learningTerminatedOnly = terminatedOnly, bkFile = specialBKfile, globals=globals)
     val bottomTheory = topTheory.clauses flatMap(x => x.supportSet.clauses)
     val goodKernelRules = varKernel.filter(newBottomRule => !bottomTheory.exists(supportRule => newBottomRule.thetaSubsumes(supportRule)))
     goodKernelRules
   }
 
-  def getnerateNewBottomClauses_withInertia(topTheory: Theory, e: Example, targetClass: String, jep: Jep, globals: Globals) = {
+  def getnerateNewBottomClauses_withInertia(topTheory: Theory, e: Example, targetClass: String, globals: Globals) = {
     val specialBKfile = globals.ABDUCE_WITH_INERTIA
-    val (_, varKernel) = LogicUtils.generateKernel(e.toMapASP, jep=jep, bkFile = specialBKfile, globals=globals)
+    val (_, varKernel) = LogicUtils.generateKernel(e.toMapASP, bkFile = specialBKfile, globals=globals)
     val filteredKernel = varKernel.filter(p => p.head.functor == targetClass)
     val bottomTheory = topTheory.clauses flatMap(x => x.supportSet.clauses)
     val goodKernelRules = filteredKernel.filter(newBottomRule => !bottomTheory.exists(supportRule => newBottomRule.thetaSubsumes(supportRule)))
@@ -119,18 +117,37 @@ trait CoreFunctions {
 
 
 
-  def showInfo(c: Clause, c1: Clause, c2: Clause, hoeffding: Double, observedDiff: Double, n: Int, showRefs: Boolean) = {
+  def showInfo(c: Clause, c1: Clause, c2: Clause, hoeffding: Double, observedDiff: Double, n: Int, inps: RunningOptions) = {
+
+    def format(x: Double) = {
+      val defaultNumFormat = new DecimalFormat("0.############")
+      defaultNumFormat.format(x)
+    }
+
+    val showRefs = inps.showRefs
+    val weightLearn = inps.weightLean
+
     if (showRefs) {
-      s"\n===========================================================\n" +
-        s"\nClause (score: ${c.score} | tps: ${c.tps} fps: ${c.fps} fns: ${c.fns})\n\n${c.tostring}\n\nwas refined to" +
-        s" (new score: ${c1.score} | tps: ${c1.tps} fps: ${c1.fps} fns: ${c1.fns})\n\n${c1.tostring}\n\nε: $hoeffding, ΔG: $observedDiff, examples used: $n" +
-        //s"\nall refs: \n\n ${c.refinements.sortBy(z => -z.score).map(x => x.tostring+" "+" | score "+x.score+" | similarity "+similarity(x)).mkString("\n")}" +
-        s"\nall refs: \n\n ${c.refinements.sortBy(z => (-z.score,z.body.length+1)).map(x => x.tostring+" | score "+x.score+" (tps|fps|fns): "+(x.tps,x.fps,x.fns)).mkString("\n")}" +
-        s"\n===========================================================\n"
+      if(!weightLearn) {
+        s"\n===========================================================\n" +
+          s"\nClause (score: ${c.score} | tps: ${c.tps} fps: ${c.fps} fns: ${c.fns})\n\n${c.tostring}\n\nwas refined to" +
+          s" (new score: ${c1.score} | tps: ${c1.tps} fps: ${c1.fps} fns: ${c1.fns})\n\n${c1.tostring}\n\nε: $hoeffding, ΔG: $observedDiff, examples used: $n" +
+          //s"\nall refs: \n\n ${c.refinements.sortBy(z => -z.score).map(x => x.tostring+" "+" | score "+x.score+" | similarity "+similarity(x)).mkString("\n")}" +
+          s"\nall refs: \n\n ${c.refinements.sortBy(z => (-z.score,z.body.length+1)).map(x => x.tostring+" | score "+x.score+" (tps|fps|fns): "+(x.tps,x.fps,x.fns)).mkString("\n")}" +
+          s"\n===========================================================\n"
+      } else {
+        s"\n===========================================================\n" +
+          s"\nClause (score: ${c.score} | tps: ${c.tps} fps: ${c.fps} fns: ${c.fns} | MLN-weight: ${format(c.mlnWeight)})\n\n${c.tostring}\n\nwas refined to" +
+          s" (new score: ${c1.score} | tps: ${c1.tps} fps: ${c1.fps} fns: ${c1.fns} | MLN-weight: ${format(c1.mlnWeight)})\n\n${c1.tostring}\n\nε: $hoeffding, ΔG: $observedDiff, examples used: $n" +
+          //s"\nall refs: \n\n ${c.refinements.sortBy(z => -z.score).map(x => x.tostring+" "+" | score "+x.score+" | similarity "+similarity(x)).mkString("\n")}" +
+          s"\nall refs: \n\n ${c.refinements.sortBy(z => (-z.score,z.body.length+1)).map(x => x.tostring+" | score "+x.score+" (tps|fps|fns): "+(x.tps,x.fps,x.fns) + "| MLN-weight: "+format(x.mlnWeight)).mkString("\n")}" +
+          s"\n===========================================================\n"
+      }
+
     } else {
       s"\n===========================================================\n" +
-        s"\nClause (score: ${c.score} | tps: ${c.tps} fps: ${c.fps} fns: ${c.fns})\n\n${c.tostring}\n\nwas refined to" +
-        s" (new score: ${c1.score} | tps: ${c1.tps} fps: ${c1.fps} fns: ${c1.fns})\n\n${c1.tostring}\n\nε: $hoeffding, ΔG: $observedDiff, examples used: $n" +
+        s"\nClause (score: ${c.score} | tps: ${c.tps} fps: ${c.fps} fns: ${c.fns} | MLN-weight: ${format(c.mlnWeight)})\n\n${c.tostring}\n\nwas refined to" +
+        s" (new score: ${c1.score} | tps: ${c1.tps} fps: ${c1.fps} fns: ${c1.fns} | MLN-weight: ${format(c1.mlnWeight)})\n\n${c1.tostring}\n\nε: $hoeffding, ΔG: $observedDiff, examples used: $n" +
         //s"\nall refs: \n\n ${c.refinements.sortBy(z => -z.score).map(x => x.tostring+" "+" | score "+x.score+" | similarity "+similarity(x)).mkString("\n")}" +
         //s"\nall refs: \n\n ${c.refinements.sortBy(z => (-z.score,z.body.length+1)).map(x => x.tostring+" | score "+x.score+" (tps|fps|fns): "+(x.tps,x.fps,x.fns)).mkString("\n")}" +
         s"\n===========================================================\n"
@@ -140,23 +157,24 @@ trait CoreFunctions {
 
 
   def crossVal(t: Theory,
-               jep: Jep,
                data: Iterator[Example],
                handCraftedTheoryFile: String = "",
                globals: Globals,
                inps: RunningOptions) = {
 
+
+
     while (data.hasNext) {
       val e = data.next()
       //println(e.time)
-      evaluateTheory(t, e, jep, handCraftedTheoryFile, globals)
+      evaluateTheory(t, e, handCraftedTheoryFile, globals)
     }
     val stats = t.stats
     (stats._1, stats._2, stats._3, stats._4, stats._5, stats._6)
   }
 
 
-  def evaluateTheory(theory: Theory, e: Example, jep: Jep, handCraftedTheoryFile: String = "", globals: Globals): Unit = {
+  def evaluateTheory(theory: Theory, e: Example, handCraftedTheoryFile: String = "", globals: Globals): Unit = {
 
     if (e.annotation.nonEmpty) {
       val stop = "stop"
@@ -175,7 +193,7 @@ trait CoreFunctions {
     val program = ex + globals.INCLUDE_BK(globals.BK_CROSSVAL) + t + coverageConstr + show
     val f = Utils.getTempFile("isConsistent",".lp",deleteOnExit = true)
     Utils.writeLine(program, f, "overwrite")
-    val answerSet = ASP.solve(task = Globals.INFERENCE, aspInputFile = f, jep=jep)
+    val answerSet = ASP.solve(task = Globals.INFERENCE, aspInputFile = f)
     if (answerSet.nonEmpty) {
       val atoms = answerSet.head.atoms
       atoms.foreach { a=>

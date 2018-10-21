@@ -1,8 +1,13 @@
 package app.runutils
 
-import logic.{Clause, Theory}
+import java.io.PrintWriter
+
+import logic.Modes.ModeAtom
+import logic.{Clause, Literal, Theory, Variable}
 import utils.lookaheads._
 import utils.parsers.ModesParser
+import BKHandling._
+import com.typesafe.scalalogging.LazyLogging
 
 import scala.io.Source
 import scala.util.matching.Regex
@@ -30,7 +35,7 @@ object Globals {
 
   var LEARNING_WHOLE_THEORIES = false // not really used anywhere
 
-  val cwd = System.getProperty("user.dir") // Current working dir
+  val cwd: String = System.getProperty("user.dir") // Current working dir
 
   val ASPHandler = s"$cwd/asp/ASPHandler.py"
 
@@ -92,7 +97,9 @@ object Globals {
       "tp-weight" -> "1",
       "fp-weight" -> "1",
       "fn-weight" -> "1",
-      "with-inertia" -> "false"
+      "with-inertia" -> "false",
+      "weight-learning" -> "false",
+      "with-ec" -> "true"
     )
 
   // if jep is used "UNSAT" else "UNSATISFIABLE"
@@ -101,8 +108,23 @@ object Globals {
   // This is a storage of the current initiation/termination
   // parts of the theory. These fields are used by the monolithic version
   // of OLED only, when learning with inertia (from edge interval points)
-  // to get the joint theory and see if it satifsifes each new example. Abduction
+  // to get the joint theory and see if it satisfies each new example. Abduction
   // and new clauses are generated if not.
+  //--------------------------------------------------------------------------------------
+  // UPDATE: Testing for new clause generation using the satisfiability of the
+  // current joint theory works, for srongly-initiated fluents with no or very
+  // small amount of noise, but it takes a lot of time in large learning tasks.
+  // The reason is that the joint theory is unsatisfiable in most cases, since it
+  // contains over-general rules that erroneously re-initiate or terminate a target
+  // fluent. This means that abduction and new kernel set generation takes place
+  // almost always, in every new mini-batch, which causes great delays in the execution.
+  // For this to work we'd need a more ILED-style apporach, where clauses are not scored,
+  // but corrected at every new mistake. In the absence on noise this makes the joint
+  // theory to quickly converge to the correct one. On the other hand, if there is a
+  // substantial amount of noise in the data, therefore the edge interval points are
+  // frequently corrupted, there is no hope to learn strongly-initiated fluents, so there
+  // is no point discussing it or trying to fix it with simple modifications in the BK.
+  //--------------------------------------------------------------------------------------
   var CURRENT_THEORY_INITIATED: Vector[Clause] = Vector[Clause]()
   var CURRENT_THEORY_TERMINATED: Vector[Clause] = Vector[Clause]()
 
@@ -110,20 +132,23 @@ object Globals {
     Theory((CURRENT_THEORY_INITIATED ++ CURRENT_THEORY_TERMINATED).toList)
   }
 
+  //var errorProb = Vector.empty[Int]
+
 }
 
 
-class Globals(val entryPath: String, val fromDB: String) { //extends ModesParser{
+
+
+
+class Globals(val entryPath: String, val fromDB: String) extends LazyLogging {
 
   /*
    * Global values and utilities used throughout the application
    */
 
-  val cwd = System.getProperty("user.dir") // Current working dir
-  val inputPath = entryPath // Path to bk and modes files
-  val modesFile = s"$inputPath/modes" // Mode Declarations file
-
-
+  val cwd: String = System.getProperty("user.dir") // Current working dir
+  val inputPath: String = entryPath // Path to bk and modes files
+  val modesFile: String = s"$inputPath/modes" // Mode Declarations file
 
   //val AUXILIARY_PREDS = "auxiliaryPredicates"
 
@@ -133,84 +158,211 @@ class Globals(val entryPath: String, val fromDB: String) { //extends ModesParser
   val INITIATED_ONLY_INERTIA = s"$inputPath/initiated-only-with-inertia.lp"
   val BK_INITIATED_ONLY_MARKDED = s"$inputPath/bk-score-initiated.lp"
   val BK_TERMINATED_ONLY_MARKDED = s"$inputPath/bk-score-terminated.lp"
+
+  val USER_BK = s"$inputPath/bk"
+
   val BK_WHOLE_EC = s"$inputPath/bk.lp"
   val BK_CROSSVAL = s"$inputPath/bk-for-crossval.lp"
 
-  val ILED_NO_INERTIA = inputPath + "/bk-no-inertia.lp"
+  val ILED_NO_INERTIA: String = inputPath + "/bk-no-inertia.lp"
 
-  private val matches = (p: Regex, str: String) => p.pattern.matcher(str).matches
+  def matches(p: Regex, str: String) = p.pattern.matcher(str).matches
 
   val modesParser = new ModesParser
 
-  val MODES = Source.fromFile(modesFile).getLines.toList.filter(line => !matches( """""".r, line))
-  val MODEHS = MODES.filter(m => m.contains("modeh") && !m.startsWith("%")).map(x => x).map(x => modesParser.getParseResult(modesParser.parseModes(modesParser.modeh, x)))
-  val MODEBS = MODES.filter(m => m.contains("modeb") && !m.startsWith("%")).map(x => modesParser.getParseResult(modesParser.parseModes(modesParser.modeb, x)))
+  val MODES: List[String] = Source.fromFile(modesFile).getLines.toList.filter(line => !matches( """""".r, line) && !line.startsWith("%"))
+
+
+  val MODEHS: List[ModeAtom] = MODES.filter(m => m.contains("modeh") && !m.startsWith("%")).map(x => x).
+    map(x => modesParser.getParseResult(modesParser.parseModes(modesParser.modeh, x)))
+
+  if (MODEHS.isEmpty) logger.error("No head mode declarations found.")
+
+  val MODEBS: List[ModeAtom] = MODES.filter(m => m.contains("modeb") && !m.startsWith("%")).
+    map(x => modesParser.getParseResult(modesParser.parseModes(modesParser.modeb, x)))
+
+  if (MODEBS.isEmpty) logger.error("No body mode declarations found.")
+
+
+  /* The input to this method is a Literal representation of mode atoms and example pattern atoms (variabilized). */
+
+  def getTypeAxioms(m: Literal): Set[String] = {
+    val plmrkTerms = m.getPlmrkTerms
+    val (posPlmrkTerms, negPlrmTerms, grndPlmrkTerms) = (plmrkTerms._1, plmrkTerms._2, plmrkTerms._3)
+    val allPlmrks = (posPlmrkTerms ++ negPlrmTerms ++ grndPlmrkTerms).map(x => x.asInstanceOf[Variable]).toSet
+
+    allPlmrks.foldLeft(Set[String]()) { (accum, y) =>
+      val allOtherPlmrks = allPlmrks diff Set(y)
+      if (y.inOrOutVar == "+" || y.inOrOutVar == "-") {
+        val result_ = s"${y._type}(${{y.name}}) :- ${m.tostring}."
+
+        // the regex below matches variable symbols which do not appear in predicate of function
+        // names. So it will match X0 in p(X0) but not in pX0(X0), pxX0(X0), pX_0(X0), p_2X0(X0) and so on
+        val result = allOtherPlmrks.foldLeft(result_) { (x1, y1) => x1.replaceAll(s"(?<![a-zA-Z0-9_]+)${y1.name}", "_") }
+        accum + result
+      } else {
+        accum
+      }
+    }
+  }
 
   // Example patterns as a list[ModeAtom] (helper)
-  val eps1 =
-    MODES.filter(m => m.contains("examplePattern") && !m.startsWith("%")).map(x => modesParser.getParseResult(modesParser.parseModes(modesParser.exmplPattern, x)))
+  val eps1: List[ModeAtom] =
+    MODES.filter(m => m.contains("examplePattern") && !m.startsWith("%")).
+      map(x => modesParser.getParseResult(modesParser.parseModes(modesParser.exmplPattern, x)))
 
-  // Example patterns as a list[ModeAtom] (helper)
-  val eps2 = eps1 match {
+  val eps2: List[ModeAtom] = eps1 match {
     case List() => MODEHS // if no example patterns are found, use the head mode declarations for them
     case _ => eps1
   }
 
-  def getAdditionalLanguageBias(predicateName: String) = {
-    val f = Source.fromFile(modesFile).getLines.toList.filter(line => line.startsWith(s"$predicateName"))
-    f.map(x => x.split(s"$predicateName\\(")(1).split("\\)")(0)).filter(p => (MODEHS++MODEBS).exists(q => q.functor == p))
+  // Auxiliary predicates. These are input predicates which are not part of the target language
+  // but are necessary for extracting the types of entities in the domain (e.g. think of coords/4 in CAVIAR).
+  private val inputPreds: List[ModeAtom] = {
+    MODES.filter(m => m.contains("inputPredicate") && !m.startsWith("%")).
+      map(x => modesParser.getParseResult(modesParser.parseModes(modesParser.inputPred, x)))
   }
 
 
-  val FORCE_PREDS = getAdditionalLanguageBias("force")
-  val BASIC_PREDS = getAdditionalLanguageBias("basic")
-  val AUXILIARY_PREDS = getAdditionalLanguageBias("auxiliary")
-
-  /*
-  val LOOK_AHEADS = {
-    val f = Source.fromFile(modesFile).getLines.toList.filter(line => line.startsWith("lookahead"))
-    if (f.nonEmpty) f.map( x => new LookAheadSpecification(x) ) else Nil
-  }
-  */
-
-  val LOOK_AHEADS_TEST = {
-    val f = Source.fromFile(modesFile).getLines.toList.filter(line => line.startsWith("lookahead"))
-    if (f.nonEmpty) f.map( x => new LookAheadUtils.LookAheadSpecification(x) ) else Nil
+  if (inputPreds.exists(p => p.isNAF)) {
+    logger.error(s"NAF is not allowed in input predicates.")
+    System.exit(-1)
   }
 
-  private val coverageDirectives = {
-    val varbedExmplPatterns = for (x <- eps2) yield x.varbed.tostring
-    val tps = (x: String) => s"\ntps($x):- $x, example($x).\n"
-    val tpsMarked = (x: String) => s"\ntps(I,$x):- marked(I,$x), example($x), rule(I).\n"
-    val fps = (x: String) => s"\nfps($x):- $x, not example($x).\n"
-    val fpsMarked = (x: String) => s"\nfps(I,$x):- marked(I,$x), not example($x), rule(I).\n"
-    val fns = (x: String) => s"\nfns($x) :- example($x), not $x.\n"
-    val fnsMarked = (x: String) => s"\nfns(I,$x):- not marked(I,$x), example($x), rule(I).\n"
-    val coverAllPositivesConstraint = (x: String) => s"\n:- example($x), not $x.\n"
-    val excludeAllNegativesConstraint = (x: String) => s"\n:- $x, not example($x).\n"
-    val (tp,fp,fn,tpm,fpm,fnm,allpos,allnegs) =
-      varbedExmplPatterns.
-        foldLeft(List[String](),List[String](),List[String](),List[String](),
-          List[String](),List[String](),List[String](),List[String]()){ (x,y) =>
-          (x._1 :+ tps(y) ,x._2 :+ fps(y), x._3 :+ fns(y),
-            x._4 :+ tpsMarked(y), x._5 :+ fpsMarked(y) ,
-            x._6 :+ fnsMarked(y), x._7 :+ coverAllPositivesConstraint(y), x._8 :+ excludeAllNegativesConstraint(y))
-        }
-    val mkString = (x: List[String]) => x.mkString("\n")
-    (mkString(tp), mkString(fp), mkString(fn), mkString(tpm), mkString(fpm), mkString(fnm), mkString(allpos), mkString(allnegs))
+
+  // This method generates types axioms for the mode declarations,
+  // i.e. rules of the form: time(X1) :- happensAt(active(_),X1).
+  private val typeAxioms = {
+    val m = inputPreds.filter(x => !x.isNAF).map(x => x.varbed)
+    val x = m.flatMap(getTypeAxioms).toSet
+    //x foreach println
+    x
   }
 
-  val EXAMPLE_PATTERNS = eps2 map (p => p.varbed)
-  val EXAMPLE_PATTERNS_AS_STRINGS = EXAMPLE_PATTERNS map (_.tostring)
+  /* Reads the background knowledge from  $inputPath/bk.lp and produces helper files (e.g. for rule evaluation,
+     bottom clause generation etc.) */
 
-  val TPS_RULES = coverageDirectives._1
-  val FPS_RULES = coverageDirectives._2
-  val FNS_RULES = coverageDirectives._3
-  val TPS_RULES_MARKED = coverageDirectives._4
-  val FPS_RULES_MARKED = coverageDirectives._5
-  val FNS_RULES_MARKED = coverageDirectives._6
-  val CONSTRAINT_COVER_ALL_POSITIVES = coverageDirectives._7
-  val CONSTRAINT_EXCLUDE_ALL_NEGATIVES = coverageDirectives._8
+  //private val PY_LESSTHAN =
+  //  "#script (python)\nfrom gringo import Fun\nimport math\n\ndef less_than(x,y):\n    return float(x) < float(y)\n\n#end."
+
+  private val EC_AXIOM_1 = "holdsAt(F,Te) :- fluent(F), not sdFluent(F), initiatedAt(F,Ts), next(Ts, Te)."
+  private val EC_AXIOM_2 = "holdsAt(F,Te) :- fluent(F), not sdFluent(F), holdsAt(F,Ts), " +
+    "not terminatedAt(F,Ts), next(Ts, Te)."
+  //private val RIGHT_BEFORE_DEF = "right_before(X,Z) :- time(X), time(Z), Z = X+40."
+  ///*
+  private val RIGHT_BEFORE_DEF ="\n#script (python)\ntimes = []\ndef collect_all(a):\n    times.append(a)\n    " +
+    "return 1\ndef sorted():\n    times.sort()\n    return zip(range(len(times)), times)\n#end.\ncollect_all." +
+    "\ncollect_all :- time(X), @collect_all(X) == 0.\nsorted_pair(X,N) :- collect_all, " +
+    "(X,N) = @sorted().\nnext(X, Y) :- sorted_pair(A,X), sorted_pair(A+1,Y).\n"
+
+  //*/
+  private val INIT_TIME_DEF = "initialTime(X) :- time(X), #false : X > Y, time(Y)."
+  private val INIT_HOLDS_DEF = "%THIS SHOULD NOT BE HERE!\nholdsAt(F,T) :- initialTime(T), example(holdsAt(F,T))."
+  val CORE_EVENT_CALCULUS_BK = List(EC_AXIOM_1, EC_AXIOM_2, RIGHT_BEFORE_DEF, INIT_TIME_DEF, INIT_HOLDS_DEF)
+  val CROSSVAL_EVENT_CALCULUS_BK = List(EC_AXIOM_1, EC_AXIOM_2, RIGHT_BEFORE_DEF)
+  val INITIATED_ONLY_EVENT_CALCULUS_BK = List(EC_AXIOM_1, RIGHT_BEFORE_DEF, INIT_TIME_DEF, INIT_HOLDS_DEF)
+  val TERMINATED_ONLY_EVENT_CALCULUS_BK =
+    List(EC_AXIOM_1, EC_AXIOM_2, RIGHT_BEFORE_DEF, INIT_TIME_DEF, INIT_HOLDS_DEF,
+      "holdsAt(F,T) :- fluent(F), not sdFluent(F), examplesInitialTime(T), example(holdsAt(F,T)).",
+      "examplesInitialTime(X) :- example(holdsAt(_,X)), #false : X > Y, example(holdsAt(_,Y))."
+    )
+
+
+  def generateBKFiles_Event_Calculus() = {
+
+    // Read the user-input BK
+    val userBK = Source.fromFile(USER_BK).getLines.toList.mkString("\n")
+
+    // Generate the ASP scoring rules:
+    val scoringRules = generateScoringBK(MODEHS)
+
+    // Type axioms:
+    val tas = this.typeAxioms.mkString("\n")
+
+    // Generate bk.lp file (it will be used for reasoning)
+    val bkFile = new java.io.File(BK_WHOLE_EC)
+    val pw1 = new PrintWriter(bkFile)
+    pw1.write(userBK+"\n")
+    pw1.write(CORE_EVENT_CALCULUS_BK.mkString("\n"))
+    pw1.write("\n"+tas)
+    pw1.close()
+    bkFile.deleteOnExit()
+
+    // Generate initiation-only BK file
+    val initOnlyBKFile = new java.io.File(BK_INITIATED_ONLY)
+    val pw2 = new PrintWriter(initOnlyBKFile)
+    pw2.write(userBK+"\n")
+    pw2.write(INITIATED_ONLY_EVENT_CALCULUS_BK.mkString("\n"))
+    pw2.write("\n"+tas)
+    pw2.close()
+    initOnlyBKFile.deleteOnExit()
+
+    // Generate termination-only BK file
+    val termOnlyBKFile = new java.io.File(BK_TERMINATED_ONLY)
+    val pw3 = new PrintWriter(termOnlyBKFile)
+    pw3.write(userBK+"\n")
+    pw3.write(TERMINATED_ONLY_EVENT_CALCULUS_BK.mkString("\n"))
+    pw3.write("\n"+tas)
+    pw3.close()
+    termOnlyBKFile.deleteOnExit()
+
+    // Generate initiation-scoring rules
+    val scoreInitFile = new java.io.File(BK_INITIATED_ONLY_MARKDED)
+    val pw4 = new PrintWriter(scoreInitFile)
+    pw4.write(userBK+"\n")
+    pw4.write("\n"+scoringRules._1+"\n"+RIGHT_BEFORE_DEF+"\n")
+    pw4.write("\n"+tas)
+    pw4.close()
+    scoreInitFile.deleteOnExit()
+
+    // Generate termination-scoring rules
+    val scoreTermFile = new java.io.File(BK_TERMINATED_ONLY_MARKDED)
+    val pw5 = new PrintWriter(scoreTermFile)
+    pw5.write(userBK+"\n")
+    pw5.write("\n"+scoringRules._2+"\n"+RIGHT_BEFORE_DEF+"\n")
+    pw5.write("\n"+tas)
+    pw5.close()
+    scoreTermFile.deleteOnExit()
+
+    // Generate cross-validation file
+    val crossValFile = new java.io.File(BK_CROSSVAL)
+    val pw6 = new PrintWriter(crossValFile)
+    pw6.write(userBK+"\n")
+    pw6.write(CROSSVAL_EVENT_CALCULUS_BK.mkString("\n"))
+    pw6.write("\n"+tas)
+    pw6.close()
+    crossValFile.deleteOnExit()
+
+  }
+
+
+
+
+
+  if(Globals.glvalues("with-ec").toBoolean) {
+    generateBKFiles_Event_Calculus()
+  } else {
+    // what do we do here?
+  }
+
+
+
+
+
+
+  val EXAMPLE_PATTERNS: List[Literal] = eps2 map (p => p.varbed)
+  val EXAMPLE_PATTERNS_AS_STRINGS: List[String] = EXAMPLE_PATTERNS map (_.tostring)
+
+  private val coverageDirectives = getCoverageDirectives(EXAMPLE_PATTERNS_AS_STRINGS)
+
+  val TPS_RULES: String = coverageDirectives._1
+  val FPS_RULES: String = coverageDirectives._2
+  val FNS_RULES: String = coverageDirectives._3
+  val TPS_RULES_MARKED: String = coverageDirectives._4
+  val FPS_RULES_MARKED: String = coverageDirectives._5
+  val FNS_RULES_MARKED: String = coverageDirectives._6
+  val CONSTRAINT_COVER_ALL_POSITIVES: String = coverageDirectives._7
+  val CONSTRAINT_EXCLUDE_ALL_NEGATIVES: String = coverageDirectives._8
 
   val SHOW_TPS_ARITY_1 = "\n#show tps/1."
   val SHOW_TPS_ARITY_2 = "\n#show tps/2."
@@ -219,8 +371,8 @@ class Globals(val entryPath: String, val fromDB: String) { //extends ModesParser
   val SHOW_FNS_ARITY_1 = "\n#show fns/1."
   val SHOW_FNS_ARITY_2 = "\n#show fns/2."
   val SHOW_TIME = "\n#show times/1."
-  val SHOW_INTERPRETATIONS_COUNT = "\n#show exampleGrounding/1." //"\n#show examplesCount/1."
-  val INCLUDE_BK = (file: String) => s"\n\n#include " + "\""+file+"\".\n"
+  val SHOW_INTERPRETATIONS_COUNT = "\n#show countGroundings/1."
+  val INCLUDE_BK: String => String = (file: String) => s"\n\n#include " + "\""+file+"\".\n"
   val HIDE = "\n#show.\n"
 
   // if jep is used "UNSAT" else "UNSATISFIABLE"
@@ -228,33 +380,56 @@ class Globals(val entryPath: String, val fromDB: String) { //extends ModesParser
 
   val SAT = "SAT"
 
-  val TPS_COUNT_RULE = {
-    //tps(I,X) :- rule(I), X = #count { X0,X1,X2: marked(I,holdsAt(moving(X0,X1),X2)), example(holdsAt(moving(X0,X1),X2)) }.
-    EXAMPLE_PATTERNS.map{ x =>
-      s"\ntps(I,X) :- rule(I), X = #count { ${x.getVars.toList.map(_.tostring).mkString(",")}: marked(I,${x.tostring}), example(${x.tostring}) }."
-    }.mkString("\n")
-  }
+  val TPS_COUNT_RULE: String = tpsCountRules(EXAMPLE_PATTERNS)
 
-  val FPS_COUNT_RULE = {
-    //fps(I,X) :- rule(I), X = #count { X0,X1,X2: marked(I,holdsAt(moving(X0,X1),X2)), not example(holdsAt(moving(X0,X1),X2)) }.
-    EXAMPLE_PATTERNS.map{ x =>
-      s"\nfps(I,X) :- rule(I), X = #count { ${x.getVars.toList.map(_.tostring).mkString(",")}: marked(I,${x.tostring}), not example(${x.tostring}) }."
-    }.mkString("\n")
-  }
+  val FPS_COUNT_RULE: String = fpsCountRules(EXAMPLE_PATTERNS)
 
-  val FNS_COUNT_RULE = {
-    //fns(I,X) :- rule(I), X = #count { X0,X1,X2: example(holdsAt(moving(X0,X1),X2)), not marked(I,holdsAt(moving(X0,X1),X2)) }.
-    EXAMPLE_PATTERNS.map{ x =>
-      s"\nfns(I,X) :- rule(I), X = #count { ${x.getVars.toList.map(_.tostring).mkString(",")}: example(${x.tostring}), not marked(I,${x.tostring}) }."
-    }.mkString("\n")
-  }
+  val FNS_COUNT_RULE: String = fnsCountRules(EXAMPLE_PATTERNS)
 
   // FNs for terminated: not marked(I,exmpl), example(exmpl) (same as FNs for initiated)
   // TPs for terminated: marked(I, exmpl), example(exmpl) (same as TPs for initiated)
 
   val TIMES_COUNT_RULE = "\ntimes(X) :- X = #count { Z: time(Z) }.\n"
 
-  def EXAMPLE_COUNT_RULE = this.EXAMPLE_PATTERNS.map(x => s"exampleGrounding(${x.tostring}):-${x.getTypePredicates(this).mkString(",")}.").mkString("\n")+"\n"
+  /*
+  def EXAMPLE_COUNT_RULE =
+    this.EXAMPLE_PATTERNS.map{ x =>
+      s"exampleGrounding(${x.tostring}):-${x.getTypePredicates(this).mkString(",")}.\n"+
+      s"countGroundings(X) :- X = #count { ${x.getVars.toList.map(_.tostring).mkString(",")}: " +
+        s"exampleGrounding(${x.tostring}),${x.getTypePredicates(this).mkString(",")} }."
+    }.mkString("\n")+"\n"
+  */
+
+  /* I NEED TO FIND A WAY TO MAKE THIS GENERIC (NON- EVENT CALCULUS SPECIFIC).
+   * FOR EXAMPLE, THE USER COULD SPECIFY IT IN THE MODES FILE. */
+
+  def EXAMPLE_COUNT_RULE = "exampleGrounding(holdsAt(F,T)):-fluent(F),time(T).\n"+
+    "countGroundings(X) :- X = #count { F,T: exampleGrounding(holdsAt(F,T)),fluent(F),time(T) }.\n"
+
+
+  /*
+   val LOOK_AHEADS = {
+     val f = Source.fromFile(modesFile).getLines.toList.filter(line => line.startsWith("lookahead"))
+     if (f.nonEmpty) f.map( x => new LookAheadSpecification(x) ) else Nil
+  }
+  */
+
+  private val LOOK_AHEADS_TEST = {
+    val f = Source.fromFile(modesFile).getLines.toList.filter(line => line.startsWith("lookahead"))
+    if (f.nonEmpty) f.map( x => new LookAheadUtils.LookAheadSpecification(x) ) else Nil
+  }
+
+
+  /*
+    def getAdditionalLanguageBias(predicateName: String) = {
+      val f = Source.fromFile(modesFile).getLines.toList.filter(line => line.startsWith(s"$predicateName"))
+     f.map(x => x.split(s"$predicateName\\(")(1).split("\\)")(0)).filter(p => (MODEHS++MODEBS).exists(q => q.functor == p))
+    }
+
+    val FORCE_PREDS = getAdditionalLanguageBias("force")
+    val BASIC_PREDS = getAdditionalLanguageBias("basic")
+    val AUXILIARY_PREDS = getAdditionalLanguageBias("auxiliary")
+  */
 
   var EVALUATION_FUNCTION = "precision_recall" // alternative is foil_gain
   var MAX_CLAUSE_LENGTH = 15

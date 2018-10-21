@@ -6,16 +6,13 @@ import java.util.UUID
 import app.runners.{MLNDataHandler, OLEDRunner_MLNExperiments}
 import app.runners.MLNDataHandler.MLNDataOptions
 import app.runutils.Globals
-import com.mongodb.DB
 import com.mongodb.casbah.MongoClient
 import com.typesafe.scalalogging.LazyLogging
-import data_handling.caviar_intervals.MeetingTrainingData
+import datautils.caviar_intervals.MeetingTrainingData
 import iled.ILED
 import iled.ILED.updateSupport
-import jep.Jep
 import logic.Examples.Example
 import logic._
-import oled.functions.CoreFunctions
 import utils.DataUtils.{DataAsExamples, DataAsIntervals}
 import utils.{ASP, CaviarUtils, Utils}
 import xhail.Xhail
@@ -57,39 +54,38 @@ object HillClimbing extends App with LazyLogging {
 
 
 
-    def iterateOnce(selectedNode: Theory, bottomTheory: Theory, jep: Jep, gl: Globals) = {
-      val children = generateChildrenNodes(selectedNode, bottomTheory, getTrainingData(), jep, gl).filter(x => x != Theory())
-      scoreNodes(children, jep, gl)
+    def iterateOnce(selectedNode: Theory, bottomTheory: Theory, gl: Globals) = {
+      val children = generateChildrenNodes(selectedNode, bottomTheory, getTrainingData(), gl).filter(x => x != Theory())
+      scoreNodes(children, gl)
       val f1 = (t: Theory) => t.stats._6
       val selectedChildNode = children.sortBy( x => -f1(x) ).head // sort by f1-score
       logger.info(s"Best theory so far (F1-score ${selectedChildNode.stats._6}):\n${selectedChildNode.tostring}")
       selectedChildNode
     }
 
-    def scoreNodes(children: Vector[Theory], jep: Jep, gl: Globals) = {
+    def scoreNodes(children: Vector[Theory], gl: Globals) = {
       logger.info("Scoring children nodes")
       children.foreach { childNode =>
-        crossVal(childNode, jep, getTrainingData(), "", gl)
+        crossVal(childNode, getTrainingData(), "", gl)
       }
       //children.foreach(x => println(x.tostring + " " + x.stats._6))
     }
 
-    val jep = new Jep()
     //val globals = new Globals("/home/nkatz/dev/iled/datasets/Caviar/meeting", "")
     val globals = new Globals("/home/nkatz/dev/iled/datasets/CTM/whole-hierarchy", "")
 
 
-    val bottomTheory = constructBottomTheory(getTrainingData(), jep, globals)
+    val bottomTheory = constructBottomTheory(getTrainingData(), globals)
     val iterations = 8
     val theory = (1 to iterations).foldLeft(Theory()) { (x, y) =>
       logger.info(s"Iteration $y")
-      iterateOnce(x, bottomTheory, jep, globals)
+      iterateOnce(x, bottomTheory, globals)
     }
     logger.info("Done")
     logger.info("Cross-validation...")
     val testSet = CaviarUtils.getDataFromIntervals(collection, "meeting", data.asInstanceOf[DataAsIntervals].testingSet, chunkSize, withChunking = false)
     val theory_ = Theory(theory.clauses)
-    crossVal(theory_, jep, testSet, "", globals) // generate new theory to clear the stats counter
+    crossVal(theory_, testSet, "", globals) // generate new theory to clear the stats counter
     logger.info(s"F1-score on test set: ${theory_.stats._6}")
   }
 
@@ -102,9 +98,8 @@ object HillClimbing extends App with LazyLogging {
     val chunkSize = 50
     val opts = new MLNDataOptions(foldPath, chunkSize)
     val dataset = getData(opts)
-    val jep = new Jep()
     val globals = new Globals("/home/nkatz/dev/iled/datasets/CaviarMLN", "")
-    val bottomTheory = constructBottomTheory(dataset, jep, globals)
+    val bottomTheory = constructBottomTheory(dataset, globals)
     //println(bottomTheory.tostring)
     val iterations = 2
     /*
@@ -119,48 +114,48 @@ object HillClimbing extends App with LazyLogging {
     */
     val theory = (1 to iterations).foldLeft(Theory()) { (x, y) =>
       logger.info(s"Iteration $y")
-      iterateOnce(x, bottomTheory, jep, globals, opts)
+      iterateOnce(x, bottomTheory, globals, opts)
     }
     logger.info("Done")
     logger.info("Cross-validation...")
     val testSet = MLNDataHandler.getTestingData(opts)
     val theory_ = Theory(theory.clauses)
-    crossVal(theory_, jep, testSet, "", globals) // generate new theory to clear the stats counter
+    crossVal(theory_, testSet, "", globals) // generate new theory to clear the stats counter
     logger.info(s"F1-score on test set: ${theory_.stats._6}")
     //iterateOnce(Theory(), bottomTheory, jep, globals, opts)
   }
 
   def getData(opts : MLNDataOptions) = MLNDataHandler.getTrainingData(opts)
 
-  def iterateOnce(selectedNode: Theory, bottomTheory: Theory, jep: Jep, gl: Globals, opts: MLNDataOptions) = {
-    val children = generateChildrenNodes(selectedNode, bottomTheory, getData(opts), jep, gl).filter(x => x != Theory())
-    scoreNodes(children, jep, gl, opts)
+  def iterateOnce(selectedNode: Theory, bottomTheory: Theory, gl: Globals, opts: MLNDataOptions) = {
+    val children = generateChildrenNodes(selectedNode, bottomTheory, getData(opts), gl).filter(x => x != Theory())
+    scoreNodes(children, gl, opts)
     val f1 = (t: Theory) => t.stats._6
     val selectedChildNode = children.sortBy( x => -f1(x) ).head // sort by f1-score
     logger.info(s"Best theory so far (F1-score ${selectedChildNode.stats._6}):\n${selectedChildNode.tostring}")
     selectedChildNode
   }
 
-  def scoreNodes(children: Vector[Theory], jep: Jep, gl: Globals, opts: MLNDataOptions) = {
+  def scoreNodes(children: Vector[Theory], gl: Globals, opts: MLNDataOptions) = {
     logger.info("Scoring children nodes")
     children.foreach { childNode =>
-      crossVal(childNode, jep, getData(opts), "", gl)
+      crossVal(childNode, getData(opts), "", gl)
     }
     //children.foreach(x => println(x.tostring + " " + x.stats._6))
   }
 
-  def generateChildrenNodes(currentNode: Theory, bottomTheory: Theory, trainingSet: Iterator[Example], jep: Jep, gl: Globals) = {
+  def generateChildrenNodes(currentNode: Theory, bottomTheory: Theory, trainingSet: Iterator[Example], gl: Globals) = {
     logger.info("Generating children nodes")
     trainingSet.foldLeft(Vector[Theory]()){ (theories, newExample) =>
       println(s"Generating children at example ${newExample.time}")
-      val isSat = ILED.isSAT(currentNode, newExample, ASP.check_SAT_Program, jep, gl)
+      val isSat = ILED.isSAT(currentNode, newExample, ASP.check_SAT_Program, gl)
       if (isSat) {
         theories
       } else {
         val aspFile: File = utils.Utils.getTempFile("aspInduction", ".lp")
         val (_, use2AtomsMap, defeasible, use3AtomsMap, _, _) =
           ASP.inductionASPProgram(kernelSet = bottomTheory, priorTheory = currentNode, examples = newExample.toMapASP, aspInputFile = aspFile, globals = gl)
-        val answerSet = ASP.solve("iled", use2AtomsMap ++ use3AtomsMap, aspFile, newExample.toMapASP, fromWeakExmpl=false, jep)
+        val answerSet = ASP.solve("iled", use2AtomsMap ++ use3AtomsMap, aspFile, newExample.toMapASP)
         if (answerSet != Nil) {
           val newRules = Rules.getNewRules(answerSet.head.atoms, use2AtomsMap)
           ILED.updateSupport(newRules, bottomTheory)
@@ -178,7 +173,7 @@ object HillClimbing extends App with LazyLogging {
     }//.map(x => x.initialRefinement)
   }
 
-  def constructBottomTheory(trainingSet: Iterator[Example], jep: Jep, globals: Globals): Theory = {
+  def constructBottomTheory(trainingSet: Iterator[Example], globals: Globals): Theory = {
     val infile = Utils.getTempFile("example", ".lp")
     val bk = globals.BK_WHOLE_EC
     Globals.glvalues("perfect-fit") = "false"
@@ -194,7 +189,7 @@ object HillClimbing extends App with LazyLogging {
         val interpretation = y.annotationASP ++ y.narrativeASP
         Utils.writeToFile(infile, "overwrite") { p => interpretation.foreach(p.println) }
         val (_, varKernel) =
-          Xhail.runXhail(fromFile=infile.getAbsolutePath, kernelSetOnly=true, jep=jep, bkFile=bk, globals=globals)
+          Xhail.runXhail(fromFile=infile.getAbsolutePath, kernelSetOnly=true, bkFile=bk, globals=globals)
         logger.info("Compressing bottom theory")
 
         val usefulNewBottomRules = varKernel.foldLeft(List[Clause]()) { (accum, bottomClause) =>
@@ -218,17 +213,17 @@ object HillClimbing extends App with LazyLogging {
 
 
 
-  def crossVal(t: Theory, jep: Jep, data: Iterator[Example], handCraftedTheoryFile: String = "", globals: Globals) = {
+  def crossVal(t: Theory, data: Iterator[Example], handCraftedTheoryFile: String = "", globals: Globals) = {
     while (data.hasNext) {
       val e = data.next()
-      evaluateTheory(t, e, jep, handCraftedTheoryFile, globals)
+      evaluateTheory(t, e, handCraftedTheoryFile, globals)
     }
     //val stats = t.stats
     //(stats._1, stats._2, stats._3, stats._4, stats._5, stats._6)
   }
 
 
-  def evaluateTheory(theory: Theory, e: Example, jep: Jep, handCraftedTheoryFile: String = "", globals: Globals): Unit = {
+  def evaluateTheory(theory: Theory, e: Example, handCraftedTheoryFile: String = "", globals: Globals): Unit = {
 
     val varbedExmplPatterns = globals.EXAMPLE_PATTERNS_AS_STRINGS
     val coverageConstr = s"${globals.TPS_RULES}\n${globals.FPS_RULES}\n${globals.FNS_RULES}"
@@ -243,7 +238,7 @@ object HillClimbing extends App with LazyLogging {
     val program = ex + globals.INCLUDE_BK(globals.BK_CROSSVAL) + t + coverageConstr + show
     val f = Utils.getTempFile(s"eval-theory-${UUID.randomUUID().toString}-${System.currentTimeMillis()}", ".lp")
     Utils.writeLine(program, f.getCanonicalPath, "overwrite")
-    val answerSet = ASP.solve(task = Globals.INFERENCE, aspInputFile = f, jep=jep)
+    val answerSet = ASP.solve(task = Globals.INFERENCE, aspInputFile = f)
     if (answerSet.nonEmpty) {
       val atoms = answerSet.head.atoms
       atoms.foreach { a=>
