@@ -11,25 +11,20 @@ Please consult the paper that comes with the source (``iclp-2016.pdf``) to get a
 
 This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you are welcome to redistribute it under certain conditions; See the GNU General Public License v3 for more details.
 
-## installation
+## Installation
 
-Clone the source to some local directory, let's refer to that by `/oledhome` in what follows for convenience. The following tools and software are necessary to use ``OLED``:
+The manual that comes with the source code contains detailed instructions. In sort:
 
-* Scala 2.11 & SBT with Java > 7 (preferably Java 8).
-* Python 2.7.
-* Clingo with Python, Lua and multithreading (TBB) support. To install:
-  Download the Clingo source from [here](https://sourceforge.net/projects/potassco/files/clingo/) (**version 4.5.4 of the Clingo solver**, source code, e.g. `clingo-4.5.4-source.tar.gz`) and follow the instructions that come with the source (the INSTALL manual) to install. TBB is typically installed on Linux by `apt-get install libtbb-dev`. When you're done you should add the Clingo executable that will be generated to your `PATH` variable. The Clingo executable will be located in `/clingohome/build/release`, where `/clingohome` is the location where you unzipped the clingo source code.
-* Mongodb (just follow the instructions from the Mongodb website to install).
-* Jep (Java Embedded Python). To install:
-  Clone the source from [here](https://github.com/mrj0/jep) to a location (let's refer to that by `/jephome` in what follows), and do `python setup.py install --home=/jephome`. Afterwards, add `/jephome/lib/python` to your `PYTHONPATH` variable and copy the generated jar file from  `/jephome/lib/python/jep/jep-x.x.x.jar` to `/oledhome/lib` (generate a `/lib` folder under `oledhome` if not present).
-* When you're done, download [this patch](http://users.iit.demokritos.gr/~nkatz/clingo-patch/solve-multi.patch.0), put it inside `clingohome` (the folder where where you unzipped the clingo source code) and run it as follows:
-```
-patch -p0 < solve-multi.patch.0
-```
-from within `clingohome`. Then recompile the python module:
-```
-scons --build-dir=release pyclingo
-```
+* Clone of download the source code. Open a terminal and navigate to the source code location. In what follows we'll refer to this directory by `oledhome`
+* `cp -r OLED/install-scripts .`
+* `cd install-scripts`
+* `./install.sh`
+
+Please update your `PATH`, `PYTHONPATH` and `LD_LIBRARY_PATH` as per the instructions in the manual. 
+
+## Test Run
+
+Detailed instructions on how to perform a test run with ``OLED`` are provided in the manual. In sort:
 
 ## Datasets
 
