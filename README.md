@@ -41,46 +41,28 @@ Detailed instructions on how to perform a test run with ``OLED`` are provided in
    * `show dbs`
 * Run ``OLED``. From within `/oledhome` do:
    * `java -cp oled.jar app.runners.OLEDDefaultRunner \`  <br/>
-     ` --inpath=/home/nkatz/oledhome/caviar-bk \` <br/>
+     ` --inpath=/oledhome/caviar-bk \` <br/>
      `--delta=0.00001 \` <br/>
      `--prune=0.8 \` <br/>
      `--target=meeting \` <br/>
      `--db=caviar-train \` <br/>
-     `--saveto=/home/nkatz/oledhome/theory.lp`
-
-   
-
-
+     `--saveto=/oledhome/theory.lp`
+* After learning terminates the learnt hypothesis will be written in `/oledhome/theory.lp`. You can evaluate this theory on the test set as follows:   
+   * `java -cp oled.jar app.runners.OLEDDefaultRunner \`  <br/>
+         ` --inpath=/oledhome/caviar-bk \` <br/>
+         `--target=meeting \` <br/>
+         `--db=caviar-test \` <br/>
+         `--evalth=/home/nkatz/oledhome/theory.lp`
 
 ## Datasets
 
-A dataset on which ``OLED`` has been evaluated is the [CAVIAR dataset](http://homepages.inf.ed.ac.uk/rbf/CAVIARDATA1/) for activity recognition. See [here](http://homepages.inf.ed.ac.uk/rbf/CAVIARDATA1/) for information on the CAVIAR dataset. More datasets and instructions on how to try them out will be uploaded soon. In the meantime, I'd be happy to offer assistance in using `OLED` with other datasets (formulate background knowledge, import the data in a mongodb etc). Please contact me at ``nkatz`` ``at`` ``iit`` ``dot`` ``demokritos`` ``dot`` ``gr``.
+A dataset on which ``OLED`` has been evaluated is the [CAVIAR dataset](http://homepages.inf.ed.ac.uk/rbf/CAVIARDATA1/) for activity recognition (which was also used for the test run above). See [here](http://homepages.inf.ed.ac.uk/rbf/CAVIARDATA1/) for information on the CAVIAR dataset. More datasets and instructions on how to try them out will be uploaded soon. In the meantime, I'd be happy to offer assistance in using `OLED` with other datasets (formulate background knowledge, import the data in a mongodb etc). Please contact me at ``nkatz`` ``at`` ``iit`` ``dot`` ``demokritos`` ``dot`` ``gr``.
 
-## Usage
+## Online Learning on Markov Logic Rules with `OLED`
 
-#### Run on the CAVIAR dataset
+Description & instructions coming soon.
 
-A `json` dump (extracted from a mongodb) of the `CAVIAR` dataset (`caviar.json`) may be downloaded from [this link](http://users.iit.demokritos.gr/~nkatz/OLED-data/caviar.json.tar.gz). Also, a larger version of CAVIAR, synthetically augmented with 10 times more domain constants amy be found [here](http://users.iit.demokritos.gr/~nkatz/data/caviarx10.zip). To load the data to your local mongodb instance, unzip the downloaded file, cd into that folder and do ``mongoimport --db yourDBname --collection examples --file caviar.json``, where `yourDBname` is the name of your database (it can be anything, but do not change the name of the collection -- `examples`). Next, to run `OLED` with `CAVIAR` data, generate a jar file from the source code:
-
-* Start SBT from within `/oledhome`
-* Type `assembly`
-* Move the generated file `/oledhome/target/scala-2.11/oled.jar` to `/oledhome`
-* Run it as follows:
-
-```
-java -cp oled.jar:/lib/jep-x.x.x.jar -Djava.library.path=/jephome/lib/python/jep app.runners.OLEDDefaultRunner --inpath=/oledhome/datasets/Caviar/meeting --delta=0.00001 --prune=0.7 --db=yourDBname --wjep=true --chunksize=10 --hle=meeting
-```
-
-Type 
-
-
-```
-java -cp oled.jar app.runners.OLEDDefaultRunner --help 
-```
-
-to see the list of cmd args
-
-## Distributed version of `OLED`
+## Parallel/Distributed version of `OLED`
 
 Description & instructions coming soon.
 
