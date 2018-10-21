@@ -27,7 +27,7 @@ Please update your `PATH`, `PYTHONPATH` and `LD_LIBRARY_PATH` as per the instruc
 Detailed instructions on how to perform a test run with ``OLED`` are provided in the manual. Please refer to the manual for details on the data and the learning task we'll use for this test run. In sort:
 
 * Download some data and some background knowledge 
-** test
+   * test
 
 ## Datasets
 
