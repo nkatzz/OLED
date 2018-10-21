@@ -40,7 +40,8 @@ Detailed instructions on how to perform a test run with ``OLED`` are provided in
    * `mongo`
    * `show dbs`
 * Run ``OLED``. From within `/oledhome` do:
-   * `java -cp oled.jar app.runners.OLEDDefaultRunner --inpath=/home/nkatz/oledhome/caviar-bk --delta=0.00001 --prune=0.8 --showrefs=false --target=meeting --db=caviar-train --saveto=/home/nkatz/oledhome/theory.lp`
+   * `java -cp oled.jar app.runners.OLEDDefaultRunner --inpath=/home/nkatz/oledhome/caviar-bk` <br/>
+ `--delta=0.00001 --prune=0.8 --showrefs=false --target=meeting --db=caviar-train --saveto=/home/nkatz/oledhome/theory.lp`
    
 
 
