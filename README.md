@@ -15,7 +15,7 @@ This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you a
 
 The manual that comes with the source code contains detailed instructions. In sort:
 
-* Clone of download the source code. Open a terminal and navigate to the source code location. In what follows we'll refer to this directory by `oledhome`
+* Clone of download the source code. Open a terminal and navigate to the source code location. In what follows we'll refer to this directory by `/oledhome`
 * `cp -r OLED/install-scripts .`
 * `cd install-scripts`
 * `./install.sh`
@@ -24,7 +24,10 @@ Please update your `PATH`, `PYTHONPATH` and `LD_LIBRARY_PATH` as per the instruc
 
 ## Test Run
 
-Detailed instructions on how to perform a test run with ``OLED`` are provided in the manual. In sort:
+Detailed instructions on how to perform a test run with ``OLED`` are provided in the manual. Please refer to the manual for details on the data and the learning task we'll use for this test run. In sort:
+
+* Download some data and some background knowledge 
+** test
 
 ## Datasets
 
