@@ -26,8 +26,24 @@ Please update your `PATH`, `PYTHONPATH` and `LD_LIBRARY_PATH` as per the instruc
 
 Detailed instructions on how to perform a test run with ``OLED`` are provided in the manual. Please refer to the manual for details on the data and the learning task we'll use for this test run. In sort:
 
-* Download some data and some background knowledge 
-   * test
+* Install MongoDB.
+* Download some data and some background knowledge: 
+   * `wget http://users.iit.demokritos.gr/~nkatz/oled/caviar-data.zip`
+   * `wget http://users.iit.demokritos.gr/~nkatz/oled/caviar-data.bk`
+* `unzip caviar-data.zip`
+* `unzip caviar-bk.zip`
+* `cd caviar-data`
+* Import the data into Mongo:
+   * mongoimport --db caviar-train --collection examples --file caviar-train.json
+   * mongoimport --db caviar-test --collection examples --file caviar-test.json
+* Make sure everything is ok (after axecuting the `show dbs` command you should see the newly-created dbs 'caviar-train' and 'caviar test'):
+   * `mongo`
+   * `show dbs`
+* Run ``OLED``. From within `/oledhome` do:
+   * `java -cp oled.jar app.runners.OLEDDefaultRunner --inpath=/home/nkatz/oledhome/caviar-bk --delta=0.00001 --prune=0.8 --showrefs=false --target=meeting --db=caviar-train --saveto=/home/nkatz/oledhome/theory.lp`
+   
+
+
 
 ## Datasets
 
