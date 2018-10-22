@@ -97,6 +97,15 @@ trait CoreFunctions {
     goodKernelRules
   }
 
+
+  def generateNewBottomClausesNoEC(topTheory: Theory, e: Example, globals: Globals) = {
+    val specialBKfile = globals.BK_WHOLE
+    val (_, varKernel) = LogicUtils.generateKernel(e.toMapASP, bkFile = specialBKfile, globals=globals)
+    val bottomTheory = topTheory.clauses flatMap(x => x.supportSet.clauses)
+    val goodKernelRules = varKernel.filter(newBottomRule => !bottomTheory.exists(supportRule => newBottomRule.thetaSubsumes(supportRule)))
+    goodKernelRules
+  }
+
   def getnerateNewBottomClauses_withInertia(topTheory: Theory, e: Example, targetClass: String, globals: Globals) = {
     val specialBKfile = globals.ABDUCE_WITH_INERTIA
     val (_, varKernel) = LogicUtils.generateKernel(e.toMapASP, bkFile = specialBKfile, globals=globals)

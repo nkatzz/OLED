@@ -18,6 +18,7 @@ object Literal {
   val empty = Literal()
 
   /* Parse a string into a literal, An optional mode atom may be provided. */
+  /*
   def parse(lit: String, mode: String = ""): Literal = {
     val p = new ClausalLogicParser
     mode match {
@@ -28,6 +29,15 @@ object Literal {
         Literal(functor = l.functor, terms = l.terms, isNAF = l.isNAF, modeAtom = m)
     }
   }
+  */
+
+  /*
+  * I'm quiting parsing based on parser combinators, I'll the parboiled lib which is much faster.
+  * ATTENTION: The PB2LogicParser cannot currently handle whitespace in the input strings (I need to fix it). This
+  * doesn't happen in the app right now but it might be a problem in the future. If any issue appears just comment-out
+  * this version of the parse method and use the one above, based on parser combinators.
+  * */
+  def parse(lit: String, mode: String = "") = parseWPB2(lit, mode)
 
   /* As above, using the Parboiled2 parser (faster). */
   def parseWPB2(lit: String, mode: String = "") = {

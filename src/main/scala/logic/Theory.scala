@@ -227,6 +227,111 @@ case class Theory(clauses: List[Clause] = List()) extends Expression with LazyLo
     }
   }
 
+
+
+
+
+
+
+
+  def scoreRulesNoEC(example: Example, globals: Globals, postPruningMode: Boolean = false) : Unit = {
+    // If a rule has just been expanded its refinements are empty, so generate new
+    if (!postPruningMode) this.clauses foreach (rule => if (rule.refinements.isEmpty) rule.generateCandidateRefs)
+
+    // Proceed to scoring
+    val e = (example.annotationASP ++ example.narrativeASP).mkString("\n")
+    val _marked = marked(globals)
+    val markedProgram = _marked._1
+    val markedMap = _marked._2
+    //val countRules = globals.TIMES_COUNT_RULE
+    val exmplCountRules = globals.EXAMPLE_COUNT_RULE
+
+    val show = globals.SHOW_TPS_ARITY_2 + globals.SHOW_FPS_ARITY_2 + globals.SHOW_FNS_ARITY_2 + globals.SHOW_TIME + globals.SHOW_INTERPRETATIONS_COUNT
+    val include = globals.INCLUDE_BK(globals.BK_RULE_SCORING_MARKDED)
+    val all = e + include + exmplCountRules + markedProgram + show
+    val f = Utils.getTempFile(s"isConsistent",".lp")
+    Utils.writeToFile(f, "append")(p => List(all) foreach p.println)
+    val path = f.getCanonicalPath
+    val answerSet = ASP.solve(task = Globals.SCORE_RULES, aspInputFile = new File(path))
+
+    answerSet match {
+      case Nil =>
+        throw new RuntimeException("Got an empty answer set during rule evaluation (at least times count should be returned)")
+      case _ =>
+        val (exampleCounts, coverageCounts) = answerSet.head.atoms.foldLeft(List[String](), List[String]()){ (x,y) =>
+          val exCount = x._1
+          val coverageCounts = x._2
+          if(y.startsWith("tps") || y.startsWith("fps") || y.startsWith("fns")) {
+            (exCount,coverageCounts :+ y)
+
+          } else if (y.startsWith("countGroundings")) {
+            (exCount :+ y, coverageCounts)
+          } else {
+            throw new RuntimeException(s"Don't know what to do with what the solver" +
+              s" returned.\nExpected tps/2,fps/2,fns/2,countGroundings/1 got\n${answerSet.head.atoms}")
+          }
+        }
+
+        /*
+        *
+        * Don't throw this exception. There are cases where we do not have any groundings.
+        * For instance consider this example from the maritime domain: We are learning the concept
+        * terminatedAt(highSpeedIn(Vessel,Area),Time) and an example comes with no area in it.
+        * Then there are no groundings and, correctly, the "seen examples" from our existing rules
+        * should not be increased.
+        * */
+        //if (exampleCounts.isEmpty) throw new RuntimeException("No example count returned")
+
+        // Normally, only one countGroundings/1 atom should be returned, with the number of
+        // target concept groundings as its argument. If we have more than one target concept
+        // then we could have more such atoms, but OLED does not handle that.
+        if (exampleCounts.length > 1)
+          throw new RuntimeException(s"Only one countGroundings/1 atom was expected, got ${exampleCounts.mkString(" ")} instead.")
+
+        // increase the count for seen examples
+        //val c = exampleCounts.size
+
+        val c = exampleCounts.head.split("\\(")(1).split("\\)")(0).toInt
+
+        this.clauses foreach { x =>
+          x.seenExmplsNum +=  c //times//*100 // interps
+          x.refinements.foreach(y => y.seenExmplsNum += c)
+          x.supportSet.clauses.foreach(y => y.seenExmplsNum += c)
+        }
+
+        val parse = (atom: String) => {
+          val tolit = Literal.parse(atom)
+          val (what, hashCode, count) = (tolit.functor, tolit.terms.head.tostring, tolit.terms.tail.head.tostring)
+          (what, hashCode, count)
+        }
+
+        val updateCounts = (what: String, hashCode: String, count: String) => {
+          val clause = markedMap(hashCode)
+          what match {
+            case "tps" => clause.tps += count.toInt
+            case "fps" => clause.fps += count.toInt
+            case "fns" => clause.fns += count.toInt
+          }
+        }
+
+        coverageCounts foreach { x =>
+          val (what, hashCode, count) = parse(x)
+          updateCounts(what, hashCode, count)
+        }
+    }
+  }
+
+
+
+
+
+
+
+
+
+
+
+
   /*
   * These variables are used for scoring the theory as a whole
   * */
@@ -416,6 +521,38 @@ case class Theory(clauses: List[Clause] = List()) extends Expression with LazyLo
     //val timeEnd = System.nanoTime()
 
     //println(s"growNewRuleTest solving time: ${(timeEnd-timeStart)/1000000000.0}")
+
+    answerSet.nonEmpty match {
+      case true =>
+        val atoms = answerSet.head.atoms
+        if (failure(atoms)) true
+        else false
+      case _ => false
+    }
+  }
+
+
+
+
+  def growNewRuleTestNoEC(e: Example, globals: Globals): Boolean = {
+
+    def solve(program: String): List[AnswerSet] = {
+      val f = Utils.getTempFile(s"growNewRuleTest",".lp")
+      Utils.writeToFile(f, "append")(p => List(program) foreach p.println)
+      val path = f.getCanonicalPath
+      ASP.solve(task = Globals.GROW_NEW_RULE_TEST, aspInputFile = new File(path))
+    }
+
+    val (failedTestDirective,show) = (globals.FNS_RULES,globals.SHOW_FNS_ARITY_1)
+
+    val t = (this.withTypePreds(globals) map (_.tostring)).mkString("\n")
+    val ex = (e.annotationASP ++ e.narrativeASP).mkString("\n")
+
+    val program = ex + t + failedTestDirective + show
+
+    val failure = (atoms: List[String]) => atoms.exists(p => p.startsWith("fns"))
+
+    val answerSet = solve(program)
 
     answerSet.nonEmpty match {
       case true =>

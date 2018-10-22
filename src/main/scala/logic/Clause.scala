@@ -39,11 +39,16 @@ object Clause {
   }
 
   /* Parses a string into a Clause. */
-
+  /*
   def parse(cl: String): Clause = {
     val p = new ClausalLogicParser
     p.getParseResult(p.parse(p.clause, cl)).asInstanceOf[Clause]
   }
+  */
+
+  /* Use this which is faster that combinators parsing. If any problems occur just fall back to the previous parser
+  * (uncomment the method above.) See also the related comment at the parse method of the Literal companion object.*/
+  def parse(cl: String) = parseWPB2(cl)
 
   def parseWPB2(cl: String) = PB2LogicParser.parseClause(cl).asInstanceOf[Clause]
 

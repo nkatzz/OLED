@@ -37,19 +37,25 @@ object OLEDDefaultRunner {
       println(argsok._2)
       System.exit(-1)
     } else {
+
       val runningOptions = CMDArgs.getOLEDInputArgs(args)
+
       val trainingDataOptions =
         new DefaultMongoDataOptions(dbName = runningOptions.db,
           collectionName = runningOptions.mongoCollection,
           chunkSize = runningOptions.chunkSize,
           limit = runningOptions.dataLimit,
           targetConcept = runningOptions.targetHLE, sortDbByField = "None")
+
       val testingDataOptions = trainingDataOptions
       val trainingDataFunction: DefaultMongoDataOptions => Iterator[Example] = getMongoData
       val testingDataFunction: DefaultMongoDataOptions => Iterator[Example] = getMongoData
       val system = ActorSystem("HoeffdingLearningSystem")
       val startMsg = if (runningOptions.evalth != "None") "EvaluateHandCrafted" else "start"
-      system.actorOf(Props(new Master(runningOptions, trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction)), name = "Master-Actor") !  startMsg
+
+      system.actorOf(Props(new Master(runningOptions, trainingDataOptions, testingDataOptions,
+        trainingDataFunction, testingDataFunction)), name = "Master-Actor") !  startMsg
+
     }
   }
 

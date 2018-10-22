@@ -76,17 +76,25 @@ final class PB2LogicParser(val input: ParserInput) extends Parser {
   private def Const = rule {
     (capture(LowerCaseString) ~> ((x: String) => Constant(x))) |
       (capture(Integer) ~> (x => Constant(x))) |
+      (capture(MinusInteger) ~> (x => Constant(x))) |
       (capture(optional('"') ~ LowerCaseString ~ optional('"')) ~> ((x: String) => Constant(x))) |
       (capture('"' ~ UpperCaseString ~ '"') ~> ((x: String) => Constant(x)))
   }
 
   private def LowerCaseString = rule { CharPredicate.LowerAlpha ~ zeroOrMore(CharPredicate.AlphaNum | "_") }
+
   private def Integer = rule { oneOrMore(CharPredicate.Digit) }
+
+  // This is needed in use/2 atoms with rule ids, e.g. use(-23421, 0)
+  private def MinusInteger = rule { "-" ~ oneOrMore(CharPredicate.Digit) }
+
   private def UpperCaseString = rule { CharPredicate.UpperAlpha ~ zeroOrMore(CharPredicate.AlphaNum | "_") }
 
 }
 
 object TestRunner extends App {
+  // - in
+  PB2LogicParser.parseAtom("use(-34534534,6)", debug=true)
   PB2LogicParser.parseAtom("initiatedAt(meeting(X0,X1,45),1,Z,Petryb,a(p(2,3,z(23,g,f,ert(sdjfskj,Xkjsh))),1),oo(12,23,E))", debug=true)
   // with a final "."
   PB2LogicParser.parseAtom("initiatedAt(meeting(X0,X1,45),1,Z,Petryb,a(p(2,3,z(23,g,f,ert(sdjfskj,Xkjsh))),1),oo(12,23,E)).", debug=true)
@@ -109,6 +117,7 @@ object TestRunner extends App {
   val a = Literal.toMLNFlat(mlnTest.asInstanceOf[Literal])
   println(a.tostring)
 
+  // This does not work for variabilized literals (throws an exception).
   val mlnTest1 = PB2LogicParser.parseAtom("initiatedAt(c,A,d)", debug=true)
   val b = Literal.toMLNFlat(mlnTest1.asInstanceOf[Literal])
   println(b.tostring)

@@ -55,13 +55,27 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
   def reScore(params: RunningOptions, data: Iterator[Example], theory: Theory, targetClass: String, logger: org.slf4j.Logger) = {
     theory.clauses foreach (p => p.clearStatistics) // zero all counters before re-scoring
     for (x <- data) {
-      theory.scoreRules(x, params.globals, postPruningMode = true)
+      if (Globals.glvalues("with-ec").toBoolean) {
+        theory.scoreRules(x, params.globals, postPruningMode = true)
+      } else {
+        theory.scoreRulesNoEC(x, params.globals, postPruningMode = true)
+      }
+
     }
     logger.debug( theory.clauses map { p => s"score: ${p.score}, tps: ${p.tps}, fps: ${p.fps}, fns: ${p.fns}\n${p.tostring}" } mkString "\n" )
   }
 
   def generateNewRules(topTheory: Theory, e: Example, initorterm: String, globals: Globals) = {
     val bcs = generateNewBottomClauses(topTheory, e, initorterm, globals)
+    bcs map { x =>
+      val c = Clause(head=x.head, body = List())
+      c.addToSupport(x)
+      c
+    }
+  }
+
+  def generateNewRulesNoEC(topTheory: Theory, e: Example, globals: Globals) = {
+    val bcs = generateNewBottomClausesNoEC(topTheory, e, globals)
     bcs map { x =>
       val c = Clause(head=x.head, body = List())
       c.addToSupport(x)

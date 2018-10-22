@@ -19,12 +19,12 @@ import oled.functions.SingleCoreOLEDFunctions._
 
 
 
-class TheoryLearner[T <: Source](inps: RunningOptions,
-                                 trainingDataOptions: T,
-                                 testingDataOptions: T,
-                                 trainingDataFunction: T => Iterator[Example],
-                                 testingDataFunction: T => Iterator[Example],
-                                 targetClass: String) extends Actor {
+class TheoryLearner[T <: Source](val inps: RunningOptions,
+                                 val trainingDataOptions: T,
+                                 val testingDataOptions: T,
+                                 val trainingDataFunction: T => Iterator[Example],
+                                 val testingDataFunction: T => Iterator[Example],
+                                 val targetClass: String) extends Actor {
 
   private val logger = LoggerFactory.getLogger(self.path.name)
   private var totalBatchProcessingTime = 0.0
@@ -39,7 +39,10 @@ class TheoryLearner[T <: Source](inps: RunningOptions,
     case "go" => sender ! run
   }
 
-  val initorterm: String = if(targetClass=="initiated") "initiatedAt" else "terminatedAt"
+  val initorterm: String =
+    if(targetClass=="initiated") "initiatedAt"
+    else if (targetClass=="terminated") "terminatedAt"
+    else inps.globals.MODEHS.head.varbed.tostring
 
   private val withInertia = Globals.glvalues("with-inertia").toBoolean
 
@@ -56,13 +59,15 @@ class TheoryLearner[T <: Source](inps: RunningOptions,
         if (inps.showStats) println(newExample.time)
 
         val res = Utils.time {
-          val t = processExample(topTheory, newExample)
+          val t =
+            if (Globals.glvalues("with-ec").toBoolean) processExample(topTheory, newExample)
+            else processExampleNoEC(topTheory, newExample)
 
           // This is used only when learning with inertia. But I think
           // its ok to keep it so that I can print out stats for the current
           // joint theory (for debugging).
           //if (withInertia) updateGlobalTheoryStore(t, initorterm, inps.globals)
-          updateGlobalTheoryStore(t, initorterm, inps.globals)
+          if (Globals.glvalues("with-ec").toBoolean) updateGlobalTheoryStore(t, initorterm, inps.globals)
 
           t
         }
@@ -119,7 +124,7 @@ class TheoryLearner[T <: Source](inps: RunningOptions,
         if (e.annotation.isEmpty) false else newTopTheory.growNewRuleTest(e, initorterm, inps.globals)
 
       } else {
-        if (this.inps.tryMoreRules && this.targetClass == "terminated") true
+        if (this.inps.tryMoreRules && this.targetClass == "terminated") true // Always try to find extra termination rules, they are more rare.
         else {
           val r = Utils.time{ newTopTheory.growNewRuleTest(e, initorterm, inps.globals) }
           if (inps.showStats) logger.info(s"grow new rule test time: ${r._2}")
@@ -144,7 +149,7 @@ class TheoryLearner[T <: Source](inps: RunningOptions,
 
       val newRules__ = newRules_._1
 
-      if (inps.showStats) logger.info(s"New rules genration time: ${newRules_._2}")
+      if (inps.showStats) logger.info(s"New rules generation time: ${newRules_._2}")
       this.totalNewRuleGenerationTime += newRules_._2
       // Just to be on the safe side...
       val newRules = newRules__.filter(x => x.head.functor == this.initorterm)
@@ -164,6 +169,56 @@ class TheoryLearner[T <: Source](inps: RunningOptions,
     }
     if (newTopTheory.clauses.nonEmpty) {
       val t = Utils.time { newTopTheory.scoreRules(e, inps.globals) }
+      if (inps.showStats) logger.info(s"Scoring rules time: ${t._2}")
+      this.totalRuleScoringTime += t._2
+
+      val expanded = Utils.time {  expandRules(newTopTheory) }
+      if (inps.showStats) logger.info(s"Expanding rules time: ${expanded._2}")
+      this.totalExpandRulesTime += expanded._2
+
+      if (inps.onlinePruning) {
+        pruneRules(expanded._1, inps, logger)
+      } else {
+        expanded._1
+      }
+    } else {
+      newTopTheory
+    }
+  }
+
+
+  def processExampleNoEC(topTheory: Theory, e: Example): Theory = {
+    var newTopTheory = topTheory
+    val startNew = if (e.annotation.isEmpty) false else newTopTheory.growNewRuleTestNoEC(e, inps.globals)
+    if (startNew) {
+      val newRules_ = Utils.time{
+        if (this.inps.tryMoreRules) {
+          // Don't use the current theory here to force the system to generate new rules
+          generateNewRulesNoEC(Theory(), e, inps.globals)
+        } else {
+          generateNewRulesNoEC(topTheory, e, inps.globals)
+        }
+      }
+      val newRules__ = newRules_._1
+      if (inps.showStats) logger.info(s"New rules generation time: ${newRules_._2}")
+      this.totalNewRuleGenerationTime += newRules_._2
+
+      val newRules = newRules__
+
+      if (newRules.nonEmpty) logger.info(s"Generated ${newRules.length} new rules.")
+
+      val o1 = System.nanoTime()
+      if (this.inps.compressNewRules) {
+        newTopTheory = topTheory.clauses ++ filterTriedRules(topTheory, newRules, logger)
+      } else {
+        newTopTheory = topTheory.clauses ++ newRules
+      }
+      val o2 = System.nanoTime()
+      if (inps.showStats) logger.info(s"compressing rules time: ${(o2-o1)/1000000000.0}")
+      this.totalCompressRulesTime += (o2-o1)/1000000000.0
+    }
+    if (newTopTheory.clauses.nonEmpty) {
+      val t = Utils.time { newTopTheory.scoreRulesNoEC(e, inps.globals) }
       if (inps.showStats) logger.info(s"Scoring rules time: ${t._2}")
       this.totalRuleScoringTime += t._2
 

@@ -23,11 +23,10 @@ class Dispatcher[T <: Source](inps: RunningOptions,
                               trainingDataFunction: T => Iterator[Example],
                               testingDataFunction: T => Iterator[Example]) extends Actor with LazyLogging {
 
-  var size = 2 // two processes are started, one for learning the initiatedAt part and one for the terminatedAt
-  var theories = List[(Theory,Double)]()
-  var merged = Theory()
-  var time = 0.0
-  //var done = false
+  private var size = inps.globals.MODEHS.size // One process for each target concept.
+  private var theories = List[(Theory,Double)]()
+  private var merged = Theory()
+  private var time = 0.0
 
   private val weightLearning = Globals.glvalues("weight-learning").toBoolean
 
@@ -35,7 +34,7 @@ class Dispatcher[T <: Source](inps: RunningOptions,
 
     case "EvaluateHandCrafted" =>
       if (!inps.evalth.isFile) {
-        logger.error(s"${inps.evalth} is not a file.")
+        logger.error(s"${inps.evalth} is not a file.") ; System.exit(-1)
       } else {
 
         println(s"Evaluating theory from ${inps.evalth}")
@@ -65,11 +64,28 @@ class Dispatcher[T <: Source](inps: RunningOptions,
     case "start" =>
 
       if (!weightLearning) {
-        context.actorOf(Props(new TheoryLearner(inps, trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction, "initiated")), name = s"initiated-learner-${this.##}") ! "go"
-        context.actorOf(Props(new TheoryLearner(inps, trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction, "terminated")), name = s"terminated-learner-${this.##}") ! "go"
+        if (inps.withEventCalculs) {
+          context.actorOf(Props(
+            new TheoryLearner(inps, trainingDataOptions, testingDataOptions,
+              trainingDataFunction, testingDataFunction, "initiated")),
+            name = s"initiated-learner-${this.##}") ! "go"
+
+          context.actorOf(Props(
+            new TheoryLearner(inps, trainingDataOptions, testingDataOptions,
+              trainingDataFunction, testingDataFunction, "terminated")),
+            name = s"terminated-learner-${this.##}") ! "go"
+        } else {
+          context.actorOf(Props(
+            new TheoryLearner(inps, trainingDataOptions, testingDataOptions,
+              trainingDataFunction, testingDataFunction, "None")),
+            name = s"learner-${this.##}") ! "go"
+        }
+
       } else {
 
         //context.actorOf(Props(new oled.weightlearn.WeightedTheoryLearner_OLD(inps, trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction, "initiated")), name = s"initiated-learner-${this.##}") ! "go"
+
+        /* I need to fix learning without the EC here (see above)! */
 
         if (! inps.parallelClauseEval) {
           context.actorOf(Props(new oled.weightlearn.WeightedTheoryLearner(inps, trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction, "initiated")), name = s"initiated-learner-${this.##}") ! "go"

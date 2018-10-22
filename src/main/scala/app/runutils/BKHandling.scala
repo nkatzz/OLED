@@ -1,5 +1,6 @@
 package app.runutils
 
+import com.typesafe.scalalogging.LazyLogging
 import logic.Literal
 import logic.Modes.ModeAtom
 
@@ -7,7 +8,7 @@ import logic.Modes.ModeAtom
   * Created by nkatz at 18/10/2018
   */
 
-object BKHandling {
+object BKHandling extends LazyLogging {
 
   def getCoverageDirectives(varbedExmplPatterns: List[String]) = {
     //val varbedExmplPatterns = for (x <- eps2) yield x.varbed.tostring
@@ -56,7 +57,10 @@ object BKHandling {
   /* This method is used to generate the ASP code that scores initiation and termination rules  */
 
   def generateScoringBK(modehs: List[ModeAtom]) = {
-    if (Globals.glvalues("with-ec").toBoolean) { // so we're learning with EC
+
+    if (modehs.isEmpty) { logger.error("No head mode declarations found.") ; System.exit(-1)}
+
+    if (Globals.glvalues("with-ec").toBoolean) { // We're learning with the Event Calculus in the BK.
       // We can get the fluent from the head modes.
       val targetFluent = {
         // We can take the first one of the head modes (the target fluent is the same
@@ -76,7 +80,6 @@ object BKHandling {
 
       val initScoringRule3 = s"fns(I, X) :- rule(I), X = #count {$varNamesTostr,Te,Ts: example( holdsAt(${targetFluent.tostring},Te) ), " +
         s"not marked(I, initiatedAt(${targetFluent.tostring},Ts) ), next(Ts,Te), time(Te), time(Ts) }."
-
 
       /* Termination scoring rules: */
       val termScoringRule1 = s"tps(I, X) :- rule(I), X = #count {$varNamesTostr,Te,Ts: example( holdsAt(${targetFluent.tostring},Te) ), " +
@@ -98,12 +101,16 @@ object BKHandling {
 
       (initRulesToStr, termRulesToStr)
 
-    } else {
-      // What do we do here?
-      ("", "")
+    } else { // No Event Calculus
+      val targetPred = modehs.head.varbed
+      val varNamesTostr = targetPred.getVars.map(x => x.name).mkString(",")
+      val tpsScoringRule = s"tps(I, X) :- rule(I), X = #count {$varNamesTostr: example(${targetPred.tostring}), marked(I, ${targetPred.tostring}) }."
+      val fpsScoringRule = s"fps(I, X) :- rule(I), X = #count {$varNamesTostr: not example(${targetPred.tostring}), marked(I, ${targetPred.tostring}) }."
+      val fnsScoringRule = s"fns(I, X) :- rule(I), X = #count {$varNamesTostr: example(${targetPred.tostring}), not marked(I, ${targetPred.tostring}) }."
+      val scoringRules = List(tpsScoringRule, fpsScoringRule, fnsScoringRule).mkString("\n")
+      (scoringRules, scoringRules)
     }
   }
-
 
 
 

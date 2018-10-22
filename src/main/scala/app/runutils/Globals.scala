@@ -156,12 +156,14 @@ class Globals(val entryPath: String, val fromDB: String) extends LazyLogging {
   val BK_TERMINATED_ONLY = s"$inputPath/bk-terminated-only.lp"
   val ABDUCE_WITH_INERTIA = s"$inputPath/abduce-with-inertia.lp"
   val INITIATED_ONLY_INERTIA = s"$inputPath/initiated-only-with-inertia.lp"
-  val BK_INITIATED_ONLY_MARKDED = s"$inputPath/bk-score-initiated.lp"
-  val BK_TERMINATED_ONLY_MARKDED = s"$inputPath/bk-score-terminated.lp"
+  val BK_INITIATED_ONLY_MARKDED = s"$inputPath/bk-score-initiated.lp" // BK for scoring initiation rules
+  val BK_TERMINATED_ONLY_MARKDED = s"$inputPath/bk-score-terminated.lp" // BK for scoring termination rules
+  val BK_RULE_SCORING_MARKDED = s"$inputPath/bk-score.lp" // BK for rule scoring when learning without the EC.
 
   val USER_BK = s"$inputPath/bk"
 
   val BK_WHOLE_EC = s"$inputPath/bk.lp"
+  val BK_WHOLE = s"$inputPath/bk.lp" // for learning without the EC, no practical difference
   val BK_CROSSVAL = s"$inputPath/bk-for-crossval.lp"
 
   val ILED_NO_INERTIA: String = inputPath + "/bk-no-inertia.lp"
@@ -242,33 +244,34 @@ class Globals(val entryPath: String, val fromDB: String) extends LazyLogging {
   /* Reads the background knowledge from  $inputPath/bk.lp and produces helper files (e.g. for rule evaluation,
      bottom clause generation etc.) */
 
-  //private val PY_LESSTHAN =
-  //  "#script (python)\nfrom gringo import Fun\nimport math\n\ndef less_than(x,y):\n    return float(x) < float(y)\n\n#end."
 
-  private val EC_AXIOM_1 = "holdsAt(F,Te) :- fluent(F), not sdFluent(F), initiatedAt(F,Ts), next(Ts, Te)."
-  private val EC_AXIOM_2 = "holdsAt(F,Te) :- fluent(F), not sdFluent(F), holdsAt(F,Ts), " +
-    "not terminatedAt(F,Ts), next(Ts, Te)."
-  //private val RIGHT_BEFORE_DEF = "right_before(X,Z) :- time(X), time(Z), Z = X+40."
-  ///*
-  private val RIGHT_BEFORE_DEF ="\n#script (python)\ntimes = []\ndef collect_all(a):\n    times.append(a)\n    " +
-    "return 1\ndef sorted():\n    times.sort()\n    return zip(range(len(times)), times)\n#end.\ncollect_all." +
-    "\ncollect_all :- time(X), @collect_all(X) == 0.\nsorted_pair(X,N) :- collect_all, " +
-    "(X,N) = @sorted().\nnext(X, Y) :- sorted_pair(A,X), sorted_pair(A+1,Y).\n"
-
-  //*/
-  private val INIT_TIME_DEF = "initialTime(X) :- time(X), #false : X > Y, time(Y)."
-  private val INIT_HOLDS_DEF = "%THIS SHOULD NOT BE HERE!\nholdsAt(F,T) :- initialTime(T), example(holdsAt(F,T))."
-  val CORE_EVENT_CALCULUS_BK = List(EC_AXIOM_1, EC_AXIOM_2, RIGHT_BEFORE_DEF, INIT_TIME_DEF, INIT_HOLDS_DEF)
-  val CROSSVAL_EVENT_CALCULUS_BK = List(EC_AXIOM_1, EC_AXIOM_2, RIGHT_BEFORE_DEF)
-  val INITIATED_ONLY_EVENT_CALCULUS_BK = List(EC_AXIOM_1, RIGHT_BEFORE_DEF, INIT_TIME_DEF, INIT_HOLDS_DEF)
-  val TERMINATED_ONLY_EVENT_CALCULUS_BK =
-    List(EC_AXIOM_1, EC_AXIOM_2, RIGHT_BEFORE_DEF, INIT_TIME_DEF, INIT_HOLDS_DEF,
-      "holdsAt(F,T) :- fluent(F), not sdFluent(F), examplesInitialTime(T), example(holdsAt(F,T)).",
-      "examplesInitialTime(X) :- example(holdsAt(_,X)), #false : X > Y, example(holdsAt(_,Y))."
-    )
 
 
   def generateBKFiles_Event_Calculus() = {
+
+    //private val PY_LESSTHAN =
+    //  "#script (python)\nfrom gringo import Fun\nimport math\n\ndef less_than(x,y):\n    return float(x) < float(y)\n\n#end."
+
+    val EC_AXIOM_1 = "holdsAt(F,Te) :- fluent(F), not sdFluent(F), initiatedAt(F,Ts), next(Ts, Te)."
+    val EC_AXIOM_2 = "holdsAt(F,Te) :- fluent(F), not sdFluent(F), holdsAt(F,Ts), " +
+      "not terminatedAt(F,Ts), next(Ts, Te)."
+    //private val RIGHT_BEFORE_DEF = "right_before(X,Z) :- time(X), time(Z), Z = X+40."
+    ///*
+    val RIGHT_BEFORE_DEF ="\n#script (python)\ntimes = []\ndef collect_all(a):\n    times.append(a)\n    " +
+      "return 1\ndef sorted():\n    times.sort()\n    return zip(range(len(times)), times)\n#end.\ncollect_all." +
+      "\ncollect_all :- time(X), @collect_all(X) == 0.\nsorted_pair(X,N) :- collect_all, " +
+      "(X,N) = @sorted().\nnext(X, Y) :- sorted_pair(A,X), sorted_pair(A+1,Y).\n"
+
+    //*/
+    val INIT_TIME_DEF = "initialTime(X) :- time(X), #false : X > Y, time(Y)."
+    val INIT_HOLDS_DEF = "%THIS SHOULD NOT BE HERE!\nholdsAt(F,T) :- initialTime(T), example(holdsAt(F,T))."
+    val CORE_EVENT_CALCULUS_BK = List(EC_AXIOM_1, EC_AXIOM_2, RIGHT_BEFORE_DEF, INIT_TIME_DEF, INIT_HOLDS_DEF)
+    val CROSSVAL_EVENT_CALCULUS_BK = List(EC_AXIOM_1, EC_AXIOM_2, RIGHT_BEFORE_DEF)
+    val INITIATED_ONLY_EVENT_CALCULUS_BK = List(EC_AXIOM_1, RIGHT_BEFORE_DEF, INIT_TIME_DEF, INIT_HOLDS_DEF)
+    val TERMINATED_ONLY_EVENT_CALCULUS_BK =
+      List(EC_AXIOM_1, EC_AXIOM_2, RIGHT_BEFORE_DEF, INIT_TIME_DEF, INIT_HOLDS_DEF,
+        "holdsAt(F,T) :- fluent(F), not sdFluent(F), examplesInitialTime(T), example(holdsAt(F,T)).",
+        "examplesInitialTime(X) :- example(holdsAt(_,X)), #false : X > Y, example(holdsAt(_,Y)).")
 
     // Read the user-input BK
     val userBK = Source.fromFile(USER_BK).getLines.toList.mkString("\n")
@@ -336,19 +339,49 @@ class Globals(val entryPath: String, val fromDB: String) extends LazyLogging {
   }
 
 
+  def generateBKFiles_No_Event_Calculus() = {
+    // Read the user-input BK
+    val userBK = Source.fromFile(USER_BK).getLines.toList.mkString("\n")
 
+    // Generate the ASP scoring rules:
+    val scoringRules = generateScoringBK(MODEHS)
+
+    // Type axioms:
+    val tas = this.typeAxioms.mkString("\n")
+
+    // Generate bk.lp file (it will be used for reasoning)
+    val bkFile = new java.io.File(BK_WHOLE)
+    val pw1 = new PrintWriter(bkFile)
+    pw1.write(userBK+"\n")
+    pw1.write("\n"+tas)
+    pw1.close()
+    bkFile.deleteOnExit()
+
+    // Generate BK file for rule scoring
+    val scoreTermFile = new java.io.File(BK_RULE_SCORING_MARKDED)
+    val pw5 = new PrintWriter(scoreTermFile)
+    pw5.write(userBK+"\n")
+    pw5.write("\n"+scoringRules._2+"\n")
+    pw5.write("\n"+tas)
+    pw5.close()
+    scoreTermFile.deleteOnExit()
+
+    // Generate cross-validation file
+    val crossValFile = new java.io.File(BK_CROSSVAL)
+    val pw6 = new PrintWriter(crossValFile)
+    pw6.write(userBK+"\n")
+    pw6.write("\n"+tas)
+    pw6.close()
+    crossValFile.deleteOnExit()
+
+  }
 
 
   if(Globals.glvalues("with-ec").toBoolean) {
     generateBKFiles_Event_Calculus()
   } else {
-    // what do we do here?
+    generateBKFiles_No_Event_Calculus()
   }
-
-
-
-
-
 
   val EXAMPLE_PATTERNS: List[Literal] = eps2 map (p => p.varbed)
   val EXAMPLE_PATTERNS_AS_STRINGS: List[String] = EXAMPLE_PATTERNS map (_.tostring)
@@ -403,8 +436,18 @@ class Globals(val entryPath: String, val fromDB: String) extends LazyLogging {
   /* I NEED TO FIND A WAY TO MAKE THIS GENERIC (NON- EVENT CALCULUS SPECIFIC).
    * FOR EXAMPLE, THE USER COULD SPECIFY IT IN THE MODES FILE. */
 
+  /*
   def EXAMPLE_COUNT_RULE = "exampleGrounding(holdsAt(F,T)):-fluent(F),time(T).\n"+
     "countGroundings(X) :- X = #count { F,T: exampleGrounding(holdsAt(F,T)),fluent(F),time(T) }.\n"
+  */
+  def EXAMPLE_COUNT_RULE = {
+    val targetPred = EXAMPLE_PATTERNS.head
+    val tpstr = targetPred.tostring
+    val vars = targetPred.getVars.map(x => x.name).mkString(",")
+    val typePreds = targetPred.getTypePredicates(this).mkString(",")
+    s"exampleGrounding($tpstr) :- $typePreds.\ncountGroundings(X) :- X = #count { $vars: exampleGrounding($tpstr),$typePreds }.\n"
+
+  }
 
 
   /*

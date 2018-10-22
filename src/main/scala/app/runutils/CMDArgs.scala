@@ -41,7 +41,7 @@ object CMDArgs extends LazyLogging {
     val with_jep = getMatchingArgumentValue("--wjep")
     val fromDB = getMatchingArgumentValue("--db")
     val entryPath = getMatchingArgumentValue("--inpath")
-    val globals = new Globals(entryPath.toString,fromDB.toString)
+
     val delta = getMatchingArgumentValue("--delta")
     val pruningThreshold = getMatchingArgumentValue("--prune")
     val minSeenExmpls = getMatchingArgumentValue("--minseen")
@@ -93,6 +93,9 @@ object CMDArgs extends LazyLogging {
     Globals.glvalues("with-inertia") = withInertia.toString
     Globals.glvalues("weight-learning") = weightLearn.toString
     Globals.glvalues("with-ec") = withEventCalculus.toString
+
+    // Define this here so that all values in Globals.glvalues be already set.
+    val globals = new Globals(entryPath.toString,fromDB.toString)
 
     // show the params:
     logger.info(s"\nRunning with options:\n${map.map{ case (k, v) => s"$k=$v" }.mkString(" ")}\n")
