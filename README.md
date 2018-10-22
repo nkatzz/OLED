@@ -5,7 +5,7 @@
 
 ## Related paper/more info
 
-Please consult the paper that comes with the source (``iclp-2016.pdf``) to get a grasp on the theory behind ``OLED``. The paper can also be downloaded from [here](https://www.cambridge.org/core/journals/theory-and-practice-of-logic-programming/article/online-learning-of-event-definitions/B1244B019AF03F6172DC92B57896544D)
+Please consult the paper that comes with the source (``OLED/manual/paper``) to get a grasp on the theory behind ``OLED``. The paper can also be downloaded from [here](https://www.cambridge.org/core/journals/theory-and-practice-of-logic-programming/article/online-learning-of-event-definitions/B1244B019AF03F6172DC92B57896544D). 
 
 ## Licence
 
@@ -13,7 +13,7 @@ This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you a
 
 ## Installation
 
-The manual that comes with the source code contains detailed instructions. In sort:
+The manual (``OLED/manual``) that comes with the source code contains detailed instructions. In sort:
 
 * Clone or download the source code. Open a terminal and navigate to the source code location. In what follows we'll refer to this directory by `/oledhome`
 * `cp -r OLED/install-scripts .`
@@ -67,7 +67,9 @@ A dataset on which ``OLED`` has been evaluated is the [CAVIAR dataset](http://ho
 
 ## Online Learning on Markov Logic Rules with `OLED`
 
-Instructions coming soon.
+Instructions coming soon. In the meantime, please read the related paper:
+
+* Katzouris N., Michelioudakis E., Artikis A. and Paliouras Georgios, [Online Learning of Weighted Relational Rules for Complex Event Recognition](http://homepages.inf.ed.ac.uk/rbf/CAVIARDATA1/), ECML-PKDD 1018.
 
 ## Parallel/Distributed version of `OLED`
 
