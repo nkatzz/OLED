@@ -40,6 +40,7 @@ Detailed instructions on how to perform a test run with ``OLED`` are provided in
    * `mongo`
    * `show dbs`
 * Run ``OLED``. From within `/oledhome` do:
+   <!--
    * `java -cp oled.jar app.runners.OLEDDefaultRunner \`  <br/>
      ` --inpath=/oledhome/caviar-bk \` <br/>
      `--delta=0.00001 \` <br/>
@@ -47,12 +48,17 @@ Detailed instructions on how to perform a test run with ``OLED`` are provided in
      `--target=meeting \` <br/>
      `--db=caviar-train \` <br/>
      `--saveto=/oledhome/theory.lp`
+   -->
+   * `java -cp oled.jar app.runners.OLEDDefaultRunner --inpath=/oledhome/caviar-bk --delta=0.00001 --prune=0.8 --db=caviar-train --saveto=/oledhome/theory.lp`
 * After learning terminates the learnt hypothesis will be written in `/oledhome/theory.lp`. You can evaluate this theory on the test set as follows:   
+   <!--
    * `java -cp oled.jar app.runners.OLEDDefaultRunner \`  <br/>
          ` --inpath=/oledhome/caviar-bk \` <br/>
          `--target=meeting \` <br/>
          `--db=caviar-test \` <br/>
          `--evalth=/home/nkatz/oledhome/theory.lp`
+   -->
+   * `java -cp oled.jar app.runners.OLEDDefaultRunner --inpath=/oledhome/caviar-bk --db=caviar-test --evalth=/oledhome/theory.lp` 
 * You may see all available cmd args with `java -cp oled.jar -help`
 
 ## Datasets
