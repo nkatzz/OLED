@@ -9,33 +9,6 @@ import logic.Modes.ModeAtom
 
 object BKHandling {
 
-  /*
-  * Input to this metthod is the contents of the modeclarations file
-  * */
-  def getHeadModeAtoms(modeFileContent: Iterable[String]) = {
-
-    val (headAtoms, bodyAtoms, exmplPattenns, auxPreds) =
-      modeFileContent.foldLeft(Vector[String](), Vector[String](), Vector[String](), Vector[String]()) { (accum, m) =>
-
-        if (m.contains("modeh")) {
-          (Vector[String](), Vector[String](), Vector[String](), Vector[String]())
-        } else if (m.contains("modeb")) {
-          (Vector[String](), Vector[String](), Vector[String](), Vector[String]())
-        } else if (m.contains("examplePattern")) {
-          (Vector[String](), Vector[String](), Vector[String](), Vector[String]())
-        } else if (m.contains("auxiliaryPredicate")) {
-          (Vector[String](), Vector[String](), Vector[String](), Vector[String]())
-        } else {
-          throw new RuntimeException(s"Found unexpected atom: $m in the mode declarations file. " +
-            s"Mode atoms should be one of the form modeh(...), modeb(...), examplePattern(...) or auxiliaryPredicate(...) ")
-        }
-
-
-
-
-    }
-  }
-
   def getCoverageDirectives(varbedExmplPatterns: List[String]) = {
     //val varbedExmplPatterns = for (x <- eps2) yield x.varbed.tostring
     val tps = (x: String) => s"\ntps($x):- $x, example($x).\n"
