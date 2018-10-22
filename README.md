@@ -13,7 +13,7 @@ This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you a
 
 ## Installation
 
-The manual (``OLED/manual``) that comes with the source code contains detailed instructions. In sort:
+You'll need to have Scala (> 2.11) with SBT (Scala Build Tool), Java 8, and Python 2.7 installed on your machine. The manual (``OLED/manual``) that comes with the source code contains detailed instructions. In sort:
 
 * Clone or download the source code. Open a terminal and navigate to the source code location. In what follows we'll refer to this directory by `/oledhome`
 * `cp -r OLED/install-scripts .`
