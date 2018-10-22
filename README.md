@@ -67,11 +67,11 @@ A dataset on which ``OLED`` has been evaluated is the [CAVIAR dataset](http://ho
 
 ## Online Learning on Markov Logic Rules with `OLED`
 
-Description & instructions coming soon.
+Instructions coming soon.
 
 ## Parallel/Distributed version of `OLED`
 
-Description & instructions coming soon.
+Instructions coming soon.
 
 
 
