@@ -34,8 +34,8 @@ Detailed instructions on how to perform a test run with ``OLED`` are provided in
 * `unzip caviar-bk.zip`
 * `cd caviar-data`
 * Import the data into Mongo:
-   * mongoimport --db caviar-train --collection examples --file caviar-train.json
-   * mongoimport --db caviar-test --collection examples --file caviar-test.json
+   * `mongoimport --db caviar-train --collection examples --file caviar-train.json`
+   * `mongoimport --db caviar-test --collection examples --file caviar-test.json`
 * Make sure everything is ok (after axecuting the `show dbs` command you should see the newly-created dbs 'caviar-train' and 'caviar test'):
    * `mongo`
    * `show dbs`
@@ -53,6 +53,7 @@ Detailed instructions on how to perform a test run with ``OLED`` are provided in
          `--target=meeting \` <br/>
          `--db=caviar-test \` <br/>
          `--evalth=/home/nkatz/oledhome/theory.lp`
+* You may see all available cmd args with `java -cp oled.jar -help`
 
 ## Datasets
 
