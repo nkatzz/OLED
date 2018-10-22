@@ -69,7 +69,7 @@ A dataset on which ``OLED`` has been evaluated is the [CAVIAR dataset](http://ho
 
 Instructions coming soon. In the meantime, please read the related paper:
 
-* Katzouris N., Michelioudakis E., Artikis A. and Paliouras Georgios, [Online Learning of Weighted Relational Rules for Complex Event Recognition](http://homepages.inf.ed.ac.uk/rbf/CAVIARDATA1/), ECML-PKDD 1018.
+* Katzouris N., Michelioudakis E., Artikis A. and Paliouras Georgios, [Online Learning of Weighted Relational Rules for Complex Event Recognition](http://www.ecmlpkdd2018.org/wp-content/uploads/2018/09/154.pdf), ECML-PKDD 1018.
 
 ## Parallel/Distributed version of `OLED`
 
