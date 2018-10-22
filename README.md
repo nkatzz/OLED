@@ -29,7 +29,7 @@ Detailed instructions on how to perform a test run with ``OLED`` are provided in
 * Install MongoDB.
 * Download some data and some background knowledge: 
    * `wget http://users.iit.demokritos.gr/~nkatz/oled/caviar-data.zip`
-   * `wget http://users.iit.demokritos.gr/~nkatz/oled/caviar-data.bk`
+   * `wget http://users.iit.demokritos.gr/~nkatz/oled/caviar-bk.zip`
 * `unzip caviar-data.zip`
 * `unzip caviar-bk.zip`
 * `cd caviar-data`
