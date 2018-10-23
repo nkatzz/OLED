@@ -38,7 +38,7 @@ Detailed instructions on how to perform a test run with ``OLED`` are provided in
 * Make sure everything is ok (after axecuting the `show dbs` command you should see the newly-created dbs 'caviar-train' and 'caviar test'):
    * `mongo`
    * `show dbs`
-* Run ``OLED``. From within `/oledhome` do:
+* Run ``OLED``:
    <!--
    * `java -cp oled.jar app.runners.OLEDDefaultRunner \`  <br/>
      ` --inpath=/oledhome/caviar-bk \` <br/>

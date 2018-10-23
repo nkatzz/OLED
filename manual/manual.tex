@@ -34,6 +34,7 @@
 %\usepackage{tabularx} % for aligning & numbering equations on the same line
 %\usepackage{enumitem}
 \usepackage{pifont}
+\usepackage{textcomp} % for ~
 
 
 \newcommand{\home}{\texttt{/oledhome}}
@@ -46,37 +47,24 @@
 \maketitle
 
 \section{Install}
-The whole process is illustrated in Figure \ref{fig:terminal}. In detail, do the following:
+
 \begin{itemize}
-\item Clone of download the source code from \url{https://github.com/nkatzz/OLED} 
-\item Open a terminal and navigate to the location where the source code is cloned. In what follows we'll refer to this directory by \home.
-\item From inside \home \ type in the terminal: \\ \texttt{cp -r OLED/install-scripts .}
-\item cd into the install-scripts folder and type:\\
-\texttt{./install.sh}\\
+\item Clone of download the source code: \\ 
+\texttt{git clone https://github.com/nkatzz/OLED} 
+\item \texttt{cd OLED/install-scripts}
+\item \texttt{./install.sh}\\
 You will need sudo priviledges to run the install script. The whole process will take some time to complete.
-\item If all goes well your \home \ should now look as in Figure \ref{fig:install}. You will use \textsf{oled.jar} to run OLED (see next section).
-\item Finally, you'll need to add the path to the \footnotesize \textsf{lpsolve} \normalsize library to your \linebreak \footnotesize \textsf{LD\_LIBRARY\_PATH} \normalsize  variable, the path to the \footnotesize \textsf{LoMRF} \normalsize executable to your \footnotesize \textsf{PATH} \normalsize library and the path to the \footnotesize \textsf{Clingo} \normalsize  executable to your \textsf{PATH} and \footnotesize \textsf{PYTHONPATH} \normalsize variables. To do so, add the lines presented in Figure at the end of your \texttt{/Home/.bashrc} (or your \texttt{/Home/.profile}) file. Don't forget to log-off/log-on again for the updates to the variables to take effect.
+
+\item Update your \texttt{LD\_LIBRARY\_PATH}, \texttt{PATH} and \texttt{PYTHONPATH} variables as shown in Figure \ref{fig:install}. To do so, add the lines presented in Figure at the end of your  \texttt{\texttildelow/.profile} (or your \texttt{\texttildelow/.bashrc}) file. Don't forget to modify paths shown in \ref{fig:install} to match your own path to \texttt{OLED} and to log-off/log-on again for the updates to the variables to take effect.
 
 \end{itemize}
 
 
 
 
-\begin{figure}[t]
-\centering
-\includegraphics[width=0.8\textwidth]{./figures/install}
-\caption{Illustration of the installation process.}%
-\label{fig:terminal}
-\end{figure}
 
  
 
-\begin{figure}[t]
-\centering
-\includegraphics[width=0.6\textwidth]{./figures/install-1}
-\caption{Post-installation structure of \home.}%
-\label{fig:install}
-\end{figure}
 
 
 \begin{figure}[t]
@@ -110,16 +98,16 @@ The \texttt{modes} file contains some language bias, i.e. restrictions to the sy
 
 We are now ready to perform learning with OLED. cd to your \home \ folder and run the following in a terminal:
 
-\noindent \texttt{java -cp oled.jar app.runners.OLEDDefaultRunner \textbackslash}\\
-\texttt{--inpath=/oledhome/caviar-bk --delta=0.00001 \textbackslash}   \\
+\noindent \texttt{java -cp oled-0.1.jar app.runners.OLEDDefaultRunner \textbackslash}\\
+\texttt{--inpath=<PATH TO caviar-bk FOLDER> --delta=0.00001 \textbackslash}   \\
 \texttt{--prune=0.8 --target=meeting --db=caviar-train \textbackslash}\\
-\texttt{--saveto=/oledhome/theory.lp}
+\texttt{--saveto=<PATH TO SOME LOCATION>/theory.lp}
 
-To see all available command line arguments do \texttt{java -cp oled.jar -help}. The learnt hypothesis will be saved in \texttt{/oledhome/theory.lp}. You may evaluate this theory on the test set as follows: 
+To see all available command line arguments do \texttt{java -cp oled-0.1.jar -help}. The learnt hypothesis will be saved in \texttt{/oledhome/theory.lp}. You may evaluate this theory on the test set as follows: 
 
-\noindent \texttt{java -cp oled.jar app.runners.OLEDDefaultRunner \textbackslash}\\
-\texttt{--inpath=/oledhome/caviar-bk --target=meeting \textbackslash}   \\
-\texttt{--db=caviar-test --evalth=/oledhome/theory.lp}
+\noindent \texttt{java -cp oled-0.1.jar app.runners.OLEDDefaultRunner \textbackslash}\\
+\texttt{--inpath=<PATH TO caviar-bk FOLDER> --target=meeting \textbackslash}   \\
+\texttt{--db=caviar-test --evalth=<PATH TO theory.lp>}
 
 
 
