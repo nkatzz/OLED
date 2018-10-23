@@ -1,16 +1,15 @@
-import sbt.Tests.Setup
-
+import sbt._
+import sbt.Keys._
 //import AssemblyKeys._
 
 //assemblySettings
 
 //assemblyJarName in assembly := "d-oled.jar"
-assemblyJarName in assembly := "oled.jar"
+assemblyJarName in assembly := s"oled-${version.value}.jar"
 //assemblyJarName in assembly := "maritime.jar"
 //assemblyJarName in assembly := "maritime.jar"
 
 name := "OLED"
-version := "0.1"
 organization := "nkatz"
 scalaVersion := "2.11.12"
 publishTo := Some(Resolver.file("file", new File("/home/nkatz/Desktop/test")))
