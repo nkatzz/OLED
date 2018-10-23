@@ -7,7 +7,7 @@
 
 Please consult the paper that comes with the source (``OLED/manual/paper``) to get a grasp on the theory behind ``OLED``. The paper can also be downloaded from [here](https://www.cambridge.org/core/journals/theory-and-practice-of-logic-programming/article/online-learning-of-event-definitions/B1244B019AF03F6172DC92B57896544D). 
 
-## Licence
+## License
 
 This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you are welcome to redistribute it under certain conditions; See the GNU General Public License v3 for more details.
 
@@ -16,7 +16,6 @@ This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you a
 You'll need to have Scala (> 2.11) with SBT (Scala Build Tool), Java 8, and Python 2.7 installed on your machine. The manual (``OLED/manual``) that comes with the source code contains detailed instructions. In sort:
 
 * Clone or download the source code. Open a terminal and navigate to the source code location. In what follows we'll refer to this directory by `/oledhome`
-* `cp -r OLED/install-scripts .`
 * `cd install-scripts`
 * `./install.sh`
 
