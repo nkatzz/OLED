@@ -58,7 +58,7 @@ Detailed instructions on how to perform a test run with ``OLED`` are provided in
          `--evalth=/home/nkatz/oledhome/theory.lp`
    -->
    * `java -cp oled-0.1.jar app.runners.OLEDDefaultRunner --inpath=<PATH TO THE caviar-bk FOLDER> --db=caviar-test --evalth=--inpath=<PATH TO theory.lp FILE>` 
-* You may see all available cmd args with `java -cp oled.jar -help`
+* You may see all available cmd args with `java -cp oled-0.1.jar -help`
 
 ## Datasets
 
