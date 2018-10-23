@@ -66,8 +66,11 @@ else
     log_warn "External dependencies directory exists! Moving on."
 fi
 
-log_info "Building OLED ..."
+# Get version from 'version.sbt'
+version=`/bin/grep "^version[ ][ ]*in[ ][ ]*ThisBuild[ ][ ]*:=[ ][ ]*" "../version.sbt" | sed 's/version[ ][ ]*in[ ][ ]*ThisBuild[ ][ ]*:=[ ][ ]*\"\(.*\)\"/\1/g'`
+
+log_info "Building OLED ${version} ..."
 cd ..
 sbt assembly
-mv target/scala-2.11/oled.jar ..
-log_info "Done building OLED. The jar is located at: $(dirname `pwd`)"
+mv target/scala-2.11/oled-${version}.jar .
+log_info "Done building OLED. The jar is located at: `pwd`"
