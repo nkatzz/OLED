@@ -15,8 +15,8 @@ This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you a
 
 You'll need to have Scala (> 2.11) with SBT (Scala Build Tool), Java 8, and Python 2.7 installed on your machine. The manual (``OLED/manual``) that comes with the source code contains detailed instructions. In sort:
 
-* Clone or download the source code. Open a terminal and navigate to the source code location. In what follows we'll refer to this directory by `/oledhome`
-* `cd install-scripts`
+* Clone or download the source code. Open a terminal and navigate to the source code location.
+* `cd OLED/install-scripts`
 * `./install.sh`
 
 Please update your `PATH`, `PYTHONPATH` and `LD_LIBRARY_PATH` as per the instructions in the manual. 
@@ -26,7 +26,7 @@ Please update your `PATH`, `PYTHONPATH` and `LD_LIBRARY_PATH` as per the instruc
 Detailed instructions on how to perform a test run with ``OLED`` are provided in the manual. Please refer to the manual for details on the data and the learning task we'll use for this test run. In sort:
 
 * Install MongoDB.
-* Download some data and some background knowledge: 
+* Download some data and some background knowledge at some location: 
    * `wget http://users.iit.demokritos.gr/~nkatz/oled/caviar-data.zip`
    * `wget http://users.iit.demokritos.gr/~nkatz/oled/caviar-bk.zip`
 * `unzip caviar-data.zip`
@@ -48,8 +48,8 @@ Detailed instructions on how to perform a test run with ``OLED`` are provided in
      `--db=caviar-train \` <br/>
      `--saveto=/oledhome/theory.lp`
    -->
-   * `java -cp oled.jar app.runners.OLEDDefaultRunner --inpath=/oledhome/caviar-bk --delta=0.00001 --prune=0.8 --db=caviar-train --saveto=/oledhome/theory.lp`
-* After learning terminates the learnt hypothesis will be written in `/oledhome/theory.lp`. You can evaluate this theory on the test set as follows:   
+   * `java -cp oled-0.1.jar app.runners.OLEDDefaultRunner --inpath=<PATH TO THE caviar-bk FOLDER> --delta=0.00001 --prune=0.8 --db=caviar-train --saveto=<PATH TO SOME LOCATION>/theory.lp`
+* After learning terminates the learnt hypothesis will be written in `theory.lp`. You can evaluate this theory on the test set as follows:   
    <!--
    * `java -cp oled.jar app.runners.OLEDDefaultRunner \`  <br/>
          ` --inpath=/oledhome/caviar-bk \` <br/>
@@ -57,7 +57,7 @@ Detailed instructions on how to perform a test run with ``OLED`` are provided in
          `--db=caviar-test \` <br/>
          `--evalth=/home/nkatz/oledhome/theory.lp`
    -->
-   * `java -cp oled.jar app.runners.OLEDDefaultRunner --inpath=/oledhome/caviar-bk --db=caviar-test --evalth=/oledhome/theory.lp` 
+   * `java -cp oled-0.1.jar app.runners.OLEDDefaultRunner --inpath=<PATH TO THE caviar-bk FOLDER> --db=caviar-test --evalth=--inpath=<PATH TO theory.lp FILE>` 
 * You may see all available cmd args with `java -cp oled.jar -help`
 
 ## Datasets
