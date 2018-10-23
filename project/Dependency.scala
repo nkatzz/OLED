@@ -3,19 +3,19 @@ import sbt._
 object Dependency {
 
   object v {
-    final val Akka = "2.5.6"
+    final val Akka = "2.5.17"
 
-    final val ScalaLogging = "3.5.0"
-    final val Logback = "1.1.7"
+    final val ScalaLogging = "3.9.0"
+    final val Logback = "1.2.3"
     final val SLF4J = "1.7.15"
 
     final val MongoDB = "3.1.1"
 
-    final val ScalaTest = "2.1.3"
+    final val ScalaTest = "3.0.5"
 
-    final val ScalaZ = "7.1.4"
+    final val ScalaZ = "7.2.26"
     final val SizeOf = "0.1"
-    final val Parser = "2.1.4"
+    final val Parboiled = "2.1.5"
 
     final val Optimus = "2.0.0"
     final val LoMRF = "0.5.5-SNAPSHOT"
@@ -28,11 +28,10 @@ object Dependency {
   lazy val Logging = Seq(
     "com.typesafe.scala-logging" %% "scala-logging" % v.ScalaLogging,
     "ch.qos.logback" % "logback-classic" % v.Logback,
-    "ch.qos.logback" % "logback-core" % v.Logback,
     "org.slf4j" % "slf4j-api" % v.SLF4J
   )
 
-  // MongoDB
+  // MongoDB (update to "org.mongodb.scala" %% "mongo-scala-driver" % "2.1.0")
   lazy val MongoDB = "org.mongodb" %% "casbah" % v.MongoDB
 
   // ScalaTest for UNIT testing
@@ -42,7 +41,7 @@ object Dependency {
   lazy val Tools = Seq(
     "org.scalaz" %% "scalaz-core" % v.ScalaZ,
     "com.madhukaraphatak" %% "java-sizeof" % v.SizeOf,
-    "org.parboiled" %% "parboiled" % v.Parser
+    "org.parboiled" %% "parboiled" % v.Parboiled
   )
 
   // Optimus library for linear and quadratic optimization

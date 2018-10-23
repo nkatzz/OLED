@@ -1,12 +1,14 @@
 import sbt._
 import sbt.Keys._
 import sbt.plugins.JvmPlugin
+import sbtassembly.AssemblyPlugin
+import sbtassembly.AssemblyPlugin.autoImport._
 
-class OLEDBuild extends AutoPlugin {
+object OLEDBuild extends AutoPlugin {
 
   private val logger = ConsoleLogger()
 
-  override def requires: Plugins = JvmPlugin
+  override def requires: Plugins = JvmPlugin && AssemblyPlugin
 
   // Allow the plug-in to be included automatically
   override def trigger: PluginTrigger = allRequirements
@@ -18,7 +20,7 @@ class OLEDBuild extends AutoPlugin {
   private lazy val settings: Seq[Setting[_]] = {
     logger.info(s"Loading settings for Java $javaVersion or higher.")
     if (javaVersion < 1.8) sys.error("Java 8 or higher is required for building Optimus.")
-    else commonSettings ++ JavaSettings
+    else commonSettings ++ assemblySettings ++ javaSettings
   }
 
   private val commonSettings: Seq[Setting[_]] = Seq(
@@ -27,21 +29,13 @@ class OLEDBuild extends AutoPlugin {
 
     organization := "com.github.nkatzz",
 
-    description := "",
+    description := "A system for online learning of event definitions.",
 
     scalaVersion := "2.11.12",
 
     autoScalaLibrary := false,
 
     managedScalaInstance := true,
-
-    // fork a new JVM for 'run' and 'test:run'
-    fork := true,
-
-    // fork a new JVM for 'test:run', but not 'run'
-    fork in Test := true,
-
-    conflictManager := ConflictManager.latestRevision,
 
     resolvers ++= Seq(
       Resolver.typesafeRepo("releases"),
@@ -64,7 +58,21 @@ class OLEDBuild extends AutoPlugin {
     )
   )
 
-  private lazy val JavaSettings: Seq[Setting[_]] = Seq(
+  private lazy val assemblySettings: Seq[Setting[_]] = Seq(
+
+    assemblyJarName in assembly := s"oled-${version.value}.jar",
+
+    /*
+     * Avoid the 'deduplicate: different file contents found in the following (logback.xml)' error.
+     * This error started after the merging LoMRF.
+     */
+    assemblyMergeStrategy in assembly := {
+      case PathList("META-INF", _ @ _*) => MergeStrategy.discard
+      case _ => MergeStrategy.first
+    }
+  )
+
+  private lazy val javaSettings: Seq[Setting[_]] = Seq(
 
     javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint:unchecked", "-Xlint:deprecation"),
 
