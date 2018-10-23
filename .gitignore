@@ -42,3 +42,6 @@ external_dependencies/
 *.fdb_latexmk
 *.DS_Store
 .texpadtmp/
+
+## OLED related files
+*.lp
