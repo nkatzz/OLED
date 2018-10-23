@@ -13,13 +13,17 @@ This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you a
 
 ## Installation
 
-You'll need to have Scala (> 2.11) with SBT (Scala Build Tool), Java 8, and Python 2.7 installed on your machine. The manual (``OLED/manual``) that comes with the source code contains detailed instructions. In sort:
+You'll need to have Scala (> 2.11) with SBT (Scala Build Tool), Java 8, and Python 2.7 installed on your machine.
 
-* Clone or download the source code. Open a terminal and navigate to the source code location.
+* Clone or download the source code:
+  * `git clone https://github.com/nkatzz/OLED.git`
 * `cd OLED/install-scripts`
 * `./install.sh`
-
-Please update your `PATH`, `PYTHONPATH` and `LD_LIBRARY_PATH` as per the instructions in the manual. 
+* Update your `PATH`, `PYTHONPATH` and `LD_LIBRARY_PATH`. Append the following lines to your `~/.profile` (or `~/.bashrc`) file:
+  * `<PATH TO CLONED SOURCE>/OLED/external_dependencies/lpsolve55:$LD_LIBRARY_PATH`  
+  * `export LD_LIBRARY_PATH`
+  * `export PATH=$PATH:<PATH TO CLONED SOURCE>/OLED/external_dependencies/LoMRF/target/universal/LoMRF-0.5.5-SNAPSHOT/bin:<PATH TO CLONED SOURCE>/OLED/external_dependencies/clingo/clingo-4.5.4-source/build/release`
+  * `export PYTHONPATH=$PYTHONPATH:<PATH TO CLONED SOURCE>/OLED/external_dependencies/clingo/clingo-4.5.4-source/build/release/python`
 
 ## Test Run
 
