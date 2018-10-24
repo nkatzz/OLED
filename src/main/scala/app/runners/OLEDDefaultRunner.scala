@@ -15,21 +15,7 @@ import utils.DataUtils.Interval
 
 object OLEDDefaultRunner {
 
-  /**
-    *
-    * Learns from a mongo db using the same data (fetched sequentially) for training and for testing
-    *
-    * */
 
-  /*This is for CAVIAR*/
-  /*
-  val trainingSets =
-    if (inps.targetHLE == "meeting")
-      List(MeetingTrainingData.getMeetingTrainingData(inps.trainSetNum, randomOrder = inps.randomOrder))
-    else
-      List(MovingTrainingData.getMovingTrainingData(inps.trainSetNum, randomOrder = inps.randomOrder))
-      //List(MovingTrainingData.wholeCAVIAR1)
-  */
 
   def main(args: Array[String]) = {
     val argsok = CMDArgs.argsOk(args)
