@@ -66,35 +66,45 @@ object BKHandling extends LazyLogging {
         // We can take the first one of the head modes (the target fluent is the same
         // regardless of whether the mode atom is an initiation of termination one).
         // Then, to get the target fluent, simply retrieve the first one of the 'terms' arg.
-        modehs.head.varbed.terms.head.asInstanceOf[Literal]
+
+        val t = modehs.head.varbed.terms.head
+        // The 'if' is for cases where the target pred is of the form initiatedAt(#fluent, +time), as in
+        // initiatedAt(#fluent, +time) where fluent(leisure) is in the BK.
+        // The 'else' is for compound fluents.
+        if (t.isVariabe) Literal(functor = t._type) else modehs.head.varbed.terms.head.asInstanceOf[Literal]
+        //modehs.head.varbed.terms.head.asInstanceOf[Literal]
       }
 
       val varNamesTostr = targetFluent.getVars.map(x => x.name).mkString(",")
 
+      // The 'if' is for cases where the target pred is of the form initiatedAt(#fluent, +time)
+      // the 'else' is for compound fluents.
+      val vars = if (varNamesTostr == "") "X0,Te,Ts" else s"$varNamesTostr,Te,Ts"
+      val fluent = if (varNamesTostr == "") "X0" else s"${targetFluent.tostring}"
+      val typePreds = if (varNamesTostr == "") s"${targetFluent.tostring}(X0), next(Ts,Te), time(Te), time(Ts)" else "next(Ts,Te), time(Te), time(Ts)"
+
       /* Initiation scoring rules: */
-      val initScoringRule1 = s"tps(I, X) :- rule(I), X = #count {$varNamesTostr,Te,Ts: example( holdsAt(${targetFluent.tostring},Te) ), " +
-        s"marked(I, initiatedAt(${targetFluent.tostring},Ts) ), next(Ts,Te), time(Te), time(Ts) }."
+      val initScoringRule1 = s"tps(I, X) :- rule(I), X = #count {$vars: example( holdsAt($fluent,Te) ), " +
+        s"marked(I, initiatedAt($fluent,Ts) ), $typePreds }."
 
-      val initScoringRule2 = s"fps(I, X) :- rule(I), X = #count {$varNamesTostr,Te,Ts: not example( holdsAt(${targetFluent.tostring},Te) ), " +
-        s"marked(I, initiatedAt(${targetFluent.tostring},Ts) ), next(Ts,Te), time(Te), time(Ts) }."
+      val initScoringRule2 = s"fps(I, X) :- rule(I), X = #count {$vars: not example( holdsAt($fluent,Te) ), " +
+        s"marked(I, initiatedAt($fluent,Ts) ), $typePreds }."
 
-      val initScoringRule3 = s"fns(I, X) :- rule(I), X = #count {$varNamesTostr,Te,Ts: example( holdsAt(${targetFluent.tostring},Te) ), " +
-        s"not marked(I, initiatedAt(${targetFluent.tostring},Ts) ), next(Ts,Te), time(Te), time(Ts) }."
+      val initScoringRule3 = s"fns(I, X) :- rule(I), X = #count {$vars: example( holdsAt($fluent,Te) ), " +
+        s"not marked(I, initiatedAt($fluent,Ts) ), $typePreds }."
 
       /* Termination scoring rules: */
-      val termScoringRule1 = s"tps(I, X) :- rule(I), X = #count {$varNamesTostr,Te,Ts: example( holdsAt(${targetFluent.tostring},Te) ), " +
-        s"not marked(I, terminatedAt(${targetFluent.tostring},Ts) ), next(Ts,Te), time(Te), time(Ts) }."
+      val termScoringRule1 = s"tps(I, X) :- rule(I), X = #count {$vars: example( holdsAt($fluent,Te) ), " +
+        s"not marked(I, terminatedAt($fluent,Ts) ), $typePreds }."
 
-      val termScoringRule2 = s"tps(I, X) :- rule(I), X = #count {$varNamesTostr,Te,Ts: example( holdsAt(${targetFluent.tostring},Ts) ), " +
-        s"not example( holdsAt(${targetFluent.tostring},Te) ), marked(I, terminatedAt(${targetFluent.tostring},Ts) ), next(Ts,Te), " +
-        s"time(Te), time(Ts) }."
+      val termScoringRule2 = s"tps(I, X) :- rule(I), X = #count {$vars: example( holdsAt($fluent,Ts) ), " +
+        s"not example( holdsAt($fluent,Te) ), marked(I, terminatedAt($fluent,Ts) ), $typePreds }."
 
-      val termScoringRule3 = s"fns(I, X) :- rule(I), X = #count {$varNamesTostr,Te,Ts: example( holdsAt(${targetFluent.tostring},Te) ), " +
-        s"marked(I, terminatedAt(${targetFluent.tostring},Ts) ), next(Ts,Te), time(Te), time(Ts) }."
+      val termScoringRule3 = s"fns(I, X) :- rule(I), X = #count {$vars: example( holdsAt($fluent,Te) ), " +
+        s"marked(I, terminatedAt($fluent,Ts) ), $typePreds }."
 
-      val termScoringRule4 = s"fps(I, X) :- rule(I), X = #count {$varNamesTostr,Te,Ts: example( holdsAt(${targetFluent.tostring},Ts) ), " +
-        s"not example( holdsAt(${targetFluent.tostring},Te) ), not marked(I, terminatedAt(${targetFluent.tostring},Ts) ), next(Ts,Te), " +
-        s"time(Te), time(Ts) }."
+      val termScoringRule4 = s"fps(I, X) :- rule(I), X = #count {$vars: example( holdsAt($fluent,Ts) ), " +
+        s"not example( holdsAt($fluent,Te) ), not marked(I, terminatedAt($fluent,Ts) ), $typePreds }."
 
       val initRulesToStr = List(initScoringRule1, initScoringRule2, initScoringRule3).mkString("\n")
       val termRulesToStr = List(termScoringRule1, termScoringRule2, termScoringRule3, termScoringRule4).mkString("\n")

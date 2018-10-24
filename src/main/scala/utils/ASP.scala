@@ -511,7 +511,7 @@ object ASP extends ASPResultsParser with LazyLogging {
                 return Nil
               } else {
                 /* Perhaps there's no need to crash because the solver get stuck with something... Learning sound stuff in a past no one wants to return to */
-                logger.info(s"Task: $task -- Abduction failed (UNSATISFIABLE program)")
+                logger.error(s"Task: $task -- Abduction failed (UNSATISFIABLE program)")
                 return Nil
                 /*
                 logger.error(s"\nTask: $task -- Ended up with an UNSATISFIABLE program")
@@ -520,7 +520,7 @@ object ASP extends ASPResultsParser with LazyLogging {
                 */
               }
             case _ =>
-              logger.info(s"Task: $task -- Abduction failed (UNSATISFIABLE program)")
+              logger.error(s"Task: $task -- Abduction failed (UNSATISFIABLE program)")
               return Nil
               /*
               logger.error(s"\nTask: $task -- Ended up with an UNSATISFIABLE program")

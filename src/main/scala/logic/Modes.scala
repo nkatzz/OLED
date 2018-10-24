@@ -86,7 +86,7 @@ object Modes {
        * @param accum an accumulator that collects competed (variabilized) compound sub-terms.
        * @param remaining a list containing all remaining sub-terms that should be variabilized.
        * @param ttypes a list collecting typing predicates for the generated variables, e.g. person(X1), time(X100)
-       * @param counter a counter that is incremented by 1 each time a new varaible is generated. The name a new variable is
+       * @param counter a counter that is incremented by 1 each time a new variable is generated. The name of a new variable is
        * simply "X"+currentCounterValue.
        */
 
@@ -98,8 +98,7 @@ object Modes {
                case _   => accum.last
             }
             // We are variabilizing everything (it's modes variabilization) so replace all with a new Var.
-            val update = Literal(functor = cur.functor,
-               terms = cur.terms :+ Variable("X" + counter, sign, x._type), isNAF = false)
+            val update = Literal(functor = cur.functor, terms = cur.terms :+ Variable("X" + counter, sign, x._type))
             this.variabilize(accum.tail :+ update, tail, ttypes :+ x._type + "(X" + counter + ")", counter + 1)
          }
          remaining match {
@@ -108,14 +107,11 @@ object Modes {
                case x: NegPlmrk   => f(x, "-", tail)
                case x: ConstPlmrk => f(x, "#", tail)
                case x: ModeAtom =>
-                  val (varbed, newTypes, newCount) =
-                     this.variabilize(List(Literal(functor = x.functor)), x.args, List(), counter)
+                  val (varbed, newTypes, newCount) = this.variabilize(List(Literal(functor = x.functor)), x.args, List(), counter)
                   val pop = accum.last
-                  this.variabilize(List(Literal(functor = pop.functor, terms = pop.terms ::: varbed)),
-                     tail, ttypes ::: newTypes, newCount)
+                  this.variabilize(List(Literal(functor = pop.functor, terms = pop.terms ::: varbed)), tail, ttypes ::: newTypes, newCount)
                case _ =>
-                  throw new LogicException("Variabilizing Mode Declaration " +
-                    this.tostring + ": Found unexpected type")
+                  throw new LogicException("Variabilizing Mode Declaration " + this.tostring + ": Found unexpected type")
             }
             case Nil =>
                val pop = accum.last

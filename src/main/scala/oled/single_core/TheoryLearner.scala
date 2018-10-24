@@ -104,6 +104,10 @@ class TheoryLearner[T <: Source](val inps: RunningOptions,
 
   def processExample(topTheory: Theory, e: Example): Theory = {
 
+    if (e.time == "1454342385") {
+      val stop = "stop"
+    }
+
     var newTopTheory = topTheory
 
     val startNew =

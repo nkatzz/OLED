@@ -3,7 +3,9 @@ import sbt._
 object Dependency {
 
   object v {
-    final val Akka = "2.5.17"
+    //final val Akka = "2.5.17"
+
+    final val Akka = "2.5.6"
 
     final val ScalaLogging = "3.9.0"
     final val Logback = "1.2.3"
