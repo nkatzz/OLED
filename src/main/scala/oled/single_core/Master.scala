@@ -22,10 +22,10 @@ class Master[T <: Source](inps: RunningOptions,
 
   def receive = {
 
-    case "EvaluateHandCrafted" =>
+    case "eval" =>
       context.actorOf(Props(
         new Dispatcher(inps, trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction)),
-        name = s"Dispatcher-Actor-eval-mode") ! "EvaluateHandCrafted"
+        name = s"Dispatcher-Actor-eval-mode") ! "eval"
 
     case "start" =>
       context.actorOf(Props(

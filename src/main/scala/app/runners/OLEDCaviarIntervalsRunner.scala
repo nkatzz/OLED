@@ -63,7 +63,7 @@ object OLEDCaviarIntervalsRunner {
       val trainingDataFunction: DataOptions => Iterator[Example] = getTrainingData
       val testingDataFunction: DataOptions => Iterator[Example] = getTestingData
       val system = ActorSystem("HoeffdingLearningSystem")
-      val startMsg = if (runningOptions.evalth != "None") "EvaluateHandCrafted" else "start"
+      val startMsg = if (runningOptions.evalth != "None") "eval" else "start"
       system.actorOf(Props(new Master(runningOptions, trainingDataOptions,
         testingDataOptions, trainingDataFunction, testingDataFunction)), name = "Master-Actor") !  startMsg
 

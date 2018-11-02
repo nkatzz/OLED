@@ -15,6 +15,8 @@ object MessageTypes {
                          val compressRulesTime: Double, val expandRulesTime: Double,
                          val newRuleGenerationTime: Double, val BatchProcessingTime: Double, val targetClass: String)
 
+
+
 }
 
 

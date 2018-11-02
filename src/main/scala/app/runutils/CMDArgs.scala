@@ -118,17 +118,21 @@ object CMDArgs extends LazyLogging {
 
 
     if (inps.train == "None") {
-      logger.error("No training set provided. Re-run with --train=<db name or path to training set file>.")
-      System.exit(-1)
+      if (inps.evalth == "None") {
+        logger.error("No training set provided. Re-run with --train=<db name or path to training set file>.")
+        System.exit(-1)
+      } else {
+        checkData(inps.test, inps.mongoCollection, "test")
+      }
+
     } else {
       checkData(inps.train, inps.mongoCollection, "train")
 
     }
 
-    if (inps.test != "None") {
-      checkData(inps.test, inps.mongoCollection, "test")
-
-    }
+    //if (inps.test != "None") {
+    //  checkData(inps.test, inps.mongoCollection, "test")
+    //}
 
     if (inps.entryPath == "None") {
       logger.error("No background knowledge provided. At least a mode declarations file is necessary. Re-run with --inpath=<path to background knowledge.>")

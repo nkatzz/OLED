@@ -42,7 +42,7 @@ object Runner extends LazyLogging {
       val testingDataFunction: DefaultMongoDataOptions => Iterator[Example] = getMongoData
       val system = ActorSystem("HoeffdingLearningSystem")
 
-      val startMsg = if (runningOptions.evalth != "None") "EvaluateHandCrafted" else "go"
+      val startMsg = if (runningOptions.evalth != "None") "eval" else "start"
 
       system.actorOf(Props(new Learner(runningOptions, trainingDataOptions, testingDataOptions, trainingDataFunction,
         testingDataFunction)), name = "Learner") !  startMsg

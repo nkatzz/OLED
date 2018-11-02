@@ -36,7 +36,7 @@ object SingleCoreMaritimeRunner {
       val testingFunction: MaritimeDataOptions => Iterator[Example] = nodeData.getTestingData
 
       val system = ActorSystem("HoeffdingLearningSystem")
-      val startMsg = if (runOpts.evalth != "None") "EvaluateHandCrafted" else "start"
+      val startMsg = if (runOpts.evalth != "None") "eval" else "start"
       system.actorOf(Props(new Master(runOpts, trainingDataOptions, testingDataOptions, trainingFunction, testingFunction)), name = "Master-Actor") !  startMsg
 
 

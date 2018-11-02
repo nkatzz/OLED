@@ -35,7 +35,7 @@ object DataCRONDelivRunner {
       val testingDataFunction: DataOptions => Iterator[Example] = getData
 
       val system = ActorSystem("HoeffdingLearningSystem")
-      val startMsg = if (runningOptions.evalth != "None") "EvaluateHandCrafted" else "start"
+      val startMsg = if (runningOptions.evalth != "None") "eval" else "start"
 
       system.actorOf(Props(new Master(runningOptions, trainingDataOptions, testingDataOptions,
         trainingDataFunction, testingDataFunction)), name = "Master-Actor") !  startMsg

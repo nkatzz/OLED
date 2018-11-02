@@ -161,7 +161,7 @@ object OLEDMaritimeRunner {
 
       ///*
       val system = ActorSystem("HoeffdingLearningSystem")
-      val startMsg = if (runOpts.evalth != "None") "EvaluateHandCrafted" else "start"
+      val startMsg = if (runOpts.evalth != "None") "eval" else "start"
       system.actorOf(Props(new Master(runOpts, trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction)), name = "Master-Actor") !  startMsg
       //*/
     }

@@ -99,7 +99,7 @@ class Learner[T <: Source](val inps: RunningOptions,
 
   def receive = {
 
-    case "go" =>
+    case "start" =>
       startTime = System.nanoTime()
       this.repeatFor -= 1
       this.data = getTrainData

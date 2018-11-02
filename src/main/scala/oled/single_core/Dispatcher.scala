@@ -32,7 +32,7 @@ class Dispatcher[T <: Source](inps: RunningOptions,
 
   def receive = {
 
-    case "EvaluateHandCrafted" =>
+    case "eval" =>
       if (!inps.evalth.isFile) {
         logger.error(s"${inps.evalth} is not a file.") ; System.exit(-1)
       } else {

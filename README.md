@@ -49,7 +49,7 @@ Detailed instructions on how to perform a test run with ``OLED`` are provided in
      `--delta=0.00001 \` <br/>
      `--prune=0.8 \` <br/>
      `--target=meeting \` <br/>
-     `--db=caviar-train \` <br/>
+     `--train=caviar-train \` <br/>
      `--saveto=/oledhome/theory.lp`
    -->
    * `java -cp oled-0.1.jar app.runners.OLEDDefaultRunner --inpath=<PATH TO THE caviar-bk FOLDER> --delta=0.00001 --prune=0.8 --db=caviar-train --saveto=<PATH TO SOME LOCATION>/theory.lp`
@@ -58,7 +58,7 @@ Detailed instructions on how to perform a test run with ``OLED`` are provided in
    * `java -cp oled.jar app.runners.OLEDDefaultRunner \`  <br/>
          ` --inpath=/oledhome/caviar-bk \` <br/>
          `--target=meeting \` <br/>
-         `--db=caviar-test \` <br/>
+         `--test=caviar-test \` <br/>
          `--evalth=/home/nkatz/oledhome/theory.lp`
    -->
    * `java -cp oled-0.1.jar app.runners.OLEDDefaultRunner --inpath=<PATH TO THE caviar-bk FOLDER> --db=caviar-test --evalth=--inpath=<PATH TO theory.lp FILE>` 

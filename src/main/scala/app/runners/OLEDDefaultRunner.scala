@@ -38,11 +38,20 @@ object OLEDDefaultRunner extends LazyLogging {
         sortDbByField = "None"
       )
 
-      val testingDataOptions = trainingDataOptions
+      val testingDataOptions = new DefaultMongoDataOptions(
+        dbName = runningOptions.test,
+        collectionName = runningOptions.mongoCollection,
+        chunkSize = runningOptions.chunkSize,
+        limit = runningOptions.dataLimit,
+        targetConcept = runningOptions.targetHLE,
+        sortDbByField = "None"
+      )
+
+
       val trainingDataFunction: DefaultMongoDataOptions => Iterator[Example] = getMongoData
       val testingDataFunction: DefaultMongoDataOptions => Iterator[Example] = getMongoData
       val system = ActorSystem("HoeffdingLearningSystem")
-      val startMsg = if (runningOptions.evalth != "None") "EvaluateHandCrafted" else "start"
+      val startMsg = if (runningOptions.evalth != "None") "eval" else "start"
 
       system.actorOf(Props(new Master(runningOptions, trainingDataOptions, testingDataOptions, trainingDataFunction,
         testingDataFunction)), name = "Master-Actor") !  startMsg

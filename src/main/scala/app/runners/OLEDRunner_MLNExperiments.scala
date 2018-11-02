@@ -44,11 +44,11 @@ object OLEDRunner_MLNExperiments {
       val trainingDataFunction: MLNDataOptions => Iterator[Example] = MLNDataHandler.getTrainingData
       val testingDataFunction: MLNDataOptions => Iterator[Example] = MLNDataHandler.getTestingData
 
-      //val msg = "EvaluateHandCrafted"
+      //val msg = "eval"
       val msg = "start"
 
-      if (msg == "EvaluateHandCrafted" && inps.evalth == "None") {
-        throw new RuntimeException("No theory file provided (start msg = EvaluateHandCrafted)")
+      if (msg == "eval" && inps.evalth == "None") {
+        throw new RuntimeException("No theory file provided (start msg = eval)")
       }
 
       if (!learnWholeTheories) {
