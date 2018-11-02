@@ -22,7 +22,7 @@ object Tests extends App {
 
   val opts = new MLNDataOptions(foldPath, chunkSize)
 
-  val globals = new Globals("/home/nkatz/dev/iled/datasets/CaviarMLN", "")
+  val globals = new Globals("/home/nkatz/dev/iled/datasets/CaviarMLN")
 
   val bottomTheory = constructBottomTheory(getData(opts), globals)
 

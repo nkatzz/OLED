@@ -23,7 +23,7 @@ object MathExchange extends App with LazyLogging {
 
   val chunkSize = 10
 
-  val globals = new Globals("/home/nkatz/dev/MathExchange-for-OLED", "MathExchange")
+  val globals = new Globals("/home/nkatz/dev/MathExchange-for-OLED")
 
   val data = {
     val mongoClient = MongoClient()

@@ -153,11 +153,11 @@ class Node[T <: Source](val otherNodesNames: List[String],
 
   def start() = {
     this.repeatFor -= 1
-    logger_info(s"$showState Getting training data from db ${this.inputParameters.db}")
+    logger_info(s"$showState Getting training data from db ${this.inputParameters.train}")
     // Get the training data into a fresh iterator
     this.data = getTrainData
     if (this.data.isEmpty) {
-      slf4jLogger.error(s"DB ${inputParameters.db} is empty.")
+      slf4jLogger.error(s"DB ${inputParameters.train} is empty.")
       System.exit(-1)
     }
     // Send the first batch to self

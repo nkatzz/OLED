@@ -1,5 +1,6 @@
 package app.runutils
 
+import com.mongodb.casbah.MongoClient
 import com.typesafe.scalalogging.LazyLogging
 
 /**
@@ -16,7 +17,7 @@ import com.typesafe.scalalogging.LazyLogging
 object CMDArgs extends LazyLogging {
 
 
-  val map = scala.collection.mutable.Map[String, String]()
+  private val map = scala.collection.mutable.Map[String, String]()
 
   def getOLEDInputArgs(args: Array[String]) = {
 
@@ -39,9 +40,7 @@ object CMDArgs extends LazyLogging {
     map += "--evalth" -> evaluate_existing.toString
 
     val with_jep = getMatchingArgumentValue("--wjep")
-    val fromDB = getMatchingArgumentValue("--db")
     val entryPath = getMatchingArgumentValue("--inpath")
-
     val delta = getMatchingArgumentValue("--delta")
     val pruningThreshold = getMatchingArgumentValue("--prune")
     val minSeenExmpls = getMatchingArgumentValue("--minseen")
@@ -80,6 +79,9 @@ object CMDArgs extends LazyLogging {
     val withEventCalculus = getMatchingArgumentValue("--with-ec")
     val showStats = getMatchingArgumentValue("--show-stats")
     val saveTheoryTo = getMatchingArgumentValue("--saveto")
+    val onlineEvaluation = getMatchingArgumentValue("--online-eval")
+    val train = getMatchingArgumentValue("--train")
+    val test = getMatchingArgumentValue("--test")
 
     //-------------
     // Global sets:
@@ -95,29 +97,54 @@ object CMDArgs extends LazyLogging {
     Globals.glvalues("with-ec") = withEventCalculus.toString
 
     // Define this here so that all values in Globals.glvalues be already set.
-    val globals = new Globals(entryPath.toString,fromDB.toString)
+    val globals = new Globals(entryPath.toString)
 
     // show the params:
     logger.info(s"\nRunning with options:\n${map.map{ case (k, v) => s"$k=$v" }.mkString(" ")}\n")
 
-    new RunningOptions(entryPath.toString, delta.toString.toDouble, pruningThreshold.toString.toDouble,
+    val inps = new RunningOptions(entryPath.toString, delta.toString.toDouble, pruningThreshold.toString.toDouble,
       minSeenExmpls.toString.toInt, specializationDepth.toString.toInt, breakTiesThreshold.toString.toDouble,
       repeatFor.toString.toInt, chunkSize.toString.toInt, processBatchBeforeMailBox.toString.toInt,
       onlinePruning.toString.toBoolean, withPostPruning.toString.toBoolean, targetConcept.toString,
       compress_new_rules.toString.toBoolean, mintps.toString.toInt, tryMoreRules.toString.toBoolean,
       trainSetNum.toString.toInt, randomOrder.toString.toBoolean, scoringFun.toString, with_jep.toString.toBoolean,
-      evaluate_existing.toString, fromDB.toString, globals, minEvaluatedOn.toString.toInt, cores.toString.toInt,
+      evaluate_existing.toString, train.toString, globals, minEvaluatedOn.toString.toInt, cores.toString.toInt,
       shuffleData.toString.toBoolean, showRefs.toString.toBoolean, pruneAfter.toString.toInt, mongoCol.toString,
       dataLimit.toString.toInt, tpWeight.toString.toInt, fpWeight.toString.toInt, fnWeight.toString.toInt,
       withInertia.toString.toBoolean, weightLearn.toString.toBoolean, mlnWeightThreshold.toString.toDouble,
       parallelClauseEval.toString.toBoolean, adagradDelta.toString.toDouble,adaLearnRate.toString.toDouble,
       adaRegularization.toString.toDouble, adaLossFunction.toString, withEventCalculus.toString.toBoolean,
-      showStats.toString.toBoolean, saveTheoryTo.toString)
+      showStats.toString.toBoolean, saveTheoryTo.toString, onlineEvaluation.toString, test.toString)
+
+
+    if (inps.train == "None") {
+      logger.error("No training set provided. Re-run with --train=<db name or path to training set file>.")
+      System.exit(-1)
+    } else {
+      checkData(inps.train, inps.mongoCollection, "train")
+
+    }
+
+    if (inps.test != "None") {
+      checkData(inps.test, inps.mongoCollection, "test")
+
+    }
+
+    if (inps.entryPath == "None") {
+      logger.error("No background knowledge provided. At least a mode declarations file is necessary. Re-run with --inpath=<path to background knowledge.>")
+      System.exit(-1)
+    }
+
+    if (inps.onlineEval == "holdout" && inps.test == "None") {
+      logger.error("Online holdout evaluation requested but no testing set provided. Re-run with --test=<path to dataset or MongoDB name>.")
+      System.exit(-1)
+    }
+
+    inps
   }
 
   val arguments = Vector(
-    Arg(name = "--inpath", valueType = "String", text = "The path to the background knowledge files.", default = "Mandatory"),
-    Arg(name = "--db", valueType = "String", text = "The name of a mongodb containing the training data.", default = "Mandatory"),
+    Arg(name = "--inpath", valueType = "String", text = "The path to the background knowledge files.", default = "None"),
     Arg(name = "--delta", valueType = "Double", text = "Delta for the Hoeffding test.", default = "0.05"),
     Arg(name = "--evalth", valueType = "String", text = "If true a hand-crafted theory in a file whose path is given by this parameter is evaluated (no learning).", default = "None"),
     Arg(name = "--wjep", valueType = "Boolean", text = "If true the ASP solver is called via the java-embedded-python (jep) interface.", default = "false"),
@@ -157,9 +184,28 @@ object CMDArgs extends LazyLogging {
     Arg(name = "--ada-loss-function", valueType = "String", text = "Loss function for AdaGrad. Either 'default' (for predictive loss) or 'custom'", default = "default"),
     Arg(name = "--with-ec", valueType = "Boolean", text = "Learning using the Event Calculus in the Background knowledge.", default = "true"),
     Arg(name = "--show-stats", valueType = "Boolean", text = "If true performance stats are printed out.", default = "false"),
-    Arg(name = "--saveto", valueType = "String", text = "Path to a file to wtite the learnt theory to.", default = "")
+    Arg(name = "--saveto", valueType = "String", text = "Path to a file to wtite the learnt theory to.", default = ""),
+    Arg(name = "--online-eval", valueType = "String", text = "Online evaluation. Prequential evaluation , 'holdout' or 'None'.", default = "None"),
+    Arg(name = "--train", valueType = "String", text = "Training set location. May either by a path to a file or a mongodb name", default = "None"),
+    Arg(name = "--test", valueType = "String", text = "Testing set location. May either by a path to a file or a mongodb name", default = "None")
   )
-//--with-ec
+
+
+  def checkData(dataInput: String, collection: String, trainOrTest: String) = {
+    val msg = if (trainOrTest == "train") "train" else "test"
+    // Check if it's a file
+    val fileExists = new java.io.File(dataInput).exists
+    if(!fileExists) {
+      // check if it's a db
+      val dbok = checkDB(dataInput, collection)
+      if (!dbok) {
+        logger.error(s"Running with --$msg=$dataInput but that's neither a database nor a file")
+        System.exit(-1)
+      }
+    }
+  }
+
+
 
   def splitString(s: String, l: Int, chunks: Vector[String]): Vector[String] = {
     s.length > l match {
@@ -193,6 +239,26 @@ object CMDArgs extends LazyLogging {
     }
   }
 
+  /* If this returns false either the db does not exist or it is empty. */
+  def checkDB(dbName: String, colName: String) = {
+    val mongoClient = MongoClient()
+    val exists = mongoClient.databaseNames().toSet.contains(dbName)
+    if (!exists) {
+      logger.error(s"Database $dbName does not exist")
+      false
+    } else {
+      val collection = mongoClient(dbName)(colName)
+      val nonEmpty = collection.nonEmpty
+      mongoClient.close()
+      if (!nonEmpty){
+        logger.error(s"Database $dbName is empty.")
+      }
+      nonEmpty
+    }
+  }
+
+
+
 
 }
 
@@ -218,7 +284,7 @@ class RunningOptions(val entryPath: String,
                      val scoringFun: String,
                      val wjep: Boolean,
                      val evalth: String,
-                     val db: String,
+                     val train: String,
                      val globals: Globals,
                      val minEvalOn: Int,
                      val cores: Int,
@@ -240,6 +306,8 @@ class RunningOptions(val entryPath: String,
                      val adaLossFunction: String,
                      val withEventCalculs: Boolean,
                      val showStats: Boolean,
-                     val saveTheoryTo: String)
+                     val saveTheoryTo: String,
+                     val onlineEval: String,
+                     val test: String)
 
 

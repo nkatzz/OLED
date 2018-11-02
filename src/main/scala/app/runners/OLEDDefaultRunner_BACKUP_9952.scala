@@ -14,13 +14,13 @@ import utils.DataUtils.Interval
   * Created by nkatz on 6/30/17.
   */
 
-
+<<<<<<< HEAD
 object OLEDDefaultRunner {
 
 
-
+=======
 object OLEDDefaultRunner extends LazyLogging {
-
+>>>>>>> self-training
 
   def main(args: Array[String]) = {
 

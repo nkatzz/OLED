@@ -45,7 +45,7 @@ class WeightedTheoryLearner[T <: Source](inps: RunningOptions, trainingDataOptio
     def runOnce(inTheory: Theory): Theory = {
       val trainingData = trainingDataFunction(trainingDataOptions)
       if (trainingData.isEmpty) {
-        logger.error(s"DB ${inps.db} is empty.")
+        logger.error(s"DB ${inps.train} is empty.")
         System.exit(-1)
       }
 
@@ -126,7 +126,7 @@ class WeightedTheoryLearner[T <: Source](inps: RunningOptions, trainingDataOptio
 
 
 
-  override def processExample(topTheory: Theory, e: Example): Theory = {
+  def processExample(topTheory: Theory, e: Example): Theory = {
 
     if (e.time == "6344") {
       val stop = "stop"
@@ -256,7 +256,7 @@ class WeightedTheoryLearner[T <: Source](inps: RunningOptions, trainingDataOptio
         }
       }
 
-      val (expanded, expTimed) = Utils.time { expandRules(newTopTheory) }
+      val (expanded, expTimed) = Utils.time { expandRules(newTopTheory, inps, logger) }
 
       ///*
       logger.info(s"\nGround network time (clingo + parsing results):" +

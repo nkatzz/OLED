@@ -23,6 +23,8 @@ trait CoreFunctions {
     * */
 
 
+
+
   def filterTriedRules(T: Theory, newRules: Iterable[Clause], logger: org.slf4j.Logger) = {
     val out = newRules.filter { newRule =>
       val bottomClauses = T.clauses.map(x => x.supportSet.clauses.head)
@@ -171,14 +173,21 @@ trait CoreFunctions {
                globals: Globals,
                inps: RunningOptions) = {
 
-
-
     while (data.hasNext) {
       val e = data.next()
       //println(e.time)
       evaluateTheory(t, e, handCraftedTheoryFile, globals)
     }
     val stats = t.stats
+    (stats._1, stats._2, stats._3, stats._4, stats._5, stats._6)
+  }
+
+
+  /* Evaluate a theory on a single batch */
+  def eval(t: Theory, exmpl: Example, inps: RunningOptions) = {
+    evaluateTheory(t, exmpl, "", inps.globals)
+    val stats = t.stats
+    t.clearStats()
     (stats._1, stats._2, stats._3, stats._4, stats._5, stats._6)
   }
 
@@ -200,7 +209,7 @@ trait CoreFunctions {
     val show = globals.SHOW_TPS_ARITY_1 + globals.SHOW_FPS_ARITY_1 + globals.SHOW_FNS_ARITY_1
     val ex = e.tostring
     val program = ex + globals.INCLUDE_BK(globals.BK_CROSSVAL) + t + coverageConstr + show
-    val f = Utils.getTempFile("isConsistent",".lp",deleteOnExit = true)
+    val f = Utils.getTempFile("isConsistent",".lp")
     Utils.writeLine(program, f, "overwrite")
     val answerSet = ASP.solve(task = Globals.INFERENCE, aspInputFile = f)
     if (answerSet.nonEmpty) {

@@ -30,7 +30,7 @@ object ILED extends ClausalLogicParser with LazyLogging with MongoUtils{
   def main(args: Array[String]) {
     val db = new Database("caviar_meeting_clean", "examples")
     val entryPath = "/home/nkatz/dev/iled/datasets/Caviar/meeting"
-    val globals = new Globals(entryPath, db.name)
+    val globals = new Globals(entryPath)
     //db.inspectDB(seeWhat="example")
     //collectKernels(db, batchSize=100, trainingSetSize=100000000,startTime = 0,jep=jep)
 

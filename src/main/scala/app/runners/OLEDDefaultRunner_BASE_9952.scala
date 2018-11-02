@@ -4,7 +4,6 @@ import akka.actor.{ActorSystem, Props}
 import app.runutils.CMDArgs
 import app.runutils.IOHandling.MongoSource
 import com.mongodb.casbah.{MongoClient, MongoCollection}
-import com.typesafe.scalalogging.LazyLogging
 import logic.Examples.Example
 import oled.single_core.Master
 import utils.DataUtils.Interval
@@ -14,35 +13,39 @@ import utils.DataUtils.Interval
   * Created by nkatz on 6/30/17.
   */
 
-
 object OLEDDefaultRunner {
 
+  /**
+    *
+    * Learns from a mongo db using the same data (fetched sequentially) for training and for testing
+    *
+    * */
 
-
-object OLEDDefaultRunner extends LazyLogging {
-
+  /*This is for CAVIAR*/
+  /*
+  val trainingSets =
+    if (inps.targetHLE == "meeting")
+      List(MeetingTrainingData.getMeetingTrainingData(inps.trainSetNum, randomOrder = inps.randomOrder))
+    else
+      List(MovingTrainingData.getMovingTrainingData(inps.trainSetNum, randomOrder = inps.randomOrder))
+      //List(MovingTrainingData.wholeCAVIAR1)
+  */
 
   def main(args: Array[String]) = {
-
     val argsok = CMDArgs.argsOk(args)
-
     if (!argsok._1) {
-
-      logger.error(argsok._2)
+      println(argsok._2)
       System.exit(-1)
-
     } else {
 
       val runningOptions = CMDArgs.getOLEDInputArgs(args)
 
-      val trainingDataOptions = new DefaultMongoDataOptions(
-          dbName = runningOptions.train,
+      val trainingDataOptions =
+        new DefaultMongoDataOptions(dbName = runningOptions.db,
           collectionName = runningOptions.mongoCollection,
           chunkSize = runningOptions.chunkSize,
           limit = runningOptions.dataLimit,
-          targetConcept = runningOptions.targetHLE,
-          sortDbByField = "None"
-        )
+          targetConcept = runningOptions.targetHLE, sortDbByField = "None")
 
       val testingDataOptions = trainingDataOptions
       val trainingDataFunction: DefaultMongoDataOptions => Iterator[Example] = getMongoData
@@ -50,8 +53,8 @@ object OLEDDefaultRunner extends LazyLogging {
       val system = ActorSystem("HoeffdingLearningSystem")
       val startMsg = if (runningOptions.evalth != "None") "EvaluateHandCrafted" else "start"
 
-      system.actorOf(Props(new Master(runningOptions, trainingDataOptions, testingDataOptions, trainingDataFunction,
-        testingDataFunction)), name = "Master-Actor") !  startMsg
+      system.actorOf(Props(new Master(runningOptions, trainingDataOptions, testingDataOptions,
+        trainingDataFunction, testingDataFunction)), name = "Master-Actor") !  startMsg
 
     }
   }

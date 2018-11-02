@@ -54,6 +54,11 @@ case class Theory(clauses: List[Clause] = List()) extends Expression with LazyLo
     val fscore = 2*precision*recall/(precision+recall)
     (tps.toInt,fps.toInt,fns.toInt,precision,recall,fscore)
   }
+  def clearStats() = {
+    this.tps = new ListBuffer[String]
+    this.fps = new ListBuffer[String]
+    this.fns = new ListBuffer[String]
+  }
 
 
   def showWithStats = (this.clauses map (_.showWithStats)).mkString("\n")

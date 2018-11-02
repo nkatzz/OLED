@@ -19,9 +19,8 @@ import scala.util.matching.Regex
 object Globals {
 
   def apply(): Unit = {
-    new Globals("", "")
+    new Globals("")
   }
-
 
   var timeDebug = List[Double]()
 
@@ -140,7 +139,7 @@ object Globals {
 
 
 
-class Globals(val entryPath: String, val fromDB: String) extends LazyLogging {
+class Globals(val entryPath: String) extends LazyLogging {
 
   /*
    * Global values and utilities used throughout the application

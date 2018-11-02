@@ -210,7 +210,7 @@ class WeightedTheoryLearner[T <: Source](inps: RunningOptions, trainingDataOptio
         }
       }
 
-      val (expanded, expTimed) = Utils.time { expandRules(newTopTheory) }
+      val (expanded, expTimed) = Utils.time { expandRules(newTopTheory, inps, logger) }
 
       if (inps.onlinePruning) topTheory = pruneRules(expanded, inps, logger)
       else topTheory = expanded
