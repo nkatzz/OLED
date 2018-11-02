@@ -14,13 +14,7 @@ import utils.DataUtils.Interval
   * Created by nkatz on 6/30/17.
   */
 
-
-object OLEDDefaultRunner {
-
-
-
 object OLEDDefaultRunner extends LazyLogging {
-
 
   def main(args: Array[String]) = {
 
@@ -36,13 +30,13 @@ object OLEDDefaultRunner extends LazyLogging {
       val runningOptions = CMDArgs.getOLEDInputArgs(args)
 
       val trainingDataOptions = new DefaultMongoDataOptions(
-          dbName = runningOptions.train,
-          collectionName = runningOptions.mongoCollection,
-          chunkSize = runningOptions.chunkSize,
-          limit = runningOptions.dataLimit,
-          targetConcept = runningOptions.targetHLE,
-          sortDbByField = "None"
-        )
+        dbName = runningOptions.train,
+        collectionName = runningOptions.mongoCollection,
+        chunkSize = runningOptions.chunkSize,
+        limit = runningOptions.dataLimit,
+        targetConcept = runningOptions.targetHLE,
+        sortDbByField = "None"
+      )
 
       val testingDataOptions = trainingDataOptions
       val trainingDataFunction: DefaultMongoDataOptions => Iterator[Example] = getMongoData
@@ -57,14 +51,14 @@ object OLEDDefaultRunner extends LazyLogging {
   }
 
   private class DefaultMongoDataOptions(val dbName: String,
-                                val collectionName: String = "examples",
-                                val chunkSize: Int = 1,
-                                val limit: Double = Double.PositiveInfinity.toInt,
-                                val targetConcept: String = "None",
-                                val sortDbByField: String = "None",
-                                val sort: String = "ascending",
-                                val intervals: List[Interval] = Nil,
-                                val examplesIds: List[String] = Nil) extends MongoSource
+                                        val collectionName: String = "examples",
+                                        val chunkSize: Int = 1,
+                                        val limit: Double = Double.PositiveInfinity.toInt,
+                                        val targetConcept: String = "None",
+                                        val sortDbByField: String = "None",
+                                        val sort: String = "ascending",
+                                        val intervals: List[Interval] = Nil,
+                                        val examplesIds: List[String] = Nil) extends MongoSource
 
   def getMongoData(opts: DefaultMongoDataOptions): Iterator[Example] = {
 
@@ -83,7 +77,7 @@ object OLEDDefaultRunner extends LazyLogging {
       case false => data
       case _ =>
         data.grouped(opts.chunkSize).map { x =>
-        //data.sliding(opts.chunkSize).map { x =>
+          //data.sliding(opts.chunkSize).map { x =>
           x.foldLeft(Example()) { (z, y) =>
             new Example(annot = z.annotation ++ y.annotation, nar = z.narrative ++ y.narrative, _time = x.head.time)
           }
