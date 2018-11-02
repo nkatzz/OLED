@@ -52,7 +52,7 @@ Detailed instructions on how to perform a test run with ``OLED`` are provided in
      `--train=caviar-train \` <br/>
      `--saveto=/oledhome/theory.lp`
    -->
-   * `java -cp oled-0.1.jar app.runners.OLEDDefaultRunner --inpath=<PATH TO THE caviar-bk FOLDER> --delta=0.00001 --prune=0.8 --db=caviar-train --saveto=<PATH TO SOME LOCATION>/theory.lp`
+   * `java -cp oled-0.1.jar app.runners.OLEDDefaultRunner --inpath=<PATH TO THE caviar-bk FOLDER> --delta=0.00001 --prune=0.8 --train=caviar-train --saveto=<PATH TO SOME LOCATION>/theory.lp`
 * After learning terminates the learnt hypothesis will be written in `theory.lp`. You can evaluate this theory on the test set as follows:   
    <!--
    * `java -cp oled.jar app.runners.OLEDDefaultRunner \`  <br/>
@@ -61,7 +61,7 @@ Detailed instructions on how to perform a test run with ``OLED`` are provided in
          `--test=caviar-test \` <br/>
          `--evalth=/home/nkatz/oledhome/theory.lp`
    -->
-   * `java -cp oled-0.1.jar app.runners.OLEDDefaultRunner --inpath=<PATH TO THE caviar-bk FOLDER> --db=caviar-test --evalth=--inpath=<PATH TO theory.lp FILE>` 
+   * `java -cp oled-0.1.jar app.runners.OLEDDefaultRunner --inpath=<PATH TO THE caviar-bk FOLDER> --test=caviar-test --evalth=--inpath=<PATH TO theory.lp FILE>` 
 * You may see all available cmd args with `java -cp oled-0.1.jar -help`
 
 ## Datasets
