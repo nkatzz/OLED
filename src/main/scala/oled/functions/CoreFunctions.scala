@@ -184,8 +184,8 @@ trait CoreFunctions {
 
 
   /* Evaluate a theory on a single batch */
-  def eval(t: Theory, exmpl: Example, inps: RunningOptions) = {
-    evaluateTheory(t, exmpl, "", inps.globals)
+  def eval(t: Theory, exmpl: Example, inps: RunningOptions, inputTheoryFile: String = "") = {
+    evaluateTheory(t, exmpl, handCraftedTheoryFile = inputTheoryFile, inps.globals)
     val stats = t.stats
     t.clearStats()
     (stats._1, stats._2, stats._3, stats._4, stats._5, stats._6)
