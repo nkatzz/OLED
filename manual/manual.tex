@@ -100,14 +100,14 @@ We are now ready to perform learning with OLED. cd to your \home \ folder and ru
 
 \noindent \texttt{java -cp oled-0.1.jar app.runners.OLEDDefaultRunner \textbackslash}\\
 \texttt{--inpath=<PATH TO caviar-bk FOLDER> --delta=0.00001 \textbackslash}   \\
-\texttt{--prune=0.8 --target=meeting --db=caviar-train \textbackslash}\\
+\texttt{--prune=0.8 --target=meeting --train=caviar-train \textbackslash}\\
 \texttt{--saveto=<PATH TO SOME LOCATION>/theory.lp}
 
 To see all available command line arguments do \texttt{java -cp oled-0.1.jar -help}. The learnt hypothesis will be saved in \texttt{/oledhome/theory.lp}. You may evaluate this theory on the test set as follows: 
 
 \noindent \texttt{java -cp oled-0.1.jar app.runners.OLEDDefaultRunner \textbackslash}\\
 \texttt{--inpath=<PATH TO caviar-bk FOLDER> --target=meeting \textbackslash}   \\
-\texttt{--db=caviar-test --evalth=<PATH TO theory.lp>}
+\texttt{--test=caviar-test --evalth=<PATH TO theory.lp>}
 
 
 
