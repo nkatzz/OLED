@@ -1,9 +1,9 @@
 package oled.winnow
 
 //import math._
-import scalatikz.graphics.pgf.LineStyle._
-import scalatikz.graphics.pgf.LegendPos._
-import scalatikz.graphics.pgf.Figure
+//import scalatikz.graphics.pgf.LineStyle._
+//import scalatikz.graphics.pgf.LegendPos._
+//import scalatikz.graphics.pgf.Figure
 
 //import scala.io.Source
 
