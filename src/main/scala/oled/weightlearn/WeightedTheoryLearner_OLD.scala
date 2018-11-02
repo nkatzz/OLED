@@ -26,7 +26,7 @@ class WeightedTheoryLearner_OLD[T <: Source](inps: RunningOptions, trainingDataO
     def runOnce(inTheory: Theory): Theory = {
       val trainingData = trainingDataFunction(trainingDataOptions)
       if (trainingData.isEmpty) {
-        logger.error(s"DB ${inps.db} is empty.")
+        logger.error(s"DB ${inps.train} is empty.")
         System.exit(-1)
       }
 
@@ -229,7 +229,7 @@ class WeightedTheoryLearner_OLD[T <: Source](inps: RunningOptions, trainingDataO
       println(s"Updating all clauses state time: ${t._2} sec")
 
       //newTopTheory.scoreRules(e, this.jep, inps.globals) // Already taken care of...
-      val expanded = expandRules(newTopTheory)
+      val expanded = expandRules(newTopTheory, inps, logger)
       if (inps.onlinePruning) {
         pruneRules(expanded, inps, logger)
       } else {

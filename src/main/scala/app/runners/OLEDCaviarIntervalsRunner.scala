@@ -51,7 +51,7 @@ object OLEDCaviarIntervalsRunner {
     } else {
       val runningOptions = CMDArgs.getOLEDInputArgs(args)
       val trainingDataOptions =
-        new DataOptions(dbName = runningOptions.db,
+        new DataOptions(dbName = runningOptions.train,
           collectionName = runningOptions.mongoCollection,
           chunkSize = runningOptions.chunkSize,
           limit = runningOptions.dataLimit,

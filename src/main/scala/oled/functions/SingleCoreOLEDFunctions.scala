@@ -2,6 +2,7 @@ package oled.functions
 
 import app.runutils.{Globals, RunningOptions}
 import com.mongodb.casbah.MongoClient
+import com.typesafe.scalalogging.LazyLogging
 import logic.Examples.Example
 import logic.{AnswerSet, Clause, Theory}
 import utils.ASP.getCoverageDirectives
@@ -23,10 +24,235 @@ import scala.util.Random
 
 object SingleCoreOLEDFunctions extends CoreFunctions {
 
+
+
+
+
+  def processExample(topTheory: Theory, e: Example, targetClass: String,
+                     inps: RunningOptions, logger: org.slf4j.Logger) = {
+
+    var newTopTheory = topTheory
+
+    var scoringTime = 0.0
+    var newRuleTestTime = 0.0
+    var compressRulesTime = 0.0
+    var expandRulesTime = 0.0
+    var newRuleGenerationTime = 0.0
+
+    val initorterm: String =
+      if(targetClass=="initiated") "initiatedAt"
+      else if (targetClass=="terminated") "terminatedAt"
+      else inps.globals.MODEHS.head.varbed.tostring
+
+    val withInertia = Globals.glvalues("with-inertia").toBoolean
+
+    val startNew =
+      if (withInertia) {
+
+        /*-------------------------------------------------------------------*/
+        // This works, but it takes too long. The reason is that it tries
+        // to abduce at almost every example. See the comment above the isSat
+        // method in SingleCoreOLEDFunctions for more details. See also the related
+        // comment in Globals.scala.
+
+        //if (e.annotation.isEmpty) false else ! isSat(e, inps.globals, this.jep)
+
+        /*-------------------------------------------------------------------*/
+
+        // growNewRuleTest here works with inertia in both the initiation and the
+        // termination cases.
+        if (e.annotation.isEmpty) false else newTopTheory.growNewRuleTest(e, initorterm, inps.globals)
+
+      } else {
+        if (inps.tryMoreRules && targetClass == "terminated") true // Always try to find extra termination rules, they are more rare.
+        else {
+          val r = Utils.time{ newTopTheory.growNewRuleTest(e, initorterm, inps.globals) }
+          if (inps.showStats) logger.info(s"grow new rule test time: ${r._2}")
+          newRuleTestTime += r._2
+          r._1
+        }
+      }
+
+    if (startNew) {
+      val newRules_ = Utils.time {
+        if (withInertia) {
+          getnerateNewBottomClauses_withInertia(topTheory, e, initorterm, inps.globals)
+        } else {
+          if (inps.tryMoreRules) {
+            // Don't use the current theory here to force the system to generate new rules
+            generateNewRules(Theory(), e, initorterm, inps.globals)
+          } else {
+            generateNewRules(topTheory, e, initorterm, inps.globals)
+          }
+        }
+      }
+
+      val newRules__ = newRules_._1
+
+      if (inps.showStats) logger.info(s"New rules generation time: ${newRules_._2}")
+      newRuleGenerationTime += newRules_._2
+      // Just to be on the safe side...
+      val newRules = newRules__.filter(x => x.head.functor == initorterm)
+
+      if (newRules.nonEmpty) logger.info(s"Generated ${newRules.length} new rules.")
+
+      val o1 = System.nanoTime()
+      if (inps.compressNewRules) {
+        newTopTheory = topTheory.clauses ++ filterTriedRules(topTheory, newRules, logger)
+      } else {
+        newTopTheory = topTheory.clauses ++ newRules
+      }
+      val o2 = System.nanoTime()
+      if (inps.showStats) logger.info(s"compressing rules time: ${(o2-o1)/1000000000.0}")
+      compressRulesTime += (o2-o1)/1000000000.0
+
+    }
+    if (newTopTheory.clauses.nonEmpty) {
+      val t = Utils.time { newTopTheory.scoreRules(e, inps.globals) }
+      if (inps.showStats) logger.info(s"Scoring rules time: ${t._2}")
+      scoringTime += t._2
+
+      val expanded = Utils.time {  expandRules(newTopTheory, inps, logger) }
+      if (inps.showStats) logger.info(s"Expanding rules time: ${expanded._2}")
+      expandRulesTime += expanded._2
+
+      if (inps.onlinePruning) {
+        val pruned = pruneRules(expanded._1, inps, logger)
+        (pruned, scoringTime, newRuleTestTime, compressRulesTime, expandRulesTime, newRuleGenerationTime)
+      } else {
+        (expanded._1, scoringTime, newRuleTestTime, compressRulesTime, expandRulesTime, newRuleGenerationTime)
+      }
+    } else {
+      (newTopTheory, scoringTime, newRuleTestTime, compressRulesTime, expandRulesTime, newRuleGenerationTime)
+    }
+  }
+
+
+
+  def rightWay(parentRule: Clause, inps: RunningOptions) = {
+    val (observedDiff, best, secondBest) = parentRule.meanDiff
+
+    val epsilon = Utils.hoeffding(inps.delta, parentRule.seenExmplsNum)
+
+    //logger.info(s"\n(observedDiff, epsilon, bestScore, secondBestScore): ($observedDiff, $epsilon, ${best.score}, ${secondBest.score})")
+
+    val passesTest = if (epsilon < observedDiff) true else false
+    //val tie = if (epsilon <= breakTiesThreshold && parentRule.seenExmplsNum >= minSeenExmpls) true else false
+    val tie = if (observedDiff < epsilon  && epsilon < inps.breakTiesThreshold && parentRule.seenExmplsNum >= inps.minSeenExmpls) true else false
+
+    //println(s"best score: ${best.score} 2nd-best: ${secondBest.score} $observedDiff < $epsilon && $epsilon < ${inps.breakTiesThreshold} ${parentRule.seenExmplsNum} >= ${inps.minSeenExmpls} $tie")
+
+    val couldExpand =
+      if (inps.minTpsRequired != 0) {
+        // The best.mlnWeight >= parentRule.mlnWeight condition doesn't work of course...
+        (passesTest || tie) && (best.getTotalTPs >= parentRule.getTotalTPs * inps.minTpsRequired/100.0) //&& best.mlnWeight >= parentRule.mlnWeight
+      } else {
+        // The best.mlnWeight >= parentRule.mlnWeight condition doesn't work of course...
+        passesTest || tie //&& best.mlnWeight >= parentRule.mlnWeight
+      }
+
+    (couldExpand,epsilon,observedDiff,best,secondBest)
+  }
+
+  def expandRules(topTheory: Theory, inps: RunningOptions, logger: org.slf4j.Logger): Theory = {
+    //val t0 = System.nanoTime()
+    val out = topTheory.clauses flatMap { parentRule =>
+      val (couldExpand,epsilon,observedDiff,best,secondBest) = rightWay(parentRule, inps)
+
+      //println(best.score,best.tps, best.fps, best.fns, "  ", secondBest.score, secondBest.tps, secondBest.fps, secondBest.fns)
+
+      couldExpand match {
+        case true =>
+          // This is the extra test that I added at Feedzai
+          val extraTest =
+            if(secondBest != parentRule) (best.score > parentRule.score) && (best.score - parentRule.score > epsilon)
+            else best.score > parentRule.score
+          extraTest match { //&& (1.0/best.body.size+1 > 1.0/parentRule.body.size+1) match {
+            case true =>
+              val refinedRule = best
+              logger.info(showInfo(parentRule, best, secondBest, epsilon, observedDiff,
+                parentRule.seenExmplsNum, inps))
+              refinedRule.seenExmplsNum = 0 // zero the counter
+              refinedRule.supportSet = parentRule.supportSet // only one clause here
+              List(refinedRule)
+            case _ => List(parentRule)
+          }
+        case _ => List(parentRule)
+      }
+    }
+    //val t1 = System.nanoTime()
+    //println(s"expandRules time: ${(t1-t0)/1000000000.0}")
+    Theory(out)
+  }
+
+
+  def processExampleNoEC(topTheory: Theory, e: Example, inps: RunningOptions, logger: org.slf4j.Logger) = {
+
+    var scoringTime = 0.0
+    var newRuleTestTime = 0.0
+    var compressRulesTime = 0.0
+    var expandRulesTime = 0.0
+    var newRuleGenerationTime = 0.0
+
+    var newTopTheory = topTheory
+    val startNew = if (e.annotation.isEmpty) false else newTopTheory.growNewRuleTestNoEC(e, inps.globals)
+    if (startNew) {
+      val newRules_ = Utils.time{
+        if (inps.tryMoreRules) {
+          // Don't use the current theory here to force the system to generate new rules
+          generateNewRulesNoEC(Theory(), e, inps.globals)
+        } else {
+          generateNewRulesNoEC(topTheory, e, inps.globals)
+        }
+      }
+      val newRules__ = newRules_._1
+      if (inps.showStats) logger.info(s"New rules generation time: ${newRules_._2}")
+      newRuleGenerationTime += newRules_._2
+
+      val newRules = newRules__
+
+      if (newRules.nonEmpty) logger.info(s"Generated ${newRules.length} new rules.")
+
+      val o1 = System.nanoTime()
+      if (inps.compressNewRules) {
+        newTopTheory = topTheory.clauses ++ filterTriedRules(topTheory, newRules, logger)
+      } else {
+        newTopTheory = topTheory.clauses ++ newRules
+      }
+      val o2 = System.nanoTime()
+      if (inps.showStats) logger.info(s"compressing rules time: ${(o2-o1)/1000000000.0}")
+      compressRulesTime += (o2-o1)/1000000000.0
+    }
+    if (newTopTheory.clauses.nonEmpty) {
+      val t = Utils.time { newTopTheory.scoreRulesNoEC(e, inps.globals) }
+      if (inps.showStats) logger.info(s"Scoring rules time: ${t._2}")
+      scoringTime += t._2
+
+      val expanded = Utils.time {  expandRules(newTopTheory, inps, logger) }
+      if (inps.showStats) logger.info(s"Expanding rules time: ${expanded._2}")
+      expandRulesTime += expanded._2
+
+      if (inps.onlinePruning) {
+        val pruned = pruneRules(expanded._1, inps, logger)
+        (pruned, scoringTime, newRuleTestTime, compressRulesTime, expandRulesTime, newRuleGenerationTime)
+      } else {
+        (expanded._1, scoringTime, newRuleTestTime, compressRulesTime, expandRulesTime, newRuleGenerationTime)
+      }
+    } else {
+      (newTopTheory, scoringTime, newRuleTestTime, compressRulesTime, expandRulesTime, newRuleGenerationTime)
+    }
+  }
+
+
+
+
+
+
+
   def getTrainingData(params: RunningOptions, data: TrainingSet, targetClass: String): Iterator[Example] = {
 
     val mc = MongoClient()
-    val collection = mc(params.db)("examples")
+    val collection = mc(params.train)("examples")
 
     def getData = utils.CaviarUtils.getDataAsChunks(collection, params.chunkSize, targetClass)
 
@@ -46,7 +272,7 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
         }
       case x: DataAsExamples => data.asInstanceOf[DataAsExamples].trainingSet.toIterator
       case x: DataFunction =>
-        data.asInstanceOf[DataFunction].function(params.db, params.targetHLE, params.chunkSize, DataAsIntervals())
+        data.asInstanceOf[DataFunction].function(params.train, params.targetHLE, params.chunkSize, DataAsIntervals())
       case _ => throw new RuntimeException(s"${data.getClass}: Don't know what to do with this data container!")
     }
   }

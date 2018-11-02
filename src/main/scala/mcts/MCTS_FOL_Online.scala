@@ -39,7 +39,7 @@ object MCTS_FOL_Online extends LazyLogging{
     val foldPath = "/home/nkatz/dev/CAVIAR_MLN/CAVIAR_MLN/move/fold_2"
     val chunkSize = 500
     val opts = new MLNDataOptions(foldPath, chunkSize)
-    val globals = new Globals("/home/nkatz/dev/iled/datasets/CaviarMLN/move", "")
+    val globals = new Globals("/home/nkatz/dev/iled/datasets/CaviarMLN/move")
 
     val exploreRate = 0.005 //1.0/Math.sqrt(2) //
 

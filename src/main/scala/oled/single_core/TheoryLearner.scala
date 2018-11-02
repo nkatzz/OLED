@@ -1,14 +1,12 @@
 package oled.single_core
 
 import akka.actor.Actor
-import app.runutils.IOHandling.{MongoSource, Source}
+import app.runutils.IOHandling.Source
 import app.runutils.{Globals, RunningOptions}
-import com.mongodb.casbah.MongoClient
 import logic.Examples.Example
-import logic.{Clause, LogicUtils, Theory}
+import logic.Theory
 import org.slf4j.LoggerFactory
-import utils.Implicits._
-import utils.{Database, Utils}
+import utils.Utils
 import oled.functions.SingleCoreOLEDFunctions._
 
 
@@ -17,6 +15,14 @@ import oled.functions.SingleCoreOLEDFunctions._
   *
   */
 
+
+/*
+*
+* This is the old version of the core OLED learner, where (in case we're
+* learning with the Event Calculus) initiation and termination rules are
+* learnt separately and in parallel.
+*
+* */
 
 
 class TheoryLearner[T <: Source](val inps: RunningOptions,
@@ -44,14 +50,14 @@ class TheoryLearner[T <: Source](val inps: RunningOptions,
     else if (targetClass=="terminated") "terminatedAt"
     else inps.globals.MODEHS.head.varbed.tostring
 
-  private val withInertia = Globals.glvalues("with-inertia").toBoolean
+  //private val withInertia = Globals.glvalues("with-inertia").toBoolean
 
   def run: (Theory,Double) = {
 
     def runOnce(inTheory: Theory): Theory = {
       val trainingData = trainingDataFunction(trainingDataOptions)
       if (trainingData.isEmpty) {
-        logger.error(s"DB ${inps.db} is empty.")
+        logger.error(s"DB ${inps.train} is empty.")
         System.exit(-1)
       }
       trainingData.foldLeft(inTheory){ (topTheory, newExample) =>
@@ -60,16 +66,25 @@ class TheoryLearner[T <: Source](val inps: RunningOptions,
 
         val res = Utils.time {
           val t =
-            if (Globals.glvalues("with-ec").toBoolean) processExample(topTheory, newExample)
-            else processExampleNoEC(topTheory, newExample)
+            if (Globals.glvalues("with-ec").toBoolean) processExample(topTheory, newExample, targetClass, inps, logger)
+            else processExampleNoEC(topTheory, newExample, inps, logger)
+
+          val th = t._1
+
+          totalRuleScoringTime += t._2
+          totalNewRuleTestTime += t._3
+          totalCompressRulesTime += t._4
+          totalExpandRulesTime += t._5
+          totalNewRuleGenerationTime += t._6
+
 
           // This is used only when learning with inertia. But I think
           // its ok to keep it so that I can print out stats for the current
           // joint theory (for debugging).
           //if (withInertia) updateGlobalTheoryStore(t, initorterm, inps.globals)
-          if (Globals.glvalues("with-ec").toBoolean) updateGlobalTheoryStore(t, initorterm, inps.globals)
+          if (Globals.glvalues("with-ec").toBoolean) updateGlobalTheoryStore(th, initorterm, inps.globals)
 
-          t
+          th
         }
         if (inps.showStats) logger.info(s"Total batch process time: ${res._2}")
         this.totalBatchProcessingTime += res._2
@@ -102,199 +117,5 @@ class TheoryLearner[T <: Source](val inps: RunningOptions,
   }
 
 
-  def processExample(topTheory: Theory, e: Example): Theory = {
-
-    if (e.time == "1454342385") {
-      val stop = "stop"
-    }
-
-    var newTopTheory = topTheory
-
-    val startNew =
-      if (withInertia) {
-
-        /*-------------------------------------------------------------------*/
-        // This works, but it takes too long. The reason is that it tries
-        // to abduce at almost every example. See the comment above the isSat
-        // method in SingleCoreOLEDFunctions for more details. See also the related
-        // comment in Globals.scala.
-
-        //if (e.annotation.isEmpty) false else ! isSat(e, inps.globals, this.jep)
-
-        /*-------------------------------------------------------------------*/
-
-        // growNewRuleTest here works with inertia in both the initiation and the
-        // termination cases.
-        if (e.annotation.isEmpty) false else newTopTheory.growNewRuleTest(e, initorterm, inps.globals)
-
-      } else {
-        if (this.inps.tryMoreRules && this.targetClass == "terminated") true // Always try to find extra termination rules, they are more rare.
-        else {
-          val r = Utils.time{ newTopTheory.growNewRuleTest(e, initorterm, inps.globals) }
-          if (inps.showStats) logger.info(s"grow new rule test time: ${r._2}")
-          this.totalNewRuleTestTime += r._2
-          r._1
-        }
-      }
-
-    if (startNew) {
-      val newRules_ = Utils.time {
-        if (withInertia) {
-          getnerateNewBottomClauses_withInertia(topTheory, e, this.initorterm, inps.globals)
-        } else {
-          if (this.inps.tryMoreRules) {
-            // Don't use the current theory here to force the system to generate new rules
-            generateNewRules(Theory(), e, this.initorterm, inps.globals)
-          } else {
-            generateNewRules(topTheory, e, this.initorterm, inps.globals)
-          }
-        }
-      }
-
-      val newRules__ = newRules_._1
-
-      if (inps.showStats) logger.info(s"New rules generation time: ${newRules_._2}")
-      this.totalNewRuleGenerationTime += newRules_._2
-      // Just to be on the safe side...
-      val newRules = newRules__.filter(x => x.head.functor == this.initorterm)
-
-      if (newRules.nonEmpty) logger.info(s"Generated ${newRules.length} new rules.")
-
-      val o1 = System.nanoTime()
-      if (this.inps.compressNewRules) {
-        newTopTheory = topTheory.clauses ++ filterTriedRules(topTheory, newRules, logger)
-      } else {
-        newTopTheory = topTheory.clauses ++ newRules
-      }
-      val o2 = System.nanoTime()
-      if (inps.showStats) logger.info(s"compressing rules time: ${(o2-o1)/1000000000.0}")
-      this.totalCompressRulesTime += (o2-o1)/1000000000.0
-
-    }
-    if (newTopTheory.clauses.nonEmpty) {
-      val t = Utils.time { newTopTheory.scoreRules(e, inps.globals) }
-      if (inps.showStats) logger.info(s"Scoring rules time: ${t._2}")
-      this.totalRuleScoringTime += t._2
-
-      val expanded = Utils.time {  expandRules(newTopTheory) }
-      if (inps.showStats) logger.info(s"Expanding rules time: ${expanded._2}")
-      this.totalExpandRulesTime += expanded._2
-
-      if (inps.onlinePruning) {
-        pruneRules(expanded._1, inps, logger)
-      } else {
-        expanded._1
-      }
-    } else {
-      newTopTheory
-    }
-  }
-
-
-  def processExampleNoEC(topTheory: Theory, e: Example): Theory = {
-    var newTopTheory = topTheory
-    val startNew = if (e.annotation.isEmpty) false else newTopTheory.growNewRuleTestNoEC(e, inps.globals)
-    if (startNew) {
-      val newRules_ = Utils.time{
-        if (this.inps.tryMoreRules) {
-          // Don't use the current theory here to force the system to generate new rules
-          generateNewRulesNoEC(Theory(), e, inps.globals)
-        } else {
-          generateNewRulesNoEC(topTheory, e, inps.globals)
-        }
-      }
-      val newRules__ = newRules_._1
-      if (inps.showStats) logger.info(s"New rules generation time: ${newRules_._2}")
-      this.totalNewRuleGenerationTime += newRules_._2
-
-      val newRules = newRules__
-
-      if (newRules.nonEmpty) logger.info(s"Generated ${newRules.length} new rules.")
-
-      val o1 = System.nanoTime()
-      if (this.inps.compressNewRules) {
-        newTopTheory = topTheory.clauses ++ filterTriedRules(topTheory, newRules, logger)
-      } else {
-        newTopTheory = topTheory.clauses ++ newRules
-      }
-      val o2 = System.nanoTime()
-      if (inps.showStats) logger.info(s"compressing rules time: ${(o2-o1)/1000000000.0}")
-      this.totalCompressRulesTime += (o2-o1)/1000000000.0
-    }
-    if (newTopTheory.clauses.nonEmpty) {
-      val t = Utils.time { newTopTheory.scoreRulesNoEC(e, inps.globals) }
-      if (inps.showStats) logger.info(s"Scoring rules time: ${t._2}")
-      this.totalRuleScoringTime += t._2
-
-      val expanded = Utils.time {  expandRules(newTopTheory) }
-      if (inps.showStats) logger.info(s"Expanding rules time: ${expanded._2}")
-      this.totalExpandRulesTime += expanded._2
-
-      if (inps.onlinePruning) {
-        pruneRules(expanded._1, inps, logger)
-      } else {
-        expanded._1
-      }
-    } else {
-      newTopTheory
-    }
-  }
-
-
-  def rightWay(parentRule: Clause) = {
-    val (observedDiff, best, secondBest) = parentRule.meanDiff
-
-    val epsilon = Utils.hoeffding(inps.delta, parentRule.seenExmplsNum)
-
-    //logger.info(s"\n(observedDiff, epsilon, bestScore, secondBestScore): ($observedDiff, $epsilon, ${best.score}, ${secondBest.score})")
-
-    val passesTest = if (epsilon < observedDiff) true else false
-    //val tie = if (epsilon <= breakTiesThreshold && parentRule.seenExmplsNum >= minSeenExmpls) true else false
-    val tie = if (observedDiff < epsilon  && epsilon < inps.breakTiesThreshold && parentRule.seenExmplsNum >= inps.minSeenExmpls) true else false
-
-    //println(s"best score: ${best.score} 2nd-best: ${secondBest.score} $observedDiff < $epsilon && $epsilon < ${inps.breakTiesThreshold} ${parentRule.seenExmplsNum} >= ${inps.minSeenExmpls} $tie")
-
-    val couldExpand =
-      if (inps.minTpsRequired != 0) {
-        // The best.mlnWeight >= parentRule.mlnWeight condition doesn't work of course...
-        (passesTest || tie) && (best.getTotalTPs >= parentRule.getTotalTPs * inps.minTpsRequired/100.0) //&& best.mlnWeight >= parentRule.mlnWeight
-      } else {
-        // The best.mlnWeight >= parentRule.mlnWeight condition doesn't work of course...
-        passesTest || tie //&& best.mlnWeight >= parentRule.mlnWeight
-      }
-
-    (couldExpand,epsilon,observedDiff,best,secondBest)
-  }
-
-  def expandRules(topTheory: Theory): Theory = {
-    //val t0 = System.nanoTime()
-    val out = topTheory.clauses flatMap { parentRule =>
-      val (couldExpand,epsilon,observedDiff,best,secondBest) = rightWay(parentRule)
-
-      //println(best.score,best.tps, best.fps, best.fns, "  ", secondBest.score, secondBest.tps, secondBest.fps, secondBest.fns)
-
-      couldExpand match {
-        case true =>
-          // This is the extra test that I added at Feedzai
-          val extraTest =
-            if(secondBest != parentRule) (best.score > parentRule.score) && (best.score - parentRule.score > epsilon)
-            else best.score > parentRule.score
-          extraTest match { //&& (1.0/best.body.size+1 > 1.0/parentRule.body.size+1) match {
-            case true =>
-              val refinedRule = best
-              logger.info(showInfo(parentRule, best, secondBest, epsilon, observedDiff,
-                parentRule.seenExmplsNum, this.inps))
-              refinedRule.seenExmplsNum = 0 // zero the counter
-              refinedRule.supportSet = parentRule.supportSet // only one clause here
-              List(refinedRule)
-            case _ => List(parentRule)
-          }
-        case _ => List(parentRule)
-      }
-    }
-    //val t1 = System.nanoTime()
-    //println(s"expandRules time: ${(t1-t0)/1000000000.0}")
-    Theory(out)
-  }
 
 }

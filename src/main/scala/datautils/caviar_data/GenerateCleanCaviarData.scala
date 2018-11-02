@@ -28,7 +28,7 @@ object GenerateCleanCaviarData {
     mongoClient.dropDatabase(newDB)
     val collection = mongoClient(newDB)("examples")
 
-    val gl = new Globals(entryPath, fromDB)
+    val gl = new Globals(entryPath)
     val (handCraftedRules,show) = HLE match {
       case "meeting" =>
         (handCraftedRulesPath,s"\n#show.\n#show holdsAt($HLE(X,Y),T):holdsAt($HLE(X,Y),T).\n")

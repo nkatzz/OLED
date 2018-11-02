@@ -32,7 +32,7 @@ object MCTS_FOL extends LazyLogging{
 
     val opts = new MLNDataOptions(foldPath, chunkSize)
 
-    val globals = new Globals("/home/nkatz/dev/iled/datasets/CaviarMLN/move", "")
+    val globals = new Globals("/home/nkatz/dev/iled/datasets/CaviarMLN/move")
 
     val bottomTheory = constructBottomTheory(getData(opts), globals)
 

@@ -54,4 +54,7 @@ object Dependency {
 
   // LoMRF library for Markov Logic Networks
   lazy val LoMRF = "com.github.anskarl" %% "lomrf" % v.LoMRF
+
+
+  lazy val vegas = "org.vegas-viz" %% "vegas" % "0.3.12"
 }

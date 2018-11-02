@@ -29,7 +29,7 @@ object Xhail extends ASPResultsParser with LazyLogging {
     //Core.setGlobalParams(args)
     val entryPath = args(0)
     val fromDB = args(1)
-    val globals = new Globals(entryPath, fromDB)
+    val globals = new Globals(entryPath)
     runXhail(fromDB = fromDB, bkFile = globals.BK_WHOLE_EC, globals=globals)
   }
 

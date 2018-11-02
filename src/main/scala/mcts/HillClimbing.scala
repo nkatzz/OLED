@@ -72,7 +72,7 @@ object HillClimbing extends App with LazyLogging {
     }
 
     //val globals = new Globals("/home/nkatz/dev/iled/datasets/Caviar/meeting", "")
-    val globals = new Globals("/home/nkatz/dev/iled/datasets/CTM/whole-hierarchy", "")
+    val globals = new Globals("/home/nkatz/dev/iled/datasets/CTM/whole-hierarchy")
 
 
     val bottomTheory = constructBottomTheory(getTrainingData(), globals)
@@ -98,7 +98,7 @@ object HillClimbing extends App with LazyLogging {
     val chunkSize = 50
     val opts = new MLNDataOptions(foldPath, chunkSize)
     val dataset = getData(opts)
-    val globals = new Globals("/home/nkatz/dev/iled/datasets/CaviarMLN", "")
+    val globals = new Globals("/home/nkatz/dev/iled/datasets/CaviarMLN")
     val bottomTheory = constructBottomTheory(dataset, globals)
     //println(bottomTheory.tostring)
     val iterations = 2
