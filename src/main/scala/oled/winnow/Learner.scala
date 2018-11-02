@@ -121,7 +121,6 @@ class Learner[T <: Source](val inps: RunningOptions,
           logger.info(currentError)
         }
       }
-
       logger.info(s"Prequential error vector:\n${prequentialError.mkString(",")}")
       logger.info(s"Prequential error vector (Accumulated Error):\n${prequentialError.scanLeft(0.0)(_ + _).tail}")
       context.system.terminate()
@@ -143,21 +142,17 @@ class Learner[T <: Source](val inps: RunningOptions,
           this.totalNewRuleTestTime += r.newRuleTestTime
           this.totalRuleScoringTime += r.ruleScoringTime
         } else {
-
           val ir = responses("initiated")
           val tr = responses("terminated")
           val newInitTheory = ir.theory
           val newTermTheory = tr.theory
           this.theory = List(newInitTheory, newTermTheory)
-
           this.totalBatchProcessingTime += math.max(ir.BatchProcessingTime, tr.BatchProcessingTime)
-
           this.totalCompressRulesTime += math.max(ir.compressRulesTime, tr.compressRulesTime)
           this.totalExpandRulesTime += math.max(ir.expandRulesTime, tr.expandRulesTime)
           this.totalNewRuleGenerationTime += math.max(ir.newRuleGenerationTime, tr.newRuleGenerationTime)
           this.totalNewRuleTestTime += math.max(ir.newRuleTestTime, tr.newRuleTestTime)
           this.totalRuleScoringTime += math.max(ir.ruleScoringTime, tr.ruleScoringTime)
-
         }
         //logger.info(currentError)
         // reset these before processing a new batch
@@ -248,10 +243,21 @@ class Learner[T <: Source](val inps: RunningOptions,
     // prequential first
     if (withec) {
       val (init, term) = (theory.head, theory.tail.head)
-      val merged = Theory( (init.clauses ++ term.clauses).filter(p => p.body.length >= 1 && p.seenExmplsNum > 5000 && p.score > 0.95) )
+
+      //val merged = Theory( (init.clauses ++ term.clauses).filter(p => p.body.length >= 1 && p.seenExmplsNum > 5000 && p.score > 0.9) )
+
+      val merged = Theory( (init.clauses ++ term.clauses) )
+
       val (tps, fps, fns, precision, recall, fscore) = eval(merged, batch, inps)
-      currentError = s"TPs: $tps, FPs: $fps, FNs: $fns, error (|true state| - |inferred state|): ${math.abs(batch.annotation.toSet.size - (tps+fps))}"
+
+      // I think this is wrong, the correct error is the number of mistakes (fps+fns)
+      //currentError = s"TPs: $tps, FPs: $fps, FNs: $fns, error (|true state| - |inferred state|): ${math.abs(batch.annotation.toSet.size - (tps+fps))}"
+
+      currentError = s"Number of mistakes (FPs+FNs) "
       this.prequentialError = this.prequentialError :+ (fps+fns).toDouble
+
+
+
     }
 
     // TODO :
