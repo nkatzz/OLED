@@ -8,8 +8,8 @@ import logic.{LogicUtils, Theory}
 import oled.winnow.MessageTypes.{FinishedBatchMsg, ProcessBatchMsg}
 import org.slf4j.LoggerFactory
 import oled.functions.SingleCoreOLEDFunctions.eval
-
 import scala.collection.mutable.Map
+import AuxFuncs._
 
 
 /**
@@ -235,10 +235,17 @@ class Learner[T <: Source](val inps: RunningOptions,
     logger.info(s"Holdout error vector:\nTODO")
   }
 
+  implicit class ExtendedDouble(n: Double) {
+    def rounded(x: Int) = {
+      val w = math.pow(10, x)
+      (n * w).toLong.toDouble / w
+    }
+  }
+
   /* Performs online evaluation. Prequential is always performed.
    * Holdout is  performed every 1000 examples if the testing set is non-empty.
    */
-  def evaluate(batch: Example, inputTheoyFile: String = "") = {
+  def evaluate(batch: Example, inputTheoryFile: String = "") = {
 
     // prequential first
     if (withec) {
@@ -246,7 +253,32 @@ class Learner[T <: Source](val inps: RunningOptions,
 
       //val merged = Theory( (init.clauses ++ term.clauses).filter(p => p.body.length >= 1 && p.seenExmplsNum > 5000 && p.score > 0.9) )
 
-      val merged = Theory( (init.clauses ++ term.clauses) )
+      val merged = Theory( init.clauses ++ term.clauses )
+
+      //------------------
+      // TEST STUFF START
+      //------------------
+
+      if (theory.head.clauses.nonEmpty && theory.tail.head.clauses.nonEmpty) {
+
+        merged.clauses foreach (rule => if (rule.refinements.isEmpty) rule.generateCandidateRefs)
+
+        val t = merged.clauses.flatMap(x => x.refinements :+ x)
+
+        val r = scala.util.Random
+
+        t foreach {x => x.w = r.nextFloat()}
+
+        val m = marked(merged.clauses.toVector, inps.globals)
+
+        val stop = "stop"
+      }
+
+
+
+      //------------------
+      // TEST STUFF END
+      //------------------
 
       val (tps, fps, fns, precision, recall, fscore) = eval(merged, batch, inps)
 
@@ -256,13 +288,10 @@ class Learner[T <: Source](val inps: RunningOptions,
       currentError = s"Number of mistakes (FPs+FNs) "
       this.prequentialError = this.prequentialError :+ (fps+fns).toDouble
 
-
-
     }
 
     // TODO :
     // Implement holdout evaluation.
-
   }
 
 

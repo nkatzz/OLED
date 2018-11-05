@@ -18,10 +18,13 @@
 package utils
 
 import java.io.File
+
 import utils.DataUtils.{DataAsIntervals, DataSet}
 import utils.DataUtils.Interval
 import logic.Examples.Example
-import logic.{Constant, PriorTheory, Theory, Clause}
+import logic.{Clause, Constant, PriorTheory, Theory}
+
+import scala.math.pow
 
 /**
   * Created by nkatz on 4/2/2016.
@@ -64,6 +67,8 @@ object ClauseImplicits {
   implicit def asConstant(x: String): Constant = Constant(x)
   implicit def asConstant(x: Int): Constant = Constant(x.toString)
 }
+
+
 
 object TrainingSetImplicits {
 

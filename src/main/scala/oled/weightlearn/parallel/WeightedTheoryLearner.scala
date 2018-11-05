@@ -112,10 +112,6 @@ class WeightedTheoryLearner[T <: Source](inps: RunningOptions, trainingDataOptio
 
     case e: Example =>
 
-      if (e.time == "6344") {
-        val stop = "stop"
-      }
-
       // All the work takes place here
       var newTopTheory = topTheory
 

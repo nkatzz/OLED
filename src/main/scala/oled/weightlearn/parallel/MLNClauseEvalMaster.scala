@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory
 
 class MLNClauseEvalMaster(inps: RunningOptions, targetClass: String) extends Actor {
 
-  private val logger = LoggerFactory.getLogger(self.path.name)
+  //private val logger = LoggerFactory.getLogger(self.path.name)
 
   private var counter = 0
   private var resultsVector = Vector.empty[MLNClauseHandlingOutput]

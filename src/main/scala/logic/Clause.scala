@@ -92,6 +92,10 @@ case class Clause(head: PosLiteral = PosLiteral(),
   var mlnWeight: Double = 0.0
   var subGradient: Double = 0.0
 
+  // This is a "general-purpose" weight variable, the intention is to use this
+  // for all online convex optimization methods that we'll try (e.g. winnow, AdaGrad, Adam etc).
+  var w: Double = 0.0
+
   // These variables store the total current counts from all nodes.
   // These are also used in the distributed setting.
   var totalTPs = 0
@@ -505,8 +509,7 @@ case class Clause(head: PosLiteral = PosLiteral(),
   }
 
   def marked(globals: Globals) = {
-    Clause(head=Literal(functor = "marked", terms=List(this.##.toString, this.head)),
-      body=this.withTypePreds(globals).body)
+    Clause(head=Literal(functor = "marked", terms=List(this.##.toString, this.head)), body=this.withTypePreds(globals).body)
   }
 
   val isEmpty = this == Clause.empty
