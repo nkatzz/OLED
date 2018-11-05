@@ -1,14 +1,34 @@
+/*
+ * Copyright (C) 2016  Nikos Katzouris
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 import sbt._
 import sbt.Keys._
 import sbt.plugins.JvmPlugin
 import sbtassembly.AssemblyPlugin
 import sbtassembly.AssemblyPlugin.autoImport._
+import de.heikoseeberger.sbtheader.HeaderPlugin
+import de.heikoseeberger.sbtheader.License._
+import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport._
 
 object OLEDBuild extends AutoPlugin {
 
   private val logger = ConsoleLogger()
 
-  override def requires: Plugins = JvmPlugin && AssemblyPlugin
+  override def requires: Plugins = JvmPlugin && AssemblyPlugin && HeaderPlugin
 
   // Allow the plug-in to be included automatically
   override def trigger: PluginTrigger = allRequirements
@@ -31,6 +51,8 @@ object OLEDBuild extends AutoPlugin {
 
     description := "A system for online learning of event definitions.",
 
+    headerLicense := Some(GPLv3("2016", "Nikos Katzouris")),
+
     scalaVersion := "2.11.12",
 
     autoScalaLibrary := false,
@@ -46,21 +68,21 @@ object OLEDBuild extends AutoPlugin {
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-library" % scalaVersion.value,
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-      "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.6"
+      "org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.1"
     ),
 
-    dependencyOverrides ++= Set(
+    dependencyOverrides ++= Seq(
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       "org.scala-lang" % "scala-library" % scalaVersion.value,
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-      "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.6",
-      "org.scala-lang.modules" %% "scala-xml" % "1.0.6"
+      "org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.1",
+      "org.scala-lang.modules" %% "scala-xml" % "1.1.1"
     )
   )
 
   private lazy val assemblySettings: Seq[Setting[_]] = Seq(
 
-    assemblyJarName in assembly := s"oled-${version.value}.jar",
+    assemblyJarName in assembly := s"${name.value.toLowerCase}-${version.value}.jar",
 
     /*
      * Avoid the 'deduplicate: different file contents found in the following (logback.xml)' error.
