@@ -44,10 +44,10 @@ if [ ! -d ../external_dependencies ]; then
     tar xf LoMRF.tar.xz
     tar xf lpsolve55.tar.xz
     tar xf auxlib.tar.xz
-    cd LoMRF
+    cd auxlib
     sbt +publishLocal
     cd ..
-    cd auxlib
+    cd LoMRF
     sbt +publishLocal
     cd ..
     rm LoMRF.tar.xz
