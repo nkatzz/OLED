@@ -211,10 +211,6 @@ trait CoreFunctions {
 
   def evaluateTheory(theory: Theory, e: Example, handCraftedTheoryFile: String = "", globals: Globals): Unit = {
 
-    if (e.annotation.nonEmpty) {
-      val stop = "stop"
-    }
-
     val varbedExmplPatterns = globals.EXAMPLE_PATTERNS_AS_STRINGS
     val coverageConstr = s"${globals.TPS_RULES}\n${globals.FPS_RULES}\n${globals.FNS_RULES}"
     val t =

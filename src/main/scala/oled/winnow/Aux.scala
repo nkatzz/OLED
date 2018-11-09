@@ -29,9 +29,20 @@ object AuxFuncs {
   def marked(clauses: Vector[Clause], globals: Globals): (String, Map[String, Clause]) = {
     val allRefinements = clauses flatMap(_.refinements)
     val allRules = clauses ++ allRefinements
+    //val allRules = clauses
+    /*
     val markedTheory = clauses map (x => marked(x, globals))
     val markedRefinements = allRefinements map (x => marked(x, globals))
+    */
+
+    println(allRules.map(_.w))
+
+    val markedTheory = clauses map (x => markedQuickAndDirty(x, globals))
+    val markedRefinements = allRefinements map (x => markedQuickAndDirty(x, globals))
+
     val allRulesMarked = markedTheory ++ markedRefinements
+    //val allRulesMarked = markedTheory
+
     val hashCodesClausesMap = (allRules map (x => x.##.toString -> x)).toMap
     val rulePredicates = hashCodesClausesMap.keySet.map(x => s"rule($x). ").mkString("\n")
     (allRulesMarked.map(_.tostring).mkString("\n")+rulePredicates, hashCodesClausesMap)
@@ -39,7 +50,16 @@ object AuxFuncs {
 
   // The head of a weighted rule is of the form: marked(ruleId, "weight", actualHead)
   def marked(c: Clause, globals: Globals) = {
-    Clause(head=Literal(functor = "marked", terms=List(c.##.toString, s""""${c.w}"""", c.head)), body=c.withTypePreds(globals).body)
+    val cc = Clause(head=Literal(functor = "marked", terms=List(c.##.toString, s""""${c.w}"""", c.head)), body=c.withTypePreds(globals).body)
+    cc.w = c.w
+    cc
+  }
+
+  // The head of a weighted rule is of the form: marked(ruleId, actualHead)
+  def markedQuickAndDirty(c: Clause, globals: Globals) = {
+    val cc = Clause(head=Literal(functor = "marked", terms=List(c.##.toString, c.head)), body=c.withTypePreds(globals).body)
+    cc.w = c.w
+    cc
   }
 
 }

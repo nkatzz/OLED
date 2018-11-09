@@ -94,7 +94,7 @@ case class Clause(head: PosLiteral = PosLiteral(),
 
   // This is a "general-purpose" weight variable, the intention is to use this
   // for all online convex optimization methods that we'll try (e.g. winnow, AdaGrad, Adam etc).
-  var w: Double = 0.0
+  var w: Double = 1.0
 
   // These variables store the total current counts from all nodes.
   // These are also used in the distributed setting.

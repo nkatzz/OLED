@@ -236,9 +236,28 @@ case class Theory(clauses: List[Clause] = List()) extends Expression with LazyLo
         val updateCounts = (what: String, hashCode: String, count: String) => {
           val clause = markedMap(hashCode)
           what match {
-            case "tps" => clause.tps += count.toInt
-            case "fps" => clause.fps += count.toInt
-            case "fns" => clause.fns += count.toInt
+            case "tps" =>
+              clause.tps += count.toInt
+              // This is for winnow:
+              var newWeight = (1 to count.toInt).foldLeft(clause.w)( (x,_) => 2*x)
+              if (newWeight.isPosInfinity) newWeight = clause.w
+              clause.w = newWeight
+
+            case "fps" =>
+              clause.fps += count.toInt
+              // This is for winnow:
+              if (clause.head.functor.contains("initiated")) {
+                val newWeight = (1 to count.toInt).foldLeft(clause.w)( (x,_) => 0.5*x)
+                clause.w = newWeight
+              }
+
+            case "fns" =>
+              clause.fns += count.toInt
+              // This is for winnow:
+              if (clause.head.functor.contains("terminated")) {
+                val newWeight = (1 to count.toInt).foldLeft(clause.w)( (x,_) => 0.5*x)
+                clause.w = newWeight
+              }
           }
         }
 

@@ -1,15 +1,22 @@
 package oled.winnow
 
+import java.io.File
+
 import akka.actor.{Actor, ActorRef, PoisonPill, Props}
 import app.runutils.IOHandling.Source
 import app.runutils.{Globals, RunningOptions}
 import logic.Examples.Example
-import logic.{LogicUtils, Theory}
+import logic.{Literal, LogicUtils, Theory}
 import oled.winnow.MessageTypes.{FinishedBatchMsg, ProcessBatchMsg}
 import org.slf4j.LoggerFactory
 import oled.functions.SingleCoreOLEDFunctions.eval
+
 import scala.collection.mutable.Map
 import AuxFuncs._
+import utils.{ASP, Utils}
+import utils.Implicits._
+
+import scala.reflect.internal.Trees
 
 
 /**
@@ -188,7 +195,8 @@ class Learner[T <: Source](val inps: RunningOptions,
         throw new RuntimeException("This should never have happened (repeatfor is now negative?)")
       }
     } else {
-      evaluate(nextBatch)
+      //evaluate(nextBatch)
+      evaluateTest(nextBatch)
       if (this.workers.length > 1) { // we're learning with the Event Calculus.
         val msg1 = new ProcessBatchMsg(theory.head, nextBatch, "initiated")
         val msg2 = new ProcessBatchMsg(theory.tail.head, nextBatch, "terminated")
@@ -242,10 +250,35 @@ class Learner[T <: Source](val inps: RunningOptions,
     }
   }
 
+
+  def evaluate(batch: Example, inputTheoryFile: String = "") = {
+    // prequential first
+    if (withec) {
+      val (init, term) = (theory.head, theory.tail.head)
+
+      val merged = Theory( (init.clauses ++ term.clauses).filter(p => p.body.length >= 1 && p.seenExmplsNum > 5000 && p.score > 0.9) )
+
+      //val merged = Theory( init.clauses ++ term.clauses )
+
+      val (tps, fps, fns, precision, recall, fscore) = eval(merged, batch, inps)
+
+      // I think this is wrong, the correct error is the number of mistakes (fps+fns)
+      //currentError = s"TPs: $tps, FPs: $fps, FNs: $fns, error (|true state| - |inferred state|): ${math.abs(batch.annotation.toSet.size - (tps+fps))}"
+
+      currentError = s"Number of mistakes (FPs+FNs) "
+      this.prequentialError = this.prequentialError :+ (fps+fns).toDouble
+
+    }
+
+    // TODO :
+    // Implement holdout evaluation.
+  }
+
+
   /* Performs online evaluation. Prequential is always performed.
    * Holdout is  performed every 1000 examples if the testing set is non-empty.
    */
-  def evaluate(batch: Example, inputTheoryFile: String = "") = {
+  def evaluateTest(batch: Example, inputTheoryFile: String = "") = {
 
     // prequential first
     if (withec) {
@@ -262,31 +295,86 @@ class Learner[T <: Source](val inps: RunningOptions,
       if (theory.head.clauses.nonEmpty && theory.tail.head.clauses.nonEmpty) {
 
         merged.clauses foreach (rule => if (rule.refinements.isEmpty) rule.generateCandidateRefs)
+        //val t = merged.clauses.flatMap(x => x.refinements :+ x)
 
-        val t = merged.clauses.flatMap(x => x.refinements :+ x)
+        val _marked = marked(merged.clauses.toVector, inps.globals)
 
-        val r = scala.util.Random
+        // QUICK AND DIRTY SOLUTION JUST TO TRY IT.
+        println(batch.time+" Test eval for winnow")
 
-        t foreach {x => x.w = r.nextFloat()}
+        val e = (batch.annotationASP ++ batch.narrativeASP).mkString("\n")
+        val markedProgram = _marked._1
+        val markedMap = _marked._2
+        val all = e + markedProgram + "\n#include \"/home/nkatz/dev/OLED-BK/BKExamples/BK-various-taks/DevTest/caviar-bk/bk.lp\"." + "\n#show marked/2."
+        val f = Utils.getTempFile(s"quick-and-dirty",".lp")
+        Utils.writeToFile(f, "append")(p => List(all) foreach p.println)
+        val path = f.getCanonicalPath
+        val answerSet = ASP.solve(task = Globals.SCORE_RULES, aspInputFile = new File(path))
+        val atoms = if (answerSet.nonEmpty) answerSet.head.atoms.toSet else Set[String]()
 
-        val m = marked(merged.clauses.toVector, inps.globals)
+        val inferred_temp = atoms.map{ a =>
+           val l = Literal.parse(a)
+          (l.terms.head.tostring, l.terms.tail.head.tostring)
+        }.groupBy(z => z._2).map(z =>  (z._1, z._2.map(_._1)) )
+
+        val initRules = theory.head.clauses
+        val initRulesNum = (initRules ++ initRules.flatMap(_.refinements)).length
+
+        val termRules = theory.tail.head.clauses
+        val termRulesNum = (termRules ++ termRules.flatMap(_.refinements)).length
+
+        val inferred_final = inferred_temp.foldLeft(Set[String]()) { (accum, y) =>
+          val (atom, ruleIds) = (y._1, y._2)
+          val weightSum = ruleIds.map(id => markedMap(id).w).sum
+          //val majority = if (atom.contains("initiated")) initRulesNum else termRulesNum
+          val majority = 16000
+          if (weightSum >= majority) {
+            accum + atom
+          } else {
+            accum
+          }
+        }
+
+        //println(inferred_final)
+
+        val evalProgram =
+          (batch.narrative.toSet ++ inferred_final).map(x => x+".").mkString("\n")+
+          inps.globals.INCLUDE_BK(inps.globals.BK_CROSSVAL)+"\nout(holdsAt(F,T)) :- holdsAt(F,T), fluent(F).\n#show.\n#show out/1."
+        val f1 = Utils.getTempFile("isConsistent",".lp")
+        Utils.writeLine(evalProgram, f1, "overwrite")
+
+        val inferredState = ASP.solve(task = Globals.INFERENCE, aspInputFile = f1)
+
+        val _inferred = if (inferredState.nonEmpty) inferredState.head.atoms.toSet else Set[String]()
+        val inferred = _inferred.map(x => Literal.parse(x).terms.head.tostring)
+
+        val trueAtoms = batch.annotation.toSet
+
+        val (tps, fps, fns) =
+        if (inferredState.nonEmpty) {
+          val _tps = inferred.intersect(trueAtoms).size
+          val _fps = inferred.diff(trueAtoms).size
+          val _fns = trueAtoms.diff(inferred).size
+          (_tps, _fps, _fns)
+        } else {
+          (0, 0, batch.annotation.size)
+        }
+
+        currentError = s"Number of mistakes (FPs+FNs) "
+        this.prequentialError = this.prequentialError :+ (fps+fns).toDouble
+
+        println(prequentialError)
+
+        //------------------
+        // TEST STUFF END
+        //------------------
+
 
         val stop = "stop"
+
+        // QUICK AND DIRTY SOLUTION JUST TO TRY IT.
       }
 
-
-
-      //------------------
-      // TEST STUFF END
-      //------------------
-
-      val (tps, fps, fns, precision, recall, fscore) = eval(merged, batch, inps)
-
-      // I think this is wrong, the correct error is the number of mistakes (fps+fns)
-      //currentError = s"TPs: $tps, FPs: $fps, FNs: $fns, error (|true state| - |inferred state|): ${math.abs(batch.annotation.toSet.size - (tps+fps))}"
-
-      currentError = s"Number of mistakes (FPs+FNs) "
-      this.prequentialError = this.prequentialError :+ (fps+fns).toDouble
 
     }
 
