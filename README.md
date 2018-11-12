@@ -20,7 +20,7 @@ You'll need to have Scala (> 2.11) with SBT (Scala Build Tool), Java 8, and Pyth
 * `cd OLED/install-scripts`
 * `./install.sh`
 * Update your `PATH`, `PYTHONPATH` and `LD_LIBRARY_PATH`. Append the following lines to your `~/.profile` (or `~/.bashrc`) file:
-  * `<PATH TO CLONED SOURCE>/OLED/external_dependencies/lpsolve55:$LD_LIBRARY_PATH`  
+  * `LD_LIBRARY_PATH=<PATH TO CLONED SOURCE>/OLED/external_dependencies/lpsolve55:$LD_LIBRARY_PATH`  
   * `export LD_LIBRARY_PATH`
   * `export PATH=$PATH:<PATH TO CLONED SOURCE>/OLED/external_dependencies/LoMRF/target/universal/LoMRF-0.5.5-SNAPSHOT/bin:<PATH TO CLONED SOURCE>/OLED/external_dependencies/clingo/clingo-4.5.4-source/build/release`
   * `export PYTHONPATH=$PYTHONPATH:<PATH TO CLONED SOURCE>/OLED/external_dependencies/clingo/clingo-4.5.4-source/build/release/python`
@@ -61,7 +61,7 @@ Detailed instructions on how to perform a test run with ``OLED`` are provided in
          `--test=caviar-test \` <br/>
          `--evalth=/home/nkatz/oledhome/theory.lp`
    -->
-   * `java -cp oled-0.1.jar app.runners.OLEDDefaultRunner --inpath=<PATH TO THE caviar-bk FOLDER> --test=caviar-test --evalth=--inpath=<PATH TO theory.lp FILE>` 
+   * `java -cp oled-0.1.jar app.runners.OLEDDefaultRunner --inpath=<PATH TO THE caviar-bk FOLDER> --test=caviar-test --evalth==<PATH TO theory.lp FILE>` 
 * You may see all available cmd args with `java -cp oled-0.1.jar -help`
 
 ## Datasets
