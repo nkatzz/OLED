@@ -195,8 +195,8 @@ case class Clause(head: PosLiteral = PosLiteral(),
     // How can this be normalized so we get a range in [0,1]???
     // Remember also that if you use this, the parent rule should not be included
     // in the calculation of the best-scoring rule, since it will always win
-    tps * (Math.log(adjust(precision)) - Math.log(adjust(parentClause.precision)))
-    //tpsRelativeFrequency * (Math.log(adjust(precision)) - Math.log(adjust(parentClause.precision)))
+    //tps * (Math.log(adjust(precision)) - Math.log(adjust(parentClause.precision)))
+    tpsRelativeFrequency * (Math.log(adjust(precision)) - Math.log(adjust(parentClause.precision)))
   }
 
   def foilGainTerm = {
@@ -205,8 +205,8 @@ case class Clause(head: PosLiteral = PosLiteral(),
     // How can this be normalized so we get a range in [0,1]???
     // Remember also that if you use this, the parent rule should not be included
     // in the calculation of the best-scoring rule, since it will always win
-    tps * (Math.log(adjust(recall)) - Math.log(adjust(parentClause.recall)))
-    //tpsRelativeFrequency * (Math.log(adjust(recall)) - Math.log(adjust(parentClause.recall)))
+    //tps * (Math.log(adjust(recall)) - Math.log(adjust(parentClause.recall)))
+    tpsRelativeFrequency * (Math.log(adjust(recall)) - Math.log(adjust(parentClause.recall)))
   }
 
   def foilInfoGainInit = {
@@ -349,6 +349,14 @@ case class Clause(head: PosLiteral = PosLiteral(),
     rl
   }
 
+  def weighted_precision = {
+    if (!precision.isNaN) tps * precision else 0.0
+  }
+
+  def weighted_recall = {
+    if (!recall.isNaN) tps * recall else 0.0
+  }
+
   def score: Double = {
 
     if (this.foilGainInit.isInfinite || this.foilGainTerm.isInfinite) {
@@ -363,8 +371,14 @@ case class Clause(head: PosLiteral = PosLiteral(),
 
     if (this.head.functor == "initiatedAt") {
       Globals.scoringFunction match {
-        case "default" => if (!precision.isNaN) precision else 0.0
+        //case "default" => if (!precision.isNaN) precision else 0.0 // That's the standard
+
+        case "default" => weighted_precision
+
+        //case "default" => if (!precision.isNaN) (tps.toFloat- (fps.toFloat - this.length.toFloat))/(tps.toFloat+fps.toFloat) else 0.0
+
         //case "default" => if (!precision.isNaN)  (1.0 - 1.0/(1.0+tps.toDouble)) * precision else 0.0
+
         case "foilgain" => foilGainInit
         case "fscore" => fscore
         case _ => throw new RuntimeException("Error: No scoring function given.")
@@ -376,8 +390,14 @@ case class Clause(head: PosLiteral = PosLiteral(),
       //gainInt
     } else if (this.head.functor == "terminatedAt") {
       Globals.scoringFunction match {
-        case "default" => if (!recall.isNaN) recall else 0.0
+        //case "default" => if (!recall.isNaN) recall else 0.0
+
+        case "default" => weighted_recall
+
+        //case "default" => (tps.toFloat- (fns.toFloat - this.length.toFloat))/(tps.toFloat+fns.toFloat)
+
         //case "default" => if (!recall.isNaN) (1.0 - 1.0/(1.0+tps.toDouble)) * recall else 0.0
+
         case "foilgain" => foilGainTerm
         case "fscore" => fscore
         case _ => throw new RuntimeException("Error: No scoring function given.")

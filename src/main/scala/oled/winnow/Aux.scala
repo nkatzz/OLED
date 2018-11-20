@@ -4,6 +4,7 @@ import app.runutils.Globals
 import logic.Examples.Example
 import logic.{Clause, Literal, Theory}
 import utils.ClauseImplicits._
+import oled.distributed.Structures.ClauseStats
 
 /**
   * Created by nkatz at 1/11/2018
@@ -21,6 +22,38 @@ object MessageTypes {
 
 object AuxFuncs {
 
+
+  /* generates candidate refinements for the Hoeffding test.
+   The otherNodesNames is used only in the distributed setting. */
+  def generateCandidateRefs(c: Clause): Unit = {
+    val specializationDepth = Globals.glvalues("specializationDepth").toInt
+    val candidateList = c.supportSet.clauses.flatMap(_.body).distinct.filter(!c.body.contains(_))
+    val refinementsSets =
+      (for (x <- 1 to specializationDepth) yield x).foldLeft(List[List[Clause]]()) { (accum, depth) =>
+        val z = for (lits <- candidateList.toSet.subsets(depth).toList) yield Clause(c.head, c.body ++ lits)
+        val z_ = Theory.compressTheory(z)
+        accum :+ z_
+      }
+    val flattend = refinementsSets.flatten
+    flattend.foreach{ refinement =>
+      refinement.parentClause = c
+      //------------------------------------
+      refinement.mlnWeight = c.mlnWeight
+      //------------------------------------
+      val newMap = scala.collection.mutable.Map[String, ClauseStats]()
+      if (Globals.glvalues("distributed").toBoolean) {
+        // Just to be on the safe side in the distributed case
+        if (c.countsPerNode.isEmpty) throw new RuntimeException(s"The countsPerNode map of clause ${c.uuid} is empty," +
+          s" when it should have been populated at clause generation")
+        c.countsPerNode.foreach { entry => newMap(entry._1) = new ClauseStats(0, 0, 0, 0)}
+        refinement.countsPerNode = newMap
+      }
+    }
+    c.refinements = flattend
+  }
+
+
+
   /**
     *
     * @return The marked rules and the marked rule preds (e.g. rule(234234)) as a single string ready for ASP use.
@@ -35,13 +68,13 @@ object AuxFuncs {
     val markedRefinements = allRefinements map (x => marked(x, globals))
     */
 
-    println(allRules.map(_.w))
-
     val markedTheory = clauses map (x => markedQuickAndDirty(x, globals))
     val markedRefinements = allRefinements map (x => markedQuickAndDirty(x, globals))
 
     val allRulesMarked = markedTheory ++ markedRefinements
     //val allRulesMarked = markedTheory
+
+    println(allRules.map(_.w))
 
     val hashCodesClausesMap = (allRules map (x => x.##.toString -> x)).toMap
     val rulePredicates = hashCodesClausesMap.keySet.map(x => s"rule($x). ").mkString("\n")

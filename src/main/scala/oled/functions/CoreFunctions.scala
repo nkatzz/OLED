@@ -105,6 +105,19 @@ trait CoreFunctions {
     Theory(keep)
   }
 
+  // Simply remove clauses with tps=0 (have been over-specialized, no chance to recover)
+  def pruneRulesNaive(topTheory: Theory, inps: RunningOptions, logger: org.slf4j.Logger) = {
+    val (keep, prune) = topTheory.clauses.foldLeft(List[Clause](), List[Clause]()) { (accum, clause) =>
+      if (clause.tps == 0) {
+        (accum._1, accum._2 :+ clause)
+      } else {
+        (accum._1 :+ clause, accum._2)
+      }
+    }
+    prune.foreach(x => logger.info(s"\nPruned clause\n${x.showWithStats}"))
+    Theory(keep)
+  }
+
   def generateNewBottomClauses(topTheory: Theory, e: Example, initorterm: String, globals: Globals) = {
 
     val terminatedOnly = if(initorterm == "terminatedAt") true else false

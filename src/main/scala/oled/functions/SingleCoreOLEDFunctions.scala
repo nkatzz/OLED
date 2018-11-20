@@ -81,7 +81,8 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
         if (e.annotation.isEmpty) false else newTopTheory.growNewRuleTest(e, initorterm, inps.globals)
 
       } else {
-        if (inps.tryMoreRules && targetClass == "terminated") true // Always try to find extra termination rules, they are more rare.
+        //if (inps.tryMoreRules && targetClass == "terminated") true // Always try to find extra termination rules, they are more rare.
+        if (inps.tryMoreRules) true // Sometimes, depending on the order of the examples, it's necessary to try more even for initiation.
         else {
           val r = Utils.time{ newTopTheory.growNewRuleTest(e, initorterm, inps.globals) }
           if (inps.showStats) logger.info(s"grow new rule test time: ${r._2}")
@@ -134,7 +135,8 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
       expandRulesTime += expanded._2
 
       if (inps.onlinePruning) {
-        val pruned = pruneRules(expanded._1, inps, logger)
+        //val pruned = pruneRules(expanded._1, inps, logger)
+        val pruned = pruneRulesNaive(expanded._1, inps, logger)
         (pruned, scoringTime, newRuleTestTime, compressRulesTime, expandRulesTime, newRuleGenerationTime)
       } else {
         (expanded._1, scoringTime, newRuleTestTime, compressRulesTime, expandRulesTime, newRuleGenerationTime)
@@ -168,7 +170,7 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
         passesTest || tie //&& best.mlnWeight >= parentRule.mlnWeight
       }
 
-    (couldExpand,epsilon,observedDiff,best,secondBest)
+    (couldExpand, epsilon, observedDiff, best, secondBest)
   }
 
   def expandRules(topTheory: Theory, inps: RunningOptions, logger: org.slf4j.Logger): Theory = {

@@ -195,8 +195,11 @@ class Learner[T <: Source](val inps: RunningOptions,
         throw new RuntimeException("This should never have happened (repeatfor is now negative?)")
       }
     } else {
-      //evaluate(nextBatch)
-      evaluateTest(nextBatch)
+
+      evaluate(nextBatch)
+
+      //evaluateTest(nextBatch)
+
       if (this.workers.length > 1) { // we're learning with the Event Calculus.
         val msg1 = new ProcessBatchMsg(theory.head, nextBatch, "initiated")
         val msg2 = new ProcessBatchMsg(theory.tail.head, nextBatch, "terminated")
@@ -243,30 +246,39 @@ class Learner[T <: Source](val inps: RunningOptions,
     logger.info(s"Holdout error vector:\nTODO")
   }
 
+  /*
   implicit class ExtendedDouble(n: Double) {
     def rounded(x: Int) = {
       val w = math.pow(10, x)
       (n * w).toLong.toDouble / w
     }
   }
-
+  */
 
   def evaluate(batch: Example, inputTheoryFile: String = "") = {
+
     // prequential first
     if (withec) {
       val (init, term) = (theory.head, theory.tail.head)
 
-      val merged = Theory( (init.clauses ++ term.clauses).filter(p => p.body.length >= 1 && p.seenExmplsNum > 5000 && p.score > 0.9) )
+      //val merged = Theory( (init.clauses ++ term.clauses).filter(p => p.body.length >= 1 && p.seenExmplsNum > 5000 && p.score > 0.7) )
 
-      //val merged = Theory( init.clauses ++ term.clauses )
+      //val merged = Theory( (init.clauses ++ term.clauses).filter(p => p.body.length >= 1 && p.score > 0.9) )
+
+      val merged = Theory( init.clauses.filter(p => p.precision >= 0.9) ++ term.clauses.filter(p => p.recall >= 0.9) )
 
       val (tps, fps, fns, precision, recall, fscore) = eval(merged, batch, inps)
 
       // I think this is wrong, the correct error is the number of mistakes (fps+fns)
       //currentError = s"TPs: $tps, FPs: $fps, FNs: $fns, error (|true state| - |inferred state|): ${math.abs(batch.annotation.toSet.size - (tps+fps))}"
 
+      val error = (fps+fns).toDouble
+
       currentError = s"Number of mistakes (FPs+FNs) "
-      this.prequentialError = this.prequentialError :+ (fps+fns).toDouble
+      this.prequentialError = this.prequentialError :+ error
+
+      println(s"time, scoring theory size, error: ${batch.time}, ${merged.size}, $error")
+      println(this.prequentialError)
 
     }
 
@@ -286,7 +298,7 @@ class Learner[T <: Source](val inps: RunningOptions,
 
       //val merged = Theory( (init.clauses ++ term.clauses).filter(p => p.body.length >= 1 && p.seenExmplsNum > 5000 && p.score > 0.9) )
 
-      val merged = Theory( init.clauses ++ term.clauses )
+      val merged = Theory( (init.clauses ++ term.clauses).filter(p => p.body.length >= 1) )
 
       //------------------
       // TEST STUFF START
@@ -317,26 +329,54 @@ class Learner[T <: Source](val inps: RunningOptions,
           (l.terms.head.tostring, l.terms.tail.head.tostring)
         }.groupBy(z => z._2).map(z =>  (z._1, z._2.map(_._1)) )
 
-        val initRules = theory.head.clauses
-        val initRulesNum = (initRules ++ initRules.flatMap(_.refinements)).length
+        //val initRules = theory.head.clauses
+        //val initRulesNum = (initRules ++ initRules.flatMap(_.refinements)).length
 
-        val termRules = theory.tail.head.clauses
-        val termRulesNum = (termRules ++ termRules.flatMap(_.refinements)).length
+        //val termRules = theory.tail.head.clauses
+        //val termRulesNum = (termRules ++ termRules.flatMap(_.refinements)).length
 
+        // Here we get the initiatedAt and terminatedAt atoms inferred by the winnow weighted majority scheme.
+        // These are then passed to the reasoner to infer the actual holdsAt atoms
         val inferred_final = inferred_temp.foldLeft(Set[String]()) { (accum, y) =>
-          val (atom, ruleIds) = (y._1, y._2)
-          val weightSum = ruleIds.map(id => markedMap(id).w).sum
-          //val majority = if (atom.contains("initiated")) initRulesNum else termRulesNum
-          val majority = 16000
+          val (atom, firingRuleIds) = (y._1, y._2)
+
+          val firingRulesweightSum = firingRuleIds.map(id => markedMap(id).w).sum
+
+          val nonFiringRuleIds =
+            if (atom.contains("initiated")) {
+              val allRelevantRules = markedMap.filter(p => p._2.head.functor.contains("initiated")).keys.toSet
+              allRelevantRules.diff(firingRuleIds)
+            } else {
+              val allRelevantRules = markedMap.filter(p => p._2.head.functor.contains("terminated")).keys.toSet
+              allRelevantRules.diff(firingRuleIds)
+            }
+
+          val nonFiringRulesWeightSum = nonFiringRuleIds.map(id => markedMap(id).w).sum
+
+          /*
+          val majority = if (atom.contains("initiated")) initRulesNum else termRulesNum
+          //val majority = 16000
           if (weightSum >= majority) {
+            accum + atom
+          } else {
+            accum
+          }
+          */
+
+          /*
+          logger.info(s"firing-non-firing weight: $firingRulesweightSum-$nonFiringRulesWeightSum, " +
+            s"winner: ${if (firingRulesweightSum >= nonFiringRulesWeightSum) "firing" else "non-firing"}")
+          */
+
+          if (firingRulesweightSum >= nonFiringRulesWeightSum) {
             accum + atom
           } else {
             accum
           }
         }
 
-        //println(inferred_final)
-
+        // this is used to generate the actual holdsAt atoms predicted by our theory, using the
+        // initiatedAt/terminatedAt inferred previously.
         val evalProgram =
           (batch.narrative.toSet ++ inferred_final).map(x => x+".").mkString("\n")+
           inps.globals.INCLUDE_BK(inps.globals.BK_CROSSVAL)+"\nout(holdsAt(F,T)) :- holdsAt(F,T), fluent(F).\n#show.\n#show out/1."
@@ -350,27 +390,133 @@ class Learner[T <: Source](val inps: RunningOptions,
 
         val trueAtoms = batch.annotation.toSet
 
-        val (tps, fps, fns) =
+        val (inferredTPs, inferredFPs, inferredFNs) =
         if (inferredState.nonEmpty) {
-          val _tps = inferred.intersect(trueAtoms).size
-          val _fps = inferred.diff(trueAtoms).size
-          val _fns = trueAtoms.diff(inferred).size
+          val _tps = inferred.intersect(trueAtoms)
+          val _fps = inferred.diff(trueAtoms)
+          val _fns = trueAtoms.diff(inferred)
           (_tps, _fps, _fns)
         } else {
-          (0, 0, batch.annotation.size)
+          (Set[String](), Set[String](), batch.annotation.toSet)
         }
 
         currentError = s"Number of mistakes (FPs+FNs) "
-        this.prequentialError = this.prequentialError :+ (fps+fns).toDouble
+        this.prequentialError = this.prequentialError :+ (inferredFPs.size + inferredFNs.size).toDouble
 
         println(prequentialError)
+
+        //-----------------------
+        // WINNOW WEIGHTS UPDATE
+        //-----------------------
+
+        var tpRule1 = ""
+        var tpRule2 = ""
+        var fpRule = ""
+        var fnRule = ""
+
+        // This is copied form BKHandling.generateScoringBK
+        if (Globals.glvalues("with-ec").toBoolean) { // We're learning with the Event Calculus in the BK.
+          // We can get the fluent from the head modes.
+          val targetFluent = {
+            // We can take the first one of the head modes (the target fluent is the same
+            // regardless of whether the mode atom is an initiation of termination one).
+            // Then, to get the target fluent, simply retrieve the first one of the 'terms' arg.
+
+            val t = inps.globals.MODEHS.head.varbed.terms.head
+            // The 'if' is for cases where the target pred is of the form initiatedAt(#fluent, +time), as in
+            // initiatedAt(#fluent, +time) where fluent(leisure) is in the BK.
+            // The 'else' is for compound fluents.
+            if (t.isVariabe) Literal(functor = t._type) else inps.globals.MODEHS.head.varbed.terms.head.asInstanceOf[Literal]
+            //modehs.head.varbed.terms.head.asInstanceOf[Literal]
+          }.tostring
+
+          tpRule1 = s"tp(I, holdsAt($targetFluent,Te)) :- rule(I), example( holdsAt($targetFluent,Te) ), marked(I, initiatedAt($targetFluent,Ts) ), next(Ts,Te), time(Te), time(Ts)."
+          tpRule2 = s"tp(I, holdsAt($targetFluent,Te)) :- rule(I), example( holdsAt($targetFluent,Te) ), not marked(I, terminatedAt($targetFluent,Ts) ), next(Ts,Te), time(Te), time(Ts)."
+          fpRule = s"fp(I, holdsAt($targetFluent,Te)) :- rule(I), not example( holdsAt($targetFluent,Te) ), marked(I, initiatedAt($targetFluent,Ts) ), next(Ts,Te), time(Te), time(Ts)."
+          fnRule = s"fn(I, holdsAt($targetFluent,Te)) :- rule(I), example( holdsAt($targetFluent,Te) ), marked(I, terminatedAt($targetFluent,Ts) ), next(Ts,Te), time(Te), time(Ts)."
+
+        } else { // No Event Calculus
+          //val targetPred = inps.globals.MODEHS.head.varbed
+          //TODO
+        }
+
+        if (batch.time == "1029800") {
+          val stop = "stop"
+        }
+
+        val directives = s"\n$tpRule1\n$tpRule2\n$fpRule\n$fnRule"
+
+        val program = e + markedProgram + "\n#include \"/home/nkatz/dev/OLED-BK/BKExamples/BK-various-taks/DevTest/caviar-bk/bk.lp\"." +
+          directives + "\n#show.\n#show tp/2.\n#show fp/2.\n#show fn/2."
+        val f2 = Utils.getTempFile(s"quick-and-dirty",".lp")
+        Utils.writeToFile(f2, "append")(p => List(program) foreach p.println)
+        val paaath = f2.getCanonicalPath
+        val _result = ASP.solve(task = Globals.SCORE_RULES, aspInputFile = new File(paaath))
+
+        val result = if (_result.nonEmpty) _result.head.atoms.toSet else Set[String]()
+
+        val (tpAtoms, fpAtoms, fnAtoms) = result.foldLeft(Set[String](), Set[String](), Set[String]()) { (x, atom) =>
+          val (a, b, c) = (x._1, x._2, x._3)
+          if (atom.startsWith("tp")) (a + atom, b, c)
+          else if (atom.startsWith("fp")) (a, b+atom, c)
+          else (a,b,c+atom)
+        }
+
+        // foreach inferred FN atom x:
+        //    foreach initiation rule r that correctly fires (x is a TP for r):
+        //        increase r's weight
+        //    foreach termination rule r that correctly does not fire (x is a TP for r):
+        //        increase r's weight
+        inferredFNs foreach { x =>
+          tpAtoms foreach { y =>
+            if (y.contains(x)) {
+              val l = Literal.parse(y)
+              val ruleId = l.terms.head.tostring
+              val rule = markedMap(ruleId)
+              val newWeight = rule.w*2
+              rule.w = if (newWeight.isPosInfinity) rule.w else newWeight
+            }
+          }
+        }
+
+        // foreach inferred FP atom x:
+        //   foreach initiated rule r that incorrectly fires (x is an FP for r):
+        //     decrease r's weight
+        //   foreach termination rule that incorrectly fires (x is an FN for r):
+        //     decrease r's weight
+        inferredFPs foreach { x =>
+          fpAtoms foreach { y =>
+            if (y.contains(x)) {
+              val l = Literal.parse(y)
+              val ruleId = l.terms.head.tostring
+              val rule = markedMap(ruleId)
+              val newWeight = rule.w*0.5
+              rule.w = newWeight
+            }
+          }
+          // this is the same, factor it out
+          fnAtoms foreach { y =>
+            if (y.contains(x)) {
+              val l = Literal.parse(y)
+              val ruleId = l.terms.head.tostring
+              val rule = markedMap(ruleId)
+              val newWeight = rule.w*0.5
+              rule.w = newWeight
+            }
+          }
+        }
+
+
+        //println(result)
+
+        //-----------------------
+        // WINNOW WEIGHTS UPDATE
+        //-----------------------
 
         //------------------
         // TEST STUFF END
         //------------------
 
-
-        val stop = "stop"
 
         // QUICK AND DIRTY SOLUTION JUST TO TRY IT.
       }
