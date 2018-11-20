@@ -1,9 +1,9 @@
 package oled.winnow
 
-import math._
-import scalatikz.graphics.pgf.LineStyle._
-import scalatikz.graphics.pgf.LegendPos._
-import scalatikz.graphics.pgf.Figure
+//import math._
+//import scalatikz.graphics.pgf.LineStyle._
+//import scalatikz.graphics.pgf.LegendPos._
+//import scalatikz.graphics.pgf.Figure
 
 import scala.io.Source
 
@@ -14,7 +14,7 @@ import scala.io.Source
 
 object PlotTest extends App {
 
-  ///*
+  /*
   val domain = -2 * Pi to 2 * Pi by 0.1
 
 
@@ -38,6 +38,6 @@ object PlotTest extends App {
     .havingYLabel("$Y$")
     //.havingTitle("$\\sin(x)$ vs $\\cos(x)$")
     .show()
-    //*/
+    */
 
 }
