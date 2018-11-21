@@ -30,7 +30,7 @@ import mcts.HillClimbing.{constructBottomTheory, generateChildrenNodes, getData,
   */
 
 
-object MCTS_FOL extends LazyLogging{
+object MCTS_FOL extends LazyLogging {
 
   /* TODO Need to implement the propagation to all theories that subsume the best child */
 

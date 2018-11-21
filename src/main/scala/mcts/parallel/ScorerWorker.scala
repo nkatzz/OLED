@@ -29,8 +29,8 @@ import logic.Theory
   * Created by nkatz on 9/22/17.
   */
 
-class ScorerSlave[T <: Source](globals: Globals, options: T,
-                               dataFunction: T => Iterator[Example]) extends Actor with LazyLogging {
+class ScorerWorker[T <: Source](globals: Globals, options: T,
+                                dataFunction: T => Iterator[Example]) extends Actor with LazyLogging {
 
   def receive = {
     case theory: Theory =>

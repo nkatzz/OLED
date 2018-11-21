@@ -50,7 +50,7 @@ class ScorerMaster[T <: Source](globals: Globals,
       //theories.map(x => stringTheory(x)).grouped(jobsPerCore) foreach { jobs =>
       theories.grouped(jobsPerCore) foreach { jobs =>
         jobs foreach { theory =>
-          context.actorOf(Props(new ScorerSlave(globals, options, dataFunction)), name = s"scorer-slave-$i") ! theory
+          context.actorOf(Props(new ScorerWorker(globals, options, dataFunction)), name = s"scorer-slave-$i") ! theory
           i += 1
         }
       }
