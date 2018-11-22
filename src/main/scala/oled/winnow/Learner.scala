@@ -23,6 +23,14 @@ import scala.reflect.internal.Trees
   * Created by nkatz at 26/10/2018
   */
 
+/*
+*
+* I ran this on the normal CAVIAR ordering as follows:
+* --inpath=/home/nkatz/dev/OLED-BK/BKExamples/BK-various-taks/DevTest/caviar-bk --delta=0.00001 --prune=0.8
+* --train=caviar --repfor=4 --chunksize=50 --try-more-rules=true --scorefun=default --onlineprune=true
+*
+* */
+
 class Learner[T <: Source](val inps: RunningOptions,
                            val trainingDataOptions: T,
                            val testingDataOptions: T,
@@ -196,9 +204,9 @@ class Learner[T <: Source](val inps: RunningOptions,
       }
     } else {
 
-      evaluate(nextBatch)
+      //evaluate(nextBatch)
 
-      //evaluateTest(nextBatch)
+      evaluateTest(nextBatch)
 
       if (this.workers.length > 1) { // we're learning with the Event Calculus.
         val msg1 = new ProcessBatchMsg(theory.head, nextBatch, "initiated")
@@ -329,18 +337,13 @@ class Learner[T <: Source](val inps: RunningOptions,
           (l.terms.head.tostring, l.terms.tail.head.tostring)
         }.groupBy(z => z._2).map(z =>  (z._1, z._2.map(_._1)) )
 
-        //val initRules = theory.head.clauses
-        //val initRulesNum = (initRules ++ initRules.flatMap(_.refinements)).length
 
-        //val termRules = theory.tail.head.clauses
-        //val termRulesNum = (termRules ++ termRules.flatMap(_.refinements)).length
 
         // Here we get the initiatedAt and terminatedAt atoms inferred by the winnow weighted majority scheme.
         // These are then passed to the reasoner to infer the actual holdsAt atoms
         val inferred_final = inferred_temp.foldLeft(Set[String]()) { (accum, y) =>
-          val (atom, firingRuleIds) = (y._1, y._2)
 
-          val firingRulesweightSum = firingRuleIds.map(id => markedMap(id).w).sum
+          val (atom, firingRuleIds) = (y._1, y._2)
 
           val nonFiringRuleIds =
             if (atom.contains("initiated")) {
@@ -351,28 +354,45 @@ class Learner[T <: Source](val inps: RunningOptions,
               allRelevantRules.diff(firingRuleIds)
             }
 
+          val firingRulesweightSum = firingRuleIds.map(id => markedMap(id).w).sum
           val nonFiringRulesWeightSum = nonFiringRuleIds.map(id => markedMap(id).w).sum
 
-          /*
+          ///*
+          val initRules = theory.head.clauses
+          val initRulesNum = initRules.length
+          //val initRulesAll = initRules ++ initRules.flatMap(_.refinements)
+          //val initRulesNum = initRulesAll.length
+
+
+          val termRules = theory.tail.head.clauses
+          val termRulesNum = termRules.length
+          //val termRulesAll = termRules ++ termRules.flatMap(_.refinements)
+          //val termRulesNum = termRulesAll.length
+
+
           val majority = if (atom.contains("initiated")) initRulesNum else termRulesNum
+          val weightSum = firingRulesweightSum
           //val majority = 16000
           if (weightSum >= majority) {
             accum + atom
           } else {
             accum
           }
-          */
+          //*/
 
           /*
           logger.info(s"firing-non-firing weight: $firingRulesweightSum-$nonFiringRulesWeightSum, " +
             s"winner: ${if (firingRulesweightSum >= nonFiringRulesWeightSum) "firing" else "non-firing"}")
           */
 
+          /*
+
           if (firingRulesweightSum >= nonFiringRulesWeightSum) {
             accum + atom
           } else {
             accum
           }
+          */
         }
 
         // this is used to generate the actual holdsAt atoms predicted by our theory, using the

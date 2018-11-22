@@ -21,7 +21,7 @@ import akka.actor.{ActorSystem, Props}
 import app.runutils.CMDArgs
 import app.runutils.IOHandling.MongoSource
 import com.mongodb.casbah.{MongoClient, MongoCollection}
-import datautils.caviar_intervals.{MeetingTrainingData, MovingTrainingData}
+import experiments.datautils.caviar_intervals.{MeetingTrainingData, MovingTrainingData}
 import logic.Examples.Example
 import oled.single_core.Master
 import utils.CaviarUtils

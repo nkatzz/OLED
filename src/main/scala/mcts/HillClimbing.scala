@@ -25,7 +25,7 @@ import app.runners.MLNDataHandler.MLNDataOptions
 import app.runutils.Globals
 import com.mongodb.casbah.MongoClient
 import com.typesafe.scalalogging.LazyLogging
-import datautils.caviar_intervals.MeetingTrainingData
+import experiments.datautils.caviar_intervals.MeetingTrainingData
 import iled.ILED
 import iled.ILED.updateSupport
 import logic.Examples.Example

@@ -371,9 +371,9 @@ case class Clause(head: PosLiteral = PosLiteral(),
 
     if (this.head.functor == "initiatedAt") {
       Globals.scoringFunction match {
-        //case "default" => if (!precision.isNaN) precision else 0.0 // That's the standard
+        case "default" => if (!precision.isNaN) precision else 0.0 // That's the standard
 
-        case "default" => weighted_precision
+        //case "default" => weighted_precision
 
         //case "default" => if (!precision.isNaN) (tps.toFloat- (fps.toFloat - this.length.toFloat))/(tps.toFloat+fps.toFloat) else 0.0
 
@@ -390,9 +390,9 @@ case class Clause(head: PosLiteral = PosLiteral(),
       //gainInt
     } else if (this.head.functor == "terminatedAt") {
       Globals.scoringFunction match {
-        //case "default" => if (!recall.isNaN) recall else 0.0
+        case "default" => if (!recall.isNaN) recall else 0.0
 
-        case "default" => weighted_recall
+        //case "default" => weighted_recall
 
         //case "default" => (tps.toFloat- (fns.toFloat - this.length.toFloat))/(tps.toFloat+fns.toFloat)
 
