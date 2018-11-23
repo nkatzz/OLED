@@ -187,7 +187,7 @@ class WeightedTheoryLearner[T <: Source](inps: RunningOptions, trainingDataOptio
     if (newTopTheory.clauses.nonEmpty) {
 
       val generate_refs_timed = Utils.time {
-        newTopTheory.clauses.toVector foreach (rule => if (rule.refinements.isEmpty) rule.generateCandidateRefs)
+        newTopTheory.clauses.toVector foreach (rule => if (rule.refinements.isEmpty) rule.generateCandidateRefs(inps.globals))
       }
 
 

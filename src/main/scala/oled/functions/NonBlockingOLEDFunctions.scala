@@ -39,7 +39,7 @@ object NonBlockingOLEDFunctions extends CoreFunctions {
       }
       // In the distributed setting, refinements must be generated right after the construction of a clause,
       // in order to copy them in the clause copies that will be sent to other nodes (ensure same uuid's etc.)
-      c.generateCandidateRefs
+      c.generateCandidateRefs(globals)
       c
     }
   }
@@ -85,7 +85,10 @@ object NonBlockingOLEDFunctions extends CoreFunctions {
     (couldExpand,epsilon,observedDiff,best,secondBest)
   }
 
-  def expandRule(parentRule: Clause, delta: Double, breakTiesThreshold: Double, minSeenExmpls: Int, nodeName: String, params: RunningOptions, logger: org.slf4j.Logger) = {
+  def expandRule(parentRule: Clause, delta: Double, breakTiesThreshold: Double,
+                 minSeenExmpls: Int, nodeName: String, params: RunningOptions,
+                 logger: org.slf4j.Logger) = {
+
     val minTpsRequired = params.minTpsRequired
     val (couldExpand,epsilon,observedDiff,best,secondBest) = rightWay(parentRule, delta, breakTiesThreshold, minSeenExmpls, minTpsRequired)
     if (couldExpand) {
@@ -101,7 +104,7 @@ object NonBlockingOLEDFunctions extends CoreFunctions {
         refinedRule.supportSet = parentRule.supportSet // only one clause here
         // In the distributed setting, refinements must be generated right after the construction of a clause,
         // in order to copy them in the clause copies that will be sent to other nodes (ensure same uuid's etc.)
-        refinedRule.generateCandidateRefs
+        refinedRule.generateCandidateRefs(params.globals)
         (true, refinedRule)
       } else {
         logger.info(s"Hoeffding test failed (clause ${parentRule.uuid}) not expanded")

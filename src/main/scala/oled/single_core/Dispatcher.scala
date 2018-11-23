@@ -133,7 +133,7 @@ class Dispatcher[T <: Source](inps: RunningOptions,
 
         val data = testingDataFunction(testingDataOptions)
 
-        logger.info("Performing cross-validation")
+        logger.info("Evaluating on the test set")
         if (!weightLearning) {
 
           val (tps,fps,fns,precision,recall,fscore) = crossVal(merged, data=data, globals = inps.globals, inps = inps)

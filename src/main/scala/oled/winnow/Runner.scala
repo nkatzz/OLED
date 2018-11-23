@@ -20,10 +20,7 @@ object Runner extends LazyLogging {
     val argsok = CMDArgs.argsOk(args)
 
     if (!argsok._1) {
-
-      logger.error(argsok._2)
-      System.exit(-1)
-
+      logger.error(argsok._2) ; System.exit(-1)
     } else {
 
       val runningOptions = CMDArgs.getOLEDInputArgs(args)
@@ -55,7 +52,7 @@ object Runner extends LazyLogging {
                                         val chunkSize: Int = 1,
                                         val limit: Double = Double.PositiveInfinity.toInt,
                                         val targetConcept: String = "None",
-                                        val sortDbByField: String = "None",
+                                        val sortDbByField: String = "time",
                                         val sort: String = "ascending",
                                         val intervals: List[Interval] = Nil,
                                         val examplesIds: List[String] = Nil) extends MongoSource

@@ -217,7 +217,7 @@ case class Literal(functor: String = "", terms: List[Expression] = Nil, isNAF: B
 
   def negateThis =
     if (this.isNAF) {
-      Literal(functor = this.functor, terms = this.terms, isNAF = false, modeAtom = this.modeAtom, typePreds = this.typePreds)
+      Literal(functor = this.functor, terms = this.terms, modeAtom = this.modeAtom, typePreds = this.typePreds)
     } else {
       Literal(functor = this.functor, terms = this.terms, isNAF = true, modeAtom = this.modeAtom, typePreds = this.typePreds)
     }
@@ -227,6 +227,32 @@ case class Literal(functor: String = "", terms: List[Expression] = Nil, isNAF: B
     else throw new LogicException(s"Found negated literal casted as postive literal: ${this.tostring}}")
   }
 
+  /*
+  * This is use for comparison predicates only. It returns the constant that represents a threshold value
+  * for comparison. For example, if this is close(X,Y,40,T) and the corresponding declaration is
+  *
+  * comparisonPredicate(close(+person,+person,#threshold_value,+time), lessThan, comparison_term_position(3))
+  *
+  * then this method returns 40
+  *
+  * */
+  def getComparisonTerm = {
+    val m = this.modeAtom
+    if (m.isComparisonPredicate) {
+      // Note that since m is a comparison predicate template, its comparisonTermPosition list cannot be empty
+      val first = this.terms(m.comparisonTermPosition.head - 1)
+      val rest = m.comparisonTermPosition.tail
+      if (rest.nonEmpty) {
+        rest.foldLeft(first) { (term, position) =>
+          term.asInstanceOf[Literal].terms(position - 1)
+        }
+      } else {
+        first
+      }
+    } else {
+      Constant()
+    }
+  }
 
   override val tostring: String = terms match {
     case List() => functor

@@ -32,6 +32,54 @@ import scala.collection.mutable.ListBuffer
 object LogicUtils {
 
 
+  /*
+  * Simplifies a rule by removing redundant comparison predicates from its body.
+  * */
+  def simplifyRule(c: Clause, gl: Globals) = {
+
+    val (nonComparisonPreds, comparisonPreds) = c.body.foldLeft(Set[Literal](), Set[Literal]()) { (accum, lit) =>
+      if (gl.comparisonPredicates.contains(lit.modeAtom)) (accum._1, accum._2 + lit) else (accum._1 + lit, accum._2)
+    }
+
+    val grouped = comparisonPreds.groupBy(x => x.modeAtom)
+
+    val simplified = grouped.map{ case (modeAtom, literals) =>
+      if (modeAtom.compRelation == "lessThan") {
+        literals.toList.minBy(_.getComparisonTerm.name.toInt)
+      } else if (modeAtom.compRelation == "greaterThan") {
+        literals.toList.maxBy(_.getComparisonTerm.name.toInt)
+      } else {
+        throw new RuntimeException(s"Don't know what to do with this comparison relation: ${modeAtom.compRelation}")
+      }
+    }.toSet
+
+    val newTerms = nonComparisonPreds.toList ++ simplified.toList
+
+    val cc = Clause(head = c.head, body = newTerms, supportSet = c.supportSet, uuid = c.uuid)
+    // Just to be on the safe side...
+    cc.parentClause = c.parentClause
+    cc.countsPerNode = c.countsPerNode
+    cc.mlnWeight = c.mlnWeight
+    cc.subGradient = c.subGradient
+    cc.w = c.w
+    cc.totalTPs = c.totalTPs
+    cc.totalFPs = c.totalFPs
+    cc.totalFNs = c.totalFNs
+    cc.totalSeenExmpls = c.totalSeenExmpls
+    cc.tps = c.tps
+    cc.fps = c.fps
+    cc.fns = c.fns
+    cc.refinements = c.refinements
+    cc.seenExmplsNum = c.seenExmplsNum
+    cc.previousMeanDiffCount = c.previousMeanDiffCount
+    cc.previousMeanScoreCount = c.previousMeanScoreCount
+    cc.previousMeanDiff = c.previousMeanDiff
+    cc.previousScore = c.previousScore
+
+    cc
+
+  }
+
   ///*
   def compressTheory(kernel: List[Clause]): List[Clause] = {
     val compressed = new ListBuffer[Clause]

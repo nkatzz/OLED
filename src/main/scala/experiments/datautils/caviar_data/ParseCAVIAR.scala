@@ -185,8 +185,11 @@ object ParseCAVIAR extends ClausalLogicParser {
     case _~"("~_~"("~p~")"~"="~c~","~t~")" => new NarrativeAtom(what = "coord", id = p.id, xcoord = c._1, ycoord = c._2, time = (t.toInt+pastTime).toString)
   }
 
-  def caviarAtomParser(pastTime: Int): Parser[Atom] = annotationParser(pastTime)|lleParser(pastTime)|orientationParser(pastTime)|appearanceParser(pastTime)|coordsParser(pastTime)
+  def caviarAtomParser(pastTime: Int): Parser[Atom] =
+    annotationParser(pastTime)|lleParser(pastTime)|orientationParser(pastTime)|appearanceParser(pastTime)|coordsParser(pastTime)
+
   def caviarParser(pastTime: Int): Parser[List[Atom]] = rep(caviarAtomParser(pastTime))
+
   class Person(val id: String)
 
   trait Atom {

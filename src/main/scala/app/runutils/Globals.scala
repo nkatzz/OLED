@@ -257,11 +257,51 @@ class Globals(val entryPath: String) extends LazyLogging {
     x
   }
 
+  /*
+  * Comparison predicates compare numerical values to a threshold, e.g:
+  *
+  * close(p1, p2, 30, 10)
+  *
+  * meaning that the Euclidean distance of p1, p2 at time 10 is less than 30.
+  *
+  * Comparison predicates may be declared in the modes file like this:
+  *
+  * comparisonPredicate(close(+person,+person,#numvalue,+time), lessThan, comparison_term_position(3))
+  *
+  * The #numvalue placemarker indicates the position of the actual numerical threshold
+  * while the 'lessThan' term (can also be 'greaterThan') declares the intended "semantics"
+  * of the predicate. Note that numvalue has to be the type of this term in the corresponding body declaration. The
+  * comparison_term_position(3) indicates the position of the comparison term in the atom. In folded atoms the whole
+  * "path" to this term needs to be specified e.g.
+  *
+  * comparisonPredicate(far(+person,+person,test(+person, p(#threshold_value)),+time), greaterThan, comparison_term_position(3,2,1))
+  *
+  * Here to find the comparison term take atom.terms(3).terms(2).terms(1). See also the method getComparisonTerm
+  * in the Modes class and the getComparisonTerm in the Literal class.
+  *
+  * Comparison predicate declarations are used internally to allow for two tasks that simplify the learning process:
+  *
+  * 1. Reduce clauses: When a comparison predicate in the lessThan semantics and with numvalue1 is added to a rule,
+  *    then any other similar predicate with numvalue2 such that numvalue2 > numvalue1 is removed from the rule.
+  *    Rules with comparison predicate in the greaterThan semantics are reduced accordingly.
+  * 2. When generating candidate specializations, rules that consist of comparison predicates only (e.g. close/4
+  *    predicates only) are omitted.
+  * */
+  val comparisonPredicates: List[ModeAtom] = {
+    MODES.filter(m => m.contains("comparisonPredicate") && !m.startsWith("%")).
+      map(x => modesParser.getParseResult(modesParser.parseModes(modesParser.compPred, x)))
+  }
+
+  MODEBS foreach { m =>
+    val x = comparisonPredicates.find(z => z == m).getOrElse(ModeAtom())
+    if (x != ModeAtom()) {
+      m.compRelation = x.compRelation
+      m.comparisonTermPosition = x.comparisonTermPosition
+    }
+  }
+
   /* Reads the background knowledge from  $inputPath/bk.lp and produces helper files (e.g. for rule evaluation,
      bottom clause generation etc.) */
-
-
-
 
   def generateBKFiles_Event_Calculus() = {
 

@@ -9,7 +9,7 @@ import logic.Examples.Example
 import logic.{Literal, LogicUtils, Theory}
 import oled.winnow.MessageTypes.{FinishedBatchMsg, ProcessBatchMsg}
 import org.slf4j.LoggerFactory
-import oled.functions.SingleCoreOLEDFunctions.eval
+import oled.functions.SingleCoreOLEDFunctions.{crossVal, eval}
 
 import scala.collection.mutable.Map
 import AuxFuncs._
@@ -52,6 +52,9 @@ class Learner[T <: Source](val inps: RunningOptions,
 
   // Control learning iterations over the data
   private var repeatFor = inps.repeatFor
+
+  // Used to count examples for holdout evaluation
+  private var exampleCounter = 0
 
   // Local data variable. Cleared at each iteration (in case repfor > 1).
   private var data = Iterator[Example]()
@@ -128,6 +131,7 @@ class Learner[T <: Source](val inps: RunningOptions,
 
     case "eval" => {
       // Prequential evaluation of a given theory
+      /*
       logger.info(s"Performing prequential Evaluation of theory from ${inps.evalth}")
       (1 to repeatFor) foreach { _ =>
         this.data = getTrainData
@@ -138,8 +142,17 @@ class Learner[T <: Source](val inps: RunningOptions,
       }
       logger.info(s"Prequential error vector:\n${prequentialError.mkString(",")}")
       logger.info(s"Prequential error vector (Accumulated Error):\n${prequentialError.scanLeft(0.0)(_ + _).tail}")
+      */
+      val testData = testingDataFunction(testingDataOptions)
+
+      val (tps,fps,fns,precision,recall,fscore) = crossVal(Theory(), data=testData, handCraftedTheoryFile = inps.evalth, globals = inps.globals, inps = inps)
+
+      logger.info(s"\ntps: $tps\nfps: $fps\nfns: " + s"$fns\nprecision: $precision\nrecall: $recall\nf-score: $fscore)")
+
       context.system.terminate()
     }
+
+
 
     case p: FinishedBatchMsg => {
       responseCounter -= 1
@@ -186,6 +199,8 @@ class Learner[T <: Source](val inps: RunningOptions,
 
     val nextBatch = getNextBatch
 
+    exampleCounter += inps.chunkSize
+
     if (nextBatch.isEmpty) {
       logger.info(s"Finished the data.")
       if (this.repeatFor > 0) {
@@ -204,9 +219,9 @@ class Learner[T <: Source](val inps: RunningOptions,
       }
     } else {
 
-      //evaluate(nextBatch)
+      evaluate(nextBatch)
 
-      evaluateTest(nextBatch)
+      //evaluateTest(nextBatch)
 
       if (this.workers.length > 1) { // we're learning with the Event Calculus.
         val msg1 = new ProcessBatchMsg(theory.head, nextBatch, "initiated")
@@ -234,11 +249,15 @@ class Learner[T <: Source](val inps: RunningOptions,
     val totalRunningTime = (endTime - startTime)/1000000000.0
     val totalTrainingTime = totalBatchProcessingTime
 
+    logger.info(s"\nAll rules found (non-pruned, non-compressed):\n ${merged.showWithStats}")
+
+    val pruned = Theory(merged.clauses.filter(_.score >= inps.pruneThreshold))
+
     /* THIS MAY TAKE TOO LONG FOR LARGE AND COMPLEX THEORIES!! */
     logger.info("Compressing theory...")
-    val merged_ = Theory(LogicUtils.compressTheory(merged.clauses))
+    val pruned_ = Theory(LogicUtils.compressTheory(pruned.clauses))
 
-    logger.info(s"\nTheory found:\n ${merged_.showWithStats}")
+    logger.info(s"\nFinal Pruned theory found:\n ${pruned_.showWithStats}")
     logger.info(s"Theory size: $theorySize")
     logger.info(s"Total running time: $totalTrainingTime")
     logger.info(s"Total batch processing time: $totalRunningTime")
@@ -251,48 +270,72 @@ class Learner[T <: Source](val inps: RunningOptions,
     logger.info(s"Prequential error vector:\n${prequentialError.mkString(",")}")
     logger.info(s"Prequential error vector (Accumulated Error):\n${prequentialError.scanLeft(0.0)(_ + _).tail}")
 
-    logger.info(s"Holdout error vector:\nTODO")
+    logger.info("Evaluating on the test set")
+
+    val testData = testingDataFunction(testingDataOptions)
+
+    val (tps,fps,fns,precision,recall,fscore) = crossVal(pruned_, data=testData, globals = inps.globals, inps = inps)
+
+    logger.info(s"\ntps: $tps\nfps: $fps\nfns: " + s"$fns\nprecision: $precision\nrecall: $recall\nf-score: $fscore)")
+
+
+
   }
 
-  /*
-  implicit class ExtendedDouble(n: Double) {
-    def rounded(x: Int) = {
-      val w = math.pow(10, x)
-      (n * w).toLong.toDouble / w
-    }
-  }
-  */
 
   def evaluate(batch: Example, inputTheoryFile: String = "") = {
 
-    // prequential first
-    if (withec) {
-      val (init, term) = (theory.head, theory.tail.head)
+    if (inps.prequential) {
+      if (withec) {
+        val (init, term) = (theory.head, theory.tail.head)
 
-      //val merged = Theory( (init.clauses ++ term.clauses).filter(p => p.body.length >= 1 && p.seenExmplsNum > 5000 && p.score > 0.7) )
+        //val merged = Theory( (init.clauses ++ term.clauses).filter(p => p.body.length >= 1 && p.seenExmplsNum > 5000 && p.score > 0.7) )
 
-      //val merged = Theory( (init.clauses ++ term.clauses).filter(p => p.body.length >= 1 && p.score > 0.9) )
+        //val merged = Theory( (init.clauses ++ term.clauses).filter(p => p.body.length >= 1 && p.score > 0.9) )
 
-      val merged = Theory( init.clauses.filter(p => p.precision >= 0.9) ++ term.clauses.filter(p => p.recall >= 0.9) )
+        val merged = Theory( init.clauses.filter(p => p.precision >= inps.pruneThreshold) ++ term.clauses.filter(p => p.recall >= inps.pruneThreshold) )
 
-      val (tps, fps, fns, precision, recall, fscore) = eval(merged, batch, inps)
+        val (tps, fps, fns, precision, recall, fscore) = eval(merged, batch, inps)
 
-      // I think this is wrong, the correct error is the number of mistakes (fps+fns)
-      //currentError = s"TPs: $tps, FPs: $fps, FNs: $fns, error (|true state| - |inferred state|): ${math.abs(batch.annotation.toSet.size - (tps+fps))}"
+        // I think this is wrong, the correct error is the number of mistakes (fps+fns)
+        //currentError = s"TPs: $tps, FPs: $fps, FNs: $fns, error (|true state| - |inferred state|): ${math.abs(batch.annotation.toSet.size - (tps+fps))}"
 
-      val error = (fps+fns).toDouble
+        val error = (fps+fns).toDouble
 
-      currentError = s"Number of mistakes (FPs+FNs) "
-      this.prequentialError = this.prequentialError :+ error
+        currentError = s"Number of mistakes (FPs+FNs) "
+        this.prequentialError = this.prequentialError :+ error
 
-      println(s"time, scoring theory size, error: ${batch.time}, ${merged.size}, $error")
-      println(this.prequentialError)
+        println(s"time, scoring theory size, error: ${batch.time}, ${merged.size}, $error")
+        println(this.prequentialError)
 
+      }
     }
 
     // TODO :
     // Implement holdout evaluation.
+
+    if (inps.holdout != 0) {
+
+    }
+
+
+
+
   }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
   /* Performs online evaluation. Prequential is always performed.
@@ -314,7 +357,7 @@ class Learner[T <: Source](val inps: RunningOptions,
 
       if (theory.head.clauses.nonEmpty && theory.tail.head.clauses.nonEmpty) {
 
-        merged.clauses foreach (rule => if (rule.refinements.isEmpty) rule.generateCandidateRefs)
+        merged.clauses foreach (rule => if (rule.refinements.isEmpty) rule.generateCandidateRefs(inps.globals))
         //val t = merged.clauses.flatMap(x => x.refinements :+ x)
 
         val _marked = marked(merged.clauses.toVector, inps.globals)

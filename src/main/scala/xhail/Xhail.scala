@@ -75,7 +75,7 @@ object Xhail extends ASPResultsParser with LazyLogging {
         Map("annotation" -> annotation, "narrative" -> narrative)
     }
 
-    val aspFile: File = Utils.getTempFile("aspinput", ".lp", "", deleteOnExit = true)
+    val aspFile: File = Utils.getTempFile("aspinput", ".lp")
     val abdModels: List[AnswerSet] =
       abduce("modehs", examples = examples, learningTerminatedAtOnly = learningTerminatedAtOnly, fromWeakExmpl = fromWeakExmpl, bkFile = bkFile, globals=globals)
     //if (abdModel != Nil) logger.info("Created Delta set")
@@ -109,7 +109,7 @@ object Xhail extends ASPResultsParser with LazyLogging {
   def iterativeSearch(models: List[AnswerSet], e: Map[String, List[String]], kernelSetOnly: Boolean, bkFile: String, globals: Globals) = {
 
     val findHypothesisIterativeSearch = (varKernel: List[Clause], examples: Map[String, List[String]]) => {
-      val aspFile: File = Utils.getTempFile("aspInduction", ".lp", "", deleteOnExit = true)
+      val aspFile: File = Utils.getTempFile("aspInduction", ".lp")
       val (_, use2AtomsMap,_,_,_,_) = ASP.inductionASPProgram(kernelSet=Theory(varKernel),examples=examples,aspInputFile=aspFile,globals=globals)
       ASP.solve(Globals.SEARCH_MODELS,use2AtomsMap,examples=examples,aspInputFile=aspFile)
     }
@@ -381,6 +381,9 @@ object Xhail extends ASPResultsParser with LazyLogging {
 
 
           ///*
+          // just to make woled work a bit faster, since you cannot cut these atoms from lomrf
+          // (such redundant atoms can be automatically pruned with clingo, but you cannot do this with lomrf).
+          // I need to fix this
           val b = _b.filter{x =>
            x.functor!="close" || (x.functor == "close" && x.terms(0).name != x.terms(1).name)
           }
@@ -403,7 +406,11 @@ object Xhail extends ASPResultsParser with LazyLogging {
       }
 
     }
-    val varKernel = kernelSet.map(x => x.varbed)
+    val _varKernel = kernelSet.map(x => x.varbed)
+
+    // Remove redundant comparison literals for the variabilized kernel to simplify things...
+    val varKernel = _varKernel.map(x => LogicUtils.simplifyRule(x, globals))
+
     val vlength = varKernel.length
     val compressed = if (Globals.glvalues("compressKernels").toBoolean) compressTheory(varKernel.toList) else varKernel.toList
     val clength = compressed.length

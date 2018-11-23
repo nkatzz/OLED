@@ -35,7 +35,7 @@ object Theory  {
 
   def mergeTheories(T: List[Theory]) = Theory(T flatMap (x => x.clauses))
 
-  def compressTheory(l: List[Clause]): List[Clause] = {
+  def compressTheory(l: Iterable[Clause]): List[Clause] = {
     val compressed = new ListBuffer[Clause]
     val included = (c: Clause) => compressed.toList.exists(x => x.thetaSubsumes(c) && c.thetaSubsumes(x))
     for (c <- l) {
@@ -149,7 +149,7 @@ case class Theory(clauses: List[Clause] = List()) extends Expression with LazyLo
         }
       }
       */
-      this.clauses foreach (rule => if (rule.refinements.isEmpty) rule.generateCandidateRefs)
+      this.clauses foreach (rule => if (rule.refinements.isEmpty) rule.generateCandidateRefs(globals))
     }
 
     // debug:
@@ -260,7 +260,7 @@ case class Theory(clauses: List[Clause] = List()) extends Expression with LazyLo
 
   def scoreRulesNoEC(example: Example, globals: Globals, postPruningMode: Boolean = false) : Unit = {
     // If a rule has just been expanded its refinements are empty, so generate new
-    if (!postPruningMode) this.clauses foreach (rule => if (rule.refinements.isEmpty) rule.generateCandidateRefs)
+    if (!postPruningMode) this.clauses foreach (rule => if (rule.refinements.isEmpty) rule.generateCandidateRefs(globals))
 
     // Proceed to scoring
     val e = (example.annotationASP ++ example.narrativeASP).mkString("\n")

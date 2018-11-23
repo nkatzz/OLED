@@ -119,7 +119,7 @@ class WeightedTheoryLearner[T <: Source](inps: RunningOptions, trainingDataOptio
         if (newTopTheory.clauses.nonEmpty) {
 
           newTopTheory.clauses.toVector foreach
-            (rule => if (rule.refinements.isEmpty) rule.generateCandidateRefs)
+            (rule => if (rule.refinements.isEmpty) rule.generateCandidateRefs(inps.globals))
 
           newTopTheory.clauses.map { topClause =>
             val bestRef = topClause.refinements.sortBy(x => - x.mlnWeight).head
@@ -169,7 +169,7 @@ class WeightedTheoryLearner[T <: Source](inps: RunningOptions, trainingDataOptio
 
         val generate_refs_timed = Utils.time {
           newTopTheory.clauses.toVector foreach
-            (rule => if (rule.refinements.isEmpty) rule.generateCandidateRefs)
+            (rule => if (rule.refinements.isEmpty) rule.generateCandidateRefs(inps.globals))
         }
 
         val allClauses = newTopTheory.clauses.flatMap { x =>

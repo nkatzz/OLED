@@ -82,7 +82,12 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
 
       } else {
         //if (inps.tryMoreRules && targetClass == "terminated") true // Always try to find extra termination rules, they are more rare.
-        if (inps.tryMoreRules) true // Sometimes, depending on the order of the examples, it's necessary to try more even for initiation.
+        if (inps.tryMoreRules) {
+          //val r = scala.util.Random
+          //val coinFlip = r.nextFloat
+          //if (coinFlip >= 0.5) true else false
+          true // Sometimes, depending on the order of the examples, it's necessary to try more even for initiation.
+        }
         else {
           val r = Utils.time{ newTopTheory.growNewRuleTest(e, initorterm, inps.globals) }
           if (inps.showStats) logger.info(s"grow new rule test time: ${r._2}")

@@ -17,6 +17,12 @@
 
 package logic
 
+object Constant {
+  def apply(): Constant = {
+    Constant("")
+  }
+}
+
 case class Constant(override val name: String, plmrk: String = "", override val _type: String = "") extends Expression {
 
   // No use. Allowing upper-case constants helps in MLN <--> ASL

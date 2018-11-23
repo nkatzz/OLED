@@ -96,7 +96,8 @@ object CMDArgs extends LazyLogging {
     val withEventCalculus = getMatchingArgumentValue("--with-ec")
     val showStats = getMatchingArgumentValue("--show-stats")
     val saveTheoryTo = getMatchingArgumentValue("--saveto")
-    val onlineEvaluation = getMatchingArgumentValue("--online-eval")
+    val holdout = getMatchingArgumentValue("--holdout")
+    val prequential = getMatchingArgumentValue("--prequential")
     val train = getMatchingArgumentValue("--train")
     val test = getMatchingArgumentValue("--test")
 
@@ -131,7 +132,7 @@ object CMDArgs extends LazyLogging {
       withInertia.toString.toBoolean, weightLearn.toString.toBoolean, mlnWeightThreshold.toString.toDouble,
       parallelClauseEval.toString.toBoolean, adagradDelta.toString.toDouble,adaLearnRate.toString.toDouble,
       adaRegularization.toString.toDouble, adaLossFunction.toString, withEventCalculus.toString.toBoolean,
-      showStats.toString.toBoolean, saveTheoryTo.toString, onlineEvaluation.toString, test.toString)
+      showStats.toString.toBoolean, saveTheoryTo.toString, holdout.toString.toInt, prequential.toString.toBoolean, test.toString)
 
 
     if (inps.train == "None") {
@@ -156,10 +157,7 @@ object CMDArgs extends LazyLogging {
       System.exit(-1)
     }
 
-    if (inps.onlineEval == "holdout" && inps.test == "None") {
-      logger.error("Online holdout evaluation requested but no testing set provided. Re-run with --test=<path to dataset or MongoDB name>.")
-      System.exit(-1)
-    }
+
 
     inps
   }
@@ -206,7 +204,8 @@ object CMDArgs extends LazyLogging {
     Arg(name = "--with-ec", valueType = "Boolean", text = "Learning using the Event Calculus in the Background knowledge.", default = "true"),
     Arg(name = "--show-stats", valueType = "Boolean", text = "If true performance stats are printed out.", default = "false"),
     Arg(name = "--saveto", valueType = "String", text = "Path to a file to wtite the learnt theory to.", default = ""),
-    Arg(name = "--online-eval", valueType = "String", text = "Online evaluation. Prequential evaluation , 'holdout' or 'None'.", default = "None"),
+    Arg(name = "--holdout", valueType = "Int", text = "Perform holdout evaluation on a test set every <Int> time points. Omit if --holdout=0", default = "0"),
+    Arg(name = "--prequential", valueType = "Boolean", text = "If true perform prequential evaluation on every incoming data batch.", default = "true"),
     Arg(name = "--train", valueType = "String", text = "Training set location. May either by a path to a file or a mongodb name", default = "None"),
     Arg(name = "--test", valueType = "String", text = "Testing set location. May either by a path to a file or a mongodb name", default = "None")
   )
@@ -328,7 +327,8 @@ class RunningOptions(val entryPath: String,
                      val withEventCalculs: Boolean,
                      val showStats: Boolean,
                      val saveTheoryTo: String,
-                     val onlineEval: String,
+                     val holdout: Int,
+                     val prequential: Boolean,
                      val test: String)
 
 

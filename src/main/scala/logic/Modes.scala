@@ -34,7 +34,13 @@ object Modes {
       override val tostring = "#" + _type
       override def tostringQuote = this.tostring
    }
-   
+
+   object ModeAtom {
+      def apply(): ModeAtom = {
+         ModeAtom("", Nil)
+      }
+   }
+
    case class ModeAtom(functor: String, args: List[Expression], isNAF:Boolean = false) extends Expression {
 
       val arity = this.args.length
@@ -43,6 +49,30 @@ object Modes {
          case List() => true
          case _      => false
       }
+
+      var compRelation = ""
+
+      var comparisonTermPosition: List[Int] = List[Int]()
+
+      def comparisonTermType = getComparisonTerm._type
+
+      def getComparisonTerm: Expression = {
+         if (comparisonTermPosition.nonEmpty) {
+            val first = args(comparisonTermPosition.head - 1)
+            val rest = comparisonTermPosition.tail
+            if (rest.nonEmpty) {
+               rest.foldLeft(first) { (term, position) =>
+                  term.asInstanceOf[ModeAtom].args(position - 1)
+               }
+            } else {
+               first
+            }
+         } else {
+            Constant()
+         }
+      }
+
+      def isComparisonPredicate = compRelation == "lessThan" || compRelation == "greaterThan"
 
       override val tostring: String = args match {
          case List() => if (isNAF) s"not $functor" else functor

@@ -24,8 +24,10 @@ import app.runutils.Globals
 import logic.Examples.Example
 import oled.distributed.Structures.ClauseStats
 import logic.Exceptions._
+import logic.Modes.ModeAtom
 import utils.{ASP, Utils}
 import oled.distributed.Structures
+
 import scala.collection.mutable.ListBuffer
 import scala.util.Random
 import utils.ClauseImplicits._
@@ -499,14 +501,40 @@ case class Clause(head: PosLiteral = PosLiteral(),
   }
 
 
+  def condition = true
+
   /* generates candidate refinements for the Hoeffding test.
      The otherNodesNames is used only in the distributed setting. */
-  def generateCandidateRefs: Unit = {
+  def generateCandidateRefs(gl: Globals): Unit = {
+
+    /*
+    * Checks if a specialization is redundant. Currently a specialization is
+    * redundant if it consists only of comparison predicates of the same type.
+    * For instance, this is redundant:
+    *
+    * blah :- close(X,Y,30,12), close(X,Y,40,12), close(X,Y,50,12)
+    *
+    * where close(X, Y, Z, T) means that the Euclidean distance of X and Y at time T is less than Z.
+    *
+    * */
+    def redundant(newLits: Set[Literal]) = {
+      val all = this.body ++ newLits
+
+      val test: Set[ModeAtom] = all.map(x => x.modeAtom).toSet
+
+      // if the test variable is a singleton then all predicates are comparison predicates of the same type
+      if (all.size == 1) {
+        false
+      } else {
+        test.size == 1 && gl.comparisonPredicates.contains(test.head)
+      }
+    }
+
     val specializationDepth = Globals.glvalues("specializationDepth").toInt
     val candidateList = this.supportSet.clauses.flatMap(_.body).distinct.filter(!this.body.contains(_))
     val refinementsSets =
       (for (x <- 1 to specializationDepth) yield x).foldLeft(List[List[Clause]]()) { (accum, depth) =>
-        val z = for (lits <- candidateList.toSet.subsets(depth).toList) yield Clause(this.head, this.body ++ lits)
+        val z = for ( lits <- candidateList.toSet.subsets(depth).toVector if !redundant(lits) ) yield Clause(this.head, this.body ++ lits)
         val z_ = Theory.compressTheory(z)
         accum :+ z_ 
     }
@@ -532,7 +560,7 @@ case class Clause(head: PosLiteral = PosLiteral(),
     Clause(head=Literal(functor = "marked", terms=List(this.##.toString, this.head)), body=this.withTypePreds(globals).body)
   }
 
-  val isEmpty = this == Clause.empty
+  //val isEmpty = this == Clause.empty
 
   def addToSupport(c: Clause) = {
     this.supportSet = Theory(this.supportSet.clauses :+ c)
