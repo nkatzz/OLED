@@ -61,6 +61,7 @@ object Examples {
 
 
 
+    ///*
     def tranformToExample(examples: List[DBObject], usingWeakExmpls: Boolean = false) = {
       val startTimePredicate = s"starttime(${examples.map(x => f_time(x)).map(x => x.toInt).distinct.sorted.head})"
       val annotation =
@@ -76,7 +77,9 @@ object Examples {
 
       new Example(annot=annotation,nar=narrative,_time=time,suppressedAnnotation=suppressedAnnotation,isWeak=isWeak)
     }
+    //*/
 
+    /*
     def mergeExamples(_exs: List[Example]) = {
       _exs match {
         case Nil => new Example()
@@ -89,6 +92,7 @@ object Examples {
           new Example(annot=annotation,nar=narrative,_time=time)
       }
     }
+    */
 
     def apply(examples: List[DBObject], usingWeakExmpls: Boolean) = {
       usingWeakExmpls match {
@@ -105,22 +109,26 @@ object Examples {
 
     }
 
+    /*
     def apply(annotation: List[String],narrative: List[String],time: String) ={}
+    */
 
+    /*
     def apply(a: scala.collection.mutable.Set[String], n: scala.collection.mutable.Set[String], t: String) = {
       new Example(annot = a.toList, nar = n.toList, _time = t)
     }
+    */
   }
 
   case class Example(e: DBObject = DBObject(),
                      commingFromDB: String = "",
-                     private val annot:List[String]=List(),
-                     private val nar:List[String]=List(),
+                     private val annot:List[String] = Nil,
+                     private val nar:List[String] = Nil,
                      _time:String="",
                      isWeak: Boolean = false,
                      usingWeakExmpls: Boolean = false,
                      containedExamples: List[Example] = List[Example](),
-                     suppressedAnnotation: List[String] = List()) extends Data {
+                     suppressedAnnotation: List[String] = Nil) extends Data {
 
     val annotation: List[String] =
       if (this.annot.isEmpty && this.nar.isEmpty)// then this is really coming from db, so read the DBObject

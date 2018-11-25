@@ -495,6 +495,7 @@ object CaviarUtils {
     }
   }
 
+  /*
   def mergeCaviarCopies(numOfCopies: Int) = {
     val mongoClient = MongoClient()
     val allCopies =
@@ -520,6 +521,7 @@ object CaviarUtils {
     }
     mongoClient.close()
   }
+  */
 
 
 

@@ -59,7 +59,7 @@ class Learner[T <: Source](val inps: RunningOptions,
   // Local data variable. Cleared at each iteration (in case repfor > 1).
   private var data = Iterator[Example]()
 
-  // This is optionlal. A testing set (for holdout evaluation) may not be provided.
+  // This is optional. A testing set (for holdout evaluation) may not be provided.
   private var testingData = Iterator[Example]()
 
   // Counts the number of precessed batches. Used to determine when to
@@ -236,7 +236,7 @@ class Learner[T <: Source](val inps: RunningOptions,
   }
 
   /* Finished. Just show results and shut down */
-  def wrapUp() = {
+  def wrapUp(): Unit = {
     val merged = {
       if (theory.length == 1) {
         theory.head
@@ -283,7 +283,7 @@ class Learner[T <: Source](val inps: RunningOptions,
   }
 
 
-  def evaluate(batch: Example, inputTheoryFile: String = "") = {
+  def evaluate(batch: Example, inputTheoryFile: String = ""): Unit = {
 
     if (inps.prequential) {
       if (withec) {
