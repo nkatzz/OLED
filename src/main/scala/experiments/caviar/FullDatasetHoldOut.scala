@@ -48,7 +48,7 @@ object FullDatasetHoldOut extends LazyLogging {
 
 
 
-  private class MongoDataOptions(val dbNames: Vector[String], val chunkSize: Int = 1,
+  class MongoDataOptions(val dbNames: Vector[String], val chunkSize: Int = 1,
                                  val limit: Double = Double.PositiveInfinity.toInt,
                                  val targetConcept: String = "None", val sortDbByField: String = "time",
                                  val sort: String = "ascending", val what: String = "training") extends MongoSource

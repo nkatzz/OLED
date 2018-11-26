@@ -411,6 +411,8 @@ object Xhail extends ASPResultsParser with LazyLogging {
     // Remove redundant comparison literals for the variabilized kernel to simplify things...
     val varKernel = _varKernel.map(x => LogicUtils.simplifyRule(x, globals))
 
+    //val varKernel = _varKernel
+
     val vlength = varKernel.length
     val compressed = if (Globals.glvalues("compressKernels").toBoolean) compressTheory(varKernel.toList) else varKernel.toList
     val clength = compressed.length

@@ -61,18 +61,18 @@ object AuxFuncs {
     */
   def marked(clauses: Vector[Clause], globals: Globals): (String, Map[String, Clause]) = {
     val allRefinements = clauses flatMap(_.refinements)
-    //val allRules = clauses ++ allRefinements
+    //val allRules = (clauses ++ allRefinements)//.filter(x => x.score >= 0.9)
+
     val allRules = clauses
     /*
     val markedTheory = clauses map (x => marked(x, globals))
     val markedRefinements = allRefinements map (x => marked(x, globals))
     */
 
-    val markedTheory = clauses map (x => markedQuickAndDirty(x, globals))
-    val markedRefinements = allRefinements map (x => markedQuickAndDirty(x, globals))
+    //val markedTheory = clauses map (x => markedQuickAndDirty(x, globals))
+    //val markedRefinements = allRefinements map (x => markedQuickAndDirty(x, globals))
 
-    //val allRulesMarked = markedTheory ++ markedRefinements
-    val allRulesMarked = markedTheory
+    val allRulesMarked = allRules map (x => markedQuickAndDirty(x, globals))
 
     println(allRules.map(_.w))
 

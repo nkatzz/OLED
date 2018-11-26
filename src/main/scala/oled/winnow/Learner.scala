@@ -199,6 +199,8 @@ class Learner[T <: Source](val inps: RunningOptions,
 
     val nextBatch = getNextBatch
 
+    println(nextBatch.time)
+
     exampleCounter += inps.chunkSize
 
     if (nextBatch.isEmpty) {
@@ -219,9 +221,9 @@ class Learner[T <: Source](val inps: RunningOptions,
       }
     } else {
 
-      evaluate(nextBatch)
+      //evaluate(nextBatch)
 
-      //evaluateTest(nextBatch)
+      evaluateTest(nextBatch)
 
       if (this.workers.length > 1) { // we're learning with the Event Calculus.
         val msg1 = new ProcessBatchMsg(theory.head, nextBatch, "initiated")
@@ -347,15 +349,18 @@ class Learner[T <: Source](val inps: RunningOptions,
     if (withec) {
       val (init, term) = (theory.head, theory.tail.head)
 
-      //val merged = Theory( (init.clauses ++ term.clauses).filter(p => p.body.length >= 1 && p.seenExmplsNum > 5000 && p.score > 0.9) )
-
       val merged = Theory( (init.clauses ++ term.clauses).filter(p => p.body.length >= 1) )
+
+      //val merged = Theory( (init.clauses ++ term.clauses).filter(p => p.body.length >= 1 && p.score >= inps.pruneThreshold) )
+
+      //val merged = Theory( init.clauses.filter(p => p.precision >= inps.pruneThreshold) ++ term.clauses.filter(p => p.recall >= inps.pruneThreshold) )
 
       //------------------
       // TEST STUFF START
       //------------------
 
-      if (theory.head.clauses.nonEmpty && theory.tail.head.clauses.nonEmpty) {
+      if (true) {
+      //if (theory.head.clauses.nonEmpty && theory.tail.head.clauses.nonEmpty) {
 
         merged.clauses foreach (rule => if (rule.refinements.isEmpty) rule.generateCandidateRefs(inps.globals))
         //val t = merged.clauses.flatMap(x => x.refinements :+ x)
@@ -412,7 +417,7 @@ class Learner[T <: Source](val inps: RunningOptions,
           //val termRulesAll = termRules ++ termRules.flatMap(_.refinements)
           //val termRulesNum = termRulesAll.length
 
-
+          /*
           val majority = if (atom.contains("initiated")) initRulesNum else termRulesNum
           val weightSum = firingRulesweightSum
           //val majority = 16000
@@ -421,21 +426,27 @@ class Learner[T <: Source](val inps: RunningOptions,
           } else {
             accum
           }
-          //*/
-
-          /*
-          logger.info(s"firing-non-firing weight: $firingRulesweightSum-$nonFiringRulesWeightSum, " +
-            s"winner: ${if (firingRulesweightSum >= nonFiringRulesWeightSum) "firing" else "non-firing"}")
           */
 
-          /*
 
+
+
+          //if (firingRulesweightSum - nonFiringRulesWeightSum >= 1) {
           if (firingRulesweightSum >= nonFiringRulesWeightSum) {
             accum + atom
           } else {
             accum
           }
-          */
+
+        }
+
+        //println(inferred_final)
+
+        if (inferred_final.exists(x => x.contains("initiatedAt"))) {
+          println("HERE")
+          println(inferred_final)
+          println(merged.showWithStats)
+          val stop = "stop"
         }
 
         // this is used to generate the actual holdsAt atoms predicted by our theory, using the
@@ -522,7 +533,8 @@ class Learner[T <: Source](val inps: RunningOptions,
           val (a, b, c) = (x._1, x._2, x._3)
           if (atom.startsWith("tp")) (a + atom, b, c)
           else if (atom.startsWith("fp")) (a, b+atom, c)
-          else (a,b,c+atom)
+          else if (atom.startsWith("fn")) (a,b,c+atom)
+          else throw new RuntimeException("FUCK This shouldn't have happened")
         }
 
         // foreach inferred FN atom x:
@@ -530,6 +542,7 @@ class Learner[T <: Source](val inps: RunningOptions,
         //        increase r's weight
         //    foreach termination rule r that correctly does not fire (x is a TP for r):
         //        increase r's weight
+        ///*
         inferredFNs foreach { x =>
           tpAtoms foreach { y =>
             if (y.contains(x)) {
@@ -541,6 +554,7 @@ class Learner[T <: Source](val inps: RunningOptions,
             }
           }
         }
+        //*/
 
         // foreach inferred FP atom x:
         //   foreach initiated rule r that incorrectly fires (x is an FP for r):
