@@ -373,7 +373,7 @@ class Learner[T <: Source](val inps: RunningOptions,
         val e = (batch.annotationASP ++ batch.narrativeASP).mkString("\n")
         val markedProgram = _marked._1
         val markedMap = _marked._2
-        val all = e + markedProgram + "\n#include \"/home/nkatz/dev/OLED-BK/BKExamples/BK-various-taks/DevTest/caviar-bk/bk.lp\"." + "\n#show marked/2."
+        val all = e + markedProgram + "\n#include \""+inps.entryPath+"/bk.lp\"." + "\n#show marked/2."
         val f = Utils.getTempFile(s"quick-and-dirty",".lp")
         Utils.writeToFile(f, "append")(p => List(all) foreach p.println)
         val path = f.getCanonicalPath
@@ -520,7 +520,7 @@ class Learner[T <: Source](val inps: RunningOptions,
 
         val directives = s"\n$tpRule1\n$tpRule2\n$fpRule\n$fnRule"
 
-        val program = e + markedProgram + "\n#include \"/home/nkatz/dev/OLED-BK/BKExamples/BK-various-taks/DevTest/caviar-bk/bk.lp\"." +
+        val program = e + markedProgram + "\n#include \""+inps.entryPath+"/bk.lp\"." +
           directives + "\n#show.\n#show tp/2.\n#show fp/2.\n#show fn/2."
         val f2 = Utils.getTempFile(s"quick-and-dirty",".lp")
         Utils.writeToFile(f2, "append")(p => List(program) foreach p.println)
