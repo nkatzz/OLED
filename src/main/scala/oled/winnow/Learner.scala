@@ -131,7 +131,7 @@ class Learner[T <: Source](val inps: RunningOptions,
 
     case "eval" => {
       // Prequential evaluation of a given theory
-      /*
+      ///*
       logger.info(s"Performing prequential Evaluation of theory from ${inps.evalth}")
       (1 to repeatFor) foreach { _ =>
         this.data = getTrainData
@@ -142,13 +142,16 @@ class Learner[T <: Source](val inps: RunningOptions,
       }
       logger.info(s"Prequential error vector:\n${prequentialError.mkString(",")}")
       logger.info(s"Prequential error vector (Accumulated Error):\n${prequentialError.scanLeft(0.0)(_ + _).tail}")
-      */
+      //*/
+
+      // This is evaluation on a test set, just comment-out prequential, uncomment this.
+      /*
       val testData = testingDataFunction(testingDataOptions)
 
       val (tps,fps,fns,precision,recall,fscore) = crossVal(Theory(), data=testData, handCraftedTheoryFile = inps.evalth, globals = inps.globals, inps = inps)
 
       logger.info(s"\ntps: $tps\nfps: $fps\nfns: " + s"$fns\nprecision: $precision\nrecall: $recall\nf-score: $fscore)")
-
+      */
       context.system.terminate()
     }
 
@@ -440,7 +443,6 @@ class Learner[T <: Source](val inps: RunningOptions,
 
         }
 
-        //println(inferred_final)
 
         if (inferred_final.exists(x => x.contains("initiatedAt"))) {
           println("HERE")
@@ -514,9 +516,6 @@ class Learner[T <: Source](val inps: RunningOptions,
           //TODO
         }
 
-        if (batch.time == "1029800") {
-          val stop = "stop"
-        }
 
         val directives = s"\n$tpRule1\n$tpRule2\n$fpRule\n$fnRule"
 
@@ -549,7 +548,8 @@ class Learner[T <: Source](val inps: RunningOptions,
               val l = Literal.parse(y)
               val ruleId = l.terms.head.tostring
               val rule = markedMap(ruleId)
-              val newWeight = rule.w*2
+              //val newWeight = rule.w*2
+              val newWeight = rule.w*Math.pow(Math.E, 2)
               rule.w = if (newWeight.isPosInfinity) rule.w else newWeight
             }
           }
@@ -567,7 +567,8 @@ class Learner[T <: Source](val inps: RunningOptions,
               val l = Literal.parse(y)
               val ruleId = l.terms.head.tostring
               val rule = markedMap(ruleId)
-              val newWeight = rule.w*0.5
+              //val newWeight = rule.w*0.5
+              val newWeight = rule.w*Math.pow(Math.E, -2.0)
               rule.w = newWeight
             }
           }
@@ -577,7 +578,8 @@ class Learner[T <: Source](val inps: RunningOptions,
               val l = Literal.parse(y)
               val ruleId = l.terms.head.tostring
               val rule = markedMap(ruleId)
-              val newWeight = rule.w*0.5
+              //val newWeight = rule.w*0.5
+              val newWeight = rule.w*Math.pow(Math.E, -2.0)
               rule.w = newWeight
             }
           }
