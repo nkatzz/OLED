@@ -1,6 +1,7 @@
 package oled.winnow
 
 import app.runutils.Globals
+import com.typesafe.scalalogging.LazyLogging
 import logic.Examples.Example
 import logic.{Clause, Literal, Theory}
 import utils.ClauseImplicits._
@@ -20,7 +21,41 @@ object MessageTypes {
 
 }
 
-object AuxFuncs {
+object AuxStructures {
+
+  class InertiaAtom(val atom: String, val weight: Double)
+
+  class Inetrtia
+
+}
+
+
+
+object AuxFuncs extends LazyLogging {
+
+
+  def reduceWeights(ruleIds: Vector[String], idsMap: Map[String, Clause]) = {
+    ruleIds.foreach{ id =>
+      val rule = idsMap(id)
+      //val newWeight = rule.w*0.5
+      //val newWeight = rule.w * Math.pow(Math.E, -2.0)
+      val newWeight = rule.w * Math.pow(Math.E, -1.0)
+      rule.w = newWeight
+    }
+  }
+
+  def increaseWeights(ruleIds: Vector[String], idsMap: Map[String, Clause]) = {
+    ruleIds.foreach{ id =>
+      val rule = idsMap(id)
+      //val newWeight = rule.w*2
+      //val newWeight = rule.w*Math.pow(Math.E, 2.0)
+      val newWeight = rule.w*Math.pow(Math.E, 1.0)
+      rule.w = if (newWeight.isPosInfinity) rule.w else newWeight
+    }
+  }
+
+
+
 
 
   /* generates candidate refinements for the Hoeffding test.
@@ -59,24 +94,9 @@ object AuxFuncs {
     * @return The marked rules and the marked rule preds (e.g. rule(234234)) as a single string ready for ASP use.
     *         Also a map of ruleId --> rule
     */
-  def marked(clauses: Vector[Clause], globals: Globals): (String, Map[String, Clause]) = {
-    val allRefinements = clauses flatMap(_.refinements)
-
-    //val allRules = (clauses ++ allRefinements) //++ clauses.map(x => x.supportSet.clauses.head)//.filter(x => x.score >= 0.9)
-
-    //val allRules = clauses ++ clauses.map(x => x.supportSet.clauses.head)
-    val allRules = clauses
-    /*
-    val markedTheory = clauses map (x => marked(x, globals))
-    val markedRefinements = allRefinements map (x => marked(x, globals))
-    */
-
-    //val markedTheory = clauses map (x => markedQuickAndDirty(x, globals))
-    //val markedRefinements = allRefinements map (x => markedQuickAndDirty(x, globals))
+  def marked(allRules: Vector[Clause], globals: Globals): (String, Map[String, Clause]) = {
 
     val allRulesMarked = allRules map (x => markedQuickAndDirty(x, globals))
-
-    println(allRules.map(_.w))
 
     val hashCodesClausesMap = (allRules map (x => x.##.toString -> x)).toMap
     val rulePredicates = hashCodesClausesMap.keySet.map(x => s"rule($x). ").mkString("\n")

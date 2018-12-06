@@ -101,6 +101,7 @@ object CMDArgs extends LazyLogging {
     val train = getMatchingArgumentValue("--train")
     val test = getMatchingArgumentValue("--test")
     val selfTraining = getMatchingArgumentValue("--selftrain")
+    val carryLastInferred = getMatchingArgumentValue("--carry-last-inferred")
 
     //-------------
     // Global sets:
@@ -134,7 +135,7 @@ object CMDArgs extends LazyLogging {
       parallelClauseEval.toString.toBoolean, adagradDelta.toString.toDouble,adaLearnRate.toString.toDouble,
       adaRegularization.toString.toDouble, adaLossFunction.toString, withEventCalculus.toString.toBoolean,
       showStats.toString.toBoolean, saveTheoryTo.toString, holdout.toString.toInt, prequential.toString.toBoolean,
-      test.toString, selfTraining.toString.toBoolean)
+      test.toString, selfTraining.toString.toBoolean,carryLastInferred.toString.toBoolean)
 
 
     if (inps.train == "None") {
@@ -210,10 +211,12 @@ object CMDArgs extends LazyLogging {
     Arg(name = "--prequential", valueType = "Boolean", text = "If true perform prequential evaluation on every incoming data batch.", default = "true"),
     Arg(name = "--train", valueType = "String", text = "Training set location. May either by a path to a file or a mongodb name", default = "None"),
     Arg(name = "--test", valueType = "String", text = "Testing set location. May either by a path to a file or a mongodb name", default = "None"),
-    Arg(name = "--selftrain", valueType = "Boolean", text = "If true performs simple self-training from unlabeled data (experimental).", default = "false")
+    Arg(name = "--selftrain", valueType = "Boolean", text = "If true performs simple self-training from unlabeled data (experimental).", default = "false"),
+    // carry-last-inferred is not implemented yet. I want to use it for prequential evaluation
+    Arg(name = "--carry-last-inferred", valueType = "Boolean", text = "If true, persistence of complex events is propagated to the next data batches.", default = "false")
   )
 
-
+//--carry-last-inferred
   def checkData(dataInput: String, collection: String, trainOrTest: String) = {
     val msg = if (trainOrTest == "train") "train" else "test"
     // Check if it's a file
@@ -333,6 +336,7 @@ class RunningOptions(val entryPath: String,
                      val holdout: Int,
                      val prequential: Boolean,
                      val test: String,
-                     val selfTraining: Boolean)
+                     val selfTraining: Boolean,
+                     val carryLastInferred: Boolean)
 
 

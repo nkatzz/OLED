@@ -15,7 +15,8 @@ import scala.collection.mutable.Map
 import AuxFuncs._
 import utils.{ASP, Utils}
 import utils.Implicits._
-
+import scala.collection.immutable.ListMap
+import scala.collection.mutable
 import scala.reflect.internal.Trees
 
 
@@ -38,6 +39,18 @@ class Learner[T <: Source](val inps: RunningOptions,
                            val testingDataFunction: T => Iterator[Example]) extends Actor {
 
   startTime = System.nanoTime()
+
+  /*
+  private var totalTPs = 0
+  private var totalFPs = 0
+  private var totalFNs = 0
+  private var totalTNs = 0
+  */
+
+  private var totalTPs = Set[String]()
+  private var totalFPs = Set[String]()
+  private var totalFNs = Set[String]()
+  private var totalTNs = Set[String]()
 
   private var totalBatchProcessingTime = 0.0
   private var totalRuleScoringTime = 0.0
@@ -155,12 +168,12 @@ class Learner[T <: Source](val inps: RunningOptions,
       context.system.terminate()
     }
 
-
-
     case p: FinishedBatchMsg => {
       responseCounter -= 1
       if (p.targetClass == "") responses += ("theory-no-ec" -> p) else responses += (p.targetClass -> p)
       if (responseCounter == 0) {
+
+        processedBatches += 1
 
         // General case first (no event calculus)
         if (responses.keySet.size == 1) {
@@ -194,6 +207,9 @@ class Learner[T <: Source](val inps: RunningOptions,
     }
   }
 
+
+  var processedBatches = 0
+
   /*
   * Performs online evaluation and sends the next batch to the worker(s) for processing.
   *
@@ -202,7 +218,7 @@ class Learner[T <: Source](val inps: RunningOptions,
 
     val nextBatch = getNextBatch
 
-    println(nextBatch.time)
+    logger.info(s"Processing batch $batchCounter")
 
     exampleCounter += inps.chunkSize
 
@@ -224,9 +240,11 @@ class Learner[T <: Source](val inps: RunningOptions,
       }
     } else {
 
-      //evaluate(nextBatch)
+      evaluate(nextBatch)
 
-      evaluateTest(nextBatch)
+      //evaluateTest(nextBatch)
+
+      //evaluateTest_NEW(nextBatch)
 
       if (this.workers.length > 1) { // we're learning with the Event Calculus.
         val msg1 = new ProcessBatchMsg(theory.head, nextBatch, "initiated")
@@ -275,6 +293,8 @@ class Learner[T <: Source](val inps: RunningOptions,
     logger.info(s"Prequential error vector:\n${prequentialError.mkString(",")}")
     logger.info(s"Prequential error vector (Accumulated Error):\n${prequentialError.scanLeft(0.0)(_ + _).tail}")
 
+    logger.info(s"Total TPs: ${totalTPs.size}, Total FPs: ${totalFPs.size}, Total FNs: ${totalFNs.size}")
+
     logger.info("Evaluating on the test set")
 
     val testData = testingDataFunction(testingDataOptions)
@@ -282,9 +302,6 @@ class Learner[T <: Source](val inps: RunningOptions,
     val (tps,fps,fns,precision,recall,fscore) = crossVal(pruned_, data=testData, globals = inps.globals, inps = inps)
 
     logger.info(s"\ntps: $tps\nfps: $fps\nfns: " + s"$fns\nprecision: $precision\nrecall: $recall\nf-score: $fscore)")
-
-
-
   }
 
 
@@ -322,17 +339,333 @@ class Learner[T <: Source](val inps: RunningOptions,
     if (inps.holdout != 0) {
 
     }
-
-
-
-
   }
 
 
 
 
 
+  def evaluateTest_NEW(batch: Example, inputTheoryFile: String = "") = {
 
+    if (withec) {
+
+      val (init, term) = (theory.head, theory.tail.head)
+
+      val _merged = {
+        /*
+        val initRules = LogicUtils.compressTheory(init.clauses.filter(_.body.nonEmpty))
+        val termRules = LogicUtils.compressTheory(term.clauses.filter(_.body.nonEmpty))
+        Theory(initRules ++ termRules)
+        */
+        Theory( (init.clauses ++ term.clauses).filter(p => p.body.nonEmpty) )
+      }
+
+      val mergedWithRefs = Theory(_merged.clauses ++ _merged.clauses.flatMap(_.refinements))
+
+      val merged = _merged
+      //val merged = mergedWithRefs
+
+      // just for debugging
+      val weightsBefore = merged.clauses.map(x => x.w)
+
+      val targetFluent = {
+        // We can take the first one of the head modes (the target fluent is the same
+        // regardless of whether the mode atom is an initiation of termination one).
+        // Then, to get the target fluent, simply retrieve the first one of the 'terms' arg.
+
+        val t = inps.globals.MODEHS.head.varbed.terms.head
+        // The 'if' is for cases where the target pred is of the form initiatedAt(#fluent, +time), as in
+        // initiatedAt(#fluent, +time) where fluent(leisure) is in the BK.
+        // The 'else' is for compound fluents.
+        if (t.isVariabe) Literal(functor = t._type) else inps.globals.MODEHS.head.varbed.terms.head.asInstanceOf[Literal]
+        //modehs.head.varbed.terms.head.asInstanceOf[Literal]
+      }.tostring
+
+      val tpRule1 = s"tp(I, holdsAt($targetFluent,Te)) :- rule(I), example( holdsAt($targetFluent,Te) ), marked(I, initiatedAt($targetFluent,Ts) ), next(Ts,Te), time(Te), time(Ts)."
+      val tpRule2 = s"tp(I, holdsAt($targetFluent,Te)) :- rule(I), example( holdsAt($targetFluent,Te) ), not marked(I, terminatedAt($targetFluent,Ts) ), next(Ts,Te), time(Te), time(Ts)."
+      val tpRule3 = s"tp(inertia, holdsAt($targetFluent,Te)) :- example( holdsAt($targetFluent,Te) ), inertia( holdsAt($targetFluent,Ts) ), next(Ts,Te), time(Te), time(Ts)."
+
+      val fpRule = s"fp(I, holdsAt($targetFluent,Te)) :- rule(I), not example( holdsAt($targetFluent,Te) ), marked(I, initiatedAt($targetFluent,Ts) ), next(Ts,Te), time(Te), time(Ts)."
+      val fpRule2 = s"fp(inertia, holdsAt($targetFluent,Te)) :- not example( holdsAt($targetFluent,Te) ), inertia( holdsAt($targetFluent,Ts) ), next(Ts,Te), time(Te), time(Ts)."
+
+      val fnRule = s"fn(I, holdsAt($targetFluent,Te)) :- rule(I), example( holdsAt($targetFluent,Te) ), marked(I, terminatedAt($targetFluent,Ts) ), next(Ts,Te), time(Te), time(Ts)."
+
+
+
+
+
+      merged.clauses foreach (rule => if (rule.refinements.isEmpty) rule.generateCandidateRefs(inps.globals))
+      //val t = merged.clauses.flatMap(x => x.refinements :+ x)
+
+      val _marked = marked(merged.clauses.toVector, inps.globals)
+      val markedProgram = _marked._1
+      val markedMap = _marked._2
+      val e = (batch.annotationASP ++ batch.narrativeASP).mkString("\n")
+
+      val directives = s"\n$tpRule1\n$tpRule2\n$fpRule\n$fnRule"
+
+      val program = e + markedProgram + "\n#include \""+inps.entryPath+"/bk.lp\"." + directives + "\n#show.\n#show tp/2.\n#show fp/2.\n#show fn/2."
+      val f2 = Utils.getTempFile(s"quick-and-dirty",".lp")
+      Utils.writeToFile(f2, "append")(p => List(program) foreach p.println)
+      val paaath = f2.getCanonicalPath
+      val _result = ASP.solve(task = Globals.SCORE_RULES, aspInputFile = new File(paaath))
+
+      val result = if (_result.nonEmpty) _result.head.atoms.toSet else Set[String]()
+
+      val (tpAtoms, fpAtoms, fnAtoms) = result.foldLeft(Set[String](), Set[String](), Set[String]()) { (x, atom) =>
+        val (a, b, c) = (x._1, x._2, x._3)
+        if (atom.startsWith("tp")) (a + atom, b, c)
+        else if (atom.startsWith("fp")) (a, b+atom, c)
+        else if (atom.startsWith("fn")) (a,b,c+atom)
+        else throw new RuntimeException("FUCK This shouldn't have happened")
+      }
+
+      //println(tpAtoms)
+      //println(fpAtoms)
+      //println(fnAtoms)
+
+      val allInferredAtoms = tpAtoms ++ fpAtoms ++ fnAtoms
+
+      // We'll use a map to process the results. The keys will be actual holdsAt/2 atoms.
+      // The values will be three lists of clauses:
+      // initiatedBy, terminatedBy and notTerminatedBy. Each list contains the ids of the rules that
+      // respectively initiate, terminate and not terminate the key atom
+
+      val map = scala.collection.mutable.Map[String, (Vector[String], Vector[String], Vector[String])]()
+
+      allInferredAtoms foreach { s =>
+        val l = Literal.parse(s)
+        val functor = l.functor
+        val ruleId = l.terms.head.tostring
+        val holdsAtAtom = l.terms.tail.head.tostring
+        val actualRule = markedMap(ruleId)
+
+        //if (map.keySet.contains(holdsAtAtom)) {
+        if (functor == "tp") {
+          // INITIATED TP
+          if (actualRule.head.functor.contains("initiated")) {
+            // then the atom is correctly derived by the initiation rule.
+            // Add the rule id to the initiatedBy field of the map (the 1st one)
+            if (map.keySet.contains(holdsAtAtom)) {
+              map(holdsAtAtom) = (map(holdsAtAtom)._1 :+ ruleId, map(holdsAtAtom)._2, map(holdsAtAtom)._3)
+            } else {
+              map(holdsAtAtom) = (Vector(ruleId), Vector[String](), Vector[String]())
+            }
+            // TERMINATED TP
+          } else {
+            // then the rule is correctly not terminated by the termination rule.
+            // Add the rule id to the notTerminatedBy field of the map (the 3rd one)
+            if (map.keySet.contains(holdsAtAtom)) {
+              map(holdsAtAtom) = (map(holdsAtAtom)._1, map(holdsAtAtom)._2, map(holdsAtAtom)._3 :+ ruleId)
+            } else {
+              map(holdsAtAtom) = (Vector[String](), Vector[String](), Vector(ruleId))
+            }
+          }
+        } else if (functor == "fp") {
+          // This can only happen initiation rules. Add the atom to the initiatedBy field of the map.
+          if (map.keySet.contains(holdsAtAtom)) {
+            map(holdsAtAtom) = (map(holdsAtAtom)._1 :+ ruleId, map(holdsAtAtom)._2, map(holdsAtAtom)._3)
+          } else {
+            map(holdsAtAtom) = (Vector(ruleId), Vector[String](), Vector[String]())
+          }
+        } else if (functor == "fn") {
+          // This can only happen termination rules. Add the atom to the terminatedBy field of the map.
+          if (map.keySet.contains(holdsAtAtom)) {
+            map(holdsAtAtom) = (map(holdsAtAtom)._1, map(holdsAtAtom)._2 :+ ruleId, map(holdsAtAtom)._3)
+          } else {
+            map(holdsAtAtom) = (Vector[String](), Vector(ruleId), Vector[String]())
+          }
+        } else {
+          throw new RuntimeException(s"Unexpected predicate symbol: $functor")
+        }
+      }
+
+      // Next, we sort the map by the time-stamp of each inferred holdsAt atom in ascending order.
+      // For each holdsAt atom we calculate if it should actually be inferred, based on the weights
+      // of the rules that initiate or terminate it. In this process, the weights of the rules are
+      // updated based on whether the atom is mistakenly/correctly predicted and whether each individual
+      // rule mistakenly/correctly predicts it. Sorting the inferred atoms and iterating over them is necessary
+      // so as to promote/penalize the rule weights correctly after each mistake.
+
+      /*
+      val _sortedMap = scala.collection.mutable.Map[Int, Set[String]]()
+
+      map foreach { entry =>
+        val parsed = Literal.parse(entry._1)
+        val time = parsed.terms.tail.head.name.toInt
+        if (_sortedMap.contains(time)) {
+          _sortedMap(time) = _sortedMap(time) + parsed.tostring
+        } else {
+          _sortedMap(time) = Set(parsed.tostring)
+        }
+      }
+
+      val sorted = _sortedMap.toSeq.sortBy(_._1)
+      */
+
+      ///*
+      val sorted = map.map { entry =>
+        val parsed = Literal.parse(entry._1)
+        val time = parsed.terms.tail.head.name.toInt
+        ((entry._1, time), entry._2)
+      }.toVector.sortBy(x => x._1._2) // sort by time
+      //*/
+
+      //val lastTimePoint = if (sorted.nonEmpty) sorted.last._1._2 else 0
+
+      val inertiaMap = scala.collection.mutable.Map[Int, Set[InertiaFluent]]()
+
+      val trueAtoms = batch.annotation.toSet
+
+      // The sets in the accumulator of the foldLeft represent TPs, FPs, FNs,
+      // as identified by the annotation during the foldLeft iteration
+      val inferred = sorted.foldLeft(Set[String](), Set[String](), Set[String]()) { (accum, y) =>
+
+        val (atom, time) = (y._1._1, y._1._2)
+
+        val parsed = Literal.parse(atom)
+
+        //-----------------------------------------------------------------------------
+        //-----------------------------------------------------------------------------
+        // this is for updating inertia. I need to do this properly and optimize it.
+        val inert = inertiaMap.head // this is supposed to always have only one record (the previous time-point).
+        val (prevTime, inertiaFluents) = (inert._1, inert._2)
+        var intertiaExpertPrediction = 0.0
+        if (time > prevTime) { // just to be on the safe side
+          val currentFluent = parsed.terms.head.tostring
+          val inertAtom = inertiaFluents.find{ p => p.fluentAtom == currentFluent }.getOrElse(InertiaFluent())
+          if (inertAtom != InertiaFluent()) {
+            intertiaExpertPrediction = inertAtom.weight
+          }
+        } else {
+          throw new RuntimeException("Problem with inertia.")
+        }
+        //-----------------------------------------------------------------------------
+        //-----------------------------------------------------------------------------
+
+        val (initiatedBy, terminatedBy, notTerminatedBy) = (y._2._1, y._2._2, y._2._2)
+
+        val initWeightSum = if (initiatedBy.nonEmpty) initiatedBy.map(x => markedMap(x).w).sum else 0.0
+        val termWeightSum = if (terminatedBy.nonEmpty) terminatedBy.map(x => markedMap(x).w).sum else 0.0
+        val notTermWeightsSum = if (notTerminatedBy.nonEmpty) notTerminatedBy.map(x => markedMap(x).w).sum else 0.0
+
+        val firingInitRules = initiatedBy
+        val nonFiringInitRules =
+          markedMap.filter(x =>
+            x._2.head.functor.contains("initiated") && !firingInitRules.toSet.contains(x._1)).values
+
+        val predictInitiated = (intertiaExpertPrediction + initWeightSum) - nonFiringInitRules.map(_.w).sum
+
+        val firingTermRules = terminatedBy
+        val nonFiringTermRules =
+          markedMap.filter(x =>
+            x._2.head.functor.contains("terminated") && !firingTermRules.toSet.contains(x._1)).values
+
+        val predictTerminated = termWeightSum - nonFiringTermRules.map(_.w).sum
+
+        //val predictAtomHolds = initWeightSum + notTermWeightsSum >= termWeightSum
+        //val predictAtomHolds = initWeightSum >= termWeightSum
+
+        /*
+        val predictAtomHolds = {
+          if (predictInitiated >= predictTerminated) {
+            if (predictInitiated > 0.0) true else false
+          } else {
+            // MAYBE YOU WANT TO THINK THIS OVER...
+            false
+          }
+        }
+        */
+
+        val predictAtomHolds = {
+          if (predictInitiated > 0 && predictTerminated > 0) {
+            // If we predict both initiation and termination keep the largest
+            if (predictInitiated >= predictTerminated) true else false
+          } else {
+            if (predictInitiated > 0) true else false
+          }
+        }
+
+        if (predictAtomHolds) {
+
+          //----------------------------------------------------------------------------------------
+          //----------------------------------------------------------------------------------------
+          // this is for updating inertia. I need to do this properly and optimize it.
+          val (fluent, time) = (parsed.terms.head.tostring, parsed.terms.tail.head.tostring.toInt)
+
+
+
+          if (intertiaExpertPrediction > 0.0) {
+
+          }
+          //----------------------------------------------------------------------------------------
+          //----------------------------------------------------------------------------------------
+
+          if (trueAtoms.contains(atom)) {
+            // Then it's a TP. Simply return it without updating any weights.
+            //totalTPs += 1
+            totalTPs = totalTPs + atom
+            (accum._1 + atom, accum._2, accum._3)
+          } else {
+            // Then it's an FP. We want to decrease the weights of all rules that contribute to the FP:
+            // Rules that incorrectly initiate it and rules that incorrectly terminate it.
+            totalFPs = totalFPs + atom
+            reduceWeights(initiatedBy, markedMap)
+            reduceWeights(terminatedBy, markedMap)
+            (accum._1, accum._2 + atom, accum._3)
+          }
+        } else {
+          // We predicted it does not hold
+          if (trueAtoms.contains(atom)) {
+            // but it actually does, so we have an FN. We want to increase the weights of all rules that initiate it
+            // and all rules that do not terminate it.
+            totalFNs = totalFNs + atom
+            increaseWeights(initiatedBy, markedMap)
+            increaseWeights(notTerminatedBy, markedMap)
+            (accum._1, accum._2, accum._3 + atom)
+          } else {
+            // Then we have an atom which was erroneously inferred by the (un-weighted) rules (with ordinary logical
+            // inference), but which eventually not inferred, thanks to the expert-based weighted framework. That is,
+            // either the total weight of the non-firing "initiatedAt" fragment of the theory was greater than the weight
+            // of the firing part, or the the total weight of the firing "terminatedAt" path of the theory was greater
+            // than the weight of the "initiatedAt" fragment. In either case, the atom is eventually a TN. We don't do
+            // anything with it.
+            (accum._1, accum._2, accum._3)
+          }
+        }
+      }
+
+      val (tps, fps, fns) = (inferred._1, inferred._2, inferred._3)
+
+      val (fpsNumber, currentFNsNumber) = (fps.size, fns.size)
+
+      // All atoms in tps are certainly true positives. But we need to account for the real true atoms which are not in there
+      val restFNs = trueAtoms.diff(tps)
+
+      val restFNsNumber = restFNs.size
+
+      var trueFNsNumber = currentFNsNumber + restFNsNumber
+
+      // Ugly (AND DANGEROUS) hack to avoid counting as mistakes the holdsAt/2 atoms at the first time point of an interval
+      if (trueFNsNumber == 2) trueFNsNumber = 0
+
+      // We have gathered the FNs that have not been inferred, but we need to add the rest of them in the global counter
+      totalFNs = totalFNs ++ restFNs
+
+      // Just for debugging.
+      val weightsAfter = merged.clauses.map(x => x.w)
+
+      prequentialError = prequentialError :+ (fpsNumber + trueFNsNumber).toDouble
+
+      if (fpsNumber + trueFNsNumber > 0) {
+        logger.info(s"\nMade mistakes: FPs: $fpsNumber, " +
+          s"FNs: $trueFNsNumber.\nWeights before: $weightsBefore\nWeights after: $weightsAfter\nPredicted with:\n${merged.showWithStats}")
+      }
+    } else { // No Event Calculus. We'll see what we'll do with that.
+
+    }
+
+  }
 
 
 
@@ -347,6 +680,10 @@ class Learner[T <: Source](val inps: RunningOptions,
    * Holdout is  performed every 1000 examples if the testing set is non-empty.
    */
   def evaluateTest(batch: Example, inputTheoryFile: String = "") = {
+
+    //if (batch.time == "4000") {
+    //  val stop = "stop"
+    //}
 
     // prequential first
     if (withec) {
@@ -371,7 +708,7 @@ class Learner[T <: Source](val inps: RunningOptions,
         val _marked = marked(merged.clauses.toVector, inps.globals)
 
         // QUICK AND DIRTY SOLUTION JUST TO TRY IT.
-        println(batch.time+" Test eval for winnow")
+
 
         val e = (batch.annotationASP ++ batch.narrativeASP).mkString("\n")
         val markedProgram = _marked._1
@@ -431,9 +768,6 @@ class Learner[T <: Source](val inps: RunningOptions,
           }
           */
 
-
-
-
           //if (firingRulesweightSum - nonFiringRulesWeightSum >= 1) {
           if (firingRulesweightSum >= nonFiringRulesWeightSum) {
             accum + atom
@@ -443,13 +777,14 @@ class Learner[T <: Source](val inps: RunningOptions,
 
         }
 
-
+        /*
         if (inferred_final.exists(x => x.contains("initiatedAt"))) {
           println("HERE")
           println(inferred_final)
           println(merged.showWithStats)
           val stop = "stop"
         }
+        */
 
         // this is used to generate the actual holdsAt atoms predicted by our theory, using the
         // initiatedAt/terminatedAt inferred previously.
@@ -476,10 +811,22 @@ class Learner[T <: Source](val inps: RunningOptions,
           (Set[String](), Set[String](), batch.annotation.toSet)
         }
 
-        currentError = s"Number of mistakes (FPs+FNs) "
-        this.prequentialError = this.prequentialError :+ (inferredFPs.size + inferredFNs.size).toDouble
+        /*
+        if (inferredFPs.nonEmpty) {
+          println(s"\n\n\n\n\n\n\n\nHERE+${inferredFPs.size}\n\n\n\n\n\n\n")
+        }
+        */
 
-        println(prequentialError)
+        // Ugly hack to avoid counting as mistakes the holdsAt/2 atoms at the first time point of an interval
+        val _inferredFNS = if (inferredFNs.size == 2) Set[String]() else inferredFNs
+
+        //prequentialError = prequentialError :+ (inferredFPs.size + inferredFNs.size).toDouble
+        prequentialError = prequentialError :+ (inferredFPs.size + _inferredFNS.size).toDouble
+
+
+        val msg = batch.time+" Test eval for winnow" + s"TPs: ${inferredTPs.size}, FPs: ${inferredFPs.size}, FNs: ${inferredFNs.size}/${_inferredFNS.size}"
+
+        logger.info("\n"+msg+"\n"+merged.clauses.map(x => x.w)+"\n"+prequentialError.mkString(" "))
 
         //-----------------------
         // WINNOW WEIGHTS UPDATE
@@ -536,20 +883,22 @@ class Learner[T <: Source](val inps: RunningOptions,
           else throw new RuntimeException("FUCK This shouldn't have happened")
         }
 
+
         // foreach inferred FN atom x:
         //    foreach initiation rule r that correctly fires (x is a TP for r):
         //        increase r's weight
         //    foreach termination rule r that correctly does not fire (x is a TP for r):
         //        increase r's weight
         ///*
-        inferredFNs foreach { x =>
+        _inferredFNS foreach { x =>
+        //inferredFNs foreach { x =>
           tpAtoms foreach { y =>
             if (y.contains(x)) {
               val l = Literal.parse(y)
               val ruleId = l.terms.head.tostring
               val rule = markedMap(ruleId)
               //val newWeight = rule.w*2
-              val newWeight = rule.w*Math.pow(Math.E, 2)
+              val newWeight = rule.w*Math.pow(Math.E, 2.0)
               rule.w = if (newWeight.isPosInfinity) rule.w else newWeight
             }
           }

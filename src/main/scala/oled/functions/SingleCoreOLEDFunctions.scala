@@ -194,8 +194,7 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
           extraTest match { //&& (1.0/best.body.size+1 > 1.0/parentRule.body.size+1) match {
             case true =>
               val refinedRule = best
-              logger.info(showInfo(parentRule, best, secondBest, epsilon, observedDiff,
-                parentRule.seenExmplsNum, inps))
+              logger.info(showInfo(parentRule, best, secondBest, epsilon, observedDiff, parentRule.seenExmplsNum, inps))
               refinedRule.seenExmplsNum = 0 // zero the counter
               refinedRule.supportSet = parentRule.supportSet // only one clause here
               List(refinedRule)

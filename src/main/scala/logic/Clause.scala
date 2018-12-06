@@ -472,7 +472,7 @@ case class Clause(head: PosLiteral = PosLiteral(),
     val (tps_, fps_, fns_) =
       if(! Globals.glvalues("distributed").toBoolean) (tps*tpw, fps*fpw, fns*fnw)
       else (this.getTotalTPs, this.getTotalFPs, this.getTotalFNs)
-    s"score:" + s" $scoreFunction, tps: $tps_, fps: $fps_, fns: $fns_ | MLN-weight: ${format(this.mlnWeight)} Evaluated on: ${this.getTotalSeenExmpls} examples\n$tostring"
+    s"score:" + s" $scoreFunction, tps: $tps_, fps: $fps_, fns: $fns_ | MLN-weight: ${format(this.mlnWeight)} | Expert Weight: ${this.w} Evaluated on: ${this.getTotalSeenExmpls} examples\n$tostring"
   }
 
   def showWithStats_NoEC = {
