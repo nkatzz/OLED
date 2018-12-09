@@ -15,6 +15,7 @@ import scala.collection.mutable.Map
 import AuxFuncs._
 import utils.{ASP, Utils}
 import utils.Implicits._
+import PredictUpdateHandler._
 import scala.collection.immutable.ListMap
 import scala.collection.mutable
 import scala.reflect.internal.Trees
@@ -240,11 +241,11 @@ class Learner[T <: Source](val inps: RunningOptions,
       }
     } else {
 
-      evaluate(nextBatch)
+      //evaluate(nextBatch)
 
       //evaluateTest(nextBatch)
 
-      //evaluateTest_NEW(nextBatch)
+      evaluateTest_NEW(nextBatch)
 
       if (this.workers.length > 1) { // we're learning with the Event Calculus.
         val msg1 = new ProcessBatchMsg(theory.head, nextBatch, "initiated")
@@ -489,7 +490,6 @@ class Learner[T <: Source](val inps: RunningOptions,
 
       /*
       val _sortedMap = scala.collection.mutable.Map[Int, Set[String]]()
-
       map foreach { entry =>
         val parsed = Literal.parse(entry._1)
         val time = parsed.terms.tail.head.name.toInt
@@ -499,7 +499,6 @@ class Learner[T <: Source](val inps: RunningOptions,
           _sortedMap(time) = Set(parsed.tostring)
         }
       }
-
       val sorted = _sortedMap.toSeq.sortBy(_._1)
       */
 
@@ -538,7 +537,7 @@ class Learner[T <: Source](val inps: RunningOptions,
             intertiaExpertPrediction = inertAtom.weight
           }
         } else {
-          throw new RuntimeException("Problem with inertia.")
+          throw new RuntimeException("Problem with inertia at the experts setting.")
         }
         //-----------------------------------------------------------------------------
         //-----------------------------------------------------------------------------
@@ -666,7 +665,6 @@ class Learner[T <: Source](val inps: RunningOptions,
     }
 
   }
-
 
 
 

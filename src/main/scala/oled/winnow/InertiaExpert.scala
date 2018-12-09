@@ -1,7 +1,7 @@
 package oled.winnow
 
 object InertiaFluent {
-  def apply() = {
+  def apply(): InertiaFluent = {
     InertiaFluent("", 0, 0.0)
   }
 }
@@ -21,6 +21,6 @@ case class InertiaFluent(fluentAtom: String, time: Int, var weight: Double) {
 
 class InertiaExpert {
 
-  private var Atoms = Set[InertiaFluent]
+  private var Atoms = Set[InertiaFluent]()
 
 }

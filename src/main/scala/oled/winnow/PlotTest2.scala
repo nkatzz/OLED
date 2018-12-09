@@ -1,6 +1,6 @@
 package oled.winnow
 
-import scalatikz.graphics.pgf.Figure
+//import scalatikz.graphics.pgf.Figure
 import scala.io.Source
 import scala.math._
 
@@ -12,8 +12,9 @@ object PlotTest2 extends App {
 
   //plotMeeting1passLogScale("/home/nkatz/Desktop/oled-winnow-results/meeting-1-pass", "/home/nkatz/Desktop/oled-winnow-results")
 
-  plotMeeting2passLogScale("/home/nkatz/Desktop/oled-winnow-results/meeting-2-passes", "/home/nkatz/Desktop/oled-winnow-results")
+  //plotMeeting2passLogScale("/home/nkatz/Desktop/oled-winnow-results/meeting-2-passes", "/home/nkatz/Desktop/oled-winnow-results")
 
+  /*
   def plotMeeting1pass(dataPath: String, savePath: String) = {
 
     val data = Source.fromFile(dataPath).getLines.filter( x => !x.isEmpty && !x.startsWith("%"))//.split(",")
@@ -39,7 +40,7 @@ object PlotTest2 extends App {
     //.show()
 
   }
-
+  */
 
   def log2(x: Double) = {
 
@@ -74,6 +75,7 @@ object PlotTest2 extends App {
 
   }
 
+  /*
   def plotMeeting1passLogScale(dataPath: String, savePath: String) = {
 
     val data = Source.fromFile(dataPath).getLines.filter( x => !x.isEmpty && !x.startsWith("%"))//.split(",")
@@ -99,7 +101,9 @@ object PlotTest2 extends App {
     //.show()
 
   }
+  */
 
+  /*
   def plotMeeting2passLogScale(dataPath: String, savePath: String) = {
 
     val data = Source.fromFile(dataPath).getLines.filter( x => !x.isEmpty && !x.startsWith("%"))//.split(",")
@@ -151,7 +155,7 @@ object PlotTest2 extends App {
     //.show()
 
   }
-
+  */
 
 
 
