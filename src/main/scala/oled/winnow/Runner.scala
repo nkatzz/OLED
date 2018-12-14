@@ -52,6 +52,7 @@ object Runner extends LazyLogging {
 
       // This is the running setting in the object FullDatasetHoldOut
 
+      ///*
       val train1 =
       Vector("caviar-video-1-meeting-moving", "caviar-video-3", "caviar-video-2-meeting-moving", "caviar-video-5",
         "caviar-video-6", "caviar-video-13-meeting", "caviar-video-7", "caviar-video-8",
@@ -62,20 +63,44 @@ object Runner extends LazyLogging {
         "caviar-video-22-meeting-moving", "caviar-video-4", "caviar-video-23-moving", "caviar-video-25",
         "caviar-video-24-meeting-moving", "caviar-video-26", "caviar-video-27",
         "caviar-video-28-meeting", "caviar-video-29", "caviar-video-30")
+      //*/
 
+      /*
+      val train1 =
+        Vector("caviar-video-21-meeting-moving", "caviar-video-7", "caviar-video-28-meeting", "caviar-video-25", "caviar-video-30",
+          "caviar-video-11", "caviar-video-6", "caviar-video-26", "caviar-video-27", "caviar-video-20-meeting-moving", "caviar-video-13-meeting",
+          "caviar-video-12-moving", "caviar-video-1-meeting-moving", "caviar-video-9", "caviar-video-16", "caviar-video-23-moving",
+          "caviar-video-29", "caviar-video-5", "caviar-video-18", "caviar-video-4", "caviar-video-19-meeting-moving",
+          "caviar-video-24-meeting-moving", "caviar-video-8", "caviar-video-10", "caviar-video-2-meeting-moving",
+          "caviar-video-22-meeting-moving", "caviar-video-15", "caviar-video-3", "caviar-video-17", "caviar-video-14-meeting-moving")
+      */
 
-      //val dataset = MeetingTrainTestSets.meeting7
+      val trainShuffled = scala.util.Random.shuffle(train1)
 
+      logger.info(s"\nData order:\n$trainShuffled")
+
+      /* This is for running with the entire CAVIAR */
+      /*
       val trainingDataOptions =
         new MongoDataOptions(dbNames = train1,//dataset._1,
           chunkSize = runningOptions.chunkSize, targetConcept = runningOptions.targetHLE, sortDbByField = "time", what = "training")
 
-      /*
+      val testingDataOptions = trainingDataOptions
+      */
+
+      /* This is for running on the training set and then performing prequential evaluation on the test set. */
+      ///*
+      val dataset = MeetingTrainTestSets.meeting1
+
+      val trainingDataOptions =
+        new MongoDataOptions(dbNames = dataset._1,
+          chunkSize = runningOptions.chunkSize, targetConcept = runningOptions.targetHLE, sortDbByField = "time", what = "training")
+
       val testingDataOptions =
         new MongoDataOptions(dbNames = dataset._2,
           chunkSize = runningOptions.chunkSize, targetConcept = runningOptions.targetHLE, sortDbByField = "time", what = "testing")
-      */
-      val testingDataOptions = trainingDataOptions
+      //*/
+
 
       val trainingDataFunction: MongoDataOptions => Iterator[Example] = FullDatasetHoldOut.getMongoData
 
@@ -84,6 +109,10 @@ object Runner extends LazyLogging {
       val system = ActorSystem("HoeffdingLearningSystem")
 
       val startMsg = if (runningOptions.evalth != "None") "eval" else "start"
+
+      // use a hand-crafted theory for sequential prediction (updates the weights but not the structure of the rules).
+      //--evalth=/home/nkatz/Desktop/theory
+      //val startMsg = "predict"
 
       system.actorOf(Props(new Learner(runningOptions, trainingDataOptions, testingDataOptions, trainingDataFunction,
         testingDataFunction)), name = "Learner") !  startMsg

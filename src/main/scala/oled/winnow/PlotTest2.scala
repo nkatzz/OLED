@@ -1,6 +1,6 @@
 package oled.winnow
 
-//import scalatikz.graphics.pgf.Figure
+import scalatikz.graphics.pgf.Figure
 import scala.io.Source
 import scala.math._
 
@@ -10,9 +10,9 @@ object PlotTest2 extends App {
 
   //plotMeeting2passes("/home/nkatz/Desktop/oled-winnow-results/meeting-2-passes", "/home/nkatz/Desktop/oled-winnow-results")
 
-  //plotMeeting1passLogScale("/home/nkatz/Desktop/oled-winnow-results/meeting-1-pass", "/home/nkatz/Desktop/oled-winnow-results")
+  //plotMeeting1passLogScale("/home/nkatz/Desktop/oled-winnow-results/meeting-1-pass-new", "/home/nkatz/Desktop/oled-winnow-results")
 
-  //plotMeeting2passLogScale("/home/nkatz/Desktop/oled-winnow-results/meeting-2-passes", "/home/nkatz/Desktop/oled-winnow-results")
+  plotMeeting2passLogScale("/home/nkatz/Desktop/oled-winnow-results/meeting-2-passes-new", "/home/nkatz/Desktop/oled-winnow-results")
 
   /*
   def plotMeeting1pass(dataPath: String, savePath: String) = {
@@ -75,7 +75,7 @@ object PlotTest2 extends App {
 
   }
 
-  /*
+  ///*
   def plotMeeting1passLogScale(dataPath: String, savePath: String) = {
 
     val data = Source.fromFile(dataPath).getLines.filter( x => !x.isEmpty && !x.startsWith("%"))//.split(",")
@@ -89,7 +89,7 @@ object PlotTest2 extends App {
     val noConstraints = data.next().split(",").map(_.toDouble).toVector.map(x => toLog(x))
     val handCrafted = data.next().split(",").map(_.toDouble).toVector.map(x => toLog(x))
 
-    Figure("meeting-1-pass-log-scale").plot(winnow).plot(_095).plot(_09).plot(_08).plot(_07).plot(_06).plot(noConstraints).plot(handCrafted)
+    Figure("meeting-1-pass-log-scale-new").plot(winnow).plot(_095).plot(_09).plot(_08).plot(_07).plot(_06).plot(noConstraints).plot(handCrafted)
       //.plot(domain -> sin _)
       //.plot(lineStyle = DASHED)(domain -> cos _)
       .havingLegends("winnow", "score $\\geq 0.95$", "score $\\geq 0.9$", "score $\\geq 0.8$", "score $\\geq 0.7$", "score $\\geq 0.6$", "all rules", "hand-crafted")
@@ -101,9 +101,9 @@ object PlotTest2 extends App {
     //.show()
 
   }
-  */
+  //*/
 
-  /*
+  ///*
   def plotMeeting2passLogScale(dataPath: String, savePath: String) = {
 
     val data = Source.fromFile(dataPath).getLines.filter( x => !x.isEmpty && !x.startsWith("%"))//.split(",")
@@ -116,7 +116,7 @@ object PlotTest2 extends App {
     val _06 = data.next().split(",").map(_.toDouble).toVector.map(x => toLog(x))
 
 
-    Figure("meeting-2-passes-log-scale").plot(winnow).plot(_095).plot(_09).plot(_08).plot(_07).plot(_06)
+    Figure("meeting-2-passes-log-scale-new").plot(winnow).plot(_095).plot(_09).plot(_08).plot(_07).plot(_06)
       //.plot(domain -> sin _)
       //.plot(lineStyle = DASHED)(domain -> cos _)
       .havingLegends("winnow", "score $\\geq 0.95$", "score $\\geq 0.9$", "score $\\geq 0.8$", "score $\\geq 0.7$", "score $\\geq 0.6$", "all rules", "hand-crafted")
@@ -155,7 +155,7 @@ object PlotTest2 extends App {
     //.show()
 
   }
-  */
+
 
 
 
