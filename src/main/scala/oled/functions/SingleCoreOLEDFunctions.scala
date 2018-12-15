@@ -154,33 +154,41 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
 
 
   def rightWay(parentRule: Clause, inps: RunningOptions) = {
-    val (observedDiff, best, secondBest) = parentRule.meanDiff
 
-    val epsilon = Utils.hoeffding(inps.delta, parentRule.seenExmplsNum)
+    if (parentRule.score < inps.preprune) {
+      val (observedDiff, best, secondBest) = parentRule.meanDiff
 
-    //logger.info(s"\n(observedDiff, epsilon, bestScore, secondBestScore): ($observedDiff, $epsilon, ${best.score}, ${secondBest.score})")
+      val epsilon = Utils.hoeffding(inps.delta, parentRule.seenExmplsNum)
 
-    val passesTest = if (epsilon < observedDiff) true else false
-    //val tie = if (epsilon <= breakTiesThreshold && parentRule.seenExmplsNum >= minSeenExmpls) true else false
-    val tie = if (observedDiff < epsilon  && epsilon < inps.breakTiesThreshold && parentRule.seenExmplsNum >= inps.minSeenExmpls) true else false
+      //logger.info(s"\n(observedDiff, epsilon, bestScore, secondBestScore): ($observedDiff, $epsilon, ${best.score}, ${secondBest.score})")
 
-    //println(s"best score: ${best.score} 2nd-best: ${secondBest.score} $observedDiff < $epsilon && $epsilon < ${inps.breakTiesThreshold} ${parentRule.seenExmplsNum} >= ${inps.minSeenExmpls} $tie")
+      val passesTest = if (epsilon < observedDiff) true else false
+      //val tie = if (epsilon <= breakTiesThreshold && parentRule.seenExmplsNum >= minSeenExmpls) true else false
+      val tie = if (observedDiff < epsilon  && epsilon < inps.breakTiesThreshold && parentRule.seenExmplsNum >= inps.minSeenExmpls) true else false
 
-    val couldExpand =
-      if (inps.minTpsRequired != 0) {
-        // The best.mlnWeight >= parentRule.mlnWeight condition doesn't work of course...
-        (passesTest || tie) && (best.getTotalTPs >= parentRule.getTotalTPs * inps.minTpsRequired/100.0) //&& best.mlnWeight >= parentRule.mlnWeight
-      } else {
-        // The best.mlnWeight >= parentRule.mlnWeight condition doesn't work of course...
-        passesTest || tie //&& best.mlnWeight >= parentRule.mlnWeight
-      }
+      //println(s"best score: ${best.score} 2nd-best: ${secondBest.score} $observedDiff < $epsilon && $epsilon < ${inps.breakTiesThreshold} ${parentRule.seenExmplsNum} >= ${inps.minSeenExmpls} $tie")
 
-    (couldExpand, epsilon, observedDiff, best, secondBest)
+      val couldExpand =
+        if (inps.minTpsRequired != 0) {
+          // The best.mlnWeight >= parentRule.mlnWeight condition doesn't work of course...
+          (passesTest || tie) && (best.getTotalTPs >= parentRule.getTotalTPs * inps.minTpsRequired/100.0) //&& best.mlnWeight >= parentRule.mlnWeight
+        } else {
+          // The best.mlnWeight >= parentRule.mlnWeight condition doesn't work of course...
+          passesTest || tie //&& best.mlnWeight >= parentRule.mlnWeight
+        }
+
+      (couldExpand, epsilon, observedDiff, best, secondBest)
+    } else {
+      (false, 0.0, 0.0, parentRule, parentRule)
+    }
+
+
   }
 
   def expandRules(topTheory: Theory, inps: RunningOptions, logger: org.slf4j.Logger): Theory = {
     //val t0 = System.nanoTime()
     val out = topTheory.clauses flatMap { parentRule =>
+
       val (couldExpand,epsilon,observedDiff,best,secondBest) = rightWay(parentRule, inps)
 
       //println(best.score,best.tps, best.fps, best.fns, "  ", secondBest.score, secondBest.tps, secondBest.fps, secondBest.fns)

@@ -34,13 +34,34 @@ object AuxStructures {
 }
 
 object Test extends App {
-  import scala.util.control.Breaks._
-  val x = 1 to 100
-  breakable {
-    x foreach { x =>
-      if (x < 50) println(x) else break
-    }
+
+  import scala.util.Random
+
+  val vals = Vector(1, -1)
+
+  def getRanomVector = {
+    (1 to 20).map( x => Random.shuffle(vals).head ).toVector
   }
+
+  def getRandomVectors = {
+    (1 to 100).map(_ => getRanomVector).toVector
+  }
+
+  // in this strategy we get one prediction pre vector
+  def individualVoting(vecs: Vector[Vector[Int]]) = {
+    val votes = vecs.map{ x => x.sum.toDouble/x.length }
+    votes.sum/votes.length
+  }
+
+  def collectiveVoting(vecs: Vector[Vector[Int]]) = {
+    val all = vecs.flatten
+    all.sum.toDouble/all.length
+  }
+
+  def vecs = getRandomVectors
+  println(individualVoting(vecs))
+  println(collectiveVoting(vecs))
+
 }
 
 
@@ -49,22 +70,24 @@ object AuxFuncs extends LazyLogging {
 
 
   def reduceWeights(ruleIds: Vector[String], idsMap: Map[String, Clause], learningRate: Double) = {
-    ruleIds.foreach{ id =>
+    ruleIds.foreach { id =>
       val rule = idsMap(id)
       //val newWeight = rule.w*0.5
       //val newWeight = rule.w * Math.pow(Math.E, -2.0)
       val newWeight = rule.w * Math.pow(Math.E, (-1.0) * learningRate)
       rule.w = newWeight
+      rule.updateRunningWeightAvg(newWeight)
     }
   }
 
   def increaseWeights(ruleIds: Vector[String], idsMap: Map[String, Clause], learningRate: Double) = {
-    ruleIds.foreach{ id =>
+    ruleIds.foreach { id =>
       val rule = idsMap(id)
       //val newWeight = rule.w*2
       //val newWeight = rule.w*Math.pow(Math.E, 2.0)
       val newWeight = rule.w * Math.pow(Math.E, 1.0 * learningRate)
       rule.w = if (newWeight.isPosInfinity) rule.w else newWeight
+      rule.updateRunningWeightAvg(rule.w)
     }
   }
 
@@ -99,6 +122,105 @@ object AuxFuncs extends LazyLogging {
   }
 
 
+  def reportMistake(what: String, atom: String, inertiaWeight: Double,
+                     firingInitRulesNum: Int, nonfiringInitRulesNum: Int,
+                     firingTermRulesNum: Int, nonfiringTermRulesNum: Int,
+                     initWeightSum: Double, termWeightSum: Double,
+                     noinitWeightSum: Double, notermWeightSum: Double, logger: org.slf4j.Logger) = {
+
+    logger.info(s"\nMade $what mistake for atom: $atom.\nInertia weight: " +
+      s"$inertiaWeight\nFiring initiation rules: $firingInitRulesNum, sum of weight: $initWeightSum\nNon " +
+      s"firing initiation rules: $nonfiringInitRulesNum, sum of weight: $noinitWeightSum\nFiring " +
+      s"termination rules: $firingTermRulesNum, sum of weight: $termWeightSum\nNon firing termination " +
+      s"rules: $nonfiringTermRulesNum, sum of weight: $notermWeightSum")
+
+  }
+
+  def predict(inertiaPrediction: Double, initPrediction: Double, termPrediction: Double, strongInertia: Boolean) = {
+
+    if (strongInertia) {
+      // This does not take the firing initiation rules into account when something holds by inertia.
+      // In weakly initiated settings it tends to generate more FPs, because when a fluent is actually
+      // weakly initiated, the non-firing initiation rules are a good indicator for whether the fluent persists.
+      // On the other hand, this is necessary for strongly initiated fluents, to allow for the persistence of fluents.
+      if (inertiaPrediction > 0.0) {
+        if (inertiaPrediction > termPrediction) true else false
+      } else {
+        // this "if" here is necessary. We don't want something to be detected
+        // just because the initiation weight sum is greater than the termination weight sum.
+        // We also want the initiation sum to be positive, so that the fluent is actually initiated.
+        if (initPrediction > 0.0) {
+          if (initPrediction > termPrediction) true else false
+        } else {
+          false
+        }
+      }
+    } else {
+      // This often makes wrong predictions (FNs) because non-firing initiation rules take over inertia.
+      // But is usually has better results (less FPs) in weakly-ininitated fluents.
+      if (inertiaPrediction + initPrediction > 0.0) {
+        if (termPrediction > 0) {
+          if (inertiaPrediction + initPrediction > termPrediction) true else false
+        } else {
+          true
+        }
+      } else {
+        false
+      }
+    }
+  }
+
+
+  def normalizeWeights(inertiaExpert: Map[String, Double],
+                       firingInitRules: Vector[Clause], nonFiringInitRules: Vector[Clause],
+                       firingTermRules: Vector[Clause], nonFiringTermRules: Vector[Clause]) = {
+
+    val inertiaWeights = inertiaExpert.values.sum
+
+    val allRules = firingInitRules ++ nonFiringInitRules ++ firingTermRules ++ nonFiringTermRules
+
+    val totalWeight = allRules.map(x => x.w).sum + inertiaWeights
+
+    allRules foreach {x => x.w = x.w/totalWeight}
+
+  }
+
+
+
+
+  /*
+  *
+  * Creates a prediction for a single rule (expert) w.r.t. a single atom by combining the predictions
+  * of a sub-expert committee (rule's specializations).
+  *
+  * firingRuleIds and nonFiringRuleIds are respectively the ids of rules that fire/don't fire w.r.t. to a
+  * single atom (the atom for which we're getting a prediction).
+  *
+  * */
+
+  def getRulePrediction(rule: Clause, firingRuleIds: Vector[String], nonFiringRuleIds: Vector[String]) = {
+
+    val abstains = rule.body.isEmpty // don't use the top rule's opinion if the rule is too immature.
+
+    val wholeCommittee = if (!abstains) rule.refinements :+ rule else rule.refinements
+
+    val rulesToWeightsMap = wholeCommittee.map( x => x.## -> x.w ).toMap
+
+    val yesWeight = {
+      val yes = firingRuleIds.toSet.intersect(rulesToWeightsMap.keySet.map(_.toString)).map(_.toInt)
+      yes.map(id => rulesToWeightsMap(id)).sum
+    }
+
+    val noWeight = {
+      val no = nonFiringRuleIds.toSet.intersect(rulesToWeightsMap.keySet.map(_.toString)).map(_.toInt)
+      no.map(id => rulesToWeightsMap(id)).sum
+    }
+
+    yesWeight - noWeight
+
+  }
+
+
   /*
   *
   * Computes the groundings of the rules in the current theory and returns a map. The key to each of
@@ -108,8 +230,10 @@ object AuxFuncs extends LazyLogging {
   *
   * */
 
-  def computeRuleGroundings(inps: RunningOptions, markedProgram: String, markedMap: Map[String, Clause], batch: String) = {
+  def computeRuleGroundings(inps: RunningOptions, markedProgram: String,
+                            markedMap: Map[String, Clause], batch: String, trueAtoms: Set[String]) = {
 
+    /*
     val targetFluent = {
       // We can take the first one of the head modes (the target fluent is the same
       // regardless of whether the mode atom is an initiation of termination one).
@@ -122,6 +246,7 @@ object AuxFuncs extends LazyLogging {
       if (t.isVariabe) Literal(functor = t._type) else inps.globals.MODEHS.head.varbed.terms.head.asInstanceOf[Literal]
       //modehs.head.varbed.terms.head.asInstanceOf[Literal]
     }.tostring
+    */
 
     /*
     val tpRule1 = s"tp(I, holdsAt($targetFluent,Te)) :- rule(I), example( holdsAt($targetFluent,Te) ), " +
@@ -134,6 +259,7 @@ object AuxFuncs extends LazyLogging {
     val fnRule = s"fn(I, holdsAt($targetFluent,Te)) :- rule(I), example( holdsAt($targetFluent,Te) ), " +
       s"marked(I, terminatedAt($targetFluent,Ts) ), next(Ts,Te), time(Te), time(Ts)."
     */
+
     //------------------------------------------------------------------------------------------------------------
     // Using the directive below (note that it includes the "termination-tp rule tpRule2",
     // where we count as TPs correct NON-FIRINGS of termination rules) is wrong (and very dangerous).
@@ -188,8 +314,8 @@ object AuxFuncs extends LazyLogging {
     allInferredAtoms foreach { s =>
 
       val l = Literal.parse(s)
-      val functor = l.functor
-      val ruleId = l.terms.head.tostring
+      //val functor = l.functor
+      val ruleId = l.terms.head.tostring.toInt.toString
       val holdsAtAtom = l.terms.tail.head.tostring
       val actualRule = markedMap(ruleId)
 
@@ -199,63 +325,24 @@ object AuxFuncs extends LazyLogging {
         } else {
           map(holdsAtAtom) = (Vector(ruleId), Vector[String]())
         }
-      } else {
+      } else if (actualRule.head.functor.contains("terminated")) {
         if (map.keySet.contains(holdsAtAtom)) {
           map(holdsAtAtom) = (map(holdsAtAtom)._1, map(holdsAtAtom)._2 :+ ruleId)
         } else {
           map(holdsAtAtom) = (Vector[String](), Vector(ruleId))
         }
-      }
-    }
-
-    /*
-    allInferredAtoms foreach { s =>
-      val l = Literal.parse(s)
-      val functor = l.functor
-      val ruleId = l.terms.head.tostring
-      val holdsAtAtom = l.terms.tail.head.tostring
-      val actualRule = markedMap(ruleId)
-
-      //if (map.keySet.contains(holdsAtAtom)) {
-      if (functor == "tp") {
-        // INITIATED TP
-        if (actualRule.head.functor.contains("initiated")) {
-          // then the atom is correctly derived by the initiation rule.
-          // Add the rule id to the initiatedBy field of the map (the 1st one)
-          if (map.keySet.contains(holdsAtAtom)) {
-            map(holdsAtAtom) = (map(holdsAtAtom)._1 :+ ruleId, map(holdsAtAtom)._2, map(holdsAtAtom)._3)
-          } else {
-            map(holdsAtAtom) = (Vector(ruleId), Vector[String](), Vector[String]())
-          }
-          // TERMINATED TP
-        } else {
-          // then the rule is correctly not terminated by the termination rule.
-          // Add the rule id to the notTerminatedBy field of the map (the 3rd one)
-          if (map.keySet.contains(holdsAtAtom)) {
-            map(holdsAtAtom) = (map(holdsAtAtom)._1, map(holdsAtAtom)._2, map(holdsAtAtom)._3 :+ ruleId)
-          } else {
-            map(holdsAtAtom) = (Vector[String](), Vector[String](), Vector(ruleId))
-          }
-        }
-      } else if (functor == "fp") {
-        // This can only happen with initiation rules. Add the atom to the initiatedBy field of the map.
-        if (map.keySet.contains(holdsAtAtom)) {
-          map(holdsAtAtom) = (map(holdsAtAtom)._1 :+ ruleId, map(holdsAtAtom)._2, map(holdsAtAtom)._3)
-        } else {
-          map(holdsAtAtom) = (Vector(ruleId), Vector[String](), Vector[String]())
-        }
-      } else if (functor == "fn") {
-        // This can only happen with termination rules. Add the atom to the terminatedBy field of the map.
-        if (map.keySet.contains(holdsAtAtom)) {
-          map(holdsAtAtom) = (map(holdsAtAtom)._1, map(holdsAtAtom)._2 :+ ruleId, map(holdsAtAtom)._3)
-        } else {
-          map(holdsAtAtom) = (Vector[String](), Vector(ruleId), Vector[String]())
-        }
       } else {
-        throw new RuntimeException(s"Unexpected predicate symbol: $functor")
+        throw new RuntimeException("Fuck! this shouldn't have happened")
       }
     }
-    */
+
+    ///*
+    trueAtoms foreach { atom =>
+      if (!map.keySet.contains(atom)) {
+        map(atom) = (Vector[String](), Vector[String]())
+      }
+    }
+    //*/
 
     map
 

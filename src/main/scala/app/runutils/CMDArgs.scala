@@ -101,7 +101,7 @@ object CMDArgs extends LazyLogging {
     val train = getMatchingArgumentValue("--train")
     val test = getMatchingArgumentValue("--test")
     val selfTraining = getMatchingArgumentValue("--selftrain")
-    val carryLastInferred = getMatchingArgumentValue("--carry-last-inferred")
+    val preprune = getMatchingArgumentValue("--preprune")
 
     //-------------
     // Global sets:
@@ -135,7 +135,7 @@ object CMDArgs extends LazyLogging {
       parallelClauseEval.toString.toBoolean, adagradDelta.toString.toDouble,adaLearnRate.toString.toDouble,
       adaRegularization.toString.toDouble, adaLossFunction.toString, withEventCalculus.toString.toBoolean,
       showStats.toString.toBoolean, saveTheoryTo.toString, holdout.toString.toInt, prequential.toString.toBoolean,
-      test.toString, selfTraining.toString.toBoolean,carryLastInferred.toString.toBoolean)
+      test.toString, selfTraining.toString.toBoolean,preprune.toString.toDouble)
 
 
     if (inps.train == "None") {
@@ -212,8 +212,7 @@ object CMDArgs extends LazyLogging {
     Arg(name = "--train", valueType = "String", text = "Training set location. May either by a path to a file or a mongodb name", default = "None"),
     Arg(name = "--test", valueType = "String", text = "Testing set location. May either by a path to a file or a mongodb name", default = "None"),
     Arg(name = "--selftrain", valueType = "Boolean", text = "If true performs simple self-training from unlabeled data (experimental).", default = "false"),
-    // carry-last-inferred is not implemented yet. I want to use it for prequential evaluation
-    Arg(name = "--carry-last-inferred", valueType = "Boolean", text = "If true, persistence of complex events is propagated to the next data batches.", default = "false")
+    Arg(name = "--preprune", valueType = "Double", text = "Do not specialize a rule if its score is greater than this threshold.", default = "1.0")
   )
 
 //--carry-last-inferred
@@ -337,6 +336,6 @@ class RunningOptions(val entryPath: String,
                      val prequential: Boolean,
                      val test: String,
                      val selfTraining: Boolean,
-                     val carryLastInferred: Boolean)
+                     val preprune: Double)
 
 

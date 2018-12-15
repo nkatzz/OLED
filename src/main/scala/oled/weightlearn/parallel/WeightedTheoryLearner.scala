@@ -180,8 +180,7 @@ class WeightedTheoryLearner[T <: Source](inps: RunningOptions, trainingDataOptio
         val enumClauses = (1 to allClauses.length).toList
         val uuidsToRuleIdsMap = (allClauses.map(_.uuid) zip enumClauses).toMap
 
-        val input = new MLNClauseHandingMasterInput(
-          allClauses.toVector, e, inps, initorterm, splitEvery = 3, workers)
+        val input = new MLNClauseHandingMasterInput(allClauses.toVector, e, inps, initorterm, splitEvery = 3, workers)
 
         //val error = predictSate(useToPredict, e, inps, initorterm, jep)
         //Globals.errorProb = Globals.errorProb :+ error

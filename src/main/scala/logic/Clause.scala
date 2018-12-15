@@ -96,7 +96,21 @@ case class Clause(head: PosLiteral = PosLiteral(),
 
   // This is a "general-purpose" weight variable, the intention is to use this
   // for all online convex optimization methods that we'll try (e.g. winnow, AdaGrad, Adam etc).
+  // Currently, it's only used for the multiplicative weights update framework.
   var w: Double = 1.0
+
+  // Counts the updates to the w variable to calculate the running average
+  var weightUpdateCount = 0.0
+  var avgWeight = 0.0
+
+
+  def updateRunningWeightAvg(newWeight: Double) = {
+    val newAvg = ((avgWeight * weightUpdateCount) + newWeight)/(weightUpdateCount + 1)
+    avgWeight = newAvg
+    weightUpdateCount += 1
+  }
+
+  //(previousMeanDiff * previousMeanDiffCount) + newDiff)/(previousMeanDiffCount + 1)
 
   // These variables store the total current counts from all nodes.
   // These are also used in the distributed setting.

@@ -467,9 +467,9 @@ object Utils extends ASPResultsParser with LazyLogging{
       result
    }
 
-  def time[R](block: => R): (R,Double) = {
+  def time[R](codeBlock : => R): (R, Double) = {
     val t0 = System.nanoTime()
-    val result = block // call-by-name
+    val result = codeBlock // call-by-name
     val t1 = System.nanoTime()
     val totalTime = (t1 - t0)/1000000000.0
     (result,totalTime)
