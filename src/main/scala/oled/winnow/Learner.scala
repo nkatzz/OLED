@@ -411,8 +411,8 @@ class Learner[T <: Source](val inps: RunningOptions,
       val newInit = oldInit //theory.head.clauses.filter(x => x.w > 0.0 && x.w < 10.0)
       val newTerm = oldTerm //theory.tail.head.clauses.filter(x => x.w > 0.0 && x.w < 10.0)
 
-      theory = List(newInit, newTerm)
-      //theory = List(newInit.clauses.flatMap(x => x.refinements :+ x), newTerm.clauses.flatMap(x => x.refinements :+ x))
+      //theory = List(newInit, newTerm)
+      theory = List(newInit.clauses.flatMap(x => x.refinements :+ x), newTerm.clauses.flatMap(x => x.refinements :+ x))
 
       val (init, term) = (theory.head, theory.tail.head)
       val _merged = init.clauses ++ term.clauses
