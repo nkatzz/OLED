@@ -396,7 +396,7 @@ class Learner[T <: Source](val inps: RunningOptions,
       val oldInit = theory.head.clauses
       val oldTerm = theory.tail.head.clauses
 
-      /*
+      ///*
       oldInit foreach { r =>
         r.w = r.avgWeight
         r.refinements foreach( r1 => r1.w = r1.avgWeight )
@@ -406,7 +406,7 @@ class Learner[T <: Source](val inps: RunningOptions,
         r.w = r.avgWeight
         r.refinements foreach( r1 => r1.w = r1.avgWeight )
       }
-      */
+      //*/
 
       val newInit = oldInit //theory.head.clauses.filter(x => x.w > 0.0 && x.w < 10.0)
       val newTerm = oldTerm //theory.tail.head.clauses.filter(x => x.w > 0.0 && x.w < 10.0)
