@@ -371,9 +371,12 @@ class Learner[T <: Source](val inps: RunningOptions,
     logger.info(s"Prequential error vector:\n${prequentialError.mkString(",")}")
     logger.info(s"Prequential error vector (Accumulated Error):\n${prequentialError.scanLeft(0.0)(_ + _).tail}")
 
-    // Just for quick and dirty experiments
-    val x = prequentialError.scanLeft(0.0)(_ + _).tail.toString()
-    Utils.writeToFile(new File(this.writeExprmtResultsTo), "append") { p => List(x).foreach(p.println) }
+    if (this.writeExprmtResultsTo != "") {
+      // Just for quick and dirty experiments
+      val x = prequentialError.scanLeft(0.0)(_ + _).tail.toString()
+      Utils.writeToFile(new File(this.writeExprmtResultsTo), "append") { p => List(x).foreach(p.println) }
+    }
+
 
     logger.info(s"Total TPs: ${totalTPs.size}, Total FPs: ${totalFPs.size}, Total FNs: ${totalFNs.size}")
 
@@ -414,10 +417,8 @@ class Learner[T <: Source](val inps: RunningOptions,
       //theory = List(newInit, newTerm)
       //theory = List(newInit.clauses.flatMap(x => x.refinements :+ x), newTerm.clauses.flatMap(x => x.refinements :+ x))
 
-      theory = List(newInit.clauses.flatMap(x => x.refinements :+ x).filter(x => x.w > 0.0 && x.w < 10.0),
-        newTerm.clauses.flatMap(x => x.refinements :+ x).filter(x => x.w > 0.0 && x.w < 10.0))
-
-
+      theory = List(newInit.clauses.flatMap(x => x.refinements :+ x).filter(x => x.w > 0.0 && x.w < 5.0),
+        newTerm.clauses.flatMap(x => x.refinements :+ x).filter(x => x.w > 0.0 && x.w < 5.0))
 
       val (init, term) = (theory.head, theory.tail.head)
       val _merged = init.clauses ++ term.clauses
@@ -432,8 +433,10 @@ class Learner[T <: Source](val inps: RunningOptions,
       logger.info(s"Evaluation on the test set\ntps: ${totalTPs.size}\nfps: ${totalFPs.size}\nfns: ${totalFNs.size}")
 
       // just for quick and dirty experiments
-      val x = s"tps: ${totalTPs.size}\nfps: ${totalFPs.size}\nfns: ${totalFNs.size}\n\n"
-      Utils.writeToFile(new File(this.writeExprmtResultsTo), "append") { p => List(x).foreach(p.println) }
+      if (this.writeExprmtResultsTo != "") {
+        val x = s"tps: ${totalTPs.size}\nfps: ${totalFPs.size}\nfns: ${totalFNs.size}\n\n"
+        Utils.writeToFile(new File(this.writeExprmtResultsTo), "append") { p => List(x).foreach(p.println) }
+      }
 
       logger.info(s"Total prediction & weights update time: $totalWeightsUpdateTime")
       logger.info(s"Total groundings computation time: $totalgroundingsTime")
