@@ -321,9 +321,9 @@ class Learner[T <: Source](val inps: RunningOptions,
 
       //evaluateTest(nextBatch)
 
-      //evaluateTest_NEW(nextBatch)
+      evaluateTest_NEW(nextBatch)
 
-      evaluateTest_NEW_EXPAND_WHEN_NEEDED(nextBatch)
+      //evaluateTest_NEW_EXPAND_WHEN_NEEDED(nextBatch)
 
       if (this.workers.length > 1) { // we're learning with the Event Calculus.
         val msg1 = new ProcessBatchMsg(theory.head, nextBatch, "initiated")
