@@ -220,6 +220,38 @@ object AuxFuncs extends LazyLogging {
 
   }
 
+  def getRulePrediction1(rule: Clause, firingRuleIds: Vector[String], nonFiringRuleIds: Vector[String]) = {
+
+    val ruleAbstains = rule.body.isEmpty // don't use the top rule's opinion if the rule is too immature.
+
+    /*
+    val bestSubExpert =
+      if (! ruleAbstains) {
+        (rule.refinements :+ rule).sortBy { x => (- x.w, - x.score, x.body.length+1) }.head
+      } else {
+        rule.refinements.sortBy { x => (- x.w, - x.score, x.body.length+1) }.head
+      }
+    */
+    val sorted = (rule.refinements :+ rule).filter(z => z.score >= 0.2).sortBy { x => (- x.score, - x.w, x.body.length+1) }
+
+    val bestExpert = if (sorted.nonEmpty) sorted.head else Clause.empty
+
+    if (bestExpert == Clause.empty) {
+      0.0
+    } else {
+      if (firingRuleIds.toSet.contains(bestExpert.##.toString)) {
+        bestExpert.w
+      } else if (nonFiringRuleIds.toSet.contains(bestExpert.##.toString)) {
+        - bestExpert.w
+      } else {
+        throw new RuntimeException(s"\nRule:\n${rule.tostring}\nwith id: ${rule.##} " +
+          s"is contained neither in the firing, nor the non-firing rules")
+      }
+    }
+
+
+  }
+
 
   /*
   *
@@ -347,6 +379,114 @@ object AuxFuncs extends LazyLogging {
     map
 
   }
+
+
+  // Generates the final theory to use on the test set. The input is a list with
+  // the initiation part in the haed and the termination part in the body
+  def getFinalTheory(theory: List[Theory], useAvgWeights: Boolean = true, logger: org.slf4j.Logger) = {
+
+    //theory = List(newInit, newTerm)
+    //theory = List(newInit.clauses.flatMap(x => x.refinements :+ x), newTerm.clauses.flatMap(x => x.refinements :+ x))
+
+    // Here somewhere, maybe you also want to try to filter
+    // filter(p => p.score > inps.pruneThreshold)
+
+    val oldInit = theory.head.clauses
+    val oldTerm = theory.tail.head.clauses
+
+    val newInit = oldInit.flatMap(x => x.refinements :+ x).
+      filter(z => z.body.nonEmpty)//.filter(x => x.avgWeight > 0.0 && x.avgWeight < 3.0)
+
+    val newTerm = oldTerm.flatMap(x => x.refinements :+ x).
+      filter(z => z.body.nonEmpty)//.filter(x => x.avgWeight > 0.0 && x.avgWeight < 3.0)
+
+    val _merged = Theory(newInit ++ newTerm)
+
+    logger.info(s"\n\n\nPerforming test with:\n\n${_merged.showWithStats}")
+
+    if (useAvgWeights) {
+      newInit foreach { r =>
+        r.w = r.avgWeight
+        r.refinements foreach( r1 => r1.w = r1.avgWeight )
+      }
+
+      newTerm foreach { r =>
+        r.w = r.avgWeight
+        r.refinements foreach( r1 => r1.w = r1.avgWeight )
+      }
+    }
+
+    (newInit, newTerm)
+
+  }
+
+
+  // This is wrong, a rule is scored based on its true/false groundings, not the final prediction
+  ///*
+  def updateRulesScore(prediction: String,
+                       firingInitRules: Vector[Clause],
+                       nonFiringInitRules: Vector[Clause],
+                       firingTermRules: Vector[Clause],
+                       nonFiringTermRules: Vector[Clause]) = {
+
+    firingInitRules foreach (x => x.seenExmplsNum +=  1)
+    nonFiringInitRules foreach (x => x.seenExmplsNum +=  1)
+    firingTermRules foreach (x => x.seenExmplsNum +=  1)
+    nonFiringTermRules foreach (x => x.seenExmplsNum +=  1)
+
+    prediction match {
+
+      // The master predicted positive and it actually is.
+      case "TP" =>
+        // Count 1 TP for all initiation rules that fire and all termination rules that do not.
+        firingInitRules foreach (x => x.tps +=  1)
+        nonFiringTermRules foreach (x => x.tps +=  1)
+
+        // Count 1 FN for all initiation rules that do not fire and all termination rules that fire.
+        nonFiringInitRules foreach (x => x.fns +=  1)
+        firingTermRules foreach (x => x.fns +=  1)
+
+      // The master predicted positive but its not.
+      case "FP" =>
+        // Count 1 FP for all initiation rules that fire.
+        firingInitRules foreach (x => x.fps +=  1)
+
+        // Count 1 TN for all initiation rules that do not fire.
+        nonFiringInitRules foreach (x => x.tns +=  1)
+
+        // Count 1 TP for all termination rules that do not fire.
+        nonFiringTermRules foreach (x => x.tps +=  1)
+
+        // Count 1 TN for all termination rules that fire.
+        firingTermRules foreach (x => x.tns +=  1)
+
+      // The master predicted negative, but it's actually positive.
+      case "FN" =>
+        // Count 1 FN for all initiation rules that do not fire and all termination rules that do.
+        nonFiringInitRules foreach (x => x.fns +=  1)
+        firingTermRules foreach (x => x.fns +=  1)
+
+        // Count 1 TP for all initiation rules that fire and all termination rules that do not fire.
+        firingInitRules foreach (x => x.tps +=  1)
+        nonFiringTermRules foreach (x => x.tps +=  1)
+
+      // The master predicted negative, and it actually is.
+      case "TN" =>
+        // Count 1 TN for all initiation rules that do not fire and all termination rules that fire
+        nonFiringInitRules foreach (x => x.tns +=  1)
+        firingTermRules foreach (x => x.tns +=  1)
+
+        // Count 1 FP for all initiation rules that fire
+        firingInitRules foreach (x => x.fps +=  1)
+
+        // Count 1 TP for all termination rules that fire.
+        firingTermRules foreach (x => x.tps +=  1)
+
+      case _ => throw new RuntimeException(s"Recieved $prediction as the prediction while updating the rules' scores.")
+    }
+
+  }
+  //*/
 
 
 

@@ -18,6 +18,7 @@ import utils.Implicits._
 
 import scala.util.control.Breaks._
 import scala.reflect.internal.Trees
+import java.util.Random
 import scala.util.matching.Regex
 
 
@@ -320,7 +321,9 @@ class Learner[T <: Source](val inps: RunningOptions,
 
       //evaluateTest(nextBatch)
 
-      evaluateTest_NEW(nextBatch)
+      //evaluateTest_NEW(nextBatch)
+
+      evaluateTest_NEW_EXPAND_WHEN_NEEDED(nextBatch)
 
       if (this.workers.length > 1) { // we're learning with the Event Calculus.
         val msg1 = new ProcessBatchMsg(theory.head, nextBatch, "initiated")
@@ -330,6 +333,10 @@ class Learner[T <: Source](val inps: RunningOptions,
       } else { // We're learning without the Event Calculus.
         workers.head ! new ProcessBatchMsg(theory.head, nextBatch)
       }
+
+
+
+
     }
 
   }
@@ -392,38 +399,16 @@ class Learner[T <: Source](val inps: RunningOptions,
       totalFPs = Set[String]()
       totalFNs = Set[String]()
 
-      // For each rule in the theory, set its weight to its average weight, so that it uses the latter
-      // for prediction during learning. Could we avoid over-training with something like that?
-      ///*
+      // This includes the refinements in the final theory
+      // Comment it out to test with the final theory
+      /*
+      val predictWith = getFinalTheory(theory, useAvgWeights = true, logger)
 
-      val oldInit = theory.head.clauses
-      val oldTerm = theory.tail.head.clauses
+      val newInit = predictWith._1
+      val newTerm = predictWith._2
 
-      ///*
-      oldInit foreach { r =>
-        r.w = r.avgWeight
-        r.refinements foreach( r1 => r1.w = r1.avgWeight )
-      }
-
-      oldTerm foreach { r =>
-        r.w = r.avgWeight
-        r.refinements foreach( r1 => r1.w = r1.avgWeight )
-      }
-      //*/
-
-      val newInit = oldInit //theory.head.clauses.filter(x => x.w > 0.0 && x.w < 10.0)
-      val newTerm = oldTerm //theory.tail.head.clauses.filter(x => x.w > 0.0 && x.w < 10.0)
-
-      //theory = List(newInit, newTerm)
-      //theory = List(newInit.clauses.flatMap(x => x.refinements :+ x), newTerm.clauses.flatMap(x => x.refinements :+ x))
-
-      theory = List(newInit.clauses.flatMap(x => x.refinements :+ x).filter(x => x.w > 0.0 && x.w < 5.0),
-        newTerm.clauses.flatMap(x => x.refinements :+ x).filter(x => x.w > 0.0 && x.w < 5.0))
-
-      val (init, term) = (theory.head, theory.tail.head)
-      val _merged = init.clauses ++ term.clauses
-
-      logger.info(s"\n\n\nPerforming test with:\n\n${_merged.showWithStats}")
+      theory = List(Theory(newInit), Theory(newTerm))
+      */
 
       testData foreach { batch =>
         evaluateTest_NEW(batch, testOnly = true)
@@ -495,32 +480,22 @@ class Learner[T <: Source](val inps: RunningOptions,
   private def getMergedTheory(testOnly: Boolean) = {
     if (withec) {
       val (init, term) = (theory.head, theory.tail.head)
-      val _merged =
-        if (!testOnly) {
-          Theory(init.clauses ++ term.clauses)
-          //Theory( (init.clauses ++ term.clauses).map(x => x.supportSet.clauses.head) )
-        } else {
-          Theory(init.clauses ++ term.clauses)
+      val _merged = Theory(init.clauses ++ term.clauses)
 
-          //Theory( (init.clauses ++ term.clauses).map(x => x.supportSet.clauses.head) )
-
-          //Theory( (init.clauses ++ term.clauses).filter(p => p.score > inps.pruneThreshold) )
-          //Theory( (init.clauses ++ term.clauses) ++ (init.clauses ++ term.clauses).flatMap(x => x.refinements) )
-        }
-
-      _merged.clauses foreach (rule => if (rule.refinements.isEmpty) rule.generateCandidateRefs(inps.globals))
-
-      val mergedWithRefs = Theory(_merged.clauses ++ _merged.clauses.flatMap(_.refinements))
-      //val merged = _merged
-
-      val merged = if (testOnly) {
-        val t = (_merged.clauses ++ _merged.clauses.flatMap(x => x.refinements)).filter(p => p.score > inps.pruneThreshold)
-        Theory(t)
+      if (testOnly) {
+        _merged
       } else {
-        mergedWithRefs
+        _merged.clauses foreach (rule => if (rule.refinements.isEmpty) rule.generateCandidateRefs(inps.globals))
+
+        // Do we want to also filter(p => p.score > inps.pruneThreshold) here?
+        // Do we want to compress here? Theory(LogicUtils.compressTheory(_merged.clauses))
+
+        val mergedWithRefs = Theory(_merged.clauses ++ _merged.clauses.flatMap(_.refinements))
+        //val merged = _merged
+        val merged = mergedWithRefs
+        merged
       }
-      //val merged = Theory(LogicUtils.compressTheory(_merged.clauses))
-      Theory(merged.clauses.filter(p => p.body.nonEmpty))
+
     } else {
       Theory() /* TODO */
     }
@@ -550,6 +525,56 @@ class Learner[T <: Source](val inps: RunningOptions,
     (mergedNew, markedProgramNew, markedMapNew)
   }
 
+  /* This is called whenever we're specializing a rule due to a mistake */
+  private def specializeRuleAndUpdate(topRule: Clause,
+                                      refinement: Clause, testOnly: Boolean = false) = {
+
+    val filter = (p: List[Clause]) => {
+      p.foldLeft(List[Clause]()) { (x, y) =>
+        if (!topRule.equals(y)) {
+          x :+ y
+        } else {
+          x
+        }
+      }
+    }
+
+    // Update the current theory
+    val oldInit = theory.head.clauses
+    val oldTerm = theory.tail.head.clauses
+    if (withec) {
+      if (topRule.head.functor.contains("initiated")) {
+        val newInit = filter(oldInit) :+ refinement
+        theory = List(Theory(newInit), Theory(oldTerm))
+        showInfo(topRule, refinement)
+      } else if (topRule.head.functor.contains("terminated")) {
+        val newTerm = filter(oldTerm) :+ refinement
+        theory = List(Theory(oldInit), Theory(newTerm))
+        showInfo(topRule, refinement)
+      } else {
+        throw new RuntimeException("Error while updating current theory.")
+      }
+    } else {
+      /* TODO */
+    }
+    // Update merged theory and marked-up stuff.
+    val mergedNew = getMergedTheory(testOnly)
+    val markedNew = marked(mergedNew.clauses.toVector, inps.globals)
+    val markedProgramNew = markedNew._1
+    val markedMapNew = markedNew._2
+    (mergedNew, markedProgramNew, markedMapNew)
+  }
+
+  private def showInfo(parent: Clause, child: Clause) = {
+
+    logger.info(s"\nRule (id: ${parent.##} | score: ${parent.score} | tps: ${parent.tps} fps: ${parent.fps} " +
+      s"fns: ${parent.fns} | ExpertWeight: ${parent.w} " +
+      s"AvgExpertWeight: ${parent.avgWeight})\n${parent.tostring}\nwas refined to" +
+      s"(id: ${child.##} | score: ${child.score} | tps: ${child.tps} fps: ${child.fps} fns: ${child.fns} | " +
+      s"ExpertWeight: ${child.w} AvgExpertWeight: ${child.avgWeight})\n${child.tostring}")
+
+  }
+
 
 
 
@@ -557,10 +582,6 @@ class Learner[T <: Source](val inps: RunningOptions,
 
   def evaluateTest_NEW(batch: Example, inputTheoryFile: String = "",
                        testOnly: Boolean = false, weightsOnly: Boolean = false, inputTheory: Theory = Theory()) = {
-
-    if (batchCounter == 364) {
-      val stop = "stop"
-    }
 
     if (withec) {
 
@@ -743,6 +764,338 @@ class Learner[T <: Source](val inps: RunningOptions,
 
 
 
+
+
+
+
+
+
+  def evaluateTest_NEW_EXPAND_WHEN_NEEDED(batch: Example, inputTheoryFile: String = "",
+                       testOnly: Boolean = false, weightsOnly: Boolean = false, inputTheory: Theory = Theory()) = {
+
+    if (withec) {
+
+      var merged = if (inputTheory == Theory()) getMergedTheory(testOnly) else inputTheory
+
+      //logger.info(s"\n${merged.tostring}")
+
+      // just for debugging
+      val weightsBefore = merged.clauses.map(x => x.w)
+      // just for debugging
+      val inertiaBefore = inertiaExpert.map(x => x)
+
+      val _marked = marked(merged.clauses.toVector, inps.globals)
+      var markedProgram = _marked._1
+      var markedMap = _marked._2
+      val e = (batch.annotationASP ++ batch.narrativeASP).mkString("\n")
+
+      val trueAtoms = batch.annotation.toSet
+
+      var inferredAtoms = (Set[String](), Set[String](), Set[String]())
+
+      // this is to be set to the time the previous iteration stopped at.
+      // It was supposed to be used for removing already seen stuff from the batch
+      // whenever we make a mistake and start computing groundings all over again, but
+      // I haven't done that yet.
+      var processedUntil = 0
+      var finishedBatch = false
+
+      var alreadyProcessedAtoms = Set.empty[String]
+
+      while(!finishedBatch) {
+
+        val groundingsMapTimed = Utils.time{
+          computeRuleGroundings(inps, markedProgram, markedMap, e, trueAtoms)
+        }
+
+        val groundingsMap = groundingsMapTimed._1
+        val groundingsTime = groundingsMapTimed._2
+
+        totalgroundingsTime += groundingsTime
+
+        // We sort the groundings map by the time-stamp of each inferred holdsAt atom in ascending order.
+        // For each holdsAt atom we calculate if it should actually be inferred, based on the weights
+        // of the rules that initiate or terminate it. In this process, the weights of the rules are
+        // updated based on whether the atom is mistakenly/correctly predicted and whether each individual
+        // rule mistakenly/correctly predicts it. Sorting the inferred atoms and iterating over them is necessary
+        // so as to promote/penalize the rule weights correctly after each mistake.
+        val sorted = groundingsMap.map { entry =>
+          val parsed = Literal.parse(entry._1)
+          val time = parsed.terms.tail.head.name.toInt
+          ((entry._1, time), entry._2)
+        }.toVector.sortBy(x => x._1._2) // sort by time
+
+        val predictAndUpdateTimed = Utils.time {
+          breakable {
+            sorted foreach { y =>
+              val (currentAtom, currentTime) = (y._1._1, y._1._2)
+
+              if (!alreadyProcessedAtoms.contains(currentAtom)) {
+                val parsed = Literal.parse(currentAtom)
+                val currentFluent = parsed.terms.head.tostring
+
+                val (initiatedBy, terminatedBy) = (y._2._1, y._2._2)
+
+                // This is also calculated at predictAndUpdate, we need to factor it out.
+                // Calculate it here (because it is needed here) and pass it to predictAndUpdate
+                // to avoid doing it twice.
+                val nonFiringInitRules =
+                  markedMap.filter(x =>
+                    x._2.head.functor.contains("initiated") && !initiatedBy.contains(x._1))
+
+                // This is also calculated at predictAndUpdate, we need to factor it out.
+                // Calculate it here (because it is needed here) and pass it to predictAndUpdate
+                // to avoid doing it twice.
+                val nonFiringTermRules =
+                  markedMap.filter(x =>
+                    x._2.head.functor.contains("terminated") && !terminatedBy.toSet.contains(x._1))
+
+                val initWeightSum = if (initiatedBy.nonEmpty) initiatedBy.map(x => markedMap(x).w).sum else 0.0
+                val termWeightSum = if (terminatedBy.nonEmpty) terminatedBy.map(x => markedMap(x).w).sum else 0.0
+
+                // only updates weights when we're not running in test mode.
+                val prediction = predictAndUpdate(currentAtom, currentFluent, initiatedBy, terminatedBy, markedMap, testOnly, trueAtoms, batch)
+
+                prediction match {
+                  case "TP" => inferredAtoms = (inferredAtoms._1 + currentAtom, inferredAtoms._2, inferredAtoms._3)
+                  case "FP" => inferredAtoms = (inferredAtoms._1, inferredAtoms._2 + currentAtom, inferredAtoms._3)
+                  case "FN" => inferredAtoms = (inferredAtoms._1, inferredAtoms._2, inferredAtoms._3 + currentAtom)
+                  case "TN" => // do nothing
+                  case _ => throw new RuntimeException("Unexpected response from predictAndUpdate")
+                }
+
+                if (! testOnly && ! weightsOnly) {
+
+                  if (prediction == "FP") {
+
+                    if (terminatedBy.isEmpty) {
+                      // Let's try adding a new termination expert only when there is no other termination expert that fires.
+                      // Else, let it fix the mistakes in future rounds by increasing the weights of firing terminating experts.
+
+                      // Generate a new termination rule from the point where we currently err.
+                      // This rule will be used for fixing the mistake in the next round.
+
+                      // This most probably results in over-training. It increases weights too much and the new rule dominates.
+                      //val totalWeight = inertiaExpert(currentFluent) + initWeightSum
+
+                      val totalWeight = 1.0
+
+                      val newTerminationRule = generateNewExpert(batch, currentAtom, inps.globals, "terminatedAt", totalWeight)
+
+                      if (!newTerminationRule.equals(Clause.empty)) {
+
+                        logger.info(s"Generated new termination rule in response to FP atom: $currentAtom")
+                        // Since neither the new termination rule (empty-bodied), nor its refinements fire,
+                        // therefore, they do not contribute to the FP, increase their weights further
+                        increaseWeights(newTerminationRule.refinements :+ newTerminationRule, learningRate)
+
+                        // Finally, add the new termination rule to the current theory.
+                        val update = addRuleAndUpdate(newTerminationRule)
+                        merged = update._1
+                        markedProgram = update._2
+                        markedMap = update._3
+                        // do it here, cause it won't be set otherwise due to the break.
+                        alreadyProcessedAtoms = alreadyProcessedAtoms + currentAtom
+                        break
+                      } else {
+                        logger.info(s"At batch $batchCounter: Failed to generate bottom rule from FP mistake with atom: $currentAtom")
+                      }
+
+                    } else { // We do have firing termination rules
+                      // Specialize a firing initiation rule. If no firing initiation rule exists,
+                      // therefore the FP is due to inertia, just let the inertia weight degrade, until
+                      // the termination rules take over the majority (note that we do have firing termination rules here,
+                      // so there are reasons to believe that we'll have such rules in the up-coming rounds).
+                      if (initiatedBy.nonEmpty) {
+                        // Note that we'll most certainly have a top-rule that fires: for every
+                        // refinement that fires, its parent rule must fire as well. Therefore, if
+                        // initiatedBy is non empty, at least some of the rules in there must be top rules.
+
+                        val rulesToSpecialize =
+                          // This is the first minor difference with the piece of code
+                          // for specializing termination rules (below). Here We select the
+                          // rules from the initiation part of the theory, below from the termination
+                          theory.head.clauses.
+                            filter(x => initiatedBy.toSet.contains(x.##.toString))
+
+                        var performedSpecialization = false
+
+                        rulesToSpecialize foreach { ruleToSpecialize =>
+                          // Find suitable refinements, i.e refinements that DO NOT fire
+                          // w.r.t. the current FP atom.
+                          val suitableRefs =
+                            // Here is the second difference. We use nonFiringInitRules here.
+                            // It's really stupid to have this code duplicated like that.
+                            // Fuck your quick & dirty bullshit.
+                            ruleToSpecialize.refinements.
+                              filter(r => nonFiringInitRules.keySet.contains(r.##.toString)).
+                              filter(s => s.score > ruleToSpecialize.score).
+                              filter(r => !theory.head.clauses.exists(r1 => r1.thetaSubsumes(r) && r.thetaSubsumes(r1))).
+                              sortBy { x => (- x.w, - x.score, x.body.length+1) }
+
+                          if (suitableRefs.nonEmpty) {
+                            performedSpecialization = true
+                            val bestRefinement = suitableRefs.head
+                            if (bestRefinement.refinements.isEmpty) bestRefinement.generateCandidateRefs(inps.globals)
+                            val update = specializeRuleAndUpdate(ruleToSpecialize, bestRefinement)
+                            merged = update._1
+                            markedProgram = update._2
+                            markedMap = update._3
+                            // do it here, cause it won't be set otherwise due to the break.
+                            alreadyProcessedAtoms = alreadyProcessedAtoms + currentAtom
+                            break
+                          }
+                        }
+
+                        if (performedSpecialization) break
+
+
+                      }
+                    }
+
+                  }
+
+                  //if (prediction == "FN" && initiatedBy.isEmpty && getInertiaExpertPrediction(currentFluent) == 0.0) {
+                  if (prediction == "FN") {
+
+                    if (initiatedBy.isEmpty || (nonFiringInitRules.values.map(_.w).sum > initWeightSum) ) {
+                      //val newInitiationRule = generateNewExpert(batch, currentAtom, inps.globals, "initiatedAt", termWeightSum)
+                      // Don't give the total weight of the termination part. It's dangerous
+                      // (e.g. if the termination part new rules get the total weight of 0.0, and the TN is never fixed!)
+                      // and it's also wrong. You just over-train to get rid of a few mistakes!
+                      val newInitiationRule = generateNewExpert(batch, currentAtom, inps.globals, "initiatedAt", 1.0)
+                      if (!newInitiationRule.equals(Clause.empty)) {
+                        logger.info(s"Generated new initiation rule in response to FN atom: $currentAtom")
+                        val update = addRuleAndUpdate(newInitiationRule)
+                        merged = update._1
+                        markedProgram = update._2
+                        markedMap = update._3
+                        // do it here, cause it won't be set otherwise due to the break.
+                        alreadyProcessedAtoms = alreadyProcessedAtoms + currentAtom
+                        break
+                      } else {
+                        logger.info(s"At batch $batchCounter: Failed to generate bottom rule from FN mistake with atom: $currentAtom")
+                      }
+
+                      /* THE CODE BELOW IS THE SAME AS ABOVE. FACTOR IT OUT TO A FUNCTION. */
+
+                    } else {
+                      // Them the FN is due to over-weighted firing termination rules. Specialize one.
+                      if (terminatedBy.nonEmpty) {
+
+                        val termRulesToSpecialize =
+                          theory.tail.head.clauses.
+                            filter(x => terminatedBy.toSet.contains(x.##.toString))
+
+                        var performedSpecialization = false
+
+                        termRulesToSpecialize foreach { ruleToSpecialize =>
+                          // Find suitable refinements, i.e refinements that DO NOT fire
+                          // w.r.t. the current FN atom.
+                          val suitableRefs =
+                            ruleToSpecialize.refinements.
+                              filter(r => nonFiringTermRules.keySet.contains(r.##.toString)).
+                              filter(s => s.score > ruleToSpecialize.score).
+                              filter(r => !theory.tail.head.clauses.exists(r1 => r1.thetaSubsumes(r) && r.thetaSubsumes(r1))).
+                              sortBy { x => (- x.w, - x.score, x.body.length+1) }
+
+                          if (suitableRefs.nonEmpty) {
+                            performedSpecialization = true
+                            val bestRefinement = suitableRefs.head
+                            if (bestRefinement.refinements.isEmpty) bestRefinement.generateCandidateRefs(inps.globals)
+                            val update = specializeRuleAndUpdate(ruleToSpecialize, bestRefinement)
+                            merged = update._1
+                            markedProgram = update._2
+                            markedMap = update._3
+                            // do it here, cause it won't be set otherwise due to the break.
+                            alreadyProcessedAtoms = alreadyProcessedAtoms + currentAtom
+                            break
+                          }
+                        }
+                        if (performedSpecialization) break
+                      } else {
+                        // This would be a problem, certainly something that is worth looking into.
+                        // We have an FN, with firing initiation rules, but not firing termination ones.
+                        // UPDATE: It's ok, it can happen because the non-firing weight is greater then the firing weight.
+                        /*
+                        throw new RuntimeException(s"We have an FN atom, which is " +
+                          s"initiated by some rules and terminated by NO rules. It's worth finding out how this happens!\nBatch" +
+                          s" cointer: $batchCounter, atom: $currentAtom")
+                        */
+                      }
+                    }
+                  }
+                }
+              }
+              alreadyProcessedAtoms = alreadyProcessedAtoms + currentAtom
+            }
+            finishedBatch = true
+          }
+        }
+        totalWeightsUpdateTime += predictAndUpdateTimed._2
+      }
+
+      val (tps, fps, fns) = (inferredAtoms._1, inferredAtoms._2, inferredAtoms._3)
+
+      val (fpsNumber, currentFNsNumber) = (fps.size, fns.size)
+
+      // All atoms in tps are certainly true positives.
+      // But we need to account for the real true atoms which are not in there.
+      val restFNs = trueAtoms.diff(tps).filter(!fns.contains(_))
+
+      if (restFNs.nonEmpty) throw new RuntimeException("FUUUUUUUUUUUUCK!!!!!")
+
+      val restFNsNumber = restFNs.size
+
+      var trueFNsNumber = currentFNsNumber + restFNsNumber
+
+      // Ugly (AND DANGEROUS) hack to avoid counting as mistakes the holdsAt/2 atoms at the first time point of an interval
+      if (trueFNsNumber == 2) trueFNsNumber = 0
+
+      // We have gathered the FNs that have not been inferred, but we need to add the rest of them in the global counter
+      totalFNs = totalFNs ++ restFNs
+
+      // Just for debugging.
+      val weightsAfter = merged.clauses.map(x => x.w)
+      //just for debugging
+      val inertiaAfter = inertiaExpert.map(x => x)
+
+      prequentialError = prequentialError :+ (fpsNumber + trueFNsNumber).toDouble
+
+      if (fpsNumber + trueFNsNumber > 0) {
+        logger.info(s"\nMade mistakes: FPs: $fpsNumber, " +
+          s"FNs: $trueFNsNumber.\nWeights before: $weightsBefore\nWeights after: $weightsAfter\nInertia Before: " +
+          s"$inertiaBefore\nInertia after: $inertiaAfter")//\nPredicted with:\n${merged.showWithStats}")
+      }
+    } else { // No Event Calculus. We'll see what we'll do with that.
+
+    }
+
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   def predictAndUpdate(currentAtom: String, currentFluent: String, init: Vector[String],
                        term: Vector[String], markedMap: scala.collection.immutable.Map[String, Clause],
                        testOnly: Boolean, trueAtoms: Set[String], batch: Example) = {
@@ -760,14 +1113,29 @@ class Learner[T <: Source](val inps: RunningOptions,
       markedMap.filter(x =>
         x._2.head.functor.contains("initiated") && !firingInitRulesIds.contains(x._1))
 
+    // Use this to have all rules and their refs vote independently:
+    // This was the default but does not seam reasonable.
     val predictInitiated = initWeightSum - nonFiringInitRules.values.map(_.w).sum
-    // Use the above to have all rules and their refs voting independently.
-    // Use the one below to have one prediction per top rule, resulting by combing the
+
+    // Use this to have one prediction per top rule, resulting by combing the
     // opinions of the rule's sub-expert committee (its specializations)
     /*
     val predictInitiatedTimed = Utils.time{
       val individualPredictions =
         theory.head.clauses.map( rule => getRulePrediction(rule, firingInitRulesIds, nonFiringInitRules.keys.toVector) )
+      individualPredictions.sum
+    }
+    val predictInitiated = predictInitiatedTimed._1
+    totalPredictionTime += predictInitiatedTimed._2
+    */
+
+    // Use this to have one prediction per top rule.
+    // The best (based on current weight) between the top-rule's own
+    // prediction and the prediction of the rule's best sub-expert:
+    /*
+    val predictInitiatedTimed = Utils.time{
+      val individualPredictions =
+        theory.head.clauses.map( rule => getRulePrediction1(rule, firingInitRulesIds, nonFiringInitRules.keys.toVector) )
       individualPredictions.sum
     }
     val predictInitiated = predictInitiatedTimed._1
@@ -780,14 +1148,29 @@ class Learner[T <: Source](val inps: RunningOptions,
       markedMap.filter(x =>
         x._2.head.functor.contains("terminated") && !firingTermRulesIds.toSet.contains(x._1))
 
+    // Use this to have all rules and their refs vote independently:
+    // This was the default but does not seam reasonable.
     val predictTerminated = termWeightSum - nonFiringTermRules.values.map(_.w).sum
-    // Use the above to have all rules and their refs voting independently.
-    // Use the one below to have one prediction per top rule, resulting by combing the
-    // opinions of the rule's sub-expert committee (its specializations)
+
+    // Use this to have one prediction per top rule, resulting by combing the
+    // opinions of the rule's sub-expert committee (its specializations):
     /*
     val predictTerminatedTimed = Utils.time {
       val individualPredictions =
-        theory.head.clauses.map( rule => getRulePrediction(rule, firingTermRulesIds, nonFiringTermRules.keys.toVector) )
+        theory.tail.head.clauses.map( rule => getRulePrediction(rule, firingTermRulesIds, nonFiringTermRules.keys.toVector) )
+      individualPredictions.sum
+    }
+    val predictTerminated = predictTerminatedTimed._1
+    totalPredictionTime += predictTerminatedTimed._2
+    */
+
+    // Use this to have one prediction per top rule.
+    // The best (based on current weight) between the top-rule's own
+    // prediction and the prediction of the rule's best sub-expert:
+    /*
+    val predictTerminatedTimed = Utils.time {
+      val individualPredictions =
+        theory.tail.head.clauses.map( rule => getRulePrediction1(rule, firingTermRulesIds, nonFiringTermRules.keys.toVector) )
       individualPredictions.sum
     }
     val predictTerminated = predictTerminatedTimed._1
@@ -841,7 +1224,11 @@ class Learner[T <: Source](val inps: RunningOptions,
 
       if (trueAtoms.contains(currentAtom)) {
 
-        // Then it's a TP. Simply return it without updating any weights.
+        // Then it's a TP. Simply return it without updating any weights, after properly scoring the rules.
+
+        updateRulesScore("TP", initiatedBy.map(x => markedMap(x)), nonFiringInitRules.values.toVector,
+          terminatedBy.map(x => markedMap(x)), nonFiringTermRules.values.toVector)
+
         totalTPs = totalTPs + currentAtom
         "TP"
 
@@ -880,6 +1267,10 @@ class Learner[T <: Source](val inps: RunningOptions,
           //increaseWeights(nonFiringInitRules.keys.toVector, markedMap, learningRate)
 
         }
+
+        updateRulesScore("FP", initiatedBy.map(x => markedMap(x)), nonFiringInitRules.values.toVector,
+          terminatedBy.map(x => markedMap(x)), nonFiringTermRules.values.toVector)
+
         "FP" // result returned to the calling method.
       }
     } else {
@@ -888,10 +1279,6 @@ class Learner[T <: Source](val inps: RunningOptions,
       if (trueAtoms.contains(currentAtom)) {
 
         // ...while it actually does, so we have an FN.
-
-        if (testOnly) {
-          logger.info(s"InitSum: ${initWeightSum - nonFiringInitRules.values.map(_.w).sum} TermSum: ${termWeightSum - nonFiringTermRules.values.map(_.w).sum}")
-        }
 
         /*
         reportMistake("FN", currentAtom, inertiaExpertPrediction, initiatedBy.size,
@@ -923,7 +1310,12 @@ class Learner[T <: Source](val inps: RunningOptions,
           reduceWeights(terminatedBy, markedMap, learningRate)
 
         }
+
+        updateRulesScore("FN", initiatedBy.map(x => markedMap(x)), nonFiringInitRules.values.toVector,
+          terminatedBy.map(x => markedMap(x)), nonFiringTermRules.values.toVector)
+
         "FN" // result returned to the calling method.
+
       } else {
         // Then we have an atom which was erroneously inferred by the (un-weighted) rules (with ordinary logical
         // inference), but which eventually not inferred, thanks to the expert-based weighted framework. That is,
@@ -934,6 +1326,10 @@ class Learner[T <: Source](val inps: RunningOptions,
         if (inertiaExpert.keySet.contains(currentFluent)) {
           inertiaExpert -= currentFluent
         }
+
+        updateRulesScore("TN", initiatedBy.map(x => markedMap(x)), nonFiringInitRules.values.toVector,
+          terminatedBy.map(x => markedMap(x)), nonFiringTermRules.values.toVector)
+
         "TN"
       }
     }

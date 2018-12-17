@@ -90,7 +90,7 @@ object Runner extends LazyLogging {
 
       /* This is for running on the training set and then performing prequential evaluation on the test set. */
       ///*
-      val dataset = MeetingTrainTestSets.meeting2
+      val dataset = MeetingTrainTestSets.meeting5
 
       val trainingDataOptions =
         new MongoDataOptions(dbNames = dataset._1,

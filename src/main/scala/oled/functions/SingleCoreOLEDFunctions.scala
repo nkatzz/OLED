@@ -46,7 +46,7 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
 
 
   def processExample(topTheory: Theory, e: Example, targetClass: String,
-                     inps: RunningOptions, logger: org.slf4j.Logger) = {
+                     inps: RunningOptions, logger: org.slf4j.Logger, learningWeights: Boolean = false) = {
 
     var newTopTheory = topTheory
 
@@ -131,11 +131,27 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
 
     }
     if (newTopTheory.clauses.nonEmpty) {
-      val t = Utils.time { newTopTheory.scoreRules(e, inps.globals) }
-      if (inps.showStats) logger.info(s"Scoring rules time: ${t._2}")
-      scoringTime += t._2
 
+      // If we're learning weights rules scoring takes place on the weight learner side
+      // so that the scores correspond to the weighted versions of the rules.
+      if (!learningWeights) {
+        val t = Utils.time { newTopTheory.scoreRules(e, inps.globals) }
+        if (inps.showStats) logger.info(s"Scoring rules time: ${t._2}")
+        scoringTime += t._2
+      }
+
+      /*
       val expanded = Utils.time {  expandRules(newTopTheory, inps, logger) }
+      if (inps.showStats) logger.info(s"Expanding rules time: ${expanded._2}")
+      expandRulesTime += expanded._2
+      */
+
+      val expanded =
+        if (! learningWeights) {
+          Utils.time {  expandRules(newTopTheory, inps, logger) }
+        } else {
+          (newTopTheory, 0.0)
+        }
       if (inps.showStats) logger.info(s"Expanding rules time: ${expanded._2}")
       expandRulesTime += expanded._2
 

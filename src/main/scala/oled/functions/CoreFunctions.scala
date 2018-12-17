@@ -109,6 +109,8 @@ trait CoreFunctions {
   def pruneRulesNaive(topTheory: Theory, inps: RunningOptions, logger: org.slf4j.Logger) = {
     val (keep, prune) = topTheory.clauses.foldLeft(List[Clause](), List[Clause]()) { (accum, clause) =>
       if (clause.tps == 0) {
+      //val ruleSize = clause.body.length
+      //if (ruleSize >= 4 && clause.score <= 0.4 ) {
         (accum._1, accum._2 :+ clause)
       } else {
         (accum._1 :+ clause, accum._2)
