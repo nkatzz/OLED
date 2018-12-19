@@ -587,6 +587,8 @@ class Learner[T <: Source](val inps: RunningOptions,
 
       var merged = if (inputTheory == Theory()) getMergedTheory(testOnly) else inputTheory
 
+      logger.info(s"Predicting with ${merged.tostring}")
+
       // just for debugging
       val weightsBefore = merged.clauses.map(x => x.w)
       // just for debugging
