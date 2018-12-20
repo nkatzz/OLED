@@ -116,7 +116,8 @@ object PlotTest2 extends App {
       plot(predictiInt.map(toLog(_))).plot(predictiTerm.map(toLog(_))).
       plot(inert.map(toLog(_))).plot(holds.map(toLog(_))).
       havingLegends("True labels","$W_I^+$","$W_I^-$","$W_T^+$","$W_T^-$","$W_I$","$W_T$","$W_{inert}$","$W_{holds}$").
-      havingXLabel("Time").havingYLabel("Weights \\ (log-scale)").saveAsPDF(savePath)
+      havingXLabel("Time").havingYLabel("Weights \\ (log-scale)").havingTitle("Meeting \\ 1-pass").
+      saveAsPDF(savePath)//show()//.saveAsPDF(savePath)
 
   }
 

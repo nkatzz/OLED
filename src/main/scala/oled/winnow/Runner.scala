@@ -73,7 +73,7 @@ object Runner extends LazyLogging {
           "caviar-video-29", "caviar-video-5", "caviar-video-18", "caviar-video-4", "caviar-video-19-meeting-moving",
           "caviar-video-24-meeting-moving", "caviar-video-8", "caviar-video-10", "caviar-video-2-meeting-moving",
           "caviar-video-22-meeting-moving", "caviar-video-15", "caviar-video-3",
-          "caviar-video-17", "caviar-video-14-meeting-moving").take(10)
+          "caviar-video-17", "caviar-video-14-meeting-moving").take(5)
       //*/
 
       val trainShuffled = scala.util.Random.shuffle(train1)
