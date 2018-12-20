@@ -103,6 +103,23 @@ object PlotTest2 extends App {
   }
   //*/
 
+
+  def plotResults(savePath: String,
+                  name: String, trueLabels: Vector[Double], wInit: Vector[Double], wNoInit: Vector[Double],
+                  wTerm: Vector[Double], wNoTerm: Vector[Double],
+                  predictiInt: Vector[Double], predictiTerm: Vector[Double],
+                  inert: Vector[Double], holds: Vector[Double]) = {
+
+    Figure(name).plot(trueLabels.map(toLog(_))).
+      plot(wInit.map(toLog(_))).plot(wNoInit.map(toLog(_))).
+      plot(wTerm.map(toLog(_))).plot(wNoTerm.map(toLog(_))).
+      plot(predictiInt.map(toLog(_))).plot(predictiTerm.map(toLog(_))).
+      plot(inert.map(toLog(_))).plot(holds.map(toLog(_))).
+      havingLegends("True labels","$W_I^+$","$W_I^-$","$W_T^+$","$W_T^-$","$W_I$","$W_T$","$W_{inert}$","$W_{holds}$").
+      havingXLabel("Time").havingYLabel("Weights \\ (log-scale)").saveAsPDF(savePath)
+
+  }
+
   ///*
   def plotMeeting2passLogScale(dataPath: String, savePath: String) = {
 

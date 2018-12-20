@@ -11,7 +11,7 @@ import oled.winnow.MessageTypes.{FinishedBatchMsg, ProcessBatchMsg}
 import org.slf4j.LoggerFactory
 import oled.functions.SingleCoreOLEDFunctions.{crossVal, eval}
 
-import scala.collection.mutable.Map
+import scala.collection.mutable.{ListBuffer, Map}
 import AuxFuncs._
 import utils.{ASP, Utils}
 import utils.Implicits._
@@ -19,6 +19,7 @@ import utils.Implicits._
 import scala.util.control.Breaks._
 import scala.reflect.internal.Trees
 import java.util.Random
+
 import scala.util.matching.Regex
 
 
@@ -101,6 +102,19 @@ class Learner[T <: Source](val inps: RunningOptions,
   // recognized fluents to persist.
   private val isStrongInertia = true
   //----------------------------------------------------------------------
+
+
+  /* All these are for presenting analytics/results after a run. */
+  private val initWeightSums = new ListBuffer[Double]
+  private val nonInitWeightSums = new ListBuffer[Double]
+  private val TermWeightSums = new ListBuffer[Double]
+  private val monTermWeightSums = new ListBuffer[Double]
+  private val predictInitWeightSums = new ListBuffer[Double]
+  private val predictTermWeightSums = new ListBuffer[Double]
+  private val inertWeightSums = new ListBuffer[Double]
+  private val prodictHoldsWeightSums = new ListBuffer[Double]
+  // For each query atom encountered during a run, 0.0 or 1.0 is stored in this buffer (true false)
+  private val trueLabels = new ListBuffer[Double]
 
   // Control learning iterations over the data
   private var repeatFor = inps.repeatFor
@@ -234,14 +248,31 @@ class Learner[T <: Source](val inps: RunningOptions,
 
           val batch = getNextBatch(lleNoise = false)
 
-          logger.info(s"Prosessing ${batch.time}")
-          //logger.info(currentError)
+          logger.info(s"Prosessing $batchCounter")
+
           evaluateTest_NEW(batch, "", false, true, Theory(rulesParsed))
         }
       }
 
-      logger.info(s"Prequential error vector:\n${prequentialError.mkString(",")}")
-      logger.info(s"Prequential error vector (Accumulated Error):\n${prequentialError.scanLeft(0.0)(_ + _).tail}")
+      logger.info(s"\nPrequential error vector:\n${prequentialError.mkString(",")}")
+      logger.info(s"\nPrequential error vector (Accumulated Error):\n${prequentialError.scanLeft(0.0)(_ + _).tail}")
+      /*
+      logger.info(s"\nTrue labels:\n$trueLabels")
+      logger.info(s"\nInitiation Weight Sums:\n$initWeightSums")
+      logger.info(s"\nNo Initiation Weight Sums:\n$nonInitWeightSums")
+      logger.info(s"\nTermination Weight Sums:\n$TermWeightSums")
+      logger.info(s"\nNon Termination Weight Sums:\n$monTermWeightSums")
+      logger.info(s"\nPredict Initiation Weight Sums:\n$predictInitWeightSums")
+      logger.info(s"\nPredict Termination Weight Sums:\n$predictTermWeightSums")
+      logger.info(s"\nInertia Weight Sums:\n$inertWeightSums")
+      logger.info(s"\nHolds Weight Sums:\n$prodictHoldsWeightSums")
+      */
+
+      PlotTest2.plotResults("/home/nkatz/Desktop/", "results",
+        trueLabels.toVector, initWeightSums.toVector, nonInitWeightSums.toVector, TermWeightSums.toVector,
+        monTermWeightSums.toVector, predictInitWeightSums.toVector, predictTermWeightSums.toVector,
+        inertWeightSums.toVector, prodictHoldsWeightSums.toVector)
+
       context.system.terminate()
     }
 
@@ -649,7 +680,11 @@ class Learner[T <: Source](val inps: RunningOptions,
                 val termWeightSum = if (terminatedBy.nonEmpty) terminatedBy.map(x => markedMap(x).w).sum else 0.0
 
                 // only updates weights when we're not running in test mode.
-                val prediction = predictAndUpdate(currentAtom, currentFluent, initiatedBy, terminatedBy, markedMap, testOnly, trueAtoms, batch)
+                val prediction =
+                  predictAndUpdate(currentAtom, currentFluent,
+                    initiatedBy, terminatedBy, markedMap, testOnly, trueAtoms, batch)
+
+                //val prediction = _prediction._1
 
                 prediction match {
                   case "TP" => inferredAtoms = (inferredAtoms._1 + currentAtom, inferredAtoms._2, inferredAtoms._3)
@@ -1095,6 +1130,21 @@ class Learner[T <: Source](val inps: RunningOptions,
 
 
 
+  def updateAnalyticsBuffers(initWghtSum: Double, termWghtSum: Double,
+                             nonInitWghtSum: Double, nonTermWghtSum: Double,
+                             predictInitWghtSum: Double, predictTermWghtSum: Double,
+                             inertWghtSum: Double, holdsWght: Double) = {
+
+    initWeightSums += initWghtSum
+    TermWeightSums += termWghtSum
+    nonInitWeightSums += nonInitWghtSum
+    monTermWeightSums += nonTermWghtSum
+    predictInitWeightSums += predictInitWghtSum
+    predictTermWeightSums += predictTermWghtSum
+    inertWeightSums += inertWghtSum
+    prodictHoldsWeightSums += holdsWght
+
+  }
 
 
 
@@ -1179,7 +1229,13 @@ class Learner[T <: Source](val inps: RunningOptions,
     totalPredictionTime += predictTerminatedTimed._2
     */
 
-    val predictAtomHolds = predict(inertiaExpertPrediction, predictInitiated, predictTerminated, isStrongInertia)
+    val _predictAtomHolds = predict(inertiaExpertPrediction, predictInitiated, predictTerminated, isStrongInertia)
+
+    val (predictAtomHolds, holdsWeight) = (_predictAtomHolds._1, _predictAtomHolds._2)
+
+    updateAnalyticsBuffers(initWeightSum, termWeightSum,
+      nonFiringInitRules.values.map(_.w).sum, nonFiringTermRules.values.map(_.w).sum,
+      predictInitiated, predictTerminated, inertiaExpertPrediction, holdsWeight)
 
     /*
     * THIS PREDICTION RULE IS WRONG:
@@ -1228,6 +1284,9 @@ class Learner[T <: Source](val inps: RunningOptions,
 
         // Then it's a TP. Simply return it without updating any weights, after properly scoring the rules.
 
+        // Update the analytics buffer for this atom
+        trueLabels :+ 1.0
+
         updateRulesScore("TP", initiatedBy.map(x => markedMap(x)), nonFiringInitRules.values.toVector,
           terminatedBy.map(x => markedMap(x)), nonFiringTermRules.values.toVector)
 
@@ -1236,6 +1295,9 @@ class Learner[T <: Source](val inps: RunningOptions,
 
       } else {
         // Then it's an FP.
+
+        // Update the analytics buffer for this atom
+        trueLabels :+ 0.0
 
         // That's for debugging
         /*
@@ -1282,6 +1344,9 @@ class Learner[T <: Source](val inps: RunningOptions,
 
         // ...while it actually does, so we have an FN.
 
+        // Update the analytics buffer for this atom
+        trueLabels :+ 1.0
+
         /*
         reportMistake("FN", currentAtom, inertiaExpertPrediction, initiatedBy.size,
           nonFiringInitRules.size, terminatedBy.size, nonFiringTermRules.size, initWeightSum,
@@ -1325,6 +1390,10 @@ class Learner[T <: Source](val inps: RunningOptions,
         // of the firing part, or the the total weight of the firing "terminatedAt" path of the theory was greater
         // than the weight of the "initiatedAt" fragment. In either case, the atom is eventually a TN. We don't do
         // anything with it, but we need to instruct the the inertia expert to "forget" the atom.
+
+        // Update the analytics buffer for this atom
+        trueLabels :+ 0.0
+
         if (inertiaExpert.keySet.contains(currentFluent)) {
           inertiaExpert -= currentFluent
         }

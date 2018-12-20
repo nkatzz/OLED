@@ -110,6 +110,10 @@ case class Clause(head: PosLiteral = PosLiteral(),
     weightUpdateCount += 1
   }
 
+  private val weights = new ListBuffer[Double]
+
+  def updateWeightsBuffer(weight: Double) = weights += weight
+
   //(previousMeanDiff * previousMeanDiffCount) + newDiff)/(previousMeanDiffCount + 1)
 
   // These variables store the total current counts from all nodes.

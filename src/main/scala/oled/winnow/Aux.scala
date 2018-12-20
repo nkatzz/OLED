@@ -77,6 +77,9 @@ object AuxFuncs extends LazyLogging {
       val newWeight = rule.w * Math.pow(Math.E, (-1.0) * learningRate)
       rule.w = newWeight
       rule.updateRunningWeightAvg(newWeight)
+
+      // for presenting analytics
+      rule.updateWeightsBuffer(rule.w)
     }
   }
 
@@ -88,6 +91,9 @@ object AuxFuncs extends LazyLogging {
       val newWeight = rule.w * Math.pow(Math.E, 1.0 * learningRate)
       rule.w = if (newWeight.isPosInfinity) rule.w else newWeight
       rule.updateRunningWeightAvg(rule.w)
+
+      // for presenting analytics
+      rule.updateWeightsBuffer(rule.w)
     }
   }
 
@@ -95,6 +101,9 @@ object AuxFuncs extends LazyLogging {
     rules foreach { r =>
       val newWeight = r.w * Math.pow(Math.E, 1.0 * learningRate)
       r.w = if (newWeight.isPosInfinity) r.w else newWeight
+
+      // for presenting analytics
+      r.updateWeightsBuffer(r.w)
     }
   }
 
@@ -144,15 +153,17 @@ object AuxFuncs extends LazyLogging {
       // weakly initiated, the non-firing initiation rules are a good indicator for whether the fluent persists.
       // On the other hand, this is necessary for strongly initiated fluents, to allow for the persistence of fluents.
       if (inertiaPrediction > 0.0) {
-        if (inertiaPrediction > termPrediction) true else false
+        val w = inertiaPrediction - termPrediction
+        if (inertiaPrediction > termPrediction) (true, w) else (false, w)
       } else {
         // this "if" here is necessary. We don't want something to be detected
         // just because the initiation weight sum is greater than the termination weight sum.
         // We also want the initiation sum to be positive, so that the fluent is actually initiated.
         if (initPrediction > 0.0) {
-          if (initPrediction > termPrediction) true else false
+          val w = initPrediction - termPrediction
+          if (initPrediction > termPrediction) (true, w) else (false, w)
         } else {
-          false
+          (false, 0.0)
         }
       }
     } else {
@@ -160,12 +171,13 @@ object AuxFuncs extends LazyLogging {
       // But is usually has better results (less FPs) in weakly-ininitated fluents.
       if (inertiaPrediction + initPrediction > 0.0) {
         if (termPrediction > 0) {
-          if (inertiaPrediction + initPrediction > termPrediction) true else false
+          val w = inertiaPrediction + initPrediction - termPrediction
+          if (inertiaPrediction + initPrediction > termPrediction) (true, w) else (false, w)
         } else {
-          true
+          (true, inertiaPrediction + initPrediction)
         }
       } else {
-        false
+        (false, 0.0)
       }
     }
   }
