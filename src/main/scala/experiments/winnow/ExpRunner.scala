@@ -8,7 +8,7 @@ import com.typesafe.scalalogging.LazyLogging
 import experiments.caviar.FullDatasetHoldOut.MongoDataOptions
 import experiments.caviar.{FullDatasetHoldOut, MeetingTrainTestSets}
 import logic.Examples.Example
-import oled.winnow.Learner
+import oled.mwua.Learner
 import utils.DataUtils.Interval
 
 /**

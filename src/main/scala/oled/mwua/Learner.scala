@@ -1,4 +1,4 @@
-package oled.winnow
+package oled.mwua
 
 import java.io.File
 
@@ -7,7 +7,7 @@ import app.runutils.IOHandling.Source
 import app.runutils.{Globals, RunningOptions}
 import logic.Examples.Example
 import logic._
-import oled.winnow.MessageTypes.{FinishedBatchMsg, ProcessBatchMsg}
+import oled.mwua.MessageTypes.{FinishedBatchMsg, ProcessBatchMsg}
 import org.slf4j.LoggerFactory
 import oled.functions.SingleCoreOLEDFunctions.{crossVal, eval}
 
@@ -100,7 +100,7 @@ class Learner[T <: Source](val inps: RunningOptions,
   // weakly initiated fluents, but setting it to true is necessary for
   // strongly initiated settings, in order to allow for previously
   // recognized fluents to persist.
-  private val isStrongInertia = true
+  private val isStrongInertia = false
   //----------------------------------------------------------------------
 
 
@@ -115,6 +115,8 @@ class Learner[T <: Source](val inps: RunningOptions,
   private val prodictHoldsWeightSums = new ListBuffer[Double]
   // For each query atom encountered during a run, 0.0 or 1.0 is stored in this buffer (true false)
   private val trueLabels = new ListBuffer[Double]
+  // Keep weights only for this
+  val keepStatsForFluent = "meeting(id4,id5)"
 
   // Control learning iterations over the data
   private var repeatFor = inps.repeatFor
@@ -256,7 +258,7 @@ class Learner[T <: Source](val inps: RunningOptions,
 
       logger.info(s"\nPrequential error vector:\n${prequentialError.mkString(",")}")
       logger.info(s"\nPrequential error vector (Accumulated Error):\n${prequentialError.scanLeft(0.0)(_ + _).tail}")
-      /*
+      ///*
       logger.info(s"\nTrue labels:\n$trueLabels")
       logger.info(s"\nInitiation Weight Sums:\n$initWeightSums")
       logger.info(s"\nNo Initiation Weight Sums:\n$nonInitWeightSums")
@@ -266,12 +268,16 @@ class Learner[T <: Source](val inps: RunningOptions,
       logger.info(s"\nPredict Termination Weight Sums:\n$predictTermWeightSums")
       logger.info(s"\nInertia Weight Sums:\n$inertWeightSums")
       logger.info(s"\nHolds Weight Sums:\n$prodictHoldsWeightSums")
-      */
+      //*/
 
+      //logger.info(s"\nTrue labels:\n$trueLabels")
+
+      ///*
       PlotTest2.plotResults("/home/nkatz/Desktop/", "results",
         trueLabels.toVector, initWeightSums.toVector, nonInitWeightSums.toVector, TermWeightSums.toVector,
         monTermWeightSums.toVector, predictInitWeightSums.toVector, predictTermWeightSums.toVector,
         inertWeightSums.toVector, prodictHoldsWeightSums.toVector)
+      //*/
 
       context.system.terminate()
     }
@@ -1130,20 +1136,27 @@ class Learner[T <: Source](val inps: RunningOptions,
 
 
 
-  def updateAnalyticsBuffers(initWghtSum: Double, termWghtSum: Double,
+  def updateAnalyticsBuffers(atom: String, initWghtSum: Double, termWghtSum: Double,
                              nonInitWghtSum: Double, nonTermWghtSum: Double,
                              predictInitWghtSum: Double, predictTermWghtSum: Double,
                              inertWghtSum: Double, holdsWght: Double) = {
 
-    initWeightSums += initWghtSum
-    TermWeightSums += termWghtSum
-    nonInitWeightSums += nonInitWghtSum
-    monTermWeightSums += nonTermWghtSum
-    predictInitWeightSums += predictInitWghtSum
-    predictTermWeightSums += predictTermWghtSum
-    inertWeightSums += inertWghtSum
-    prodictHoldsWeightSums += holdsWght
+    if (atom.contains(keepStatsForFluent)) {
+      initWeightSums += initWghtSum
+      TermWeightSums += termWghtSum
+      nonInitWeightSums += nonInitWghtSum
+      monTermWeightSums += nonTermWghtSum
+      predictInitWeightSums += predictInitWghtSum
+      predictTermWeightSums += predictTermWghtSum
+      inertWeightSums += inertWghtSum
+      prodictHoldsWeightSums += holdsWght
+    }
+  }
 
+  def updateTrueLabels(atom: String, value: Double) = {
+    if (atom.contains(keepStatsForFluent)) {
+      trueLabels += value
+    }
   }
 
 
@@ -1233,7 +1246,7 @@ class Learner[T <: Source](val inps: RunningOptions,
 
     val (predictAtomHolds, holdsWeight) = (_predictAtomHolds._1, _predictAtomHolds._2)
 
-    updateAnalyticsBuffers(initWeightSum, termWeightSum,
+    updateAnalyticsBuffers(currentAtom, initWeightSum, termWeightSum,
       nonFiringInitRules.values.map(_.w).sum, nonFiringTermRules.values.map(_.w).sum,
       predictInitiated, predictTerminated, inertiaExpertPrediction, holdsWeight)
 
@@ -1285,7 +1298,7 @@ class Learner[T <: Source](val inps: RunningOptions,
         // Then it's a TP. Simply return it without updating any weights, after properly scoring the rules.
 
         // Update the analytics buffer for this atom
-        trueLabels :+ 1.0
+        updateTrueLabels(currentAtom, 1.0)
 
         updateRulesScore("TP", initiatedBy.map(x => markedMap(x)), nonFiringInitRules.values.toVector,
           terminatedBy.map(x => markedMap(x)), nonFiringTermRules.values.toVector)
@@ -1297,7 +1310,7 @@ class Learner[T <: Source](val inps: RunningOptions,
         // Then it's an FP.
 
         // Update the analytics buffer for this atom
-        trueLabels :+ 0.0
+        updateTrueLabels(currentAtom, 0.0)
 
         // That's for debugging
         /*
@@ -1345,7 +1358,7 @@ class Learner[T <: Source](val inps: RunningOptions,
         // ...while it actually does, so we have an FN.
 
         // Update the analytics buffer for this atom
-        trueLabels :+ 1.0
+        updateTrueLabels(currentAtom, 1.0)
 
         /*
         reportMistake("FN", currentAtom, inertiaExpertPrediction, initiatedBy.size,
@@ -1392,7 +1405,7 @@ class Learner[T <: Source](val inps: RunningOptions,
         // anything with it, but we need to instruct the the inertia expert to "forget" the atom.
 
         // Update the analytics buffer for this atom
-        trueLabels :+ 0.0
+        updateTrueLabels(currentAtom, 0.0)
 
         if (inertiaExpert.keySet.contains(currentFluent)) {
           inertiaExpert -= currentFluent

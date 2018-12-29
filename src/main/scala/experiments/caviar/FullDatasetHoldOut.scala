@@ -6,7 +6,7 @@ import app.runutils.IOHandling.MongoSource
 import com.mongodb.casbah.{MongoClient, MongoCollection}
 import com.typesafe.scalalogging.LazyLogging
 import logic.Examples.Example
-import oled.winnow.Learner
+import oled.mwua.Learner
 
 
 object FullDatasetHoldOut extends LazyLogging {

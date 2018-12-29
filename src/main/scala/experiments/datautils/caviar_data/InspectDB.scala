@@ -31,7 +31,7 @@ import logic.Examples.Example
 object InspectDB extends App {
 
 
-  val dbName = "caviar-train"
+  val dbName = "caviar"
   //val dbName = "maritime-brest"
   //val dbName = "CAVIAR-MERGED-COPIES-10"
   //val dbName = "caviar"
@@ -39,12 +39,17 @@ object InspectDB extends App {
 
   val mongoClient = MongoClient()
 
+  val event = "meeting"
+
   val collection = mongoClient(dbName)("examples")
 
   collection.find().foreach{ x =>
     val e = Example(x)
 
-    if (e.annotation.nonEmpty) println(e)
+    if (e.annotation.nonEmpty) {
+      val f = e.annotation.filter(x => x.contains(event))
+      println(f)
+    }
 
 
     /*

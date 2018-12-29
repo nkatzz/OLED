@@ -1,7 +1,7 @@
-package oled.winnow
+package oled.mwua
 
-import scalatikz.graphics.pgf.Figure
-import scala.io.Source
+//import scalatikz.graphics.pgf.Figure
+//import scala.io.Source
 import scala.math._
 
 object PlotTest2 extends App {
@@ -12,7 +12,10 @@ object PlotTest2 extends App {
 
   //plotMeeting1passLogScale("/home/nkatz/Desktop/oled-winnow-results/meeting-1-pass-new", "/home/nkatz/Desktop/oled-winnow-results")
 
-  plotMeeting2passLogScale("/home/nkatz/Desktop/oled-winnow-results/meeting-2-passes-new", "/home/nkatz/Desktop/oled-winnow-results")
+  //plotMeeting2passLogScale("/home/nkatz/Desktop/oled-winnow-results/meeting-2-passes-new", "/home/nkatz/Desktop/oled-winnow-results")
+
+
+
 
   /*
   def plotMeeting1pass(dataPath: String, savePath: String) = {
@@ -46,9 +49,9 @@ object PlotTest2 extends App {
 
     val b = "stop"
 
-    println("")
-    println(x)
-    println(log(x))
+    //println("")
+    //println(x)
+    //println(log(x))
     //println("")
 
     if (log10(x) == 3.8949802909279687) {
@@ -75,7 +78,7 @@ object PlotTest2 extends App {
 
   }
 
-  ///*
+  /*
   def plotMeeting1passLogScale(dataPath: String, savePath: String) = {
 
     val data = Source.fromFile(dataPath).getLines.filter( x => !x.isEmpty && !x.startsWith("%"))//.split(",")
@@ -101,7 +104,7 @@ object PlotTest2 extends App {
     //.show()
 
   }
-  //*/
+  */
 
 
   def plotResults(savePath: String,
@@ -110,6 +113,9 @@ object PlotTest2 extends App {
                   predictiInt: Vector[Double], predictiTerm: Vector[Double],
                   inert: Vector[Double], holds: Vector[Double]) = {
 
+    //Figure(name).plot(wInit).saveAsTeX(savePath)
+
+    /*
     Figure(name).plot(trueLabels.map(toLog(_))).
       plot(wInit.map(toLog(_))).plot(wNoInit.map(toLog(_))).
       plot(wTerm.map(toLog(_))).plot(wNoTerm.map(toLog(_))).
@@ -118,10 +124,37 @@ object PlotTest2 extends App {
       havingLegends("True labels","$W_I^+$","$W_I^-$","$W_T^+$","$W_T^-$","$W_I$","$W_T$","$W_{inert}$","$W_{holds}$").
       havingXLabel("Time").havingYLabel("Weights \\ (log-scale)").havingTitle("Meeting \\ 1-pass").
       saveAsPDF(savePath)//show()//.saveAsPDF(savePath)
+    */
 
+    /*
+    Figure(name).plot(trueLabels).
+      plot(wInit.map(toLog(_))).plot(wNoInit.map(toLog(_))).
+      plot(wTerm.map(toLog(_))).plot(wNoTerm.map(toLog(_))).
+      //plot(predictiInt.map(toLog(_))).plot(predictiTerm.map(toLog(_))).
+      plot(inert.map(toLog(_))).plot(holds.map(toLog(_))).
+      //havingLegends("True labels","$W_I^+$","$W_I^-$","$W_T^+$","$W_T^-$","$W_I$","$W_T$","$W_{inert}$","$W_{holds}$").
+      havingLegends("True labels","$W_I^+$","$W_I^-$","$W_T^+$","$W_T^-$","$W_{inert}$","$W_{holds}$").
+      //havingLegends("True labels","$W_I$","$W_T$","$W_{inert}$","$W_{holds}$").
+      havingXLabel("Time").havingYLabel("Weights \\ (log-scale)").
+      havingTitle("").
+      saveAsPDF(savePath)//show()//.saveAsPDF(savePath)
+     */
+
+    /*
+    Figure(name).plot(trueLabels).
+      plot(wInit.map(toLog(_))).plot(wNoInit.map(toLog(_))).
+      //plot(predictiInt.map(toLog(_))).plot(predictiTerm.map(toLog(_))).
+      plot(inert.map(toLog(_))).plot(holds.map(toLog(_))).
+      //havingLegends("True labels","$W_I^+$","$W_I^-$","$W_T^+$","$W_T^-$","$W_I$","$W_T$","$W_{inert}$","$W_{holds}$").
+      havingLegends("True labels","$W_I^+$","$W_I^-$","$W_{inert}$","$W_{holds}$").
+      //havingLegends("True labels","$W_I$","$W_T$","$W_{inert}$","$W_{holds}$").
+      havingXLabel("Time").havingYLabel("Weights \\ (log-scale)").
+      havingTitle("").
+      saveAsPDF(savePath)//show()//.saveAsPDF(savePath)
+    */
   }
 
-  ///*
+  /*
   def plotMeeting2passLogScale(dataPath: String, savePath: String) = {
 
     val data = Source.fromFile(dataPath).getLines.filter( x => !x.isEmpty && !x.startsWith("%"))//.split(",")
@@ -146,8 +179,10 @@ object PlotTest2 extends App {
     //.show()
 
   }
+  */
 
 
+  /*
   def plotMeeting2passes(dataPath: String, savePath: String) = {
 
     val data = Source.fromFile(dataPath).getLines.filter( x => !x.isEmpty && !x.startsWith("%"))//.split(",")
@@ -173,6 +208,7 @@ object PlotTest2 extends App {
     //.show()
 
   }
+  */
 
 
 

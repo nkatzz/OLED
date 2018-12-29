@@ -1,10 +1,10 @@
-package oled.winnow
+package oled.mwua
 
 import akka.actor.Actor
 import app.runutils.RunningOptions
 import logic.Clause
 import oled.functions.SingleCoreOLEDFunctions._
-import oled.winnow.MessageTypes.{FinishedBatchMsg, ProcessBatchMsg}
+import oled.mwua.MessageTypes.{FinishedBatchMsg, ProcessBatchMsg}
 import org.slf4j.LoggerFactory
 
 
