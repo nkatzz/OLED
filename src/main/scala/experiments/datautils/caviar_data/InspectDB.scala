@@ -17,9 +17,9 @@
 
 package experiments.datautils.caviar_data
 
-import com.mongodb.BasicDBObject
-import com.mongodb.casbah.Imports.MongoDBObject
 import com.mongodb.casbah.MongoClient
+import com.mongodb.casbah.commons.MongoDBObject
+import com.mongodb.casbah.Imports._
 import logic.Examples.Example
 
 /**
@@ -30,7 +30,7 @@ import logic.Examples.Example
 
 object InspectDB extends App {
 
-
+  /*
   val dbName = "caviar"
   //val dbName = "maritime-brest"
   //val dbName = "CAVIAR-MERGED-COPIES-10"
@@ -38,40 +38,31 @@ object InspectDB extends App {
   //val dbName = "CAVIAR_Real_original"
 
   val mongoClient = MongoClient()
-
   val event = "meeting"
-
   val collection = mongoClient(dbName)("examples")
-
   collection.find().foreach{ x =>
     val e = Example(x)
-
     if (e.annotation.nonEmpty) {
       val f = e.annotation.filter(x => x.contains(event))
       println(f)
     }
-
-
-    /*
-    println(e.narrative.map(x => x+".").mkString("\n"))
-    println(e.annotation.filter(x => x.contains("highSpeedIn")).map(z => z+".").mkString("\n"))
-    println("")
-    println("")
-    */
-  }
-
-
-  /*
-  collection.find().foreach{ x =>
-    val e = Example(x)
-    if (e.time == "507120") {
-      if(e.annotation.exists(x => x.contains("meeting"))){
-        println("has meeting")
-      } else {
-        println("not has meeting")
-      }
-    }
   }
   */
+
+  val dbName = "caviar-train"
+  val newDbName = "caviar-train-1"
+  val mongoClient = MongoClient()
+  val collection = mongoClient(dbName)("examples")
+  var idCounter = 0
+  mongoClient.dropDatabase(newDbName)
+  val newCollection = mongoClient(newDbName)("examples")
+
+  collection.find().foreach{ x =>
+    val e = Example(x)
+    val entry = MongoDBObject("time" -> e.time) ++ ("annotation" -> e.annotation) ++ ("narrative" -> e.narrative) ++ ("_id" -> idCounter)
+    newCollection.insert(entry)
+    idCounter += 1
+  }
+
 
 }

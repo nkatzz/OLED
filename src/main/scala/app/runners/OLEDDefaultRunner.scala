@@ -52,7 +52,7 @@ object OLEDDefaultRunner extends LazyLogging {
         chunkSize = runningOptions.chunkSize,
         limit = runningOptions.dataLimit,
         targetConcept = runningOptions.targetHLE,
-        sortDbByField = "None"
+        sortDbByField = "_id"
       )
 
       val testingDataOptions = new DefaultMongoDataOptions(
