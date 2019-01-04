@@ -52,8 +52,8 @@ Detailed instructions on how to perform a test run with ``OLED`` are provided in
      `--train=caviar-train \` <br/>
      `--saveto=/oledhome/theory.lp`
    -->
-   * `java -cp oled-0.1.jar app.runners.OLEDDefaultRunner --inpath=<PATH TO THE caviar-bk FOLDER> --delta=0.00001 --prune=0.8 --train=caviar-train --saveto=<PATH TO SOME LOCATION>/theory.lp`
-* After learning terminates the learnt hypothesis will be written in `theory.lp`. You can evaluate this theory on the test set as follows:   
+   * `java -cp oled-0.1.jar app.runners.OLEDDefaultRunner --inpath=<PATH TO THE caviar-bk FOLDER> --delta=0.00001 --prune=0.8 --train=caviar-train --test=caviar-test --saveto=<PATH TO SOME LOCATION>/theory.lp`
+* The above command learns a theory from `caviar-train` and evaluates it on `caviar-test`. The theory and the evaluation statistics are printed on screen once larning terminates. The learnt theory is also written in `theory.lp`. To assess the quality of any theory (either learnt or hand-crafted) on a test set you can use the following command (here we're just assumming that we're evaluating the learnt theory in `theory.lp` on the downloaded test set `caviat-test`):   
    <!--
    * `java -cp oled.jar app.runners.OLEDDefaultRunner \`  <br/>
          ` --inpath=/oledhome/caviar-bk \` <br/>

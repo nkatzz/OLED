@@ -134,17 +134,8 @@ class Dispatcher[T <: Source](inps: RunningOptions,
         val data = testingDataFunction(testingDataOptions)
 
         logger.info("Evaluating on the test set")
+
         if (!weightLearning) {
-
-          val (tps,fps,fns,precision,recall,fscore) = crossVal(merged, data=data, globals = inps.globals, inps = inps)
-
-          logger.info(s"\ntps: $tps\nfps: $fps\nfns: " +
-            s"$fns\nprecision: $precision\nrecall: $recall\nf-score: $fscore\ntraining time: " +
-            s"$time\ntheory size: $theorySize")
-
-          println(s"\ntps: $tps\nfps: $fps\nfns: " +
-            s"$fns\nprecision: $precision\nrecall: $recall\nf-score: $fscore\ntraining time: " +
-            s"$time\ntheory size: $theorySize")
 
           /* THIS MAY TAKE TOO LONG FOR LARGE AND COMPLEX THEORIES!! */
           logger.info("Compressing theory...")
@@ -155,7 +146,20 @@ class Dispatcher[T <: Source](inps: RunningOptions,
             Utils.writeToFile(new File(inps.saveTheoryTo), "overwrite") {p => Vector(merged_.tostring).foreach(p.println)}
           }
 
-          val test = merged_.withTypePreds(inps.globals)
+          val (tps,fps,fns,precision,recall,fscore) = crossVal(merged_, data=data, globals = inps.globals, inps = inps)
+
+          logger.info(s"\ntps: $tps\nfps: $fps\nfns: " +
+            s"$fns\nprecision: $precision\nrecall: $recall\nf-score: $fscore\ntraining time: " +
+            s"$time\ntheory size: $theorySize")
+
+          /*
+          println(s"\ntps: $tps\nfps: $fps\nfns: " +
+            s"$fns\nprecision: $precision\nrecall: $recall\nf-score: $fscore\ntraining time: " +
+            s"$time\ntheory size: $theorySize")
+          */
+
+
+          //val test = merged_.withTypePreds(inps.globals)
 
           context.system.terminate()
 
