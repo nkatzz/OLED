@@ -6,7 +6,7 @@ import scala.math._
 
 object PlotTest2 extends App {
 
-  //plotMeeting1pass("/home/nkatz/Desktop/oled-winnow-results/meeting-1-pass", "/home/nkatz/Desktop/oled-winnow-results")
+  //plotMeeting1pass("/home/nkatz/meeting-1-pass-new", "/home/nkatz/Desktop")
 
   //plotMeeting2passes("/home/nkatz/Desktop/oled-winnow-results/meeting-2-passes", "/home/nkatz/Desktop/oled-winnow-results")
 
@@ -34,11 +34,12 @@ object PlotTest2 extends App {
     Figure("meeting-1-pass").plot(winnow).plot(_095).plot(_09).plot(_08).plot(_07).plot(_06).plot(noConstraints).plot(handCrafted)
       //.plot(domain -> sin _)
       //.plot(lineStyle = DASHED)(domain -> cos _)
-      .havingLegends("winnow", "score $\\geq 0.95$", "score $\\geq 0.9$", "score $\\geq 0.8$", "score $\\geq 0.7$", "score $\\geq 0.6$", "all rules", "hand-crafted")
+      .havingLegends("Experts", "$OLED_{score \\geq 0.95}$", "$OLED_{score \\geq 0.9}$",
+      "$OLED_{score \\geq 0.9}$", "$OLED_{score \\geq 0.7}$", "$OLED_{score \\geq 0.6}$", "$OLED_{all-rules}$", "Hand-crafted")
       //.havingLegendPos(SOUTH_WEST)
       .havingXLabel("Data batches (size 50)")
-      .havingYLabel("Accumulated \\ Error$")
-      .havingTitle("Meeting \\ 1-pass").
+      .havingYLabel("Accumulated \\ Error$").
+      //.havingTitle("Meeting \\ 1-pass").
       saveAsPDF(savePath)
     //.show()
 
