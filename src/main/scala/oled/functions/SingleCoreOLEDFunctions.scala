@@ -140,18 +140,20 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
         scoringTime += t._2
       }
 
-      /*
+      ///*
       val expanded = Utils.time {  expandRules(newTopTheory, inps, logger) }
       if (inps.showStats) logger.info(s"Expanding rules time: ${expanded._2}")
       expandRulesTime += expanded._2
-      */
+      //*/
 
+      /*
       val expanded =
         if (! learningWeights) {
           Utils.time {  expandRules(newTopTheory, inps, logger) }
         } else {
           (newTopTheory, 0.0)
         }
+      */
       if (inps.showStats) logger.info(s"Expanding rules time: ${expanded._2}")
       expandRulesTime += expanded._2
 

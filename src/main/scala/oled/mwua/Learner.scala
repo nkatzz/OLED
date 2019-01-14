@@ -1180,7 +1180,7 @@ class Learner[T <: Source](val inps: RunningOptions,
 
     // Use this to have all rules and their refs vote independently:
     // This was the default but does not seam reasonable.
-    val predictInitiated = initWeightSum - nonFiringInitRules.values.map(_.w).sum
+    val predictInitiated = initWeightSum// - nonFiringInitRules.values.map(_.w).sum
 
     // Use this to have one prediction per top rule, resulting by combing the
     // opinions of the rule's sub-expert committee (its specializations)
@@ -1215,7 +1215,7 @@ class Learner[T <: Source](val inps: RunningOptions,
 
     // Use this to have all rules and their refs vote independently:
     // This was the default but does not seam reasonable.
-    val predictTerminated = termWeightSum - nonFiringTermRules.values.map(_.w).sum
+    val predictTerminated = termWeightSum// - nonFiringTermRules.values.map(_.w).sum
 
     // Use this to have one prediction per top rule, resulting by combing the
     // opinions of the rule's sub-expert committee (its specializations):
