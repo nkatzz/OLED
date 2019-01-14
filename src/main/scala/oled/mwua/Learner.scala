@@ -1327,7 +1327,7 @@ class Learner[T <: Source](val inps: RunningOptions,
 
           // Non-firing rules should not be touched, they should be treated as abstaining experts.
           // Increasing the weights of non-firing rules results in over-training of garbage, which dominate.
-          //reduceWeights(nonFiringTermRules.keys.toVector, markedMap, learningRate)
+          // reduceWeights(nonFiringTermRules.keys.toVector, markedMap, learningRate)
 
           // Reduce the weight of the inertia expert for the particular atom, if the inertia expert predicted that it holds.
           if (inertiaExpert.keySet.contains(currentFluent)) {
