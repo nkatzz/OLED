@@ -60,7 +60,8 @@ object Dependency {
   lazy val Tools = Seq(
     "org.scalaz" %% "scalaz-core" % v.ScalaZ,
     "com.madhukaraphatak" %% "java-sizeof" % v.SizeOf,
-    "org.parboiled" %% "parboiled" % v.Parboiled
+    "org.parboiled" %% "parboiled" % v.Parboiled,
+    "com.github.vagmcs" %% "scalatikz" % "0.3.5"
   )
 
   // Optimus library for linear and quadratic optimization

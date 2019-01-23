@@ -1,7 +1,9 @@
 package oled.mwua
 
-//import scalatikz.graphics.pgf.Figure
-//import scala.io.Source
+import scalatikz.graphics.pgf.Figure
+import scalatikz.graphics.pgf.enums.LegendPos
+
+import scala.io.Source
 import scala.math._
 
 object PlotTest2 extends App {
@@ -15,6 +17,52 @@ object PlotTest2 extends App {
   //plotMeeting2passLogScale("/home/nkatz/Desktop/oled-winnow-results/meeting-2-passes-new", "/home/nkatz/Desktop/oled-winnow-results")
 
 
+
+  plotMaritime("/home/nkatz/Desktop/oled-winnow-results/maritime/brest/rendezvous/speedup", "/home/nkatz/Desktop/oled-winnow-results/maritime/brest/rendezvous")
+
+
+  def plotMaritime(dataPath: String, savePath: String) = {
+    val data = Source.fromFile(dataPath).getLines.filter( x => !x.isEmpty && !x.startsWith("%"))//.split(",")
+    //val cores = data.next().split(",").map(_.toDouble).toVector
+
+    val syncTime = Vector(1.0,2.0,4.0,8.0,16.0) zip data.next().split(",").map(_.toDouble).toVector
+    val asyncTime = Vector(1.0,2.0,4.0,8.0,16.0) zip data.next().split(",").map(_.toDouble).toVector
+
+    //val syncTime = Vector(2.0,4.0,8.0,16.0) zip data.next().split(",").map(_.toDouble).toVector
+    //val asyncTime = Vector(2.0,4.0,8.0,16.0) zip data.next().split(",").map(_.toDouble).toVector
+
+    /*
+    Figure("rendezvous-time").plot(syncTime).plot(asyncTime).havingLegendPos(LegendPos.NORTH_EAST).havingLegends("sync","async").
+      havingXLabel("Number of cores").havingYLabel("Training time (hours)").havingTitle("Rendezvous").saveAsPDF(savePath)
+    */
+    /*
+    Figure("rendezvous-f1").plot(syncTime).plot(asyncTime).havingLegendPos(LegendPos.NORTH_EAST).
+      havingLimits(0, 16, 0.7, 1.0).havingLegends("sync","async").
+      havingXLabel("Number of cores").havingYLabel("$F_1$ score").havingTitle("Rendezvous").saveAsPDF(savePath)
+    */
+    /*
+    Figure("rendezvous-msgs").plot(syncTime).plot(asyncTime).havingLegendPos(LegendPos.NORTH_EAST).
+      havingLegends("sync","async").
+      havingXLabel("Number of cores").havingYLabel("Number of messages").havingTitle("Rendezvous").saveAsPDF(savePath)
+    */
+    ///*
+    Figure("loitering-time").bar(syncTime).plot(asyncTime).havingLegendPos(LegendPos.NORTH_EAST).
+      havingLegends("sync","async").
+      havingXLabel("Number of cores").havingYLabel("Training time (hours)").havingTitle("Loitering").saveAsPDF(savePath)
+    //*/
+
+    /*
+    Figure("loitering-f1").plot(syncTime).plot(asyncTime).havingLegendPos(LegendPos.NORTH_EAST).
+      havingLimits(0, 16, 0.7, 1.0).havingLegends("sync","async").
+      havingXLabel("Number of cores").havingYLabel("$F_1$ score").havingTitle("Loitering").saveAsPDF(savePath)
+    */
+
+    /*
+    Figure("loitering-msgs").plot(syncTime).plot(asyncTime).havingLegendPos(LegendPos.NORTH_EAST).
+      havingLegends("sync","async").
+      havingXLabel("Number of cores").havingYLabel("Number of messages").havingTitle("Loitering").saveAsPDF(savePath)
+    */
+  }
 
 
   /*

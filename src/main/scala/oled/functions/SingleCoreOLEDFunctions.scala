@@ -132,7 +132,7 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
     }
     if (newTopTheory.clauses.nonEmpty) {
 
-      // If we're learning weights rules scoring takes place on the weight learner side
+      // If we're learning weights rule scoring takes place on the weight learner side
       // so that the scores correspond to the weighted versions of the rules.
       if (!learningWeights) {
         val t = Utils.time { newTopTheory.scoreRules(e, inps.globals) }
