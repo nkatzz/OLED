@@ -1,4 +1,4 @@
-package oled.mwua
+package utils.plotting
 
 import scalatikz.graphics.pgf.Figure
 import scalatikz.graphics.pgf.enums.LegendPos
@@ -16,10 +16,7 @@ object PlotTest2 extends App {
 
   //plotMeeting2passLogScale("/home/nkatz/Desktop/oled-winnow-results/meeting-2-passes-new", "/home/nkatz/Desktop/oled-winnow-results")
 
-
-
   plotMaritime("/home/nkatz/Desktop/oled-winnow-results/maritime/brest/rendezvous/speedup", "/home/nkatz/Desktop/oled-winnow-results/maritime/brest/rendezvous")
-
 
   def plotMaritime(dataPath: String, savePath: String) = {
     val data = Source.fromFile(dataPath).getLines.filter( x => !x.isEmpty && !x.startsWith("%"))//.split(",")

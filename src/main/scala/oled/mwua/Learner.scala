@@ -273,7 +273,7 @@ class Learner[T <: Source](val inps: RunningOptions,
       //logger.info(s"\nTrue labels:\n$trueLabels")
 
       ///*
-      PlotTest2.plotResults("/home/nkatz/Desktop/", "results",
+      utils.plotting.PlotTest2.plotResults("/home/nkatz/Desktop/", "results",
         trueLabels.toVector, initWeightSums.toVector, nonInitWeightSums.toVector, TermWeightSums.toVector,
         monTermWeightSums.toVector, predictInitWeightSums.toVector, predictTermWeightSums.toVector,
         inertWeightSums.toVector, prodictHoldsWeightSums.toVector)
@@ -421,7 +421,6 @@ class Learner[T <: Source](val inps: RunningOptions,
       Utils.writeToFile(new File(this.writeExprmtResultsTo), "append") { p => List(x).foreach(p.println) }
     }
 
-
     logger.info(s"Total TPs: ${totalTPs.size}, Total FPs: ${totalFPs.size}, Total FNs: ${totalFNs.size}")
 
     logger.info("Evaluating on the test set")
@@ -438,18 +437,19 @@ class Learner[T <: Source](val inps: RunningOptions,
 
       // This includes the refinements in the final theory
       // Comment it out to test with the final theory
-      /*
+      ///*
       val predictWith = getFinalTheory(theory, useAvgWeights = true, logger)
 
       val newInit = predictWith._1
       val newTerm = predictWith._2
 
       theory = List(Theory(newInit), Theory(newTerm))
-      */
+      //*/
 
       testData foreach { batch =>
         evaluateTest_NEW(batch, testOnly = true)
       }
+
       logger.info(s"Prequential error on test set:\n${prequentialError.mkString(",")}")
       logger.info(s"Prequential error vector on test set (Accumulated Error):\n${prequentialError.scanLeft(0.0)(_ + _).tail}")
       logger.info(s"Evaluation on the test set\ntps: ${totalTPs.size}\nfps: ${totalFPs.size}\nfns: ${totalFNs.size}")
@@ -624,7 +624,7 @@ class Learner[T <: Source](val inps: RunningOptions,
 
       var merged = if (inputTheory == Theory()) getMergedTheory(testOnly) else inputTheory
 
-      logger.info(s"Predicting with ${merged.tostring}")
+      //logger.info(s"Predicting with ${merged.tostring}")
 
       // just for debugging
       val weightsBefore = merged.clauses.map(x => x.w)
