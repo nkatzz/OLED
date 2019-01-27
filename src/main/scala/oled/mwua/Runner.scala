@@ -14,6 +14,8 @@ import utils.DataUtils.Interval
   * Created by nkatz at 2/11/2018
   */
 
+//--inpath=/home/nkatz/dev/BKExamples/BK-various-taks/DevTest/caviar-bk/meeting --train=caviar --delta=0.001 --prune=0.8 --repfor=5 --chunksize=50 --try-more-rules=false --prequential=true --target=meeting --preprune=0.9 --onlineprune=false --spdepth=1
+
 object Runner extends LazyLogging {
 
 
@@ -92,7 +94,7 @@ object Runner extends LazyLogging {
 
       /* This is for running on the training set and then performing prequential evaluation on the test set. */
       ///*
-      val dataset = MeetingTrainTestSets.meeting5
+      val dataset = MeetingTrainTestSets.meeting6
 
       val trainingDataOptions =
         new MongoDataOptions(dbNames = dataset._1,

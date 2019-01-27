@@ -412,7 +412,7 @@ object AuxFuncs extends LazyLogging {
     val newTerm = oldTerm.flatMap(x => x.refinements :+ x).
       filter(z => z.body.nonEmpty)//.filter(x => x.avgWeight > 0.0 && x.avgWeight < 3.0)
 
-    val _merged = Theory(newInit ++ newTerm)
+    val _merged = Theory( (newInit ++ newTerm).filter(x => x.body.nonEmpty) )
 
     logger.info(s"\n\n\nPerforming test with:\n\n${_merged.showWithStats}")
 

@@ -258,7 +258,7 @@ class Learner[T <: Source](val inps: RunningOptions,
 
       logger.info(s"\nPrequential error vector:\n${prequentialError.mkString(",")}")
       logger.info(s"\nPrequential error vector (Accumulated Error):\n${prequentialError.scanLeft(0.0)(_ + _).tail}")
-      ///*
+      /*
       logger.info(s"\nTrue labels:\n$trueLabels")
       logger.info(s"\nInitiation Weight Sums:\n$initWeightSums")
       logger.info(s"\nNo Initiation Weight Sums:\n$nonInitWeightSums")
@@ -268,7 +268,7 @@ class Learner[T <: Source](val inps: RunningOptions,
       logger.info(s"\nPredict Termination Weight Sums:\n$predictTermWeightSums")
       logger.info(s"\nInertia Weight Sums:\n$inertWeightSums")
       logger.info(s"\nHolds Weight Sums:\n$prodictHoldsWeightSums")
-      //*/
+      */
 
       //logger.info(s"\nTrue labels:\n$trueLabels")
 
@@ -358,9 +358,9 @@ class Learner[T <: Source](val inps: RunningOptions,
 
       //evaluateTest(nextBatch)
 
-      evaluateTest_NEW(nextBatch)
+      //evaluateTest_NEW(nextBatch)
 
-      //evaluateTest_NEW_EXPAND_WHEN_NEEDED(nextBatch)
+      evaluateTest_NEW_EXPAND_WHEN_NEEDED(nextBatch)
 
       if (this.workers.length > 1) { // we're learning with the Event Calculus.
         val msg1 = new ProcessBatchMsg(theory.head, nextBatch, "initiated")
@@ -423,11 +423,12 @@ class Learner[T <: Source](val inps: RunningOptions,
 
     logger.info(s"Total TPs: ${totalTPs.size}, Total FPs: ${totalFPs.size}, Total FNs: ${totalFNs.size}")
 
-    logger.info("Evaluating on the test set")
-
-    val testData = testingDataFunction(testingDataOptions)
-
     if (trainingDataOptions != testingDataOptions) {
+
+      //logger.info("Evaluating on the test set")
+
+      val testData = testingDataFunction(testingDataOptions)
+
       // Prequential eval on the test set (without weights update at each step).
       logger.info("Evaluating on the test set with the theory found so far (no weights update at each step, no structure updates).")
       prequentialError = Vector[Double]()
@@ -820,8 +821,6 @@ class Learner[T <: Source](val inps: RunningOptions,
 
       var merged = if (inputTheory == Theory()) getMergedTheory(testOnly) else inputTheory
 
-      //logger.info(s"\n${merged.tostring}")
-
       // just for debugging
       val weightsBefore = merged.clauses.map(x => x.w)
       // just for debugging
@@ -882,22 +881,28 @@ class Learner[T <: Source](val inps: RunningOptions,
                 // This is also calculated at predictAndUpdate, we need to factor it out.
                 // Calculate it here (because it is needed here) and pass it to predictAndUpdate
                 // to avoid doing it twice.
+                ///*
                 val nonFiringInitRules =
                   markedMap.filter(x =>
                     x._2.head.functor.contains("initiated") && !initiatedBy.contains(x._1))
+                //*/
 
                 // This is also calculated at predictAndUpdate, we need to factor it out.
                 // Calculate it here (because it is needed here) and pass it to predictAndUpdate
                 // to avoid doing it twice.
+                ///*
                 val nonFiringTermRules =
                   markedMap.filter(x =>
                     x._2.head.functor.contains("terminated") && !terminatedBy.toSet.contains(x._1))
+                //*/
 
                 val initWeightSum = if (initiatedBy.nonEmpty) initiatedBy.map(x => markedMap(x).w).sum else 0.0
                 val termWeightSum = if (terminatedBy.nonEmpty) terminatedBy.map(x => markedMap(x).w).sum else 0.0
 
                 // only updates weights when we're not running in test mode.
-                val prediction = predictAndUpdate(currentAtom, currentFluent, initiatedBy, terminatedBy, markedMap, testOnly, trueAtoms, batch)
+                val prediction =
+                  predictAndUpdate(currentAtom, currentFluent,
+                    initiatedBy, terminatedBy, markedMap, testOnly, trueAtoms, batch)
 
                 prediction match {
                   case "TP" => inferredAtoms = (inferredAtoms._1 + currentAtom, inferredAtoms._2, inferredAtoms._3)
@@ -930,7 +935,8 @@ class Learner[T <: Source](val inps: RunningOptions,
                         logger.info(s"Generated new termination rule in response to FP atom: $currentAtom")
                         // Since neither the new termination rule (empty-bodied), nor its refinements fire,
                         // therefore, they do not contribute to the FP, increase their weights further
-                        increaseWeights(newTerminationRule.refinements :+ newTerminationRule, learningRate)
+                        // NO, WE DO NOT INCREASE WEIGHTS OF NON-FIRING RULES!!!
+                        //increaseWeights(newTerminationRule.refinements :+ newTerminationRule, learningRate)
 
                         // Finally, add the new termination rule to the current theory.
                         val update = addRuleAndUpdate(newTerminationRule)
@@ -998,10 +1004,9 @@ class Learner[T <: Source](val inps: RunningOptions,
 
                   }
 
-                  //if (prediction == "FN" && initiatedBy.isEmpty && getInertiaExpertPrediction(currentFluent) == 0.0) {
                   if (prediction == "FN") {
-
-                    if (initiatedBy.isEmpty || (nonFiringInitRules.values.map(_.w).sum > initWeightSum) ) {
+                    //if (initiatedBy.isEmpty || (nonFiringInitRules.values.map(_.w).sum > initWeightSum) ) {
+                    if (initiatedBy.isEmpty) {
                       //val newInitiationRule = generateNewExpert(batch, currentAtom, inps.globals, "initiatedAt", termWeightSum)
                       // Don't give the total weight of the termination part. It's dangerous
                       // (e.g. if the termination part new rules get the total weight of 0.0, and the TN is never fixed!)
@@ -1242,9 +1247,15 @@ class Learner[T <: Source](val inps: RunningOptions,
     totalPredictionTime += predictTerminatedTimed._2
     */
 
+    // WITH INERTIA
+    ///*
     val _predictAtomHolds = predict(inertiaExpertPrediction, predictInitiated, predictTerminated, isStrongInertia)
-
     val (predictAtomHolds, holdsWeight) = (_predictAtomHolds._1, _predictAtomHolds._2)
+    //*/
+
+    // NO INERTIA
+    //val _predictAtomHolds = predictInitiated - predictTerminated
+    //val (predictAtomHolds, holdsWeight) = (if (_predictAtomHolds > 0) true else false, _predictAtomHolds)
 
     updateAnalyticsBuffers(currentAtom, initWeightSum, termWeightSum,
       nonFiringInitRules.values.map(_.w).sum, nonFiringTermRules.values.map(_.w).sum,
