@@ -30,23 +30,26 @@ object PlotTest2 extends App {
 
     /*
     Figure("rendezvous-time").plot(syncTime).plot(asyncTime).havingLegendPos(LegendPos.NORTH_EAST).havingLegends("sync","async").
-      havingXLabel("Number of cores").havingYLabel("Training time (hours)").havingTitle("Rendezvous").saveAsPDF(savePath)
+      havingXLabel("Number of cores").havingYLabel("Training time (hours)")
+      .havingAxisXLabels(Seq("1","2","4","8","16"))
+      .saveAsTeX(savePath)
     */
     /*
     Figure("rendezvous-f1").plot(syncTime).plot(asyncTime).havingLegendPos(LegendPos.NORTH_EAST).
       havingLimits(0, 16, 0.7, 1.0).havingLegends("sync","async").
-      havingXLabel("Number of cores").havingYLabel("$F_1$ score").havingTitle("Rendezvous").saveAsPDF(savePath)
-    */
-    /*
-    Figure("rendezvous-msgs").plot(syncTime).plot(asyncTime).havingLegendPos(LegendPos.NORTH_EAST).
-      havingLegends("sync","async").
-      havingXLabel("Number of cores").havingYLabel("Number of messages").havingTitle("Rendezvous").saveAsPDF(savePath)
+      havingXLabel("Number of cores").havingYLabel("$F_1$ score").havingAxisXLabels(Seq("1","2","4","8","16"))
+      .saveAsTeX(savePath)
     */
     ///*
+    Figure("rendezvous-msgs").plot(syncTime).plot(asyncTime).havingLegendPos(LegendPos.NORTH_EAST).
+      havingLegends("sync","async").
+      havingXLabel("Number of cores").havingYLabel("Number of messages").havingAxisXLabels(Seq("2","4","8","16")).saveAsPDF(savePath)
+    //*/
+    /*
     Figure("loitering-time").bar(syncTime).plot(asyncTime).havingLegendPos(LegendPos.NORTH_EAST).
       havingLegends("sync","async").
       havingXLabel("Number of cores").havingYLabel("Training time (hours)").havingTitle("Loitering").saveAsPDF(savePath)
-    //*/
+    */
 
     /*
     Figure("loitering-f1").plot(syncTime).plot(asyncTime).havingLegendPos(LegendPos.NORTH_EAST).
