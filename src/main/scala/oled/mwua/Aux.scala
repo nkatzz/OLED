@@ -267,9 +267,9 @@ object AuxFuncs extends LazyLogging {
 
   /*
   *
-  * Computes the groundings of the rules in the current theory and returns a map. The key to each of
+  * Computes the groundings of the rules in the current theory and returns a map. The key to each entry of
   * the map is an inferred atom and the value is a triplet of three sets: Ids of rules that
-  * initiate the key atom, terminated the atom, or not terminate the atom (the third is redundant
+  * initiate the key atom, terminate the atom, or not terminate the atom (the third is redundant
   * because it can be extracted from the complement of the firing termination rules. I'll have to go over his again).
   *
   * */
@@ -349,9 +349,9 @@ object AuxFuncs extends LazyLogging {
     val allInferredAtoms = result
 
     // We'll use a map to process the results. The keys will be actual holdsAt/2 atoms.
-    // The values will be three lists of clauses:
-    // initiatedBy, terminatedBy and notTerminatedBy. Each list contains the ids of the rules that
-    // respectively initiate, terminate and not terminate the key atom
+    // The values will be two lists of clauses:
+    // initiatedBy and  terminatedBy. Each list contains the ids of the rules that
+    // respectively initiate or terminate the key atom.
 
     val map = scala.collection.mutable.Map[String, (Vector[String], Vector[String])]()
 
