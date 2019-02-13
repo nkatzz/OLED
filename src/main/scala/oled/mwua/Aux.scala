@@ -25,13 +25,6 @@ object MessageTypes {
 
 }
 
-object AuxStructures {
-
-  class InertiaAtom(val atom: String, val weight: Double)
-
-  class Inetrtia
-
-}
 
 object Test extends App {
 
@@ -275,7 +268,7 @@ object AuxFuncs extends LazyLogging {
   * */
 
   def computeRuleGroundings(inps: RunningOptions, markedProgram: String,
-                            markedMap: Map[String, Clause], batch: String, trueAtoms: Set[String]) = {
+                            markedMap: Map[String, Clause], batch: String, trueAtoms: Set[String] = Set[String]()) = {
 
     /*
     val targetFluent = {
@@ -324,9 +317,11 @@ object AuxFuncs extends LazyLogging {
     val initGrndRule = s"grounding(I, holdsAt(F,Te)) :- rule(I), fluent(F), marked(I, initiatedAt(F,Ts) ), next(Ts,Te), time(Te), time(Ts)."
     val termGrndRule = s"grounding(I, holdsAt(F,Te)) :- rule(I), fluent(F), marked(I, terminatedAt(F,Ts) ), next(Ts,Te), time(Te), time(Ts)."
 
-    val directives = s"\n$initGrndRule\n$termGrndRule\n"
+    val fluentGroundings = s"fluentGrnd(holdsAt(F,T)) :- fluent(F), time(T)."
 
-    val program = batch + markedProgram + "\n#include \""+inps.entryPath+"/bk.lp\"." + directives + "\n#show.\n#show grounding/2." //"\n#show.\n#show tp/2.\n#show fp/2.\n#show fn/2."
+    val directives = s"\n$initGrndRule\n$termGrndRule\n$fluentGroundings\n"
+
+    val program = batch + markedProgram + "\n#include \""+inps.entryPath+"/bk.lp\"." + directives + "\n#show.\n#show grounding/2.\n#show fluentGrnd/1." //"\n#show.\n#show tp/2.\n#show fp/2.\n#show fn/2."
     val f2 = Utils.getTempFile(s"quick-and-dirty",".lp")
     Utils.writeToFile(f2, "append")(p => List(program) foreach p.println)
     val paaath = f2.getCanonicalPath
@@ -334,19 +329,19 @@ object AuxFuncs extends LazyLogging {
 
     val result = if (_result.nonEmpty) _result.head.atoms.toSet else Set[String]()
 
-    /*
-    val (tpAtoms, fpAtoms, fnAtoms) = result.foldLeft(Set[String](), Set[String](), Set[String]()) { (x, atom) =>
-      val (a, b, c) = (x._1, x._2, x._3)
-      if (atom.startsWith("tp")) (a + atom, b, c)
-      else if (atom.startsWith("fp")) (a, b+atom, c)
-      else if (atom.startsWith("fn")) (a,b,c+atom)
-      else throw new RuntimeException("FUCK This shouldn't have happened")
-    }
-    */
-
-    //val allInferredAtoms = tpAtoms ++ fpAtoms ++ fnAtoms
-
     val allInferredAtoms = result
+
+    val (ruleGroundings, allFluentGroundings) = allInferredAtoms.foldLeft(Set[String](), Set[String]()) { (accum, atom) =>
+      if (atom.startsWith("grounding")) {
+        (accum._1 + atom, accum._2)
+      } else if (atom.startsWith("fluentGrnd")) {
+        val parsed = Literal.parse(atom)
+        val actualGroundFluent = parsed.terms.head.tostring
+        (accum._1, accum._2 + actualGroundFluent)
+      } else {
+        throw new RuntimeException(s"Found unexpected ground atom (not matching the atom signatures specified in the grounding directives): $atom")
+      }
+    }
 
     // We'll use a map to process the results. The keys will be actual holdsAt/2 atoms.
     // The values will be two lists of clauses:
@@ -355,7 +350,8 @@ object AuxFuncs extends LazyLogging {
 
     val map = scala.collection.mutable.Map[String, (Vector[String], Vector[String])]()
 
-    allInferredAtoms foreach { s =>
+    //allInferredAtoms foreach { s =>
+    ruleGroundings foreach { s =>
 
       val l = Literal.parse(s)
       //val functor = l.functor
@@ -380,8 +376,16 @@ object AuxFuncs extends LazyLogging {
       }
     }
 
-    ///*
+    /*
     trueAtoms foreach { atom =>
+      if (!map.keySet.contains(atom)) {
+        map(atom) = (Vector[String](), Vector[String]())
+      }
+    }
+    */
+
+    ///*
+    allFluentGroundings foreach { atom =>
       if (!map.keySet.contains(atom)) {
         map(atom) = (Vector[String](), Vector[String]())
       }
@@ -411,7 +415,7 @@ object AuxFuncs extends LazyLogging {
     val newTerm = oldTerm.flatMap(x => x.refinements :+ x).filter(z => z.body.nonEmpty)
 
     // Filter out stuff which have a weight of 1 (never been used)
-    val _merged = Theory( (newInit ++ newTerm).filter(x => x.body.nonEmpty).filter(x => x.w != 1.0) )
+    val _merged = Theory( (newInit ++ newTerm).filter(x => x.body.nonEmpty))//.filter(x => x.w != 1.0) )
 
     logger.info(s"\n\n\nPerforming test with:\n\n${_merged.showWithStats}")
 

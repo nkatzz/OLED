@@ -79,22 +79,21 @@ object Runner extends LazyLogging {
       //*/
 
 
-      val trainShuffled = scala.util.Random.shuffle(train1)
-
-      logger.info(s"\nData order:\n$trainShuffled")
+      //val trainShuffled = scala.util.Random.shuffle(train1)
+      //logger.info(s"\nData order:\n$trainShuffled")
 
       /* This is for running with the entire CAVIAR (no test set)*/
-      /*
+      ///*
       val trainingDataOptions =
         new MongoDataOptions(dbNames = train1,//dataset._1,
           chunkSize = runningOptions.chunkSize, targetConcept = runningOptions.targetHLE, sortDbByField = "time", what = "training")
 
       val testingDataOptions = trainingDataOptions
-      */
+      //*/
 
       /* This is for running on the training set and then performing prequential evaluation on the test set. */
-      ///*
-      val dataset = MeetingTrainTestSets.meeting6
+      /*
+      val dataset = MeetingTrainTestSets.meeting1
 
       val trainingDataOptions =
         new MongoDataOptions(dbNames = dataset._1,
@@ -103,7 +102,7 @@ object Runner extends LazyLogging {
       val testingDataOptions =
         new MongoDataOptions(dbNames = dataset._2,
           chunkSize = runningOptions.chunkSize, targetConcept = runningOptions.targetHLE, sortDbByField = "time", what = "testing")
-      //*/
+      */
 
 
       val trainingDataFunction: MongoDataOptions => Iterator[Example] = FullDatasetHoldOut.getMongoData
@@ -118,8 +117,8 @@ object Runner extends LazyLogging {
       //--evalth=/home/nkatz/Desktop/theory
       //val startMsg = "predict"
 
-      system.actorOf(Props(new Learner(runningOptions, trainingDataOptions, testingDataOptions, trainingDataFunction,
-        testingDataFunction)), name = "Learner") !  startMsg
+      system.actorOf(Props(new Learner_NEW(runningOptions, trainingDataOptions, testingDataOptions, trainingDataFunction,
+        testingDataFunction)), name = "Learner") ! startMsg
 
     }
   }

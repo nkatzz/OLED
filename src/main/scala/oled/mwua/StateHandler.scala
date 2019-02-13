@@ -14,29 +14,43 @@ class StateHandler {
 
   var ensemble = new RuleEnsemble
 
-  def normalizeWeights = ensemble.normalizeWeights
+  val inertiaExpert = new InertiaExpert
 
-  def updateEnsemble(rule: Clause) = {
-    ???
+  def normalizeWeights(awakeExperts: Vector[Clause], currentFluent: String) = {
+    val totalAwakeRulesWeight = awakeExperts.map(x => x.w).sum
+    val inertiaWeight = inertiaExpert.getWeight(currentFluent)
+    val totalWeight = totalAwakeRulesWeight + inertiaWeight
+    awakeExperts.foreach(x => x.w = x.w/totalWeight.toDouble)
+    if (inertiaWeight > 0) inertiaExpert.updateWeight(currentFluent, inertiaWeight/totalWeight)
   }
 
-  def updateEnsemble(rules: List[Clause]) = {
-    ???
+  def addRule(rule: Clause) = {
+    if (rule.head.functor.contains("initiated")) {
+      ensemble.initiationRules = ensemble.initiationRules :+ rule
+    } else if (rule.head.functor.contains("terminated")) {
+      ensemble.terminationRules = ensemble.terminationRules :+ rule
+    } else {
+      ensemble.rules = ensemble.rules :+ rule
+    }
   }
 
-  /*----------------*/
-  /* Inertia Expert */
-  /*----------------*/
-  var inertiaExpert = scala.collection.mutable.Map[String, Double]()
-
-  def getInertiaExpertPrediction(fluent: String) = {
-    if (inertiaExpert.keySet.contains(fluent)) inertiaExpert(fluent) else 0.0
+  def removeRule(rule: Clause) = {
+    def remove(clauses: List[Clause], r: Clause) = {
+      clauses.filter(x => !x.equals(r))
+    }
+    if (rule.head.functor.contains("initiated")) {
+      ensemble.initiationRules = remove(ensemble.initiationRules, rule)
+    } else if (rule.head.functor.contains("terminated")) {
+      ensemble.terminationRules = remove(ensemble.terminationRules, rule)
+    } else {
+      ensemble.rules = remove(ensemble.rules, rule)
+    }
   }
 
   /*-----------------------------*/
   /* Grounding-related variables */
   /*-----------------------------*/
-  var groundingTimes = Vector[Double]()
+  var groundingTimes: Vector[Double] = Vector[Double]()
 
   def updateGrndsTimes(t: Double) = {
     groundingTimes = groundingTimes :+ t
@@ -45,9 +59,11 @@ class StateHandler {
   /*-----------------*/
   /* Stats variables */
   /*-----------------*/
-  var totalTPs = Set[String]()
-  var totalFPs = Set[String]()
-  var totalFNs = Set[String]()
-  var totalTNs = Set[String]()
+  var totalTPs = 0
+  var totalFPs = 0
+  var totalFNs = 0
+  var totalTNs = 0
+
+  var perBatchError: Vector[Int] = Vector[Int]()
 
 }

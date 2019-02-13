@@ -34,8 +34,8 @@ class RuleEnsemble {
     val initWeightsSum = initiationRules.map(x => x.w).sum
     val termWeightsSum = terminationRules.map(x => x.w).sum
     val totalWeight = initWeightsSum + termWeightsSum
-    initiationRules.foreach(x => x.w = x.w / totalWeight)
-    terminationRules.foreach(x => x.w = x.w / totalWeight)
+    initiationRules.foreach(x => x.w = x.w / totalWeight.toDouble)
+    terminationRules.foreach(x => x.w = x.w / totalWeight.toDouble)
   }
 
 

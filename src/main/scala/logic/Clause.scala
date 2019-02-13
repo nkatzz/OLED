@@ -99,6 +99,9 @@ case class Clause(head: PosLiteral = PosLiteral(),
   // Currently, it's only used for the multiplicative weights update framework.
   var w: Double = 1.0
 
+  // This is used in the (sleeping) expert setting, for randomized prediction.
+  var selectionProbability = 0.0
+
   // Counts the updates to the w variable to calculate the running average
   var weightUpdateCount = 0.0
   var avgWeight = 0.0

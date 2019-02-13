@@ -1,25 +1,18 @@
 package oled.mwua
 
 import java.io.File
-
-import akka.actor.{Actor, ActorRef, PoisonPill, Props}
+import akka.actor.Actor
 import app.runutils.IOHandling.Source
 import app.runutils.{Globals, RunningOptions}
 import logic.Examples.Example
 import logic._
-import oled.mwua.MessageTypes.{FinishedBatchMsg, ProcessBatchMsg}
 import org.slf4j.LoggerFactory
-import oled.functions.SingleCoreOLEDFunctions.{crossVal, eval}
-
-import scala.collection.mutable.{ListBuffer, Map}
+import oled.functions.SingleCoreOLEDFunctions.eval
+import scala.collection.mutable.ListBuffer
 import AuxFuncs._
-import utils.{ASP, Utils}
-import utils.Implicits._
-
+import oled.mwua.ExpertAdviceFunctions.sortGroundingsByTime
+import utils.Utils
 import scala.util.control.Breaks._
-import scala.reflect.internal.Trees
-import java.util.Random
-
 import scala.util.matching.Regex
 
 
@@ -35,7 +28,7 @@ import scala.util.matching.Regex
 *
 * */
 
-class Learner[T <: Source](val inps: RunningOptions,
+class Learner_OLD_DEBUG[T <: Source](val inps: RunningOptions,
                            val trainingDataOptions: T,
                            val testingDataOptions: T,
                            val trainingDataFunction: T => Iterator[Example],
@@ -44,21 +37,16 @@ class Learner[T <: Source](val inps: RunningOptions,
 
   startTime = System.nanoTime()
 
-  /*
   private var totalTPs = 0
   private var totalFPs = 0
   private var totalFNs = 0
   private var totalTNs = 0
-  */
 
   //--------------------------
   val normalizeWeights = true
   //--------------------------
 
-  private var totalTPs = Set[String]()
-  private var totalFPs = Set[String]()
-  private var totalFNs = Set[String]()
-  private var totalTNs = Set[String]()
+  var processedBatches = 0
 
   private var totalBatchProcessingTime = 0.0
   private var totalRuleScoringTime = 0.0
@@ -74,8 +62,6 @@ class Learner[T <: Source](val inps: RunningOptions,
   private val logger = LoggerFactory.getLogger(self.path.name)
 
   private val withec = Globals.glvalues("with-ec").toBoolean
-
-  private var bestTheoryFoundSoFar = Theory()
 
   // This map cantanins all fluents that were true previously,
   // (i.e. at the time point prior to the one that is currently being processed)
@@ -141,9 +127,6 @@ class Learner[T <: Source](val inps: RunningOptions,
   // Current prequential error (for logging only, updated as a string message containing the actual error).
   private var currentError = ""
 
-  // Stores the F1-scores from holdout evaluation
-  private var holdoutScores = Vector[Double]()
-
   // Evolving theory. If we're learning with the Event Calculus the head of the
   // list is the initiation part of the theory and the tail is the termination.
   // If not, the list has a single element (the current version of the theory).
@@ -178,24 +161,6 @@ class Learner[T <: Source](val inps: RunningOptions,
   }
 
 
-  val workers: List[ActorRef] = {
-
-    // Two workers for initiated and terminated rules respectively.
-    if (withec) {
-      val worker1 = context.actorOf(Props( new Worker(inps) ), name = "worker-1")
-      val worker2 = context.actorOf(Props( new Worker(inps) ), name = "worker-2")
-      List(worker1, worker2)
-    } else {
-      val worker = context.actorOf(Props( new Worker(inps) ), name = "worker")
-      List(worker)
-    }
-  }
-
-  // Use this variable to count the responses received from worker actors while processing a new batch.
-  private var responseCounter = workers.length
-
-  // Keep response messages from workers in here until all workers are done.
-  private val responses = Map[String, FinishedBatchMsg]()
 
   def receive = {
 
@@ -212,7 +177,6 @@ class Learner[T <: Source](val inps: RunningOptions,
 
     case "eval" => {
       // Prequential evaluation of a given theory
-      ///*
       logger.info(s"Performing prequential Evaluation of theory from ${inps.evalth}")
       (1 to repeatFor) foreach { _ =>
         this.data = getTrainData
@@ -223,16 +187,7 @@ class Learner[T <: Source](val inps: RunningOptions,
       }
       logger.info(s"Prequential error vector:\n${prequentialError.mkString(",")}")
       logger.info(s"Prequential error vector (Accumulated Error):\n${prequentialError.scanLeft(0.0)(_ + _).tail}")
-      //*/
 
-      // This is evaluation on a test set, just comment-out prequential, uncomment this.
-      /*
-      val testData = testingDataFunction(testingDataOptions)
-
-      val (tps,fps,fns,precision,recall,fscore) = crossVal(Theory(), data=testData, handCraftedTheoryFile = inps.evalth, globals = inps.globals, inps = inps)
-
-      logger.info(s"\ntps: $tps\nfps: $fps\nfns: " + s"$fns\nprecision: $precision\nrecall: $recall\nf-score: $fscore)")
-      */
       context.system.terminate()
     }
 
@@ -242,134 +197,49 @@ class Learner[T <: Source](val inps: RunningOptions,
       def matches(p: Regex, str: String) = p.pattern.matcher(str).matches
       val rules = scala.io.Source.fromFile(inps.evalth).getLines.toList.filter(line => !matches( """""".r, line) && !line.startsWith("%"))
       val rulesParsed = rules.map(r => Clause.parse(r))
-      println(rulesParsed)
       (1 to repeatFor) foreach { _ =>
-
         this.data = getTrainData
         while (data.hasNext) {
-
           val batch = getNextBatch(lleNoise = false)
-
           logger.info(s"Prosessing $batchCounter")
-
           evaluateTest_NEW(batch, "", false, true, Theory(rulesParsed))
         }
       }
-
       logger.info(s"\nPrequential error vector:\n${prequentialError.mkString(",")}")
       logger.info(s"\nPrequential error vector (Accumulated Error):\n${prequentialError.scanLeft(0.0)(_ + _).tail}")
-      /*
-      logger.info(s"\nTrue labels:\n$trueLabels")
-      logger.info(s"\nInitiation Weight Sums:\n$initWeightSums")
-      logger.info(s"\nNo Initiation Weight Sums:\n$nonInitWeightSums")
-      logger.info(s"\nTermination Weight Sums:\n$TermWeightSums")
-      logger.info(s"\nNon Termination Weight Sums:\n$monTermWeightSums")
-      logger.info(s"\nPredict Initiation Weight Sums:\n$predictInitWeightSums")
-      logger.info(s"\nPredict Termination Weight Sums:\n$predictTermWeightSums")
-      logger.info(s"\nInertia Weight Sums:\n$inertWeightSums")
-      logger.info(s"\nHolds Weight Sums:\n$prodictHoldsWeightSums")
-      */
-
-      //logger.info(s"\nTrue labels:\n$trueLabels")
-
-      ///*
-      utils.plotting.PlotTest2.plotResults("/home/nkatz/Desktop/", "results",
-        trueLabels.toVector, initWeightSums.toVector, nonInitWeightSums.toVector, TermWeightSums.toVector,
-        monTermWeightSums.toVector, predictInitWeightSums.toVector, predictTermWeightSums.toVector,
-        inertWeightSums.toVector, prodictHoldsWeightSums.toVector)
-      //*/
-
       context.system.terminate()
     }
 
-    case p: FinishedBatchMsg => {
-      responseCounter -= 1
-      if (p.targetClass == "") responses += ("theory-no-ec" -> p) else responses += (p.targetClass -> p)
-      if (responseCounter == 0) {
+    case "move on" => processNext()
 
-        processedBatches += 1
-
-        // General case first (no event calculus)
-        if (responses.keySet.size == 1) {
-          val r = responses("theory-no-ec")
-          this.theory = List(r.theory)
-          this.totalBatchProcessingTime += r.BatchProcessingTime
-          this.totalCompressRulesTime += r.compressRulesTime
-          this.totalExpandRulesTime += r.expandRulesTime
-          this.totalNewRuleGenerationTime += r.newRuleGenerationTime
-          this.totalNewRuleTestTime += r.newRuleTestTime
-          this.totalRuleScoringTime += r.ruleScoringTime
-        } else {
-          val ir = responses("initiated")
-          val tr = responses("terminated")
-          val newInitTheory = ir.theory
-          val newTermTheory = tr.theory
-          this.theory = List(newInitTheory, newTermTheory)
-          this.totalBatchProcessingTime += math.max(ir.BatchProcessingTime, tr.BatchProcessingTime)
-          this.totalCompressRulesTime += math.max(ir.compressRulesTime, tr.compressRulesTime)
-          this.totalExpandRulesTime += math.max(ir.expandRulesTime, tr.expandRulesTime)
-          this.totalNewRuleGenerationTime += math.max(ir.newRuleGenerationTime, tr.newRuleGenerationTime)
-          this.totalNewRuleTestTime += math.max(ir.newRuleTestTime, tr.newRuleTestTime)
-          this.totalRuleScoringTime += math.max(ir.ruleScoringTime, tr.ruleScoringTime)
-        }
-        //logger.info(currentError)
-        // reset these before processing a new batch
-        responseCounter = workers.length
-        responses.clear()
-        processNext()
-      }
-    }
   }
 
-
-  var processedBatches = 0
 
   /*
   * Performs online evaluation and sends the next batch to the worker(s) for processing.
   *
   * */
   private def processNext() = {
-
-    val nextBatch = getNextBatch(lleNoise = false)
-
+    val nextBatch = getNextBatch()
     logger.info(s"Processing batch $batchCounter")
-
-    exampleCounter += inps.chunkSize
-
     if (nextBatch.isEmpty) {
       logger.info(s"Finished the data.")
       if (this.repeatFor > 0) {
         logger.info(s"Starting new iteration.")
         self ! "start"
       } else if (this.repeatFor == 0) {
-
         endTime = System.nanoTime()
         logger.info("Done.")
-        workers foreach(w => w ! PoisonPill)
         wrapUp()
         context.system.terminate()
-
       } else {
         throw new RuntimeException("This should never have happened (repeatfor is now negative?)")
       }
     } else {
-
       //evaluate(nextBatch)
-
       //evaluateTest(nextBatch)
-
       //evaluateTest_NEW(nextBatch)
-
       evaluateTest_NEW_EXPAND_WHEN_NEEDED(nextBatch)
-
-      if (this.workers.length > 1) { // we're learning with the Event Calculus.
-        val msg1 = new ProcessBatchMsg(theory.head, nextBatch, "initiated")
-        val msg2 = new ProcessBatchMsg(theory.tail.head, nextBatch, "terminated")
-        workers.head ! msg1
-        workers.tail.head ! msg2
-      } else { // We're learning without the Event Calculus.
-        workers.head ! new ProcessBatchMsg(theory.head, nextBatch)
-      }
     }
   }
 
@@ -416,7 +286,7 @@ class Learner[T <: Source](val inps: RunningOptions,
       Utils.writeToFile(new File(this.writeExprmtResultsTo), "append") { p => List(x).foreach(p.println) }
     }
 
-    logger.info(s"Total TPs: ${totalTPs.size}, Total FPs: ${totalFPs.size}, Total FNs: ${totalFNs.size}")
+    logger.info(s"Total TPs: $totalTPs, Total FPs: $totalFPs, Total FNs: $totalFNs")
 
     if (trainingDataOptions != testingDataOptions) {
 
@@ -427,9 +297,9 @@ class Learner[T <: Source](val inps: RunningOptions,
       // Prequential eval on the test set (without weights update at each step).
       logger.info("Evaluating on the test set with the theory found so far (no weights update at each step, no structure updates).")
       prequentialError = Vector[Double]()
-      totalTPs = Set[String]()
-      totalFPs = Set[String]()
-      totalFNs = Set[String]()
+      totalTPs = 0
+      totalFPs = 0
+      totalFNs = 0
 
       // This includes the refinements in the final theory
       // Comment it out to test with the final theory
@@ -448,11 +318,11 @@ class Learner[T <: Source](val inps: RunningOptions,
 
       logger.info(s"Prequential error on test set:\n${prequentialError.mkString(",")}")
       logger.info(s"Prequential error vector on test set (Accumulated Error):\n${prequentialError.scanLeft(0.0)(_ + _).tail}")
-      logger.info(s"Evaluation on the test set\ntps: ${totalTPs.size}\nfps: ${totalFPs.size}\nfns: ${totalFNs.size}")
+      logger.info(s"Evaluation on the test set\ntps: $totalTPs\nfps: $totalFPs\nfns: $totalFNs")
 
       // just for quick and dirty experiments
       if (this.writeExprmtResultsTo != "") {
-        val x = s"tps: ${totalTPs.size}\nfps: ${totalFPs.size}\nfns: ${totalFNs.size}\n\n"
+        val x = s"tps: $totalTPs\nfps: $totalFPs\nfns: $totalFNs\n\n"
         Utils.writeToFile(new File(this.writeExprmtResultsTo), "append") { p => List(x).foreach(p.println) }
       }
 
@@ -560,7 +430,7 @@ class Learner[T <: Source](val inps: RunningOptions,
 
   /* This is called whenever we're specializing a rule due to a mistake */
   private def specializeRuleAndUpdate(topRule: Clause,
-                                      refinement: Clause, testOnly: Boolean = false) = {
+                                      refinement: Clause, currentAtom: String, mistakeType: String, testOnly: Boolean = false) = {
 
     val filter = (p: List[Clause]) => {
       p.foldLeft(List[Clause]()) { (x, y) =>
@@ -579,11 +449,11 @@ class Learner[T <: Source](val inps: RunningOptions,
       if (topRule.head.functor.contains("initiated")) {
         val newInit = filter(oldInit) :+ refinement
         theory = List(Theory(newInit), Theory(oldTerm))
-        showInfo(topRule, refinement)
+        showInfo(topRule, refinement, currentAtom, mistakeType)
       } else if (topRule.head.functor.contains("terminated")) {
         val newTerm = filter(oldTerm) :+ refinement
         theory = List(Theory(oldInit), Theory(newTerm))
-        showInfo(topRule, refinement)
+        showInfo(topRule, refinement, currentAtom, mistakeType)
       } else {
         throw new RuntimeException("Error while updating current theory.")
       }
@@ -598,9 +468,9 @@ class Learner[T <: Source](val inps: RunningOptions,
     (mergedNew, markedProgramNew, markedMapNew)
   }
 
-  private def showInfo(parent: Clause, child: Clause) = {
+  private def showInfo(parent: Clause, child: Clause, currentAtom: String, mistakeType: String) = {
 
-    logger.info(s"\nRule (id: ${parent.##} | score: ${parent.score} | tps: ${parent.tps} fps: ${parent.fps} " +
+    logger.info(s"\nSpecialization in response to $mistakeType atom $currentAtom:\nRule (id: ${parent.##} | score: ${parent.score} | tps: ${parent.tps} fps: ${parent.fps} " +
       s"fns: ${parent.fns} | ExpertWeight: ${parent.w} " +
       s"AvgExpertWeight: ${parent.avgWeight})\n${parent.tostring}\nwas refined to" +
       s"(id: ${child.##} | score: ${child.score} | tps: ${child.tps} fps: ${child.fps} fns: ${child.fns} | " +
@@ -620,8 +490,6 @@ class Learner[T <: Source](val inps: RunningOptions,
 
       var merged = if (inputTheory == Theory()) getMergedTheory(testOnly) else inputTheory
 
-      //logger.info(s"Predicting with ${merged.tostring}")
-
       // just for debugging
       val weightsBefore = merged.clauses.map(x => x.w)
       // just for debugging
@@ -634,13 +502,11 @@ class Learner[T <: Source](val inps: RunningOptions,
 
       val trueAtoms = batch.annotation.toSet
 
-      var inferredAtoms = (Set[String](), Set[String](), Set[String]())
+      var perBatchTPs = 0
+      var perBatchFPs = 0
+      var perBatchFNs = 0
+      var perBatchTNs = 0
 
-      // this is to be set to the time the previous iteration stopped at.
-      // It was supposed to be used for removing already seen stuff from the batch
-      // whenever we make a mistake and start computing groundings all over again, but
-      // I haven't done that yet.
-      var processedUntil = 0
       var finishedBatch = false
 
       var alreadyProcessedAtoms = Set.empty[String]
@@ -678,8 +544,8 @@ class Learner[T <: Source](val inps: RunningOptions,
                 val currentFluent = parsed.terms.head.tostring
                 val (initiatedBy, terminatedBy) = (y._2._1, y._2._2)
 
-                val initWeightSum = if (initiatedBy.nonEmpty) initiatedBy.map(x => markedMap(x).w).sum else 0.0
-                val termWeightSum = if (terminatedBy.nonEmpty) terminatedBy.map(x => markedMap(x).w).sum else 0.0
+                //val initWeightSum = if (initiatedBy.nonEmpty) initiatedBy.map(x => markedMap(x).w).sum else 0.0
+                //val termWeightSum = if (terminatedBy.nonEmpty) terminatedBy.map(x => markedMap(x).w).sum else 0.0
 
                 // only updates weights when we're not running in test mode.
                 val prediction =
@@ -689,10 +555,10 @@ class Learner[T <: Source](val inps: RunningOptions,
                 //val prediction = _prediction._1
 
                 prediction match {
-                  case "TP" => inferredAtoms = (inferredAtoms._1 + currentAtom, inferredAtoms._2, inferredAtoms._3)
-                  case "FP" => inferredAtoms = (inferredAtoms._1, inferredAtoms._2 + currentAtom, inferredAtoms._3)
-                  case "FN" => inferredAtoms = (inferredAtoms._1, inferredAtoms._2, inferredAtoms._3 + currentAtom)
-                  case "TN" => // do nothing
+                  case "TP" => perBatchTPs += 1
+                  case "FP" => perBatchFPs += 1
+                  case "FN" => perBatchFNs += 1
+                  case "TN" => perBatchTNs += 1
                   case _ => throw new RuntimeException("Unexpected response from predictAndUpdate")
                 }
 
@@ -762,39 +628,24 @@ class Learner[T <: Source](val inps: RunningOptions,
         }
         totalWeightsUpdateTime += predictAndUpdateTimed._2
       }
-
-      val (tps, fps, fns) = (inferredAtoms._1, inferredAtoms._2, inferredAtoms._3)
-
-      val (fpsNumber, currentFNsNumber) = (fps.size, fns.size)
-
-      // All atoms in tps are certainly true positives.
-      // But we need to account for the real true atoms which are not in there.
-      val restFNs = trueAtoms.diff(tps).filter(!fns.contains(_))
-
-      if (restFNs.nonEmpty) throw new RuntimeException("FUUUUUUUUUUUUCK!!!!!")
-
-      val restFNsNumber = restFNs.size
-
-      var trueFNsNumber = currentFNsNumber + restFNsNumber
-
-      // Ugly (AND DANGEROUS) hack to avoid counting as mistakes the holdsAt/2 atoms at the first time point of an interval
-      if (trueFNsNumber == 2) trueFNsNumber = 0
-
-      // We have gathered the FNs that have not been inferred, but we need to add the rest of them in the global counter
-      totalFNs = totalFNs ++ restFNs
-
       // Just for debugging.
       val weightsAfter = merged.clauses.map(x => x.w)
       //just for debugging
       val inertiaAfter = inertiaExpert.map(x => x)
 
-      prequentialError = prequentialError :+ (fpsNumber + trueFNsNumber).toDouble
+      prequentialError = prequentialError :+ (perBatchFPs + perBatchFNs).toDouble
 
-      if (fpsNumber + trueFNsNumber > 0) {
-        logger.info(s"\nMade mistakes: FPs: $fpsNumber, " +
-          s"FNs: $trueFNsNumber.\nWeights before: $weightsBefore\nWeights after: $weightsAfter\nInertia Before: " +
-          s"$inertiaBefore\nInertia after: $inertiaAfter")//\nPredicted with:\n${merged.showWithStats}")
+      if (perBatchFPs + perBatchFNs > 0) {
+        logger.info(s"\nMade mistakes: FPs: $perBatchFPs, " +
+          s"FNs: $perBatchFNs.\nWeights before: $weightsBefore\nWeights after: $weightsAfter\nInertia Before: " +
+          s"$inertiaBefore\nInertia after: $inertiaAfter")
       }
+
+      totalTPs += perBatchTPs
+      totalFPs += perBatchFPs
+      totalFNs += perBatchFNs
+      totalTNs += perBatchTNs
+
     } else { // No Event Calculus. We'll see what we'll do with that.
 
     }
@@ -802,15 +653,14 @@ class Learner[T <: Source](val inps: RunningOptions,
   }
 
 
-
-
-
-
-
   def evaluateTest_NEW_EXPAND_WHEN_NEEDED(batch: Example, inputTheoryFile: String = "",
-                       testOnly: Boolean = false, weightsOnly: Boolean = false, inputTheory: Theory = Theory()) = {
+                                          testOnly: Boolean = false, weightsOnly: Boolean = false, inputTheory: Theory = Theory()) = {
 
     if (withec) {
+
+      if (batchCounter == 38) {
+        val stop = "stop"
+      }
 
       var merged = if (inputTheory == Theory()) getMergedTheory(testOnly) else inputTheory
 
@@ -826,18 +676,14 @@ class Learner[T <: Source](val inps: RunningOptions,
 
       val trueAtoms = batch.annotation.toSet
 
-      var inferredAtoms = (Set[String](), Set[String](), Set[String]())
+      var perBatchTPs = 0
+      var perBatchFPs = 0
+      var perBatchFNs = 0
+      var perBatchTNs = 0
 
-      // this is to be set to the time the previous iteration stopped at.
-      // It was supposed to be used for removing already seen stuff from the batch
-      // whenever we make a mistake and start computing groundings all over again, but
-      // I haven't done that yet.
-      var processedUntil = 0
       var finishedBatch = false
 
       var alreadyProcessedAtoms = Set.empty[String]
-
-
 
       while(!finishedBatch) {
 
@@ -856,30 +702,39 @@ class Learner[T <: Source](val inps: RunningOptions,
         // updated based on whether the atom is mistakenly/correctly predicted and whether each individual
         // rule mistakenly/correctly predicts it. Sorting the inferred atoms and iterating over them is necessary
         // so as to promote/penalize the rule weights correctly after each mistake.
+
+        /*
         val sorted = groundingsMap.map { entry =>
           val parsed = Literal.parse(entry._1)
           val time = parsed.terms.tail.head.name.toInt
           ((entry._1, time), entry._2)
         }.toVector.sortBy(x => x._1._2) // sort by time
+        */
+
+        val sorted = sortGroundingsByTime(groundingsMap)
 
         val predictAndUpdateTimed = Utils.time {
           breakable {
             sorted foreach { y =>
-              val (currentAtom, currentTime) = (y._1._1, y._1._2)
+
+              //val (currentAtom, currentTime) = (y._1._1, y._1._2)
+              val (currentAtom, currentTime) = (y.atom, y.time)
+
 
               if (!alreadyProcessedAtoms.contains(currentAtom)) {
                 val parsed = Literal.parse(currentAtom)
                 val currentFluent = parsed.terms.head.tostring
 
-                val (initiatedBy, terminatedBy) = (y._2._1, y._2._2)
+                //val (initiatedBy, terminatedBy) = (y._2._1, y._2._2)
+                val (initiatedBy, terminatedBy) = (y.initiatedBy, y.terminatedBy)
 
                 // This is also calculated at predictAndUpdate, we need to factor it out.
                 // Calculate it here (because it is needed here) and pass it to predictAndUpdate
                 // to avoid doing it twice.
                 ///*
                 val nonFiringInitRules =
-                  markedMap.filter(x =>
-                    x._2.head.functor.contains("initiated") && !initiatedBy.contains(x._1))
+                markedMap.filter(x =>
+                  x._2.head.functor.contains("initiated") && !initiatedBy.contains(x._1))
                 //*/
 
                 // This is also calculated at predictAndUpdate, we need to factor it out.
@@ -887,12 +742,12 @@ class Learner[T <: Source](val inps: RunningOptions,
                 // to avoid doing it twice.
                 ///*
                 val nonFiringTermRules =
-                  markedMap.filter(x =>
-                    x._2.head.functor.contains("terminated") && !terminatedBy.toSet.contains(x._1))
+                markedMap.filter(x =>
+                  x._2.head.functor.contains("terminated") && !terminatedBy.toSet.contains(x._1))
                 //*/
 
-                val initWeightSum = if (initiatedBy.nonEmpty) initiatedBy.map(x => markedMap(x).w).sum else 0.0
-                val termWeightSum = if (terminatedBy.nonEmpty) terminatedBy.map(x => markedMap(x).w).sum else 0.0
+                //val initWeightSum = if (initiatedBy.nonEmpty) initiatedBy.map(x => markedMap(x).w).sum else 0.0
+                //val termWeightSum = if (terminatedBy.nonEmpty) terminatedBy.map(x => markedMap(x).w).sum else 0.0
 
                 // only updates weights when we're not running in test mode.
                 val prediction =
@@ -900,10 +755,10 @@ class Learner[T <: Source](val inps: RunningOptions,
                     initiatedBy, terminatedBy, markedMap, testOnly, trueAtoms, batch)
 
                 prediction match {
-                  case "TP" => inferredAtoms = (inferredAtoms._1 + currentAtom, inferredAtoms._2, inferredAtoms._3)
-                  case "FP" => inferredAtoms = (inferredAtoms._1, inferredAtoms._2 + currentAtom, inferredAtoms._3)
-                  case "FN" => inferredAtoms = (inferredAtoms._1, inferredAtoms._2, inferredAtoms._3 + currentAtom)
-                  case "TN" => // do nothing
+                  case "TP" => perBatchTPs += 1
+                  case "FP" => perBatchFPs += 1
+                  case "FN" => perBatchFNs += 1
+                  case "TN" => perBatchTNs += 1
                   case _ => throw new RuntimeException("Unexpected response from predictAndUpdate")
                 }
 
@@ -956,9 +811,9 @@ class Learner[T <: Source](val inps: RunningOptions,
                         // initiatedBy is non empty, at least some of the rules in there must be top rules.
 
                         val rulesToSpecialize =
-                          // This is the first minor difference with the piece of code
-                          // for specializing termination rules (below). Here We select the
-                          // rules from the initiation part of the theory, below from the termination
+                        // This is the first minor difference with the piece of code
+                        // for specializing termination rules (below). Here We select the
+                        // rules from the initiation part of the theory, below from the termination
                           theory.head.clauses.
                             filter(x => initiatedBy.toSet.contains(x.##.toString))
 
@@ -968,9 +823,9 @@ class Learner[T <: Source](val inps: RunningOptions,
                           // Find suitable refinements, i.e refinements that DO NOT fire
                           // w.r.t. the current FP atom.
                           val suitableRefs =
-                            // Here is the second difference. We use nonFiringInitRules here.
-                            // It's really stupid to have this code duplicated like that.
-                            // Fuck your quick & dirty bullshit.
+                          // Here is the second difference. We use nonFiringInitRules here.
+                          // It's really stupid to have this code duplicated like that.
+                          // Fuck your quick & dirty bullshit.
                             ruleToSpecialize.refinements.
                               filter(r => nonFiringInitRules.keySet.contains(r.##.toString)).
                               filter(s => s.score > ruleToSpecialize.score).
@@ -981,7 +836,7 @@ class Learner[T <: Source](val inps: RunningOptions,
                             performedSpecialization = true
                             val bestRefinement = suitableRefs.head
                             if (bestRefinement.refinements.isEmpty) bestRefinement.generateCandidateRefs(inps.globals)
-                            val update = specializeRuleAndUpdate(ruleToSpecialize, bestRefinement)
+                            val update = specializeRuleAndUpdate(ruleToSpecialize, bestRefinement, currentAtom, "FP")
                             merged = update._1
                             markedProgram = update._2
                             markedMap = update._3
@@ -1046,7 +901,7 @@ class Learner[T <: Source](val inps: RunningOptions,
                             performedSpecialization = true
                             val bestRefinement = suitableRefs.head
                             if (bestRefinement.refinements.isEmpty) bestRefinement.generateCandidateRefs(inps.globals)
-                            val update = specializeRuleAndUpdate(ruleToSpecialize, bestRefinement)
+                            val update = specializeRuleAndUpdate(ruleToSpecialize, bestRefinement, currentAtom, "FN")
                             merged = update._1
                             markedProgram = update._2
                             markedMap = update._3
@@ -1078,41 +933,29 @@ class Learner[T <: Source](val inps: RunningOptions,
         totalWeightsUpdateTime += predictAndUpdateTimed._2
       }
 
-      val (tps, fps, fns) = (inferredAtoms._1, inferredAtoms._2, inferredAtoms._3)
-
-      val (fpsNumber, currentFNsNumber) = (fps.size, fns.size)
-
-      // All atoms in tps are certainly true positives.
-      // But we need to account for the real true atoms which are not in there.
-      val restFNs = trueAtoms.diff(tps).filter(!fns.contains(_))
-
-      if (restFNs.nonEmpty) throw new RuntimeException("FUUUUUUUUUUUUCK!!!!!")
-
-      val restFNsNumber = restFNs.size
-
-      var trueFNsNumber = currentFNsNumber + restFNsNumber
-
-      // Ugly (AND DANGEROUS) hack to avoid counting as mistakes the holdsAt/2 atoms at the first time point of an interval
-      //if (trueFNsNumber == 2) trueFNsNumber = 0
-
-      // We have gathered the FNs that have not been inferred, but we need to add the rest of them in the global counter
-      totalFNs = totalFNs ++ restFNs
-
       // Just for debugging.
       val weightsAfter = merged.clauses.map(x => x.w)
       //just for debugging
       val inertiaAfter = inertiaExpert.map(x => x)
 
-      prequentialError = prequentialError :+ (fpsNumber + trueFNsNumber).toDouble
+      prequentialError = prequentialError :+ (perBatchFNs + perBatchFPs).toDouble
 
-      if (fpsNumber + trueFNsNumber > 0) {
-        logger.info(s"\nMade mistakes: FPs: $fpsNumber, " +
-          s"FNs: $trueFNsNumber.\nWeights before: $weightsBefore\nWeights after: $weightsAfter\nInertia Before: " +
-          s"$inertiaBefore\nInertia after: $inertiaAfter")//\nPredicted with:\n${merged.showWithStats}")
+      if (perBatchFNs + perBatchFPs > 0) {
+        logger.info(s"\nMade mistakes: FPs: $perBatchFPs, " +
+          s"FNs: $perBatchFNs.\nWeights before: $weightsBefore\nWeights after: $weightsAfter\nInertia Before: " +
+          s"$inertiaBefore\nInertia after: $inertiaAfter")
       }
+
+      totalTPs += perBatchTPs
+      totalFPs += perBatchFPs
+      totalFNs += perBatchFNs
+      totalTNs += perBatchTNs
+
     } else { // No Event Calculus. We'll see what we'll do with that.
 
     }
+
+    self ! "move on"
 
   }
 
@@ -1309,7 +1152,6 @@ class Learner[T <: Source](val inps: RunningOptions,
         updateRulesScore("TP", initiatedBy.map(x => markedMap(x)), nonFiringInitRules.values.toVector,
           terminatedBy.map(x => markedMap(x)), nonFiringTermRules.values.toVector)
 
-        totalTPs = totalTPs + currentAtom
         "TP"
 
       } else {
@@ -1325,7 +1167,6 @@ class Learner[T <: Source](val inps: RunningOptions,
           termWeightSum, nonFiringInitRules.values.map(_.w).sum, nonFiringTermRules.values.map(_.w).sum, this.logger)
         */
 
-        totalFPs = totalFPs + currentAtom
         if (!testOnly) {
 
           // Decrease the weights of all rules that contribute to the FP: Rules that incorrectly initiate it.
@@ -1372,7 +1213,6 @@ class Learner[T <: Source](val inps: RunningOptions,
           termWeightSum, nonFiringInitRules.values.map(_.w).sum, nonFiringTermRules.values.map(_.w).sum, this.logger)
         */
 
-        totalFNs = totalFNs + currentAtom
         if (! testOnly) {
 
           // Increase the weights of all rules that initiate it
