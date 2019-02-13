@@ -29,6 +29,10 @@ object ExpertAdviceFunctions extends LazyLogging {
               percentOfMistakesBeforeSpecialize: Int,
               testHandCrafted: Boolean = false) = {
 
+    if (batchCounter == 255) {
+      val stop = "stop"
+    }
+
     var batchError = 0
     var batchFPs = 0
     var batchFNs = 0
@@ -47,7 +51,6 @@ object ExpertAdviceFunctions extends LazyLogging {
             if (!alreadyProcessedAtoms.contains(currentAtom)) {
 
               //println( (atom.initiatedBy++atom.terminatedBy).map(x => markedMap(x)).map(x => x.w) )
-
 
               alreadyProcessedAtoms = alreadyProcessedAtoms + currentAtom
               batchAtoms += 1
@@ -123,7 +126,7 @@ object ExpertAdviceFunctions extends LazyLogging {
 
 
     def weightNoInfinity(prev: Double, _new: Double) = {
-      if (_new.isPosInfinity) _new else prev
+      if (_new.isPosInfinity) prev else _new
     }
 
     def getMistakeProbability(incorrectExperts: Vector[Clause]) = {
@@ -139,7 +142,8 @@ object ExpertAdviceFunctions extends LazyLogging {
       val inc = incorrectExperts.map(x => markedMap(x))
       val mistakeProbability = getMistakeProbability(inc)
       val correctExponent = mistakeProbability/(1+epsilon)
-      val inCorrectExponent = mistakeProbability/((1+epsilon) - 1)
+      //val inCorrectExponent = mistakeProbability/((1+epsilon) - 1)
+      val inCorrectExponent = mistakeProbability/(1+epsilon) - 1
 
       correctExperts foreach { x =>
         val rule = markedMap(x)
@@ -160,22 +164,47 @@ object ExpertAdviceFunctions extends LazyLogging {
       }
     }
 
-    if (atom.initiatedBy.nonEmpty) {
-      val stop = "stop"
-    }
+    val nonFiringInitRules =
+      markedMap.filter(x =>
+        x._2.head.functor.contains("initiated") && !atom.initiatedBy.toSet.contains(x._1))
+
+    val nonFiringTermRules =
+      markedMap.filter(x =>
+        x._2.head.functor.contains("terminated") && !atom.terminatedBy.toSet.contains(x._1))
 
     if (is_TP(predictedLabel, feedback)) {
       // Awake initiation rules are correct, awake termination rules are incorrect and inertia is correct
       updateRulesWeights(atom.initiatedBy, atom.terminatedBy, true)
-    } else if (is_FP_mistake(predictedLabel, feedback)) {
+
+      updateRulesScore("TP", atom.initiatedBy.map(x => markedMap(x)), nonFiringInitRules.values.toVector,
+        atom.terminatedBy.map(x => markedMap(x)), nonFiringTermRules.values.toVector)
+
+    }
+
+    if (is_FP_mistake(predictedLabel, feedback)) {
       // Awake initiation rules are incorrect, awake termination rules are correct and inertia is incorrect
       updateRulesWeights(atom.terminatedBy,atom.initiatedBy, false)
-    } else if (is_FN_mistake(predictedLabel, feedback)) {
+
+      updateRulesScore("FP", atom.initiatedBy.map(x => markedMap(x)), nonFiringInitRules.values.toVector,
+        atom.terminatedBy.map(x => markedMap(x)), nonFiringTermRules.values.toVector)
+
+    }
+
+    if (is_FN_mistake(predictedLabel, feedback)) {
       // Awake initiation rules are correct, awake termination rules are incorrect and inertia is incorrect
       updateRulesWeights(atom.initiatedBy, atom.terminatedBy, true)
-    } else { // TN
+
+      updateRulesScore("FN", atom.initiatedBy.map(x => markedMap(x)), nonFiringInitRules.values.toVector,
+        atom.terminatedBy.map(x => markedMap(x)), nonFiringTermRules.values.toVector)
+
+    }
+    if (is_TN(predictedLabel, feedback)) { // TN
       // Awake initiation rules are incorrect, awake termination rules are correct and inertia is incorrect
       updateRulesWeights(atom.terminatedBy,atom.initiatedBy, false)
+
+      updateRulesScore("TN", atom.initiatedBy.map(x => markedMap(x)), nonFiringInitRules.values.toVector,
+        atom.terminatedBy.map(x => markedMap(x)), nonFiringTermRules.values.toVector)
+
     }
   }
 
@@ -195,6 +224,8 @@ object ExpertAdviceFunctions extends LazyLogging {
         x._2.head.functor.contains("terminated") && !atom.terminatedBy.toSet.contains(x._1))
 
     if (is_TP(predictedLabel, feedback)) {
+
+      // No weight updates here
       stateHandler.totalTPs = stateHandler.totalTPs + 1
 
       val holdsWeight = inertiaExpertPrediction + initWeightSum
@@ -479,6 +510,11 @@ object ExpertAdviceFunctions extends LazyLogging {
   }
 
   def predictRandomized(a: AtomTobePredicted, stateHanlder: StateHandler, markedMap: Map[String, Clause]) = {
+
+
+    if(a.atom == "holdsAt(meeting(id1,id0),3280)") {
+      val stop = "stop"
+    }
 
     val (awakeInit, awakeTerm, currentFluent) = (a.initiatedBy, a.terminatedBy, a.fluent)
     val inertiaExpertPrediction = stateHanlder.inertiaExpert.getWeight(currentFluent)

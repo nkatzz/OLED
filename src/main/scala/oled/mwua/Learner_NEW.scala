@@ -15,7 +15,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
                                val writeExprmtResultsTo: String = "") extends Actor {
   val learningRate = 1.0
 
-  val epsilon = 0.5 // used in the randomized version
+  val epsilon = 0.0005 // used in the randomized version
 
   val randomizedPrediction = true
 
