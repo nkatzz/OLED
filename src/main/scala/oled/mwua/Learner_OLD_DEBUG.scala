@@ -1137,9 +1137,7 @@ class Learner_OLD_DEBUG[T <: Source](val inps: RunningOptions,
 
         // this is guaranteed to be positive from the prediction rule
         val holdsWeight = inertiaExpertPrediction + predictInitiated
-
         inertiaExpert += (currentFluent -> holdsWeight)
-        //inertiaExpert += (currentFluent -> 1.0)
       }
 
       if (trueAtoms.contains(currentAtom)) {
@@ -1180,6 +1178,11 @@ class Learner_OLD_DEBUG[T <: Source](val inps: RunningOptions,
           if (inertiaExpert.keySet.contains(currentFluent)) {
             val newWeight = inertiaExpert(currentFluent) * Math.pow(Math.E, (-1.0) * learningRate)
             inertiaExpert += (currentFluent -> newWeight)
+          } else {
+            // Since we predicted it as holding, we should add it to the inertia map/
+            // No, that's not correct. We only add on TPs and remove on TNs.
+            // But in any case, even storing the fluent after an FP prediction does not change results.
+            //inertiaExpert += (currentFluent -> holdsWeight)
           }
 
           // Increase the weights of rules that can fix the mistake:

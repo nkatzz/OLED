@@ -15,9 +15,16 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
                                val writeExprmtResultsTo: String = "") extends Actor {
   val learningRate = 1.0
 
-  val epsilon = 0.0005 // used in the randomized version
+  val epsilon = 0.5 // used in the randomized version
 
-  val randomizedPrediction = true
+  val randomizedPrediction = false
+
+  val specializeAllAwakeRulesOnFPMistake = false
+
+  // Set this to 1.0 to simulate the case of constant feedback at each round.
+  // For values < 1.0 we only update weights and structure if a biased coin
+  // with receiveFeedbackBias for heads returns heads.
+  val receiveFeedbackBias = 0.05
 
   // A rule must make this much % of the total FPs before it is specialized
   val percentOfMistakesBeforeSpecialize = 0
@@ -119,8 +126,9 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
           context.system.terminate()
         } else {
           val trueLabels = nextBatch.annotation.toSet
-          ExpertAdviceFunctions.process(withSplice = false, nextBatch, inps, stateHandler,
-            trueLabels, learningRate, epsilon, randomizedPrediction, batchCounter, percentOfMistakesBeforeSpecialize)
+          ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
+            stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
+            batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake, receiveFeedbackBias)
         }
       }
     }
@@ -136,6 +144,13 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
     logger.info(s"Prequential error vector:\n${stateHandler.perBatchError.mkString(",")}")
     logger.info(s"Prequential error vector (Accumulated Error):\n${stateHandler.perBatchError.scanLeft(0.0)(_ + _).tail}")
     logger.info(s"Total TPs: ${stateHandler.totalTPs}, Total FPs: ${stateHandler.totalFPs}, Total FNs: ${stateHandler.totalFNs}, Total TNs: ${stateHandler.totalTNs}")
+
+    logger.info(s"Total time: ${(endTime - startTime)/1000000000.0}")
+    logger.info(s"\nPredicted with initiation rules: ${stateHandler.predictedWithInitRule} times")
+    logger.info(s"\nPredicted with terminated rules: ${stateHandler.predictedWithTermRule} times")
+    logger.info(s"\nPredicted with inertia: ${stateHandler.predictedWithInertia} times")
+    logger.info(s"\nTotal number of rounds: ${stateHandler.totalNumberOfRounds}")
+    logger.info(s"\nReceived feedback on ${stateHandler.receivedFeedback} rounds")
   }
 
 }

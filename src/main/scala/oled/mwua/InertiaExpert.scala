@@ -20,6 +20,8 @@ class InertiaExpert {
     weightMemory += (fluent -> newWeight)
   }
 
+  def getMemory() = weightMemory
+
 
 
 

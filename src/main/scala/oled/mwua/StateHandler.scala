@@ -64,6 +64,18 @@ class StateHandler {
   var totalFNs = 0
   var totalTNs = 0
 
+  var batchCounter = 0
+
   var perBatchError: Vector[Int] = Vector[Int]()
+
+  var receivedFeedback = 0
+
+  var totalNumberOfRounds = 0
+
+  var totalAtoms = 0
+
+  var predictedWithInitRule = 0
+  var predictedWithTermRule = 0
+  var predictedWithInertia = 0
 
 }
