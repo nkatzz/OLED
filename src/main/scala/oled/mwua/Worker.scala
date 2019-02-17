@@ -16,27 +16,13 @@ class Worker(val inps: RunningOptions) extends Actor {
 
   private val logger = LoggerFactory.getLogger(self.path.name)
 
-  private var count = 0
-
   def receive = {
 
     case msg: ProcessBatchMsg =>
-
-      count += 1
-
       val p = utils.Utils.time { processExample(msg.theory, msg.batch, msg.targetClass, inps, logger, learningWeights = true) }
       val (r, batchTime) = (p._1, p._2)
       val fmsg = new FinishedBatchMsg(r._1, r._2, r._3, r._4, r._5, r._6, batchTime, msg.targetClass)
       sender ! fmsg
-      /*
-      if (count < 2) {
-
-      } else {
-        sender ! new FinishedBatchMsg(msg.theory, r._2, r._3, r._4, r._5, r._6, batchTime, msg.targetClass)
-      }
-      */
-
-
   }
 
 

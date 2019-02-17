@@ -115,7 +115,8 @@ case class InnerNode(override val id: String, override val theory: Theory, paren
 
   override val isRootNode = false
 
-  override def getMCTSScore(exploreRate: Double) = meanReward() + exploreRate * Math.sqrt(2*Math.log(this.parentNode.visits)/this.visits)
+  override def getMCTSScore(exploreRate: Double) =
+    meanReward() + exploreRate * Math.sqrt(2*Math.log(this.parentNode.visits)/this.visits)
 
   override def getDepth() = {
     var reachedRoot = false

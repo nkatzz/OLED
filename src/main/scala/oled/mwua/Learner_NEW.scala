@@ -19,12 +19,13 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
 
   val randomizedPrediction = false
 
+  // If this is false, some non-determinism is introduced (number of mistakes may vary slightly from round to round)
   val specializeAllAwakeRulesOnFPMistake = false
 
   // Set this to 1.0 to simulate the case of constant feedback at each round.
   // For values < 1.0 we only update weights and structure if a biased coin
   // with receiveFeedbackBias for heads returns heads.
-  val receiveFeedbackBias = 0.05
+  val receiveFeedbackBias = 1.0 //0.5
 
   // A rule must make this much % of the total FPs before it is specialized
   val percentOfMistakesBeforeSpecialize = 0
@@ -140,17 +141,26 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
 
 
   def wrapUp() = {
+
     logger.info(Theory(stateHandler.ensemble.merged(inps).clauses.sortBy(x => -x.w)).showWithStats)
     logger.info(s"Prequential error vector:\n${stateHandler.perBatchError.mkString(",")}")
     logger.info(s"Prequential error vector (Accumulated Error):\n${stateHandler.perBatchError.scanLeft(0.0)(_ + _).tail}")
     logger.info(s"Total TPs: ${stateHandler.totalTPs}, Total FPs: ${stateHandler.totalFPs}, Total FNs: ${stateHandler.totalFNs}, Total TNs: ${stateHandler.totalTNs}")
 
     logger.info(s"Total time: ${(endTime - startTime)/1000000000.0}")
-    logger.info(s"\nPredicted with initiation rules: ${stateHandler.predictedWithInitRule} times")
-    logger.info(s"\nPredicted with terminated rules: ${stateHandler.predictedWithTermRule} times")
-    logger.info(s"\nPredicted with inertia: ${stateHandler.predictedWithInertia} times")
-    logger.info(s"\nTotal number of rounds: ${stateHandler.totalNumberOfRounds}")
-    logger.info(s"\nReceived feedback on ${stateHandler.receivedFeedback} rounds")
+    if (randomizedPrediction) {
+      logger.info(s"\nPredicted with initiation rules: ${stateHandler.predictedWithInitRule} times")
+      logger.info(s"\nPredicted with terminated rules: ${stateHandler.predictedWithTermRule} times")
+      logger.info(s"\nPredicted with inertia: ${stateHandler.predictedWithInertia} times")
+    }
+
+    //logger.info(s"Predictions vector:\n${stateHandler.predictionsVector}")
+
+    logger.info(s"Total number of rounds: ${stateHandler.totalNumberOfRounds}")
+
+    if (receiveFeedbackBias != 1.0) {
+      logger.info(s"\nReceived feedback on ${stateHandler.receivedFeedback} rounds")
+    }
   }
 
 }

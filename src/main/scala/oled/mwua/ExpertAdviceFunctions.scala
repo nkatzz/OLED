@@ -17,9 +17,8 @@ object ExpertAdviceFunctions extends LazyLogging {
 
 
 
-  // If withSplice is true then trueLabels is empty and we use splice to get a label.
-  // Otherwise (if we're using this in a stand-alone fashion) trueLabels is the true holdsAt
-  // atoms (and we're using CWA for the false ones).
+  // The "batch" argument contains only the evidence atoms here. The annotation atoms found in the batch
+  // are passed-in via the "trueAtoms" argument.
   def process(batch: Example,
               trueAtoms: Set[String],
               inps: RunningOptions,
@@ -79,6 +78,7 @@ object ExpertAdviceFunctions extends LazyLogging {
                 termWeightSum = _termWeightSum
               } else {
                 val (_prediction_, _totalWeight, _selected) = predictRandomized(atom, stateHandler, markedMap)
+                //val (_prediction_, _totalWeight, _selected) = predict_NEW(atom, stateHandler, markedMap)
                 prediction = _prediction_
                 totalWeight = _totalWeight
                 selected = _selected
@@ -621,8 +621,69 @@ object ExpertAdviceFunctions extends LazyLogging {
     val initWeightSum = if (awakeInit.nonEmpty) awakeInit.map(x => markedMap(x).w).sum else 0.0
     val termWeightSum = if (awakeTerm.nonEmpty) awakeTerm.map(x => markedMap(x).w).sum else 0.0
     val prediction = inertiaExpertPrediction + initWeightSum - termWeightSum
+    //val prediction = initWeightSum - termWeightSum
     (prediction, inertiaExpertPrediction, initWeightSum, termWeightSum)
   }
+
+
+
+
+  def predict_NEW(a: AtomTobePredicted, stateHanlder: StateHandler, markedMap: Map[String, Clause]) = {
+
+    val (awakeInit, awakeTerm, currentFluent) = (a.initiatedBy, a.terminatedBy, a.fluent)
+    val inertiaExpertPrediction = stateHanlder.inertiaExpert.getWeight(currentFluent)
+
+    if (awakeInit.isEmpty && awakeTerm.isEmpty && inertiaExpertPrediction == 0.0) {
+      (0.0, 0.0, "None")
+    } else {
+      val bestInit = awakeInit.map(x => markedMap(x)).map(x => (x.##.toString, x.w)).sortBy(x => -x._2)
+      val bestTerm = awakeTerm.map(x => markedMap(x)).map(x => (x.##.toString, x.w)).sortBy(x => -x._2)
+
+      val nonEmprtyBodied = (awakeInit ++ awakeTerm).map(x => markedMap(x)).filter(_.body.nonEmpty)
+      val awakeRuleExpertsWithWeights = nonEmprtyBodied.map(x => (x.##.toString, x.w)).toMap
+      val awakeExpertsWithWeights =
+        if (inertiaExpertPrediction > 0) awakeRuleExpertsWithWeights + ("inertia" -> inertiaExpertPrediction)
+        else awakeRuleExpertsWithWeights
+
+      val totalWeight = awakeExpertsWithWeights.values.sum
+
+      var v = Vector.empty[(String, Double)]
+      if (bestInit.nonEmpty) v = v :+ bestInit.head
+      if (bestTerm.nonEmpty) v = v :+ bestTerm.head
+
+      val _sorted =
+        if (inertiaExpertPrediction > 0) v :+ ("inertia" -> inertiaExpertPrediction)
+        else v
+
+      val pick = _sorted.sortBy(x => -x._2).head
+
+      val selected = pick._1
+
+      if (selected == "inertia") {
+        // return
+        stateHanlder.predictedWithInertia += 1
+        (inertiaExpertPrediction, totalWeight, selected)
+      } else {
+
+        if (!markedMap.keySet.contains(selected)) {
+          throw new RuntimeException(s"atom: ${a.atom}, selected: $selected")
+        }
+
+        val expert = markedMap(selected)
+        // return
+        if (expert.head.functor.contains("initiated")) {
+          stateHanlder.predictedWithInitRule += 1
+          (expert.w, totalWeight, selected)
+        } else {
+          stateHanlder.predictedWithTermRule += 1
+          (-expert.w, totalWeight, selected)
+        }
+      }
+
+    }
+  }
+
+
 
   def predictRandomized(a: AtomTobePredicted, stateHanlder: StateHandler, markedMap: Map[String, Clause]) = {
 
@@ -633,13 +694,12 @@ object ExpertAdviceFunctions extends LazyLogging {
       (0.0, 0.0, "None")
     } else {
 
+
       val nonEmprtyBodied = (awakeInit ++ awakeTerm).map(x => markedMap(x)).filter(_.body.nonEmpty)
-
-      //val awakeRuleExpertsWithWeights = (awakeInit ++ awakeTerm).map(x => (x, markedMap(x).w)).toMap
       val awakeRuleExpertsWithWeights = nonEmprtyBodied.map(x => (x.##.toString, x.w)).toMap
-
       val awakeExpertsWithWeights =
-        if (inertiaExpertPrediction > 0) awakeRuleExpertsWithWeights + ("inertia" -> inertiaExpertPrediction) else awakeRuleExpertsWithWeights
+        if (inertiaExpertPrediction > 0) awakeRuleExpertsWithWeights + ("inertia" -> inertiaExpertPrediction)
+        else awakeRuleExpertsWithWeights
 
       val totalWeight = awakeExpertsWithWeights.values.sum
 
@@ -647,7 +707,6 @@ object ExpertAdviceFunctions extends LazyLogging {
 
       // ORDERING DOESN'T MATTER. IS THIS TRUE?
       val sorted = awakeExpertsWithWeights.toVector.map(x => (x._1, x._2/totalWeight.toDouble)).sortBy(x => x._2)
-
       //val sorted = awakeExpertsWithWeights.toVector.map(x => (x._1, x._2/totalWeight.toDouble))
 
       // Pick an element according to its probability:
