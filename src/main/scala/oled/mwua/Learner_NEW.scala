@@ -1,11 +1,15 @@
 package oled.mwua
 
+import java.io.{File, PrintWriter}
+
 import akka.actor.Actor
 import app.runutils.IOHandling.Source
 import app.runutils.RunningOptions
 import logic.Examples.Example
-import logic.Theory
+import logic.{Clause, Theory}
 import org.slf4j.LoggerFactory
+
+import scala.util.matching.Regex
 
 class Learner_NEW[T <: Source](val inps: RunningOptions,
                                val trainingDataOptions: T,
@@ -29,6 +33,51 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
 
   // A rule must make this much % of the total FPs before it is specialized
   val percentOfMistakesBeforeSpecialize = 0
+
+  // have this set to "" for a regular run without an input theory
+  //val inputTheoryFile = "/home/nkatz/Desktop/theory"
+  val inputTheoryFile = ""
+
+  val inputTheory: List[Clause] = {
+    def matches(p: Regex, str: String) = p.pattern.matcher(str).matches
+    if (inputTheoryFile == "") {
+      Nil
+    }  else {
+      val rules = scala.io.Source.fromFile(inputTheoryFile).getLines.toList.filter(line => !matches( """""".r, line) && !line.startsWith("%"))
+      val rulesParsed = rules.map(r => Clause.parse(r))
+      rulesParsed
+    }
+  }
+
+  val stateHandler: StateHandler = {
+    val stateHandler = new StateHandler
+    if (inputTheory.isEmpty) {
+      stateHandler
+    } else {
+      val (inputInitRules, inputTermRules) = inputTheory.foldLeft(List.empty[Clause], List.empty[Clause]){ (x, y) =>
+        if (y.head.functor.contains("initiated")) (x._1 :+ y, x._2) else (x._1, x._2 :+ y)
+      }
+      stateHandler.ensemble.initiationRules = inputInitRules
+      stateHandler.ensemble.terminationRules = inputTermRules
+      stateHandler
+    }
+  }
+
+
+  // Just print-out all the data (vag wanted it).
+  /*
+  val test = {
+    val pw = new PrintWriter(new File("/home/nkatz/Desktop/caviar-whole" ))
+    data = getTrainData
+    while (data.hasNext) {
+      val x = data.next()
+      val a = (x.annotation ++ x.narrative).mkString("\n")+"\n\n% New Batch\n\n"
+      pw.write(a)
+    }
+    pw.close()
+  }
+  */
+
 
   private val logger = LoggerFactory.getLogger(self.path.name)
 
@@ -111,10 +160,6 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
 
       while(! done) {
 
-        if (batchCounter == 38) {
-          val stop = "stop"
-        }
-
         val nextBatch = getNextBatch(lleNoise = false)
         logger.info(s"Processing batch $batchCounter")
         if (nextBatch.isEmpty) {
@@ -127,9 +172,18 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
           context.system.terminate()
         } else {
           val trueLabels = nextBatch.annotation.toSet
-          ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
-            stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
-            batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake, receiveFeedbackBias)
+
+          if (inputTheory.isEmpty) {
+            ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
+              stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
+              batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake, receiveFeedbackBias)
+          } else {
+            ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
+              stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
+              batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake, receiveFeedbackBias, inputTheory = Some(inputTheory))
+          }
+
+
         }
       }
     }
@@ -137,7 +191,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
   }
 
 
-  val stateHandler = new StateHandler
+
 
 
   def wrapUp() = {

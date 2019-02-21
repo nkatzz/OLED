@@ -130,6 +130,9 @@ object Examples {
                      containedExamples: List[Example] = List[Example](),
                      suppressedAnnotation: List[String] = Nil) extends Data {
 
+    var startTime = 0
+    var endTime = 0
+
     val annotation: List[String] =
       if (this.annot.isEmpty && this.nar.isEmpty)// then this is really coming from db, so read the DBObject
         if (this.e.nonEmpty)

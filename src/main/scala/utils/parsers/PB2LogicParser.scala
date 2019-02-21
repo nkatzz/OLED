@@ -90,6 +90,18 @@ final class PB2LogicParser(val input: ParserInput) extends Parser {
 
   private def Var = rule { capture(UpperCaseString) ~> ((x: String) => Variable(x)) }
 
+
+  private def Const = rule {
+    (capture(LowerCaseString) ~> ((x: String) => Constant(x))) |
+     (capture(Integer) ~> (x => Constant(x))) |
+     (capture(MinusInteger) ~> (x => Constant(x))) |
+     (capture(optional('"') ~ TK_WhatEver ~ optional('"')) ~> (x => Constant(x))) |
+     (capture(optional('"') ~ LowerCaseString ~ optional('"')) ~> ((x: String) => Constant(x))) |
+     (capture('"' ~ UpperCaseString ~ '"') ~> ((x: String) => Constant(x)))
+  }
+
+
+  /*
   private def Const = rule {
     (capture(LowerCaseString) ~> ((x: String) => Constant(x))) |
       (capture(Integer) ~> (x => Constant(x))) |
@@ -97,10 +109,13 @@ final class PB2LogicParser(val input: ParserInput) extends Parser {
       (capture(optional('"') ~ LowerCaseString ~ optional('"')) ~> ((x: String) => Constant(x))) |
       (capture('"' ~ UpperCaseString ~ '"') ~> ((x: String) => Constant(x)))
   }
+  */
 
   private def LowerCaseString = rule { CharPredicate.LowerAlpha ~ zeroOrMore(CharPredicate.AlphaNum | "_") }
 
   private def Integer = rule { oneOrMore(CharPredicate.Digit) }
+
+  private def TK_WhatEver = rule { Integer ~ "_" ~ Integer }
 
   // This is needed in use/2 atoms with rule ids, e.g. use(-23421, 0)
   private def MinusInteger = rule { "-" ~ oneOrMore(CharPredicate.Digit) }
@@ -110,6 +125,7 @@ final class PB2LogicParser(val input: ParserInput) extends Parser {
 }
 
 object TestRunner extends App {
+  val t = PB2LogicParser.parseAtom("fluentGrnd(holdsAt(reFuel(\"7330_124060\"),1498863690))", debug=true)
   // - in
   PB2LogicParser.parseAtom("use(-34534534,6)", debug=true)
   PB2LogicParser.parseAtom("initiatedAt(meeting(X0,X1,45),1,Z,Petryb,a(p(2,3,z(23,g,f,ert(sdjfskj,Xkjsh))),1),oo(12,23,E))", debug=true)

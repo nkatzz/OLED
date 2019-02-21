@@ -8,7 +8,7 @@ import logic.Clause
 
 class PartialExpertTree(val bottomRule: Clause) {
 
-  val rootNode = Clause(bottomRule.head)
+  val rootNode = new RootNode(Clause(bottomRule.head))
 
 }
 
@@ -69,10 +69,12 @@ class RootNode(override val rule: Clause) extends TreeNode {
 
 }
 
-class InnerNode(override val rule: Clause, parentNode: TreeNode) extends TreeNode {
+class InnerNode(override val rule: Clause, val parentNode: TreeNode) extends TreeNode {
 
-  override def getMCTSScore(exploreRate: Double) =
+  override def getMCTSScore(exploreRate: Double) = {
     avgReward + exploreRate * Math.sqrt(2*Math.log(parentNode.visits)/visits)
+  }
+
 
   override def getDepth() = {
     var reachedRoot = false

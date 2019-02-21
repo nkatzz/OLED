@@ -288,26 +288,6 @@ object IntervalHandler extends App {
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 package object data {
 
   implicit class ITree[T](val tree: IntervalTree[T]) {

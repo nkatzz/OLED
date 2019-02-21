@@ -1,5 +1,7 @@
 package oled.mwua
 
+import java.io.{File, PrintWriter}
+
 import scala.util.{Failure, Random, Success}
 import app.runutils.RunningOptions
 import com.typesafe.scalalogging.{LazyLogging, Logger}
@@ -34,31 +36,37 @@ object ExpertAdviceFunctions extends LazyLogging {
               splice: Option[Map[String, Double] => (Set[EvidenceAtom], Evidence)] = None,
               mapper: Option[Set[EvidenceAtom] => Vector[String]] = None,
               incompleteTrueAtoms: Option[Set[String]] = None,
-              testHandCrafted: Boolean = false) = {
+              inputTheory: Option[List[Clause]] = None) = {
 
     var batchError = 0
     var batchFPs = 0
     var batchFNs = 0
     var batchAtoms = 0
-
     var finishedBatch = false
 
     var spliceInput = Map.empty[String, Double]
-
-    val withSplice = splice.isDefined
-
     stateHandler.batchCounter = batchCounter
+
+    val withInputTheory = inputTheory.isDefined
 
     var alreadyProcessedAtoms = Set.empty[String]
     val predictAndUpdateTimed = Utils.time {
       while(!finishedBatch) {
-        val (markedProgram, markedMap, groundingsMap) = groundEnsemble(batch, inps, stateHandler, testHandCrafted)
+        val (markedProgram, markedMap, groundingsMap) = groundEnsemble(batch, inps, stateHandler, withInputTheory)
         val sortedAtomsToBePredicted = sortGroundingsByTime(groundingsMap)
         breakable {
           sortedAtomsToBePredicted foreach { atom =>
             val currentAtom = atom.atom
             if (!alreadyProcessedAtoms.contains(currentAtom)) {
-              alreadyProcessedAtoms = alreadyProcessedAtoms + currentAtom
+
+              // this should be place at the end of the iteration. In this way, if
+              // a break actuall occurs due to structure update we'll retrain on the
+              // current example to update weights of the new/revised rules and handle the
+              // inertia buffer (e.g. an FN turns into a TP after the addition of an
+              // initiation rule, the inertia expert now remembers the atom).
+              // UPDATE: Not a very good idea! Why insisting on correcting a particular mistake?
+              // After all, the provided feedback/label may be wrong!
+              //alreadyProcessedAtoms = alreadyProcessedAtoms + currentAtom
               batchAtoms += 1
               stateHandler.totalNumberOfRounds += 1
               //-------------------
@@ -90,7 +98,12 @@ object ExpertAdviceFunctions extends LazyLogging {
                 val eventPred = eventAtom.functor.capitalize
                 val eventArgs = eventAtom.terms.map(x => x.tostring.capitalize).mkString(",")
                 val out = s"$eventPred($eventArgs,$time)"
-                spliceInput += (out -> prediction)
+                // Rescale the prediction to [0,1]. If I is the interval (range) of the prediction, then
+                // rescaledPrediction = (prediction - min(I))/(max(I) - min(I)),
+                // where min(I) = -termWeightSum
+                // max(I) = initWeightSum + inertiaExpertPrediction
+                val rescaledPrediction = (prediction - (-termWeightSum))/((initWeightSum + inertiaExpertPrediction) - (-termWeightSum))
+                spliceInput += (out -> rescaledPrediction)
               }
 
               val feedback =
@@ -132,12 +145,12 @@ object ExpertAdviceFunctions extends LazyLogging {
                     if (selected == "inertia") {
                       logger.info(s"Inertia FP prediction for fluent ${atom.fluent}. Inertia weight: ${stateHandler.inertiaExpert.getWeight(atom.fluent)}")
                     }
-                    //logger.info(s"FP mistake for atom $currentAtom")
+                    logger.info(s"FP mistake for atom $currentAtom")
                   }
                   if (is_FN_mistake(predictedLabel, feedback)) {
                     batchFNs += 1
                     stateHandler.totalFNs += 1
-                    //logger.info(s"FN mistake for atom $currentAtom")
+                    logger.info(s"FN mistake for atom $currentAtom")
                   }
                 } else {
                   if (predictedLabel == "true") stateHandler.totalTPs += 1 else stateHandler.totalTNs += 1
@@ -145,6 +158,7 @@ object ExpertAdviceFunctions extends LazyLogging {
 
               }
 
+              // Handles whether we receive feedback or not.
               val update = {
                 if (receiveFeedbackBias == 1.0) {
                   true
@@ -167,13 +181,20 @@ object ExpertAdviceFunctions extends LazyLogging {
                 }
 
                 if (predictedLabel != feedback) {
-                  // Shouldn't we update the weights on newly generated rules here? Of course it's just 1 example, no big deal, but still...
-                  updateStructure(atom, markedMap, predictedLabel, feedback, batch,
-                    currentAtom, inps, Logger(this.getClass).underlying, stateHandler,
-                    percentOfMistakesBeforeSpecialize, randomizedPrediction, selected, specializeAllAwakeOnMistake)
+                  if (!withInputTheory) { // we only update weights when an input theory is given
+                    // Shouldn't we update the weights on newly generated rules here? Of course it's just 1 example, no big deal, but still...
+                    updateStructure_STRONGLY_INIT(atom, markedMap, predictedLabel, feedback, batch,
+                      currentAtom, inps, Logger(this.getClass).underlying, stateHandler,
+                      percentOfMistakesBeforeSpecialize, randomizedPrediction, selected, specializeAllAwakeOnMistake)
+                  }
                 }
               }
-
+              // Not a very good idea to do this here. The reason to do it here is to
+              // force the system to correct this particular mistake (it will be added
+              // to the alreadySeenAtoms only if the prediction on this atom is correct).
+              // But Why insisting on correcting a particular mistake?
+              // After all, the provided feedback/label may be wrong!
+              alreadyProcessedAtoms = alreadyProcessedAtoms + currentAtom
             }
           }
           finishedBatch = true
@@ -335,7 +356,9 @@ object ExpertAdviceFunctions extends LazyLogging {
         val newWeight = inertiaExpertPrediction * Math.pow(Math.E, (-1.0) * learningRate)
         stateHandler.inertiaExpert.updateWeight(currentFluent, newWeight)
       } else {
-        // Since we predicted it as holding, we should add it to the inertia map/
+        // Since we predicted it as holding, we should add it to the inertia map
+        // (???? does this make sense? Only for some sort of soft inertia for example, where
+        // the actual label (FP) could be wrong, so we remember hoping to let the weights sort things out)
         //stateHandler.inertiaExpert.updateWeight(currentFluent, prediction)
       }
       ///*
@@ -348,9 +371,22 @@ object ExpertAdviceFunctions extends LazyLogging {
       increaseWeights(atom.initiatedBy, markedMap, learningRate)
       reduceWeights(atom.terminatedBy, markedMap, learningRate)
       if (inertiaExpertPrediction > 0.0) {
-        var newWeight = inertiaExpertPrediction * Math.pow(Math.E, 1.0 * learningRate)
+        val newWeight = inertiaExpertPrediction * Math.pow(Math.E, 1.0 * learningRate)
         //newWeight = if (newWeight.isPosInfinity) stateHandler.inertiaExpert.getWeight(currentFluent) else newWeight
         stateHandler.inertiaExpert.updateWeight(currentFluent, newWeight)
+      } else {
+        // This is because in response to the FN mistake we have generated an new initiation rule
+        // (if the fluent does not hold by inertia -- see the updateStructure method). Therefore,
+        // the new initiation rule initiates the fluent, so we add it to the inertia map.
+        // Not doing so won't work in case the initiation conditions are not repeated exactly
+        // in the next time point (after this FN), so as for the fluent to be re-initiated.
+        /* THIS SHOULD BE HANDLED BY RETRAINING ON THE CURRENT EXAMPLE, SO AFTER A RULE GENERATION (INITIATION) THE fn TURNS INTO A TP */
+        /*
+        if (atom.initiatedBy.nonEmpty) {
+          stateHandler.inertiaExpert.updateWeight(currentFluent, 1.0)
+        }
+        */
+
       }
       ///*
       updateRulesScore("FN", atom.initiatedBy.map(x => markedMap(x)), nonFiringInitRules.values.toVector,
@@ -404,6 +440,79 @@ object ExpertAdviceFunctions extends LazyLogging {
             logger, percentOfMistakesBeforeSpecialize, "FN", randomizedPrediction, selected, specializeAllAwakeOnMistake)
           if (break_?) break
         }
+      }
+    }
+  }
+
+
+
+
+
+
+  def updateStructure_STRONGLY_INIT(atom: AtomTobePredicted, markedMap: Map[String, Clause],
+                      predictedLabel: String, feedback: String, batch: Example,
+                      currentAtom: String, inps: RunningOptions,
+                      logger: org.slf4j.Logger, stateHandler: StateHandler,
+                      percentOfMistakesBeforeSpecialize: Int, randomizedPrediction: Boolean,
+                      selected: String, specializeAllAwakeOnMistake: Boolean) = {
+
+    if (is_FP_mistake(predictedLabel, feedback)) {
+      // For an FP mistake we have the following cases:
+      // 1. holdsAt wins because there are no awake termination rules (so we have awake initiation rules and/or inertia). Then:
+      // 1.1 If the fluent already holds by inertia, generate new termination expert tree
+      //     (it's hopeless to expect to fix the mistake by down-weighting initiation rules,
+      //     since we need to terminate the fluent for it to be "forgotten" by the inertia expert).
+      // 1.2. If the fluent does not already hold by inertia, then specialize an existing initiation rule (or all???). With that we remove
+      //      an awake initiation expert, thus hoping to prevent this scenario from happening again in the future.
+      //      NOTE: For this to work it is necessary for the inertia expert to remember a fluent only in the case of a TP
+      //      (NOT an FP, otherwise we get back the problem of 1.1)
+      // 2. holdsAt wins because the awake termination rules are out-scored. In that case let the weight demotion
+      //    (for the awake init. rules and the inertia expert) and the weight promotion (for the awake term. rules) do the job.
+      if (atom.terminatedBy.isEmpty) {
+        if (stateHandler.inertiaExpert.knowsAbout(atom.fluent)) { // this is 1.1 from above
+          generateNewRule(batch, currentAtom, inps, "FP", logger, stateHandler, "terminatedAt", 1.0)
+        } else { // this is 1.2 from above.
+          val break_? = specialize(atom, stateHandler, markedMap, "initiated", inps,
+            logger, percentOfMistakesBeforeSpecialize, "FP", randomizedPrediction, selected, specializeAllAwakeOnMistake)
+          if (break_?) break
+        }
+
+      } else { // this is 2 from above
+        // We do have firing termination rules.
+        // Specialize initiation rules.
+        /*
+        if (atom.initiatedBy.nonEmpty) {
+          val break_? = specialize(atom, stateHandler, markedMap, "initiated", inps,
+            logger, percentOfMistakesBeforeSpecialize, "FP", randomizedPrediction, selected, specializeAllAwakeOnMistake)
+          if (break_?) break
+        }
+        */
+      }
+    }
+
+    if (is_FN_mistake(predictedLabel, feedback)) {
+      if (atom.initiatedBy.isEmpty) {
+        // We don't have firing initiation rules. Generate one, if it does not hold by inertia.
+        if (!stateHandler.inertiaExpert.knowsAbout(atom.fluent)) {
+          generateNewRule(batch, currentAtom, inps, "FN", logger, stateHandler, "initiatedAt", 1.0)
+        } else {
+          // it holds by inertia, let the weights fix the problem
+          val break_? = specialize(atom, stateHandler, markedMap, "terminated", inps,
+            logger, percentOfMistakesBeforeSpecialize, "FN", randomizedPrediction, selected, specializeAllAwakeOnMistake)
+          if (break_?) break
+        }
+
+
+      } else {
+        // We do have firing initiation rules.
+        // Specialize termination rules.
+        ///*
+        if (atom.terminatedBy.nonEmpty) {
+          val break_? = specialize(atom, stateHandler, markedMap, "terminated", inps,
+            logger, percentOfMistakesBeforeSpecialize, "FN", randomizedPrediction, selected, specializeAllAwakeOnMistake)
+          if (break_?) break
+        }
+        //*/
       }
     }
   }
@@ -559,10 +668,10 @@ object ExpertAdviceFunctions extends LazyLogging {
   def groundEnsemble(batch: Example,
                      inps: RunningOptions,
                      stateHandler: StateHandler,
-                     testHandCrafted: Boolean = false) = {
+                     withInputTheory: Boolean = false) = {
 
     val ensemble = stateHandler.ensemble
-    val merged = ensemble.merged(inps, testHandCrafted)
+    val merged = ensemble.merged(inps, withInputTheory)
 
     //println(s"Predicting with:\n${merged.tostring}")
 
