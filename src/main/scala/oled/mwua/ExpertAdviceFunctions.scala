@@ -66,7 +66,7 @@ object ExpertAdviceFunctions extends LazyLogging {
               // initiation rule, the inertia expert now remembers the atom).
               // UPDATE: Not a very good idea! Why insisting on correcting a particular mistake?
               // After all, the provided feedback/label may be wrong!
-              //alreadyProcessedAtoms = alreadyProcessedAtoms + currentAtom
+              alreadyProcessedAtoms = alreadyProcessedAtoms + currentAtom
               batchAtoms += 1
               stateHandler.totalNumberOfRounds += 1
               //-------------------
@@ -183,7 +183,14 @@ object ExpertAdviceFunctions extends LazyLogging {
                 if (predictedLabel != feedback) {
                   if (!withInputTheory) { // we only update weights when an input theory is given
                     // Shouldn't we update the weights on newly generated rules here? Of course it's just 1 example, no big deal, but still...
+
+                    /*
                     updateStructure_STRONGLY_INIT(atom, markedMap, predictedLabel, feedback, batch,
+                      currentAtom, inps, Logger(this.getClass).underlying, stateHandler,
+                      percentOfMistakesBeforeSpecialize, randomizedPrediction, selected, specializeAllAwakeOnMistake)
+                    */
+
+                    updateStructure(atom, markedMap, predictedLabel, feedback, batch,
                       currentAtom, inps, Logger(this.getClass).underlying, stateHandler,
                       percentOfMistakesBeforeSpecialize, randomizedPrediction, selected, specializeAllAwakeOnMistake)
                   }
@@ -194,7 +201,7 @@ object ExpertAdviceFunctions extends LazyLogging {
               // to the alreadySeenAtoms only if the prediction on this atom is correct).
               // But Why insisting on correcting a particular mistake?
               // After all, the provided feedback/label may be wrong!
-              alreadyProcessedAtoms = alreadyProcessedAtoms + currentAtom
+              //alreadyProcessedAtoms = alreadyProcessedAtoms + currentAtom
             }
           }
           finishedBatch = true
