@@ -31,6 +31,8 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
   // with receiveFeedbackBias for heads returns heads.
   val receiveFeedbackBias = 1.0 //0.5
 
+  val conservativeRuleGeneration = false
+
   // A rule must make this much % of the total FPs before it is specialized
   val percentOfMistakesBeforeSpecialize = 0
 
@@ -176,11 +178,11 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
           if (inputTheory.isEmpty) {
             ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
               stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
-              batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake, receiveFeedbackBias)
+              batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake, receiveFeedbackBias, conservativeRuleGeneration)
           } else {
             ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
               stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
-              batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake, receiveFeedbackBias, inputTheory = Some(inputTheory))
+              batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake, receiveFeedbackBias, conservativeRuleGeneration, inputTheory = Some(inputTheory))
           }
 
 
@@ -196,7 +198,11 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
 
   def wrapUp() = {
 
-    logger.info(Theory(stateHandler.ensemble.merged(inps).clauses.sortBy(x => -x.w)).showWithStats)
+    //logger.info(Theory(stateHandler.ensemble.merged(inps).clauses.sortBy(x => -x.w)).showWithStats)
+
+    logger.info(Theory(stateHandler.ensemble.initiationRules.sortBy(x => -x.w)).showWithStats)
+    logger.info(Theory(stateHandler.ensemble.terminationRules.sortBy(x => -x.w)).showWithStats)
+
     logger.info(s"Prequential error vector:\n${stateHandler.perBatchError.mkString(",")}")
     logger.info(s"Prequential error vector (Accumulated Error):\n${stateHandler.perBatchError.scanLeft(0.0)(_ + _).tail}")
     logger.info(s"Total TPs: ${stateHandler.totalTPs}, Total FPs: ${stateHandler.totalFPs}, Total FNs: ${stateHandler.totalFNs}, Total TNs: ${stateHandler.totalTNs}")

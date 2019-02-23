@@ -25,7 +25,8 @@ class RuleEnsemble {
       _merged
     } else {
       _merged.clauses foreach (rule => if (rule.refinements.isEmpty) rule.generateCandidateRefs(inps.globals))
-      val mergedWithRefs = Theory(_merged.clauses ++ _merged.clauses.flatMap(_.refinements))
+      //val mergedWithRefs = Theory( (_merged.clauses ++ _merged.clauses.flatMap(_.refinements)) ++ _merged.clauses.map(x => x.supportSet.clauses.head) )
+      val mergedWithRefs = Theory( _merged.clauses ++ _merged.clauses.flatMap(_.refinements) )
       mergedWithRefs
     }
   }

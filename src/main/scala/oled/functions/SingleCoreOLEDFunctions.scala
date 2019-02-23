@@ -194,20 +194,17 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
           // The best.mlnWeight >= parentRule.mlnWeight condition doesn't work of course...
           passesTest || tie //&& best.mlnWeight >= parentRule.mlnWeight
         }
-
       (couldExpand, epsilon, observedDiff, best, secondBest)
     } else {
       (false, 0.0, 0.0, parentRule, parentRule)
     }
-
-
   }
 
   def expandRules(topTheory: Theory, inps: RunningOptions, logger: org.slf4j.Logger): Theory = {
     //val t0 = System.nanoTime()
     val out = topTheory.clauses flatMap { parentRule =>
 
-      val (couldExpand,epsilon,observedDiff,best,secondBest) = rightWay(parentRule, inps)
+      val (couldExpand, epsilon, observedDiff, best, secondBest) = rightWay(parentRule, inps)
 
       //println(best.score,best.tps, best.fps, best.fns, "  ", secondBest.score, secondBest.tps, secondBest.fps, secondBest.fns)
 
@@ -223,6 +220,7 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
               logger.info(showInfo(parentRule, best, secondBest, epsilon, observedDiff, parentRule.seenExmplsNum, inps))
               refinedRule.seenExmplsNum = 0 // zero the counter
               refinedRule.supportSet = parentRule.supportSet // only one clause here
+              refinedRule.generateCandidateRefs(inps.globals)
               List(refinedRule)
             case _ => List(parentRule)
           }

@@ -5,10 +5,11 @@ import java.io.{File, PrintWriter}
 import scala.util.{Failure, Random, Success}
 import app.runutils.RunningOptions
 import com.typesafe.scalalogging.{LazyLogging, Logger}
-import logic.{Clause, Constant, Literal}
+import logic.{Clause, Constant, Literal, Theory}
 import logic.Examples.Example
 import lomrf.logic.{AtomSignature, EvidenceAtom, TRUE}
 import lomrf.mln.model.Evidence
+import oled.functions.SingleCoreOLEDFunctions
 import oled.mwua.AuxFuncs._
 import oled.mwua.HelperClasses.AtomTobePredicted
 import utils.Utils
@@ -33,6 +34,7 @@ object ExpertAdviceFunctions extends LazyLogging {
               percentOfMistakesBeforeSpecialize: Int,
               specializeAllAwakeOnMistake: Boolean,
               receiveFeedbackBias: Double,
+              conservativeRuleGeneration: Boolean = true,
               splice: Option[Map[String, Double] => (Set[EvidenceAtom], Evidence)] = None,
               mapper: Option[Set[EvidenceAtom] => Vector[String]] = None,
               incompleteTrueAtoms: Option[Set[String]] = None,
@@ -43,6 +45,10 @@ object ExpertAdviceFunctions extends LazyLogging {
     var batchFNs = 0
     var batchAtoms = 0
     var finishedBatch = false
+
+    if (batchCounter == 155) {
+      val stop = "stop"
+    }
 
     var spliceInput = Map.empty[String, Double]
     stateHandler.batchCounter = batchCounter
@@ -58,6 +64,8 @@ object ExpertAdviceFunctions extends LazyLogging {
           sortedAtomsToBePredicted foreach { atom =>
             val currentAtom = atom.atom
             if (!alreadyProcessedAtoms.contains(currentAtom)) {
+
+              logger.info(s"predicting with:\n${stateHandler.ensemble.merged(inps).tostring}")
 
               // this should be place at the end of the iteration. In this way, if
               // a break actuall occurs due to structure update we'll retrain on the
@@ -180,22 +188,32 @@ object ExpertAdviceFunctions extends LazyLogging {
                     predictedLabel, feedback, stateHandler, epsilon, markedMap, totalWeight)
                 }
 
-                if (predictedLabel != feedback) {
-                  if (!withInputTheory) { // we only update weights when an input theory is given
-                    // Shouldn't we update the weights on newly generated rules here? Of course it's just 1 example, no big deal, but still...
+                if (conservativeRuleGeneration) { // we only add new rules on mistake
+                  if (predictedLabel != feedback) {
+                    if (!withInputTheory) { // we only update weights when an input theory is given
+                      // Shouldn't we update the weights on newly generated rules here? Of course it's just 1 example, no big deal, but still...
 
-                    /*
-                    updateStructure_STRONGLY_INIT(atom, markedMap, predictedLabel, feedback, batch,
-                      currentAtom, inps, Logger(this.getClass).underlying, stateHandler,
-                      percentOfMistakesBeforeSpecialize, randomizedPrediction, selected, specializeAllAwakeOnMistake)
-                    */
+                      /*
+                      updateStructure_STRONGLY_INIT(atom, markedMap, predictedLabel, feedback, batch,
+                        currentAtom, inps, Logger(this.getClass).underlying, stateHandler,
+                        percentOfMistakesBeforeSpecialize, randomizedPrediction, selected, specializeAllAwakeOnMistake)
+                      */
 
-                    updateStructure(atom, markedMap, predictedLabel, feedback, batch,
-                      currentAtom, inps, Logger(this.getClass).underlying, stateHandler,
-                      percentOfMistakesBeforeSpecialize, randomizedPrediction, selected, specializeAllAwakeOnMistake)
+                      updateStructure(atom, markedMap, predictedLabel, feedback, batch,
+                        currentAtom, inps, Logger(this.getClass).underlying, stateHandler,
+                        percentOfMistakesBeforeSpecialize, randomizedPrediction, selected, specializeAllAwakeOnMistake)
+                    }
                   }
+                } else {
+                  // Always try to add new rules (if the true label is received).
+                  // We generate a new rule from an example if no existing bottom rule is awake w.r.t. this example.
                 }
+
+
               }
+
+              // Try to specialize here (hoeffding tests) or after a batch is finished? Maybe the second
+
               // Not a very good idea to do this here. The reason to do it here is to
               // force the system to correct this particular mistake (it will be added
               // to the alreadySeenAtoms only if the prediction on this atom is correct).
@@ -206,6 +224,14 @@ object ExpertAdviceFunctions extends LazyLogging {
           }
           finishedBatch = true
           stateHandler.perBatchError = stateHandler.perBatchError :+ batchError
+
+          // Try to specialize all rules currently in the ensemble
+          val expandedInit = SingleCoreOLEDFunctions.expandRules(Theory(stateHandler.ensemble.initiationRules), inps, Logger(this.getClass).underlying)
+          val expandedTerm = SingleCoreOLEDFunctions.expandRules(Theory(stateHandler.ensemble.terminationRules), inps, Logger(this.getClass).underlying)
+
+          stateHandler.ensemble.initiationRules = expandedInit.clauses
+          stateHandler.ensemble.terminationRules = expandedTerm.clauses
+
         }
       }
     }
@@ -428,9 +454,44 @@ object ExpertAdviceFunctions extends LazyLogging {
         // We do have firing termination rules.
         // Specialize initiation rules.
         if (atom.initiatedBy.nonEmpty) {
+
+          // This is for performing Hoeffding tests for awake initiation rules  on FP mistakes, considering as
+          // specialization candidates only the sleeping refinements (which can fix the current mistake).
+          // It doesn't make much sense. Why specialize only on mistake?
+          /*
+          val (topLevelAwakeRules, topLevelAsleepRules) = stateHandler.ensemble.initiationRules.foldLeft(Vector.empty[Clause], Vector.empty[Clause]) { (x, rule) =>
+            val isAwake = atom.initiatedBy.toSet.contains(rule.##.toString)
+            val isTopLevel = stateHandler.ensemble.initiationRules.map(_##).toSet.contains(rule.##)
+
+            if (isAwake) {
+              if (isTopLevel) {
+                (x._1 :+ rule, x._2)
+              } else {
+                (x._1, x._2) // then it's a refinement rule
+              }
+            } else {
+              if (isTopLevel) {
+                (x._1, x._2 :+ rule)
+              } else {
+                (x._1, x._2) // then it's a refinement rule
+              }
+            }
+          }
+          val specializationCandidates = topLevelAwakeRules
+          val expanded = SingleCoreOLEDFunctions.expandRules(Theory(specializationCandidates.toList), inps, logger)
+          val break_? = if (expanded.clauses.map(_.##).toSet.equals(specializationCandidates.map(_.##).toSet)) false else true
+          if (break_?) {
+            stateHandler.ensemble.initiationRules = topLevelAsleepRules.toList ++ expanded.clauses
+            break
+          }
+          */
+
+          // This is for expanding to a sleeping refinement immediately after an FP mistake. No sense in doing that.
+          /*
           val break_? = specialize(atom, stateHandler, markedMap, "initiated", inps,
             logger, percentOfMistakesBeforeSpecialize, "FP", randomizedPrediction, selected, specializeAllAwakeOnMistake)
           if (break_?) break
+          */
         }
       }
     }
@@ -440,12 +501,47 @@ object ExpertAdviceFunctions extends LazyLogging {
         generateNewRule(batch, currentAtom, inps, "FN", logger, stateHandler, "initiatedAt", 1.0)
 
       } else {
-        // We do have firing termination rules.
-        // Specialize initiation rules.
+        // We do have firing initiation rules.
+        // Specialize termination rules.
         if (atom.terminatedBy.nonEmpty) {
+
+          // This is for performing Hoeffding tests for awake termination rules  on FN mistakes, considering as
+          // specialization candidates only the sleeping refinements (which can fix the current mistake).
+          // It doesn't make much sense. Why specialize only on mistake?
+          /*
+          val (topLevelAwakeRules, topLevelAsleepRules) = stateHandler.ensemble.terminationRules.foldLeft(Vector.empty[Clause], Vector.empty[Clause]) { (x, rule) =>
+            val isAwake = atom.terminatedBy.toSet.contains(rule.##.toString)
+            val isTopLevel = stateHandler.ensemble.terminationRules.map(_##).toSet.contains(rule.##)
+
+            if (isAwake) {
+              if (isTopLevel) {
+                (x._1 :+ rule, x._2)
+              } else {
+                (x._1, x._2) // then it's a refinement rule
+              }
+            } else {
+              if (isTopLevel) {
+                (x._1, x._2 :+ rule)
+              } else {
+                (x._1, x._2) // then it's a refinement rule
+              }
+            }
+          }
+          val specializationCandidates = topLevelAwakeRules
+          val expanded = SingleCoreOLEDFunctions.expandRules(Theory(specializationCandidates.toList), inps, logger)
+          val break_? = if (expanded.clauses.map(_.##).toSet.equals(specializationCandidates.map(_.##).toSet)) false else true
+          if (break_?) {
+            stateHandler.ensemble.terminationRules = topLevelAsleepRules.toList ++ expanded.clauses
+            break
+          }
+          */
+
+          // This is for expanding to a sleeping refinement immediately after an FP mistake. No sense in doing that.
+          /*
           val break_? = specialize(atom, stateHandler, markedMap, "terminated", inps,
             logger, percentOfMistakesBeforeSpecialize, "FN", randomizedPrediction, selected, specializeAllAwakeOnMistake)
           if (break_?) break
+          */
         }
       }
     }
@@ -561,6 +657,14 @@ object ExpertAdviceFunctions extends LazyLogging {
     def performSpecialization(ruleToSpecialize: (Clause, List[Clause])) = {
       val suitableRefs = ruleToSpecialize._2
       val bestRefinement = suitableRefs.head
+      /*
+      if (bestRefinement.w > ruleToSpecialize._1.w) {
+        if (bestRefinement.refinements.isEmpty) bestRefinement.generateCandidateRefs(inps.globals)
+        showInfo(ruleToSpecialize._1, bestRefinement, atom.atom, mistakeType)
+        stateHandler.removeRule(ruleToSpecialize._1)
+        stateHandler.addRule(bestRefinement)
+      }
+      */
       if (bestRefinement.refinements.isEmpty) bestRefinement.generateCandidateRefs(inps.globals)
       showInfo(ruleToSpecialize._1, bestRefinement, atom.atom, mistakeType)
       stateHandler.removeRule(ruleToSpecialize._1)

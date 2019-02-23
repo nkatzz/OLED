@@ -219,8 +219,19 @@ case class Clause(head: PosLiteral = PosLiteral(),
     // How can this be normalized so we get a range in [0,1]???
     // Remember also that if you use this, the parent rule should not be included
     // in the calculation of the best-scoring rule, since it will always win
-    //tps * (Math.log(adjust(precision)) - Math.log(adjust(parentClause.precision)))
-    tpsRelativeFrequency * (Math.log(adjust(precision)) - Math.log(adjust(parentClause.precision)))
+
+    //tpsRelativeFrequency * (Math.log(adjust(precision)) - Math.log(adjust(parentClause.precision)))
+
+    val _gain = tps * (Math.log(adjust(precision)) - Math.log(adjust(parentClause.precision)))
+
+    // We are interested only in positive gain, therefore we consider the minimum of the
+    // gain function as 0:
+    val gain = if (_gain < 0) 0.0 else _gain
+
+    // This is the maximum for a given rule:
+    val max = parentClause.tps.toDouble * (- Math.log(adjust(parentClause.precision)) )
+    val normalizedGain = gain/max
+    normalizedGain
   }
 
   def foilGainTerm = {
@@ -230,12 +241,22 @@ case class Clause(head: PosLiteral = PosLiteral(),
     // Remember also that if you use this, the parent rule should not be included
     // in the calculation of the best-scoring rule, since it will always win
     //tps * (Math.log(adjust(recall)) - Math.log(adjust(parentClause.recall)))
-    tpsRelativeFrequency * (Math.log(adjust(recall)) - Math.log(adjust(parentClause.recall)))
+    //tpsRelativeFrequency * (Math.log(adjust(recall)) - Math.log(adjust(parentClause.recall)))
+
+    val _gain = tps * (Math.log(adjust(recall)) - Math.log(adjust(parentClause.recall)))
+
+    // We are interested only in positive gain, therefore we consider the minimum of the
+    // gain function as 0:
+    val gain = if (_gain < 0) 0.0 else _gain
+
+    // This is the maximum for a given rule:
+    val max = parentClause.tps.toDouble * (- Math.log(adjust(parentClause.recall)) )
+    val normalizedGain = gain/max
+    normalizedGain
+
   }
 
-  def foilInfoGainInit = {
-
-  }
+  def foilInfoGainInit = {}
 
   def gainInt = {
     val adjust = (x: Double) => if (x.isNaN) 0.0 else x
