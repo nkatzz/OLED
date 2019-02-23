@@ -86,6 +86,8 @@ case class Clause(head: PosLiteral = PosLiteral(),
 
   var parentClause: Clause = Clause.empty
 
+  var isBottomRule = false
+
   // This field is used by the distributed version of oled.
   // It is a (k,v) map, where each k is the id (name) of one of the other nodes N and
   // v is a Structures.Stats instance carrying the current counts from N.

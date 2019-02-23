@@ -65,7 +65,7 @@ object ExpertAdviceFunctions extends LazyLogging {
             val currentAtom = atom.atom
             if (!alreadyProcessedAtoms.contains(currentAtom)) {
 
-              logger.info(s"predicting with:\n${stateHandler.ensemble.merged(inps).tostring}")
+              //logger.info(s"predicting with:\n${stateHandler.ensemble.merged(inps).tostring}")
 
               // this should be place at the end of the iteration. In this way, if
               // a break actuall occurs due to structure update we'll retrain on the
@@ -153,12 +153,12 @@ object ExpertAdviceFunctions extends LazyLogging {
                     if (selected == "inertia") {
                       logger.info(s"Inertia FP prediction for fluent ${atom.fluent}. Inertia weight: ${stateHandler.inertiaExpert.getWeight(atom.fluent)}")
                     }
-                    logger.info(s"FP mistake for atom $currentAtom")
+                    //logger.info(s"FP mistake for atom $currentAtom")
                   }
                   if (is_FN_mistake(predictedLabel, feedback)) {
                     batchFNs += 1
                     stateHandler.totalFNs += 1
-                    logger.info(s"FN mistake for atom $currentAtom")
+                    //logger.info(s"FN mistake for atom $currentAtom")
                   }
                 } else {
                   if (predictedLabel == "true") stateHandler.totalTPs += 1 else stateHandler.totalTNs += 1
@@ -205,8 +205,30 @@ object ExpertAdviceFunctions extends LazyLogging {
                     }
                   }
                 } else {
+
                   // Always try to add new rules (if the true label is received).
                   // We generate a new rule from an example if no existing bottom rule is awake w.r.t. this example.
+                  val awakeBottomRules = {
+                    if (feedback == "true") atom.initiatedBy.filter(x => markedMap(x).isBottomRule)
+                    else atom.terminatedBy.filter(x => markedMap(x).isBottomRule)
+                  }
+
+                  val what = if (feedback == "true") "initiatedAt" else "terminatedAt"
+
+
+                  if (awakeBottomRules.isEmpty) {
+                    if (feedback == "true") {
+                      // Always try to generate new initiation experts in no awake bottom rule exists
+                      generateNewRule_1(batch, currentAtom, inps, Logger(this.getClass).underlying, stateHandler, what, 1.0)
+                    } else {
+                      // Be more conservative with termination rules.
+                      // Try to generate a termination rule only if the feedback is that the atom does not hold
+                      // and inertia says that it holds
+                      if (stateHandler.inertiaExpert.knowsAbout(atom.fluent)) {
+                        generateNewRule_1(batch, currentAtom, inps, Logger(this.getClass).underlying, stateHandler, what, 1.0)
+                      }
+                    }
+                  }
                 }
 
 
@@ -631,6 +653,20 @@ object ExpertAdviceFunctions extends LazyLogging {
       break
     } else {
       logger.info(s"At batch ${stateHandler.batchCounter}: Failed to generate bottom rule from $mistakeType mistake with atom: $currentAtom")
+    }
+  }
+
+  def generateNewRule_1(batch: Example, currentAtom: String, inps: RunningOptions,
+                      logger: org.slf4j.Logger, stateHandler: StateHandler,
+                      what: String, totalWeight: Double, removePastExperts: Boolean = false) = {
+
+    val newRule = generateNewExpert(batch, currentAtom, inps.globals, what, totalWeight)
+    if (!newRule.equals(Clause.empty)) {
+      logger.info(s"Generated new $what rule from atom: $currentAtom")
+      stateHandler.addRule(newRule)
+      break
+    } else {
+      logger.info(s"At batch ${stateHandler.batchCounter}: Failed to generate bottom rule from atom: $currentAtom")
     }
   }
 

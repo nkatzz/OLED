@@ -31,7 +31,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
   // with receiveFeedbackBias for heads returns heads.
   val receiveFeedbackBias = 1.0 //0.5
 
-  val conservativeRuleGeneration = false
+  val conservativeRuleGeneration = true
 
   // A rule must make this much % of the total FPs before it is specialized
   val percentOfMistakesBeforeSpecialize = 0
