@@ -224,8 +224,8 @@ class WeightedTheoryLearner[T <: Source](inps: RunningOptions, trainingDataOptio
 
       val (expanded, expTimed) = Utils.time { expandRules(newTopTheory, inps, logger) }
 
-      if (inps.onlinePruning) topTheory = pruneRules(expanded, inps, logger)
-      else topTheory = expanded
+      if (inps.onlinePruning) topTheory = pruneRules(expanded._1, inps, logger)
+      else topTheory = expanded._1
 
       become(normalState)
       self ! new FinishedBatch

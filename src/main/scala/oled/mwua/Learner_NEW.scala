@@ -21,7 +21,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
 
   val epsilon = 0.5 // used in the randomized version
 
-  val randomizedPrediction = false
+  val randomizedPrediction = true
 
   // If this is false, some non-determinism is introduced (number of mistakes may vary slightly from round to round)
   val specializeAllAwakeRulesOnFPMistake = false
@@ -200,8 +200,17 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
 
     //logger.info(Theory(stateHandler.ensemble.merged(inps).clauses.sortBy(x => -x.w)).showWithStats)
 
+    /*
+    def bestRuleFromExpertTree(topLevelRule: Clause) = {
+      (Vector(topLevelRule) ++ topLevelRule.refinements).sortBy(x => -x.w).head
+    }
+    */
+
     logger.info(Theory(stateHandler.ensemble.initiationRules.sortBy(x => -x.w)).showWithStats)
     logger.info(Theory(stateHandler.ensemble.terminationRules.sortBy(x => -x.w)).showWithStats)
+
+    //logger.info(Theory(stateHandler.ensemble.initiationRules.map(x => bestRuleFromExpertTree(x))).showWithStats)
+    //logger.info(Theory(stateHandler.ensemble.terminationRules.map(x => bestRuleFromExpertTree(x))).showWithStats)
 
     logger.info(s"Prequential error vector:\n${stateHandler.perBatchError.mkString(",")}")
     logger.info(s"Prequential error vector (Accumulated Error):\n${stateHandler.perBatchError.scanLeft(0.0)(_ + _).tail}")

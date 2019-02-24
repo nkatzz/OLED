@@ -248,9 +248,9 @@ class WeightedTheoryLearner_OLD[T <: Source](inps: RunningOptions, trainingDataO
       //newTopTheory.scoreRules(e, this.jep, inps.globals) // Already taken care of...
       val expanded = expandRules(newTopTheory, inps, logger)
       if (inps.onlinePruning) {
-        pruneRules(expanded, inps, logger)
+        pruneRules(expanded._1, inps, logger)
       } else {
-        expanded
+        expanded._1
       }
     } else {
       newTopTheory

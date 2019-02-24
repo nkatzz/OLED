@@ -78,6 +78,16 @@ object Runner extends LazyLogging {
           "caviar-video-17", "caviar-video-14-meeting-moving")
       //*/
 
+      // just a re-ordering of train1, so that videos with positive examples are not left at the end of the sequence
+      val train2 =
+        Vector("caviar-video-21-meeting-moving", "caviar-video-7", "caviar-video-28-meeting", "caviar-video-25", "caviar-video-30",
+          "caviar-video-11", "caviar-video-6", "caviar-video-14-meeting-moving", "caviar-video-26", "caviar-video-27",
+          "caviar-video-20-meeting-moving", "caviar-video-13-meeting", "caviar-video-19-meeting-moving",
+          "caviar-video-12-moving", "caviar-video-1-meeting-moving", "caviar-video-9", "caviar-video-16", "caviar-video-23-moving",
+          "caviar-video-29", "caviar-video-5", "caviar-video-22-meeting-moving", "caviar-video-18", "caviar-video-4",
+          "caviar-video-24-meeting-moving", "caviar-video-8", "caviar-video-10", "caviar-video-2-meeting-moving",
+           "caviar-video-15", "caviar-video-3", "caviar-video-17")
+
 
       //val trainShuffled = scala.util.Random.shuffle(train1)
       //logger.info(s"\nData order:\n$trainShuffled")
@@ -85,7 +95,7 @@ object Runner extends LazyLogging {
       /* This is for running with the entire CAVIAR (no test set)*/
       ///*
       val trainingDataOptions =
-        new MongoDataOptions(dbNames = train1, //trainShuffled ,//dataset._1,
+        new MongoDataOptions(dbNames = train2, //trainShuffled ,//dataset._1,
           chunkSize = runningOptions.chunkSize, targetConcept = runningOptions.targetHLE, sortDbByField = "time", what = "training")
 
       val testingDataOptions = trainingDataOptions

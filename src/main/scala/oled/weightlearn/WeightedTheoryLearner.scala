@@ -282,9 +282,9 @@ class WeightedTheoryLearner[T <: Source](inps: RunningOptions, trainingDataOptio
       //*/
 
       if (inps.onlinePruning) {
-        pruneRules(expanded, inps, logger)
+        pruneRules(expanded._1, inps, logger)
       } else {
-        expanded
+        expanded._1
       }
     } else {
       newTopTheory

@@ -151,7 +151,7 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
         if (! learningWeights) {
           Utils.time {  expandRules(newTopTheory, inps, logger) }
         } else {
-          (newTopTheory, 0.0)
+          ( (newTopTheory, false), 0.0)
         }
       //*/
       if (inps.showStats) logger.info(s"Expanding rules time: ${expanded._2}")
@@ -159,10 +159,10 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
 
       if (inps.onlinePruning) {
         //val pruned = pruneRules(expanded._1, inps, logger)
-        val pruned = pruneRulesNaive(expanded._1, inps, logger)
+        val pruned = pruneRulesNaive(expanded._1._1, inps, logger)
         (pruned, scoringTime, newRuleTestTime, compressRulesTime, expandRulesTime, newRuleGenerationTime)
       } else {
-        (expanded._1, scoringTime, newRuleTestTime, compressRulesTime, expandRulesTime, newRuleGenerationTime)
+        (expanded._1._1, scoringTime, newRuleTestTime, compressRulesTime, expandRulesTime, newRuleGenerationTime)
       }
     } else {
       (newTopTheory, scoringTime, newRuleTestTime, compressRulesTime, expandRulesTime, newRuleGenerationTime)
@@ -173,10 +173,15 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
 
   def rightWay(parentRule: Clause, inps: RunningOptions) = {
 
-    if (parentRule.score < inps.preprune) {
-      val (observedDiff, best, secondBest) = parentRule.meanDiff
+    if (true) { //parentRule.precision <= inps.preprune ||| parentRule.score <= inps.preprune
+      val (observedDiff, best, secondBest) = parentRule.meanDiff(inps.scoringFun)
 
       val epsilon = Utils.hoeffding(inps.delta, parentRule.seenExmplsNum)
+
+
+      //println(parentRule.refinements.map(x => x.score))
+      //println(observedDiff, epsilon)
+
 
       //logger.info(s"\n(observedDiff, epsilon, bestScore, secondBestScore): ($observedDiff, $epsilon, ${best.score}, ${secondBest.score})")
 
@@ -200,8 +205,11 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
     }
   }
 
-  def expandRules(topTheory: Theory, inps: RunningOptions, logger: org.slf4j.Logger): Theory = {
+  def expandRules(topTheory: Theory, inps: RunningOptions, logger: org.slf4j.Logger): (Theory, Boolean) = {
     //val t0 = System.nanoTime()
+
+    var expanded = false
+
     val out = topTheory.clauses flatMap { parentRule =>
 
       val (couldExpand, epsilon, observedDiff, best, secondBest) = rightWay(parentRule, inps)
@@ -212,8 +220,14 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
         case true =>
           // This is the extra test that I added at Feedzai
           val extraTest =
-            if(secondBest != parentRule) (best.score > parentRule.score) && (best.score - parentRule.score > epsilon)
-            else best.score > parentRule.score
+            if (inps.scoringFun != "foilgain") {
+              if(secondBest != parentRule) (best.score > parentRule.score) && (best.score - parentRule.score > epsilon)
+              else best.score > parentRule.score
+            } else {
+              // We want the refinement to have some gain. We do not expand for no gain
+              best.score > 0//true
+            }
+
           extraTest match { //&& (1.0/best.body.size+1 > 1.0/parentRule.body.size+1) match {
             case true =>
               val refinedRule = best
@@ -221,6 +235,7 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
               refinedRule.seenExmplsNum = 0 // zero the counter
               refinedRule.supportSet = parentRule.supportSet // only one clause here
               refinedRule.generateCandidateRefs(inps.globals)
+              expanded = true
               List(refinedRule)
             case _ => List(parentRule)
           }
@@ -229,7 +244,7 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
     }
     //val t1 = System.nanoTime()
     //println(s"expandRules time: ${(t1-t0)/1000000000.0}")
-    Theory(out)
+    (Theory(out), expanded)
   }
 
 
@@ -280,10 +295,10 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
       expandRulesTime += expanded._2
 
       if (inps.onlinePruning) {
-        val pruned = pruneRules(expanded._1, inps, logger)
+        val pruned = pruneRules(expanded._1._1, inps, logger)
         (pruned, scoringTime, newRuleTestTime, compressRulesTime, expandRulesTime, newRuleGenerationTime)
       } else {
-        (expanded._1, scoringTime, newRuleTestTime, compressRulesTime, expandRulesTime, newRuleGenerationTime)
+        (expanded._1._1, scoringTime, newRuleTestTime, compressRulesTime, expandRulesTime, newRuleGenerationTime)
       }
     } else {
       (newTopTheory, scoringTime, newRuleTestTime, compressRulesTime, expandRulesTime, newRuleGenerationTime)

@@ -199,9 +199,15 @@ case class Clause(head: PosLiteral = PosLiteral(),
     (tps.toFloat*tpw + 1) / (tps.toFloat*tpw  + fps.toFloat*fpw + 2.0)
   }
 
-  def precision: Double = tps.toFloat*tpw / (tps*tpw + fps*fpw)
+  def precision: Double = {
+    val pr = tps.toFloat*tpw / (tps*tpw + fps*fpw)
+    if (pr.isNaN) 0.0 else pr
+  }
 
-  def recall: Double = tps.toFloat*tpw / ( tps*tpw + fns*fnw)
+  def recall: Double = {
+    val rec = tps.toFloat*tpw / ( tps*tpw + fns*fnw)
+    if (rec.isNaN) 0.0 else rec
+  }
 
   def fscore: Double =
     if (this.precision+this.recall == 0) 0.0
@@ -215,6 +221,57 @@ case class Clause(head: PosLiteral = PosLiteral(),
     if (this.tps == 0 || this.parentClause.tps == 0) 0.0
     else this.tps.toDouble*tpw/this.parentClause.tps*tpw
 
+
+
+
+  def foilGain(funct: String) = {
+
+    val thisCoverage = if (funct == "precision") this.precision else this.recall
+    val parentCoverage = if (funct == "precision") parentClause.precision else parentClause.recall
+
+    if (thisCoverage == 0.0 || thisCoverage == 1.0) {
+      // If thisCoverage == 0.0 then this rules covers nothing, it's useless, so set it's gain to 0.
+      // Note that otherwise we'll have a logarithm evaluated to -infinity (log(0)).
+      // If, on the other hand thisCoverage == 1.0 then this rule is perfect (but so is the parent --
+      // the parent cannot have smaller coverage), so again, no gain.
+      0.0
+    } else {
+      // here thisCoverage is in (0,1)
+      if (parentCoverage == 1.0 || parentCoverage == 0.0) {
+        // If parentCoverage == 1.0 then the parent rule is perfect, no way to beat that, so set this rule's gain to 0
+        // Note that otherwise we'll have the parent's log evaluated to 0 and the gain formula
+        // returning a negative value (parentTPs * log(thisCoverage), which is < 0 since thisCoverage < 1).
+        // Eitherway, we only consider positive gain.
+        // If, on the other hand, parentCoverage == 0.0 then thisCoverage == 0 (the parent covers nothing, so no way for
+        // this rule -- a refinement --  to cover something)
+        0.0
+      } else {
+        // here parentCoverage is in (0,1)
+        val _gain = tps * (Math.log(thisCoverage) - Math.log(parentCoverage))
+
+        // We are interested only in positive gain, therefore we consider 0 as the minimum of the gain function:
+        val gain = if (_gain <= 0) 0.0 else _gain
+
+        // This is the maximum gain for a given rule:
+        val max = parentClause.tps.toDouble * (- Math.log(parentCoverage) )
+        val normalizedGain =  gain/max
+
+        if (normalizedGain.isNaN) {
+          if (this.body.nonEmpty) {
+            val stop = "stop"
+          }
+
+        }
+
+        normalizedGain
+      }
+    }
+
+  }
+
+
+
+  /*
   def foilGainInit = {
     val nonzero = 0.0000006
     val adjust = (x: Double) => if (x.isNaN || x == 0.0) nonzero else x
@@ -226,13 +283,12 @@ case class Clause(head: PosLiteral = PosLiteral(),
 
     val _gain = tps * (Math.log(adjust(precision)) - Math.log(adjust(parentClause.precision)))
 
-    // We are interested only in positive gain, therefore we consider the minimum of the
-    // gain function as 0:
-    val gain = if (_gain < 0) 0.0 else _gain
+    // We are interested only in positive gain, therefore we consider 0 as the minimum of the gain function:
+    val gain = if (_gain <= 0) 0.0 else _gain
 
     // This is the maximum for a given rule:
     val max = parentClause.tps.toDouble * (- Math.log(adjust(parentClause.precision)) )
-    val normalizedGain = gain/max
+    val normalizedGain = if (max == 0) 0.0 else gain/max
     normalizedGain
   }
 
@@ -249,30 +305,16 @@ case class Clause(head: PosLiteral = PosLiteral(),
 
     // We are interested only in positive gain, therefore we consider the minimum of the
     // gain function as 0:
-    val gain = if (_gain < 0) 0.0 else _gain
+    val gain = if (_gain <= 0) 0.0 else _gain
 
     // This is the maximum for a given rule:
     val max = parentClause.tps.toDouble * (- Math.log(adjust(parentClause.recall)) )
-    val normalizedGain = gain/max
+    val normalizedGain = if (max == 0) 0.0 else gain/max
     normalizedGain
 
   }
+  */
 
-  def foilInfoGainInit = {}
-
-  def gainInt = {
-    val adjust = (x: Double) => if (x.isNaN) 0.0 else x
-    adjust(this.precision) - adjust(this.parentClause.precision)
-  }
-
-  def gainTerm = {
-    val adjust = (x: Double) => if (x.isNaN) 0.0 else x
-    adjust(this.recall) - adjust(this.parentClause.recall)
-  }
-
-  def rateDiff = {
-    this.tps.toFloat/Globals.totalPos.toFloat - this.fps.toFloat - Globals.totalNegs.toFloat
-  }
 
   var refinements = List[Clause]()
   //var refinements = List[Refinement]()
@@ -298,7 +340,7 @@ case class Clause(head: PosLiteral = PosLiteral(),
   // This stores the previous mean score (used for pruning)
   var previousScore = 0.0
 
-  def meanDiff = {
+  def meanDiff(scoringFunction: String) = {
 
     /*
     if (Globals.glvalues("distributed").toBoolean) {
@@ -309,7 +351,7 @@ case class Clause(head: PosLiteral = PosLiteral(),
     // The - sign is to sort with decreasing order (default is with increasing)
     // Also sort clauses by length, so that sorter clauses be preferred over longer ones with the same score
     val allSorted =
-      if (Globals.scoringFunction == "foilgain")
+      if (scoringFunction == "foilgain")
         // The parent rule should not be included here (otherwise it will always win, see the foil gain formula)
         this.refinements.sortBy { x => (- x.score, - x.mlnWeight, x.body.length+1) }
       else
@@ -328,6 +370,11 @@ case class Clause(head: PosLiteral = PosLiteral(),
         (bestTwo.head,bestTwo.head)
     val newDiff = best.score - secondBest.score
     val newMeanDiff = ( (previousMeanDiff * previousMeanDiffCount) + newDiff)/(previousMeanDiffCount + 1)
+
+    if (newMeanDiff.isNaN) {
+      val stop = "stop"
+    }
+
     previousMeanDiffCount += 1 // increase the count
     previousMeanDiff = newMeanDiff
 
@@ -404,11 +451,16 @@ case class Clause(head: PosLiteral = PosLiteral(),
     if (!recall.isNaN) tps * recall else 0.0
   }
 
+
+
+
   def score: Double = {
 
+    /*
     if (this.foilGainInit.isInfinite || this.foilGainTerm.isInfinite) {
       val debug = "stop"
     }
+    */
 
     /*
     if (Globals.glvalues("distributed").toBoolean) {
@@ -426,7 +478,7 @@ case class Clause(head: PosLiteral = PosLiteral(),
 
         //case "default" => if (!precision.isNaN)  (1.0 - 1.0/(1.0+tps.toDouble)) * precision else 0.0
 
-        case "foilgain" => foilGainInit
+        case "foilgain" => foilGain("precision")
         case "fscore" => fscore
         case _ => throw new RuntimeException("Error: No scoring function given.")
       }
@@ -445,7 +497,7 @@ case class Clause(head: PosLiteral = PosLiteral(),
 
         //case "default" => if (!recall.isNaN) (1.0 - 1.0/(1.0+tps.toDouble)) * recall else 0.0
 
-        case "foilgain" => foilGainTerm
+        case "foilgain" => foilGain("recall")
         case "fscore" => fscore
         case _ => throw new RuntimeException("Error: No scoring function given.")
       }
