@@ -64,6 +64,7 @@ object FullDatasetHoldOut extends LazyLogging {
 
       val data = opts.allData(collection, opts.sort, opts.sortDbByField) map { x =>
         val e = Example(x)
+
         opts.targetConcept match {
           case "None" => new Example(annot = e.annotation, nar = e.narrative, _time = e.time)
           case _ => new Example(annot = e.annotation filter (_.contains(opts.targetConcept)), nar = e.narrative, _time = e.time)

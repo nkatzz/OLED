@@ -101,16 +101,22 @@ object ExpertAdviceFunctions extends LazyLogging {
               }
 
               if(splice.isDefined) {
-                val time = atom.atomParsed.terms.tail.head
+                val time = atom.atomParsed.terms.tail.head.name
                 val eventAtom = atom.atomParsed.terms.head.asInstanceOf[Literal]
                 val eventPred = eventAtom.functor.capitalize
-                val eventArgs = eventAtom.terms.map(x => x.tostring.capitalize).mkString(",")
+                val eventArgs = eventAtom.terms.map(x => x.name.capitalize).mkString(",")
                 val out = s"$eventPred($eventArgs,$time)"
                 // Rescale the prediction to [0,1]. If I is the interval (range) of the prediction, then
                 // rescaledPrediction = (prediction - min(I))/(max(I) - min(I)),
                 // where min(I) = -termWeightSum
                 // max(I) = initWeightSum + inertiaExpertPrediction
-                val rescaledPrediction = (prediction - (-termWeightSum))/((initWeightSum + inertiaExpertPrediction) - (-termWeightSum))
+
+                val _rescaledPrediction = (prediction - (-termWeightSum))/((initWeightSum + inertiaExpertPrediction) - (-termWeightSum))
+                val rescaledPrediction = {
+                  if (_rescaledPrediction.isNaN) 0.0
+                  else if (prediction <= 0) (-1) * _rescaledPrediction else _rescaledPrediction
+                }
+                //println(out, rescaledPrediction)
                 spliceInput += (out -> rescaledPrediction)
               }
 
@@ -184,7 +190,11 @@ object ExpertAdviceFunctions extends LazyLogging {
                   // Updates weights only after a mistake (in the TP case it just updates the inertia expert)
                   updateWeights(atom, prediction, inertiaExpertPrediction, initWeightSum,
                     termWeightSum, predictedLabel, markedMap, feedback, stateHandler, learningRate)
-                  stateHandler.normalizeWeights( (atom.initiatedBy ++ atom.terminatedBy).map(x => markedMap(x)), atom.fluent )
+
+                  // Do not normalize when splice is used, to allow for larger confidence values
+                  if (randomizedPrediction) { //splice.isEmpty
+                    stateHandler.normalizeWeights( (atom.initiatedBy ++ atom.terminatedBy).map(x => markedMap(x)), atom.fluent )
+                  }
                 } else {
                   updateWeightsRandomized(atom, prediction, inertiaExpertPrediction,
                     predictedLabel, feedback, stateHandler, epsilon, markedMap, totalWeight)
@@ -206,6 +216,22 @@ object ExpertAdviceFunctions extends LazyLogging {
 
                     if (structureUpdate_?) break
                   }
+                }
+              } else {
+                // Here we do not receive feedback. We need to handle inertia here
+                // Note that if feedback is received inertia is handled at the updateWeights method.
+                // If the prediction is TP (TN) the fluent is added (removed) from the inertia memory.
+                // If the prediction is incorrect, then in the FP case the fluent is added to the inertia
+                // memory (although it's mistake) so things are fair and then we try to correct the mistake
+                // in subsequent rounds if it persists. In the FN case we reduce the inertia weight (if non-zero)
+                // for the erroneously predicted fluent. Here we are in the case where no feedback is received
+                // (so its purely testing and/or providing an inference service), so we need to handle inertia.
+                if (predictedLabel == "true") {
+                  if (!stateHandler.inertiaExpert.knowsAbout(atom.fluent))
+                    stateHandler.inertiaExpert.updateWeight(atom.fluent, prediction)
+                } else {
+                  if (!stateHandler.inertiaExpert.knowsAbout(atom.fluent))
+                    stateHandler.inertiaExpert.forget(atom.fluent)
                 }
               }
 
@@ -333,7 +359,8 @@ object ExpertAdviceFunctions extends LazyLogging {
       updateRulesScore("FP", atom.initiatedBy.map(x => markedMap(x)), nonFiringInitRules.values.toVector,
         atom.terminatedBy.map(x => markedMap(x)), nonFiringTermRules.values.toVector)
 
-      //if (stateHandler.inertiaExpert.knowsAbout(atom.fluent)) stateHandler.inertiaExpert.forget(atom.fluent)
+      // This is clearly wrong... But the randomized version does not work anyway.
+      if (stateHandler.inertiaExpert.knowsAbout(atom.fluent)) stateHandler.inertiaExpert.forget(atom.fluent)
 
     }
 
@@ -376,11 +403,9 @@ object ExpertAdviceFunctions extends LazyLogging {
       val holdsWeight = inertiaExpertPrediction + initWeightSum
       // Either adds or updates the fluent
       stateHandler.inertiaExpert.updateWeight(currentFluent, holdsWeight)
-      ///*
+
       updateRulesScore("TP", atom.initiatedBy.map(x => markedMap(x)), nonFiringInitRules.values.toVector,
           atom.terminatedBy.map(x => markedMap(x)), nonFiringTermRules.values.toVector)
-      //*/
-
     }
 
     if (is_FP_mistake(predictedLabel, feedback)) {
@@ -390,15 +415,14 @@ object ExpertAdviceFunctions extends LazyLogging {
         val newWeight = inertiaExpertPrediction * Math.pow(Math.E, (-1.0) * learningRate)
         stateHandler.inertiaExpert.updateWeight(currentFluent, newWeight)
       } else {
-        // Since we predicted it as holding, we should add it to the inertia map
-        // (???? does this make sense? Only for some sort of soft inertia for example, where
-        // the actual label (FP) could be wrong, so we remember hoping to let the weights sort things out)
-        //stateHandler.inertiaExpert.updateWeight(currentFluent, prediction)
+        // Remember this since it was recognized. This is the correct approach,
+        // since we're doing sequential prediction. If we make an FP mistake at the
+        // next round we reduce the inertia weight and add termination rules.
+        stateHandler.inertiaExpert.updateWeight(currentFluent, prediction)
       }
-      ///*
+
       updateRulesScore("FP", atom.initiatedBy.map(x => markedMap(x)), nonFiringInitRules.values.toVector,
         atom.terminatedBy.map(x => markedMap(x)), nonFiringTermRules.values.toVector)
-      //*/
     }
 
     if (is_FN_mistake(predictedLabel, feedback)) {
@@ -408,32 +432,16 @@ object ExpertAdviceFunctions extends LazyLogging {
         val newWeight = inertiaExpertPrediction * Math.pow(Math.E, 1.0 * learningRate)
         //newWeight = if (newWeight.isPosInfinity) stateHandler.inertiaExpert.getWeight(currentFluent) else newWeight
         stateHandler.inertiaExpert.updateWeight(currentFluent, newWeight)
-      } else {
-        // This is because in response to the FN mistake we have generated an new initiation rule
-        // (if the fluent does not hold by inertia -- see the updateStructure method). Therefore,
-        // the new initiation rule initiates the fluent, so we add it to the inertia map.
-        // Not doing so won't work in case the initiation conditions are not repeated exactly
-        // in the next time point (after this FN), so as for the fluent to be re-initiated.
-        /* THIS SHOULD BE HANDLED BY RETRAINING ON THE CURRENT EXAMPLE, SO AFTER A RULE GENERATION (INITIATION) THE fn TURNS INTO A TP */
-        /*
-        if (atom.initiatedBy.nonEmpty) {
-          stateHandler.inertiaExpert.updateWeight(currentFluent, 1.0)
-        }
-        */
-
       }
-      ///*
       updateRulesScore("FN", atom.initiatedBy.map(x => markedMap(x)), nonFiringInitRules.values.toVector,
         atom.terminatedBy.map(x => markedMap(x)), nonFiringTermRules.values.toVector)
-      //*/
     }
 
     if (is_TN(predictedLabel, feedback)) {
       stateHandler.inertiaExpert.forget(currentFluent)
-      ///*
+
       updateRulesScore("TN", atom.initiatedBy.map(x => markedMap(x)), nonFiringInitRules.values.toVector,
         atom.terminatedBy.map(x => markedMap(x)), nonFiringTermRules.values.toVector)
-      //*/
     }
 
   }
@@ -484,7 +492,10 @@ object ExpertAdviceFunctions extends LazyLogging {
       // Also, we are always conservative with termination rules. We generate new ones only if the FP
       // holds by inertia. Otherwise it doesn't make much sense.
       if (atom.terminatedBy.isEmpty) {
-        if (stateHandler.inertiaExpert.knowsAbout(atom.fluent)) {
+        // If we leave the if (stateHandler.inertiaExpert.knowsAbout(atom.fluent)) clause here
+        // we get many more mistakes. On the other hand, it seems more reasonable to generate
+        // termination rules only when the fluent holds by inertia... (don't know what to do)
+        if (stateHandler.inertiaExpert.knowsAbout(atom.fluent)) { //stateHandler.inertiaExpert.knowsAbout(atom.fluent)
           updatedStructure = generateNewRule(batch, currentAtom, inps, "FP", logger, stateHandler, "terminatedAt", 1.0)
         }
       } else {

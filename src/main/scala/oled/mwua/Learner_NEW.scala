@@ -19,9 +19,9 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
                                val writeExprmtResultsTo: String = "") extends Actor {
   val learningRate = 1.0
 
-  val epsilon = 0.5 // used in the randomized version
+  val epsilon = 0.9 // used in the randomized version
 
-  val randomizedPrediction = true
+  val randomizedPrediction = false
 
   // If this is false, some non-determinism is introduced (number of mistakes may vary slightly from round to round)
   val specializeAllAwakeRulesOnFPMistake = false
@@ -31,7 +31,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
   // with receiveFeedbackBias for heads returns heads.
   val receiveFeedbackBias = 1.0 //0.5
 
-  val conservativeRuleGeneration = true
+  val conservativeRuleGeneration = false
 
   // A rule must make this much % of the total FPs before it is specialized
   val percentOfMistakesBeforeSpecialize = 0
