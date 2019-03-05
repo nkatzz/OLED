@@ -206,17 +206,55 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
     }
     */
 
+    if (trainingDataOptions != testingDataOptions) {
+
+      // show the info so far:
+      wrapUp_NO_TEST()
+
+      // and do the test
+      logger.info("\n\nEvaluating on the test set\n\n")
+
+      val _stateHandler = new StateHandler
+
+      _stateHandler.ensemble = {
+        val ensemble = stateHandler.ensemble
+        val init = ensemble.initiationRules.filter(x => x.body.nonEmpty)
+        val term = ensemble.terminationRules.filter(x => x.body.nonEmpty)
+        ensemble.initiationRules = init
+        ensemble.terminationRules = term
+        ensemble
+      }
+
+      val testData = testingDataFunction(testingDataOptions)
+      val _receiveFeedbackBias = 0.0 // Give no supervision for training, we're only testing
+      testData foreach { batch =>
+        val trueLabels = batch.annotation.toSet
+        ExpertAdviceFunctions.process(batch, batch.annotation.toSet, inps,
+          _stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
+          batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake, _receiveFeedbackBias, conservativeRuleGeneration)
+      }
+      logger.info(s"Prequential error vector:\n${_stateHandler.perBatchError.mkString(",")}")
+      logger.info(s"Prequential error vector (Accumulated Error):\n${_stateHandler.perBatchError.scanLeft(0.0)(_ + _).tail}")
+      logger.info(s"Total TPs: ${_stateHandler.totalTPs}, Total FPs: ${_stateHandler.totalFPs}, Total FNs: ${_stateHandler.totalFNs}, Total TNs: ${_stateHandler.totalTNs}")
+      if (_receiveFeedbackBias != 1.0) {
+        logger.info(s"\nReceived feedback on ${_stateHandler.receivedFeedback} rounds")
+      }
+    } else {
+      wrapUp_NO_TEST()
+    }
+
+
+  }
+
+  def wrapUp_NO_TEST() = {
     logger.info(Theory(stateHandler.ensemble.initiationRules.sortBy(x => -x.w)).showWithStats)
     logger.info(Theory(stateHandler.ensemble.terminationRules.sortBy(x => -x.w)).showWithStats)
-
-    //logger.info(Theory(stateHandler.ensemble.initiationRules.map(x => bestRuleFromExpertTree(x))).showWithStats)
-    //logger.info(Theory(stateHandler.ensemble.terminationRules.map(x => bestRuleFromExpertTree(x))).showWithStats)
 
     logger.info(s"Prequential error vector:\n${stateHandler.perBatchError.mkString(",")}")
     logger.info(s"Prequential error vector (Accumulated Error):\n${stateHandler.perBatchError.scanLeft(0.0)(_ + _).tail}")
     logger.info(s"Total TPs: ${stateHandler.totalTPs}, Total FPs: ${stateHandler.totalFPs}, Total FNs: ${stateHandler.totalFNs}, Total TNs: ${stateHandler.totalTNs}")
-
     logger.info(s"Total time: ${(endTime - startTime)/1000000000.0}")
+
     if (randomizedPrediction) {
       logger.info(s"\nPredicted with initiation rules: ${stateHandler.predictedWithInitRule} times")
       logger.info(s"\nPredicted with terminated rules: ${stateHandler.predictedWithTermRule} times")

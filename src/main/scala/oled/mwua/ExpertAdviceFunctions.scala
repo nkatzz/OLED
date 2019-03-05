@@ -58,8 +58,16 @@ object ExpertAdviceFunctions extends LazyLogging {
     var alreadyProcessedAtoms = Set.empty[String]
     val predictAndUpdateTimed = Utils.time {
       while(!finishedBatch) {
+
+        //val startTime = System.nanoTime()
+
         val (markedProgram, markedMap, groundingsMap) = groundEnsemble(batch, inps, stateHandler, withInputTheory)
         val sortedAtomsToBePredicted = sortGroundingsByTime(groundingsMap)
+
+        //val endTime = System.nanoTime()
+
+        //println(s"Grounding time: ${(endTime - startTime)/1000000000.0}")
+
         breakable {
           sortedAtomsToBePredicted foreach { atom =>
             val currentAtom = atom.atom
@@ -264,6 +272,11 @@ object ExpertAdviceFunctions extends LazyLogging {
         }
       }
     }
+
+
+    //println(s"Batch processing time: ${predictAndUpdateTimed._2}")
+
+
     //logger.info(s"Batch processing time: ${predictAndUpdateTimed._2}")
     if (batchError > 0) {
       logger.info(s"*** Batch #$batchCounter Total mistakes: ${batchFPs+batchFNs} (FPs: $batchFPs | FNs: $batchFNs). Total batch atoms: $batchAtoms ***")

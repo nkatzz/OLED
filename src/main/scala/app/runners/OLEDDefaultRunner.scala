@@ -22,6 +22,8 @@ import app.runutils.CMDArgs
 import app.runutils.IOHandling.MongoSource
 import com.mongodb.casbah.{MongoClient, MongoCollection}
 import com.typesafe.scalalogging.LazyLogging
+import experiments.caviar.FullDatasetHoldOut.MongoDataOptions
+import experiments.caviar.{FullDatasetHoldOut, MeetingTrainTestSets}
 import logic.Examples.Example
 import oled.single_core.Master
 import utils.DataUtils.Interval
@@ -46,6 +48,7 @@ object OLEDDefaultRunner extends LazyLogging {
 
       val runningOptions = CMDArgs.getOLEDInputArgs(args)
 
+      ///* This works for the github demo
       val trainingDataOptions = new DefaultMongoDataOptions(
         dbName = runningOptions.train,
         collectionName = runningOptions.mongoCollection,
@@ -64,9 +67,25 @@ object OLEDDefaultRunner extends LazyLogging {
         sortDbByField = "None"
       )
 
-
       val trainingDataFunction: DefaultMongoDataOptions => Iterator[Example] = getMongoData
       val testingDataFunction: DefaultMongoDataOptions => Iterator[Example] = getMongoData
+      //*/
+
+      /*
+      val dataset = MeetingTrainTestSets.meeting1
+
+      val trainingDataOptions =
+        new MongoDataOptions(dbNames = dataset._1,
+          chunkSize = runningOptions.chunkSize, targetConcept = runningOptions.targetHLE, sortDbByField = "time", what = "training")
+
+      val testingDataOptions =
+        new MongoDataOptions(dbNames = dataset._2,
+          chunkSize = runningOptions.chunkSize, targetConcept = runningOptions.targetHLE, sortDbByField = "time", what = "testing")
+
+      val trainingDataFunction: MongoDataOptions => Iterator[Example] = FullDatasetHoldOut.getMongoData
+      val testingDataFunction: MongoDataOptions => Iterator[Example] = FullDatasetHoldOut.getMongoData
+      */
+
       val system = ActorSystem("HoeffdingLearningSystem")
       val startMsg = if (runningOptions.evalth != "None") "eval" else "start"
 

@@ -6,7 +6,7 @@ import app.runutils.IOHandling.MongoSource
 import com.mongodb.casbah.{MongoClient, MongoCollection}
 import com.typesafe.scalalogging.LazyLogging
 import experiments.caviar.FullDatasetHoldOut.MongoDataOptions
-import experiments.caviar.FullDatasetHoldOut
+import experiments.caviar.{FullDatasetHoldOut, MeetingTrainTestSets}
 import logic.Examples.Example
 import utils.DataUtils.Interval
 
