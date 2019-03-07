@@ -93,16 +93,16 @@ object Runner extends LazyLogging {
       //logger.info(s"\nData order:\n$trainShuffled")
 
       /* This is for running with the entire CAVIAR (no test set)*/
-      ///*
+      /*
       val trainingDataOptions =
         new MongoDataOptions(dbNames = train2, //trainShuffled ,//dataset._1,
           chunkSize = runningOptions.chunkSize, targetConcept = runningOptions.targetHLE, sortDbByField = "time", what = "training")
 
       val testingDataOptions = trainingDataOptions
-      //*/
+      */
 
       /* This is for running on the training set and then performing prequential evaluation on the test set. */
-      /*
+      ///*
       val dataset = MeetingTrainTestSets.meeting1
 
       val trainingDataOptions =
@@ -112,7 +112,7 @@ object Runner extends LazyLogging {
       val testingDataOptions =
         new MongoDataOptions(dbNames = dataset._2,
           chunkSize = runningOptions.chunkSize, targetConcept = runningOptions.targetHLE, sortDbByField = "time", what = "testing")
-      */
+      //*/
 
 
       val trainingDataFunction: MongoDataOptions => Iterator[Example] = FullDatasetHoldOut.getMongoData

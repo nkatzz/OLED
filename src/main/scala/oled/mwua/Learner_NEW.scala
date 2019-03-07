@@ -31,10 +31,18 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
   // with receiveFeedbackBias for heads returns heads.
   val receiveFeedbackBias = 1.0 //0.5
 
-  val conservativeRuleGeneration = false
+  val conservativeRuleGeneration = true
 
   // A rule must make this much % of the total FPs before it is specialized
   val percentOfMistakesBeforeSpecialize = 0
+
+  // When this is true, the weights of rules that predict incorrectly are penalized
+  // even if the master predicts correctly. It has been reported (e.g. see Blum's
+  // "Empirical support for Winnow & WM") paper that this may increase performance. A
+  // reason for trying that is that I have observed rules with many mistaked (e.g. FPs)
+  // and a disproportionally high weight). Clearly these rules are not penalized (because the
+  // master predicts correctly), but they are useless.
+  val alwaysPenalizeMistakes = false
 
   // have this set to "" for a regular run without an input theory
   //val inputTheoryFile = "/home/nkatz/Desktop/theory"
@@ -178,14 +186,15 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
           if (inputTheory.isEmpty) {
             ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
               stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
-              batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake, receiveFeedbackBias, conservativeRuleGeneration)
+              batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
+              receiveFeedbackBias, alwaysPenalizeMistakes, conservativeRuleGeneration)
           } else {
             ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
               stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
-              batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake, receiveFeedbackBias, conservativeRuleGeneration, inputTheory = Some(inputTheory))
+              batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
+              receiveFeedbackBias, alwaysPenalizeMistakes,
+              conservativeRuleGeneration, inputTheory = Some(inputTheory))
           }
-
-
         }
       }
     }

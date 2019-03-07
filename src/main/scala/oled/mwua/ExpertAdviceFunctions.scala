@@ -34,6 +34,7 @@ object ExpertAdviceFunctions extends LazyLogging {
               percentOfMistakesBeforeSpecialize: Int,
               specializeAllAwakeOnMistake: Boolean,
               receiveFeedbackBias: Double,
+              alwaysPenalizeMistakes: Boolean,
               conservativeRuleGeneration: Boolean = true,
               splice: Option[Map[String, Double] => (Set[EvidenceAtom], Evidence)] = None,
               mapper: Option[Set[EvidenceAtom] => Vector[String]] = None,
@@ -165,7 +166,8 @@ object ExpertAdviceFunctions extends LazyLogging {
                     batchFPs += 1
                     stateHandler.totalFPs += 1
                     if (selected == "inertia") {
-                      logger.info(s"Inertia FP prediction for fluent ${atom.fluent}. Inertia weight: ${stateHandler.inertiaExpert.getWeight(atom.fluent)}")
+                      logger.info(s"Inertia FP prediction for fluent ${atom.fluent}. " +
+                        s"Inertia weight: ${stateHandler.inertiaExpert.getWeight(atom.fluent)}")
                     }
                     //logger.info(s"\nFP mistake for atom $currentAtom. " +
                     //  s"Init w. sum: $initWeightSum, term w. sum: $termWeightSum, inert: $inertiaExpertPrediction")
@@ -197,7 +199,7 @@ object ExpertAdviceFunctions extends LazyLogging {
                 if (!randomizedPrediction) {
                   // Updates weights only after a mistake (in the TP case it just updates the inertia expert)
                   updateWeights(atom, prediction, inertiaExpertPrediction, initWeightSum,
-                    termWeightSum, predictedLabel, markedMap, feedback, stateHandler, learningRate)
+                    termWeightSum, predictedLabel, markedMap, feedback, stateHandler, learningRate, alwaysPenalizeMistakes)
 
                   // Do not normalize when splice is used, to allow for larger confidence values
                   if (randomizedPrediction) { //splice.isEmpty
@@ -400,7 +402,7 @@ object ExpertAdviceFunctions extends LazyLogging {
 
   def updateWeights(atom: AtomTobePredicted, prediction: Double, inertiaExpertPrediction: Double,
                     initWeightSum: Double, termWeightSum: Double, predictedLabel: String, markedMap: Map[String, Clause],
-                    feedback: String, stateHandler: StateHandler, learningRate:Double) = {
+                    feedback: String, stateHandler: StateHandler, learningRate: Double, alwaysPenalizeMistakes: Boolean) = {
 
     val currentFluent = atom.fluent
 
@@ -419,6 +421,11 @@ object ExpertAdviceFunctions extends LazyLogging {
 
       updateRulesScore("TP", atom.initiatedBy.map(x => markedMap(x)), nonFiringInitRules.values.toVector,
           atom.terminatedBy.map(x => markedMap(x)), nonFiringTermRules.values.toVector)
+
+      if (alwaysPenalizeMistakes) {
+        // Reduce weights of awake termination rules
+        reduceWeights(atom.terminatedBy, markedMap, learningRate)
+      }
     }
 
     if (is_FP_mistake(predictedLabel, feedback)) {
@@ -455,6 +462,12 @@ object ExpertAdviceFunctions extends LazyLogging {
 
       updateRulesScore("TN", atom.initiatedBy.map(x => markedMap(x)), nonFiringInitRules.values.toVector,
         atom.terminatedBy.map(x => markedMap(x)), nonFiringTermRules.values.toVector)
+
+      if (alwaysPenalizeMistakes) {
+        // Reduce weights of awake initiation rules
+        reduceWeights(atom.initiatedBy, markedMap, learningRate)
+      }
+
     }
 
   }
