@@ -88,6 +88,7 @@ object Runner extends LazyLogging {
           "caviar-video-24-meeting-moving", "caviar-video-8", "caviar-video-10", "caviar-video-2-meeting-moving",
            "caviar-video-15", "caviar-video-3", "caviar-video-17")
 
+      val openSSH = Vector("openssh")
 
       //val trainShuffled = scala.util.Random.shuffle(train1)
       //logger.info(s"\nData order:\n$trainShuffled")
@@ -103,7 +104,9 @@ object Runner extends LazyLogging {
 
       /* This is for running on the training set and then performing prequential evaluation on the test set. */
       ///*
-      val dataset = MeetingTrainTestSets.meeting1
+      //val dataset = MeetingTrainTestSets.meeting1
+
+      val dataset = (Vector("openssh-test"), Vector("openssh"))
 
       val trainingDataOptions =
         new MongoDataOptions(dbNames = dataset._1,

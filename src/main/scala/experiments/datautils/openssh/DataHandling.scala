@@ -10,6 +10,10 @@ import scala.io.Source
 object DataHandling extends App {
 
   val lines = Source.fromFile("/home/nkatz/dev/ADL-datasets/openshs-classification/d1_1m_10tm.csv").getLines
+
+  // used for test for now
+  //val lines = Source.fromFile("/home/nkatz/dev/ADL-datasets/openshs-classification/d3_2m_10tm.csv").getLines
+
   val format = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
   def time(t: String) = format.parse(t).getTime/1000
 
@@ -26,6 +30,9 @@ object DataHandling extends App {
 
   val mongoClient = MongoClient()
   val collection = mongoClient("openssh")("examples")
+
+  // used for test for now
+  //val collection = mongoClient("openssh-test")("examples")
   collection.drop()
 
   lines.drop(1) foreach { x =>
