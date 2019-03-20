@@ -47,14 +47,24 @@ object ExpertAdviceFunctions extends LazyLogging {
     var batchAtoms = 0
     var finishedBatch = false
 
-    if (batchCounter == 43) {
-      val stop = "stop"
+    var withInputTheory = inputTheory.isDefined
+
+    ///*
+    val isTestPhase = receiveFeedbackBias == 0.0
+    if (isTestPhase) {
+      val (goodInit, goodTerm) = getFinalRules(stateHandler)
+      stateHandler.ensemble.initiationRules = goodInit
+      stateHandler.ensemble.terminationRules = goodTerm
+      logger.info(s"Testing with Initiation:\n${Theory(stateHandler.ensemble.initiationRules.sortBy(x => -x.w_pos)).showWithStats}")
+      logger.info(s"Testing with Termination:\n${Theory(stateHandler.ensemble.terminationRules.sortBy(x => -x.w_pos)).showWithStats}")
+      withInputTheory = true
     }
+    //*/
 
     var spliceInput = Map.empty[String, Double]
     stateHandler.batchCounter = batchCounter
 
-    val withInputTheory = inputTheory.isDefined
+
 
     var alreadyProcessedAtoms = Set.empty[String]
     val predictAndUpdateTimed = Utils.time {
@@ -286,6 +296,22 @@ object ExpertAdviceFunctions extends LazyLogging {
   }
 
 
+  // Rules used for test phase
+  def getFinalRules(s: StateHandler) = {
+
+    def filterGoodRules(x: List[Clause]) = {
+      val isGood = (r: Clause) => r.w_pos > r.w_neg
+      x.foldLeft(List.empty[Clause]) { (accum, rule) =>
+        //val good = (List(rule) ++ rule.refinements).filter(isGood(_))
+        //accum ++ good
+        if (isGood(rule)) accum :+ rule else accum
+      }
+    }
+    val init = filterGoodRules(s.ensemble.initiationRules)
+    val term = filterGoodRules(s.ensemble.terminationRules)
+    (init, term)
+  }
+
 
   def updateWeightsRandomized(atom: AtomTobePredicted, prediction: Double,
                               inertiaExpertPrediction: Double, predictedLabel: String,
@@ -303,9 +329,9 @@ object ExpertAdviceFunctions extends LazyLogging {
       // times 1 (if the expert is incorrect) or 0 (if the expert is correct). Since
       // correct experts do not contribute to the sum we only take into account the incorrect ones.
       if (isInertiaCorrect) {
-        incorrectExperts.map(i => i.w/totalWeight.toDouble).sum
+        incorrectExperts.map(i => i.w_pos/totalWeight.toDouble).sum
       } else {
-        incorrectExperts.map(i => i.w/totalWeight.toDouble).sum + inertiaExpertPrediction/totalWeight.toDouble
+        incorrectExperts.map(i => i.w_pos/totalWeight.toDouble).sum + inertiaExpertPrediction/totalWeight.toDouble
       }
 
     }
@@ -320,12 +346,12 @@ object ExpertAdviceFunctions extends LazyLogging {
 
       correctExperts foreach { x =>
         val rule = markedMap(x)
-        rule.w = weightNoInfinity(rule.w, rule.w * Math.pow(1+epsilon, correctExponent))
+        rule.w_pos = weightNoInfinity(rule.w_pos, rule.w_pos * Math.pow(1+epsilon, correctExponent))
       }
 
       incorrectExperts foreach { x =>
         val rule = markedMap(x)
-        rule.w = weightNoInfinity(rule.w, rule.w * Math.pow(1+epsilon, inCorrectExponent))
+        rule.w_pos = weightNoInfinity(rule.w_pos, rule.w_pos * Math.pow(1+epsilon, inCorrectExponent))
       }
 
       if (inertiaExpertPrediction > 0) {
@@ -423,14 +449,26 @@ object ExpertAdviceFunctions extends LazyLogging {
           atom.terminatedBy.map(x => markedMap(x)), nonFiringTermRules.values.toVector)
 
       if (alwaysPenalizeMistakes) {
-        // Reduce weights of awake termination rules
-        reduceWeights(atom.terminatedBy, markedMap, learningRate)
+        //reduceWeights(atom.terminatedBy, markedMap, learningRate)
+        reduceWeightsBalanced(atom.initiatedBy, markedMap, learningRate, "neg")
+        increaseWeightsBalanced(atom.initiatedBy, markedMap, learningRate, "pos")
+
+        increaseWeightsBalanced(atom.terminatedBy, markedMap, learningRate, "neg")
+        reduceWeightsBalanced(atom.terminatedBy, markedMap, learningRate, "pos")
+
       }
     }
 
     if (is_FP_mistake(predictedLabel, feedback)) {
-      reduceWeights(atom.initiatedBy, markedMap, learningRate)
-      increaseWeights(atom.terminatedBy, markedMap, learningRate)
+      //reduceWeights(atom.initiatedBy, markedMap, learningRate)
+      //increaseWeights(atom.terminatedBy, markedMap, learningRate)
+
+      reduceWeightsBalanced(atom.initiatedBy, markedMap, learningRate, "pos")
+      increaseWeightsBalanced(atom.initiatedBy, markedMap, learningRate, "neg")
+
+      increaseWeightsBalanced(atom.terminatedBy, markedMap, learningRate, "pos")
+      reduceWeightsBalanced(atom.terminatedBy, markedMap, learningRate, "neg")
+
       if (inertiaExpertPrediction > 0.0) {
         val newWeight = inertiaExpertPrediction * Math.pow(Math.E, (-1.0) * learningRate)
         stateHandler.inertiaExpert.updateWeight(currentFluent, newWeight)
@@ -446,8 +484,15 @@ object ExpertAdviceFunctions extends LazyLogging {
     }
 
     if (is_FN_mistake(predictedLabel, feedback)) {
-      increaseWeights(atom.initiatedBy, markedMap, learningRate)
-      reduceWeights(atom.terminatedBy, markedMap, learningRate)
+      //increaseWeights(atom.initiatedBy, markedMap, learningRate)
+      //reduceWeights(atom.terminatedBy, markedMap, learningRate)
+
+      reduceWeightsBalanced(atom.initiatedBy, markedMap, learningRate, "neg")
+      increaseWeightsBalanced(atom.initiatedBy, markedMap, learningRate, "pos")
+
+      increaseWeightsBalanced(atom.terminatedBy, markedMap, learningRate, "neg")
+      reduceWeightsBalanced(atom.terminatedBy, markedMap, learningRate, "pos")
+
       if (inertiaExpertPrediction > 0.0) {
         val newWeight = inertiaExpertPrediction * Math.pow(Math.E, 1.0 * learningRate)
         //newWeight = if (newWeight.isPosInfinity) stateHandler.inertiaExpert.getWeight(currentFluent) else newWeight
@@ -464,8 +509,12 @@ object ExpertAdviceFunctions extends LazyLogging {
         atom.terminatedBy.map(x => markedMap(x)), nonFiringTermRules.values.toVector)
 
       if (alwaysPenalizeMistakes) {
-        // Reduce weights of awake initiation rules
-        reduceWeights(atom.initiatedBy, markedMap, learningRate)
+        //reduceWeights(atom.initiatedBy, markedMap, learningRate)
+        reduceWeightsBalanced(atom.initiatedBy, markedMap, learningRate, "pos")
+        increaseWeightsBalanced(atom.initiatedBy, markedMap, learningRate, "neg")
+
+        increaseWeightsBalanced(atom.terminatedBy, markedMap, learningRate, "pos")
+        reduceWeightsBalanced(atom.terminatedBy, markedMap, learningRate, "neg")
       }
 
     }
@@ -839,7 +888,7 @@ object ExpertAdviceFunctions extends LazyLogging {
       ruleToSpecialize.refinements.filter(r => nonFiringRules.keySet.contains(r.##.toString)).
         //filter(s => s.score > ruleToSpecialize.score).
         //filter(r => !allRules.exists(r1 => r1.thetaSubsumes(r) && r.thetaSubsumes(r1))).
-        sortBy { x => (- x.w, - x.score, x.body.length+1) }
+        sortBy { x => (- x.w_pos, - x.score, x.body.length+1) }
     }
 
     def performSpecialization(ruleToSpecialize: (Clause, List[Clause])) = {
@@ -953,11 +1002,12 @@ object ExpertAdviceFunctions extends LazyLogging {
 
   private def showInfo(parent: Clause, child: Clause, currentAtom: String, mistakeType: String) = {
 
-    logger.info(s"\nSpecialization in response to $mistakeType atom $currentAtom:\nRule (id: ${parent.##} | score: ${parent.score} | tps: ${parent.tps} fps: ${parent.fps} " +
-      s"fns: ${parent.fns} | ExpertWeight: ${parent.w} " +
+    logger.info(s"\nSpecialization in response to $mistakeType atom $currentAtom:\nRule (id: ${parent.##} | " +
+      s"score: ${parent.score} | tps: ${parent.tps} fps: ${parent.fps} " +
+      s"fns: ${parent.fns} | ExpertWeight: ${parent.w_pos} " +
       s"AvgExpertWeight: ${parent.avgWeight})\n${parent.tostring}\nwas refined to" +
       s"(id: ${child.##} | score: ${child.score} | tps: ${child.tps} fps: ${child.fps} fns: ${child.fns} | " +
-      s"ExpertWeight: ${child.w} AvgExpertWeight: ${child.avgWeight})\n${child.tostring}")
+      s"ExpertWeight: ${child.w_pos} AvgExpertWeight: ${child.avgWeight})\n${child.tostring}")
 
   }
 
@@ -1026,9 +1076,27 @@ object ExpertAdviceFunctions extends LazyLogging {
   def predict(a: AtomTobePredicted, stateHanlder: StateHandler, markedMap: Map[String, Clause]) = {
     val (currentAtom, currentTime, awakeInit, awakeTerm, currentFluent) = (a.atom, a.time, a.initiatedBy, a.terminatedBy, a.fluent)
     val inertiaExpertPrediction = stateHanlder.inertiaExpert.getWeight(currentFluent)
-    val initWeightSum = if (awakeInit.nonEmpty) awakeInit.map(x => markedMap(x).w).sum else 0.0
-    val termWeightSum = if (awakeTerm.nonEmpty) awakeTerm.map(x => markedMap(x).w).sum else 0.0
+    /*
+    val initWeightSum = if (awakeInit.nonEmpty) awakeInit.map(x => markedMap(x).w_pos).sum else 0.0
+    val termWeightSum = if (awakeTerm.nonEmpty) awakeTerm.map(x => markedMap(x).w_pos).sum else 0.0
     val prediction = inertiaExpertPrediction + initWeightSum - termWeightSum
+    //val prediction = initWeightSum - termWeightSum
+    (prediction, inertiaExpertPrediction, initWeightSum, termWeightSum)
+    */
+
+    val initWeightSum = if (awakeInit.nonEmpty) awakeInit.map(x => markedMap(x).w_pos - markedMap(x).w_neg).sum else 0.0
+    val termWeightSum = if (awakeTerm.nonEmpty) awakeTerm.map(x => markedMap(x).w_pos - markedMap(x).w_neg).sum else 0.0
+
+    val prediction =
+      if (termWeightSum > 0) { // then the termination part predicts 'yes' (so, termination)
+        inertiaExpertPrediction + initWeightSum - termWeightSum
+      } else {// then the termination part predicts 'no' (so, no termination)
+        inertiaExpertPrediction + initWeightSum // just initiation should be taken into account here
+      }
+
+
+
+
     //val prediction = initWeightSum - termWeightSum
     (prediction, inertiaExpertPrediction, initWeightSum, termWeightSum)
   }
@@ -1044,11 +1112,11 @@ object ExpertAdviceFunctions extends LazyLogging {
     if (awakeInit.isEmpty && awakeTerm.isEmpty && inertiaExpertPrediction == 0.0) {
       (0.0, 0.0, "None")
     } else {
-      val bestInit = awakeInit.map(x => markedMap(x)).map(x => (x.##.toString, x.w)).sortBy(x => -x._2)
-      val bestTerm = awakeTerm.map(x => markedMap(x)).map(x => (x.##.toString, x.w)).sortBy(x => -x._2)
+      val bestInit = awakeInit.map(x => markedMap(x)).map(x => (x.##.toString, x.w_pos)).sortBy(x => -x._2)
+      val bestTerm = awakeTerm.map(x => markedMap(x)).map(x => (x.##.toString, x.w_pos)).sortBy(x => -x._2)
 
       val nonEmprtyBodied = (awakeInit ++ awakeTerm).map(x => markedMap(x)).filter(_.body.nonEmpty)
-      val awakeRuleExpertsWithWeights = nonEmprtyBodied.map(x => (x.##.toString, x.w)).toMap
+      val awakeRuleExpertsWithWeights = nonEmprtyBodied.map(x => (x.##.toString, x.w_pos)).toMap
       val awakeExpertsWithWeights =
         if (inertiaExpertPrediction > 0) awakeRuleExpertsWithWeights + ("inertia" -> inertiaExpertPrediction)
         else awakeRuleExpertsWithWeights
@@ -1081,10 +1149,10 @@ object ExpertAdviceFunctions extends LazyLogging {
         // return
         if (expert.head.functor.contains("initiated")) {
           stateHanlder.predictedWithInitRule += 1
-          (expert.w, totalWeight, selected)
+          (expert.w_pos, totalWeight, selected)
         } else {
           stateHanlder.predictedWithTermRule += 1
-          (-expert.w, totalWeight, selected)
+          (-expert.w_pos, totalWeight, selected)
         }
       }
 
@@ -1104,7 +1172,7 @@ object ExpertAdviceFunctions extends LazyLogging {
 
 
       val nonEmprtyBodied = (awakeInit ++ awakeTerm).map(x => markedMap(x)).filter(_.body.nonEmpty)
-      val awakeRuleExpertsWithWeights = nonEmprtyBodied.map(x => (x.##.toString, x.w)).toMap
+      val awakeRuleExpertsWithWeights = nonEmprtyBodied.map(x => (x.##.toString, x.w_pos)).toMap
 
       val awakeExpertsWithWeights =
         if (inertiaExpertPrediction > 0) awakeRuleExpertsWithWeights + ("inertia" -> inertiaExpertPrediction)
@@ -1149,10 +1217,10 @@ object ExpertAdviceFunctions extends LazyLogging {
         // return
         if (expert.head.functor.contains("initiated")) {
           stateHanlder.predictedWithInitRule += 1
-          (expert.w, totalWeight, selected)
+          (expert.w_pos, totalWeight, selected)
         } else {
           stateHanlder.predictedWithTermRule += 1
-          (-expert.w, totalWeight, selected)
+          (-expert.w_pos, totalWeight, selected)
         }
       }
     }

@@ -17,10 +17,10 @@ class StateHandler {
   val inertiaExpert = new InertiaExpert
 
   def normalizeWeights(awakeExperts: Vector[Clause], currentFluent: String) = {
-    val totalAwakeRulesWeight = awakeExperts.map(x => x.w).sum
+    val totalAwakeRulesWeight = awakeExperts.map(x => x.w_pos).sum
     val inertiaWeight = inertiaExpert.getWeight(currentFluent)
     val totalWeight = totalAwakeRulesWeight + inertiaWeight
-    awakeExperts.foreach(x => x.w = x.w/totalWeight.toDouble)
+    awakeExperts.foreach(x => x.w_pos = x.w_pos/totalWeight.toDouble)
     if (inertiaWeight > 0) inertiaExpert.updateWeight(currentFluent, inertiaWeight/totalWeight)
   }
 

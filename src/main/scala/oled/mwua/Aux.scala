@@ -67,12 +67,32 @@ object AuxFuncs extends LazyLogging {
       val rule = idsMap(id)
       //val newWeight = rule.w*0.5
       //val newWeight = rule.w * Math.pow(Math.E, -2.0)
-      val newWeight = rule.w * Math.pow(Math.E, (-1.0) * learningRate)
-      rule.w = newWeight
+      val newWeight = rule.w_pos * Math.pow(Math.E, (-1.0) * learningRate)
+      rule.w_pos = newWeight
       rule.updateRunningWeightAvg(newWeight)
 
       // for presenting analytics
-      rule.updateWeightsBuffer(rule.w)
+      rule.updateWeightsBuffer(rule.w_pos)
+    }
+  }
+
+  def reduceWeightsBalanced(ruleIds: Vector[String], idsMap: Map[String, Clause], learningRate: Double, whichWeights: String) = {
+    val getWeight = (x: Clause) => if (whichWeights == "pos") x.w_pos else x.w_neg
+    ruleIds.foreach { id =>
+      val rule = idsMap(id)
+      val newWeight = getWeight(rule) * Math.pow(Math.E, (-1.0) * learningRate)
+      if (whichWeights == "pos") rule.w_pos = newWeight else rule.w_neg = newWeight
+
+      if (whichWeights == "pos") {
+        rule.updateRunningWeightAvg(newWeight)
+      } else {
+        rule.updateNegRunningWeightAvg(newWeight)
+      }
+
+      //rule.updateRunningWeightAvg(newWeight)
+
+      // for presenting analytics
+      //rule.updateWeightsBuffer(rule.w_pos)
     }
   }
 
@@ -81,22 +101,48 @@ object AuxFuncs extends LazyLogging {
       val rule = idsMap(id)
       //val newWeight = rule.w*2
       //val newWeight = rule.w*Math.pow(Math.E, 2.0)
-      val newWeight = rule.w * Math.pow(Math.E, 1.0 * learningRate)
-      rule.w = if (newWeight.isPosInfinity) rule.w else newWeight
-      rule.updateRunningWeightAvg(rule.w)
+      val newWeight = rule.w_pos * Math.pow(Math.E, 1.0 * learningRate)
+      //val newWeight = rule.w_pos * Math.pow(Math.E, 0.5 * learningRate)
+      rule.w_pos = if (newWeight.isPosInfinity) rule.w_pos else newWeight
+      rule.updateRunningWeightAvg(rule.w_pos)
 
       // for presenting analytics
-      rule.updateWeightsBuffer(rule.w)
+      rule.updateWeightsBuffer(rule.w_pos)
+    }
+  }
+
+  def increaseWeightsBalanced(ruleIds: Vector[String], idsMap: Map[String, Clause], learningRate: Double, whichWeights: String) = {
+    val getWeight = (x: Clause) => if (whichWeights == "pos") x.w_pos else x.w_neg
+    ruleIds.foreach { id =>
+      val rule = idsMap(id)
+
+      val newWeight = getWeight(rule) * Math.pow(Math.E, 1.0 * learningRate)
+      if (whichWeights == "pos") {
+        rule.w_pos = if (newWeight.isPosInfinity) rule.w_pos else newWeight
+      } else {
+        rule.w_neg = if (newWeight.isPosInfinity) rule.w_neg else newWeight
+      }
+
+      if (whichWeights == "pos") {
+        rule.updateRunningWeightAvg(newWeight)
+      } else {
+        rule.updateNegRunningWeightAvg(newWeight)
+      }
+
+      //rule.updateRunningWeightAvg(rule.w_pos)
+
+      // for presenting analytics
+      //rule.updateWeightsBuffer(rule.w_pos)
     }
   }
 
   def increaseWeights(rules: List[Clause], learningRate: Double) = {
     rules foreach { r =>
-      val newWeight = r.w * Math.pow(Math.E, 1.0 * learningRate)
-      r.w = if (newWeight.isPosInfinity) r.w else newWeight
+      val newWeight = r.w_pos * Math.pow(Math.E, 1.0 * learningRate)
+      r.w_pos = if (newWeight.isPosInfinity) r.w_pos else newWeight
 
       // for presenting analytics
-      r.updateWeightsBuffer(r.w)
+      r.updateWeightsBuffer(r.w_pos)
     }
   }
 
@@ -117,8 +163,8 @@ object AuxFuncs extends LazyLogging {
 
       newRule.generateCandidateRefs(globals)
 
-      newRule.w = totalWeight
-      newRule.refinements.foreach(x => x.w = totalWeight)
+      newRule.w_pos = totalWeight
+      newRule.refinements.foreach(x => x.w_pos = totalWeight)
       newRule
     }
   }
@@ -184,9 +230,9 @@ object AuxFuncs extends LazyLogging {
 
     val allRules = firingInitRules ++ nonFiringInitRules ++ firingTermRules ++ nonFiringTermRules
 
-    val totalWeight = allRules.map(x => x.w).sum + inertiaWeights
+    val totalWeight = allRules.map(x => x.w_pos).sum + inertiaWeights
 
-    allRules foreach {x => x.w = x.w/totalWeight}
+    allRules foreach {x => x.w_pos = x.w_pos/totalWeight}
 
   }
 
@@ -209,7 +255,7 @@ object AuxFuncs extends LazyLogging {
 
     val wholeCommittee = if (!abstains) rule.refinements :+ rule else rule.refinements
 
-    val rulesToWeightsMap = wholeCommittee.map( x => x.## -> x.w ).toMap
+    val rulesToWeightsMap = wholeCommittee.map( x => x.## -> x.w_pos ).toMap
 
     val yesWeight = {
       val yes = firingRuleIds.toSet.intersect(rulesToWeightsMap.keySet.map(_.toString)).map(_.toInt)
@@ -237,7 +283,7 @@ object AuxFuncs extends LazyLogging {
         rule.refinements.sortBy { x => (- x.w, - x.score, x.body.length+1) }.head
       }
     */
-    val sorted = (rule.refinements :+ rule).filter(z => z.score >= 0.2).sortBy { x => (- x.score, - x.w, x.body.length+1) }
+    val sorted = (rule.refinements :+ rule).filter(z => z.score >= 0.2).sortBy { x => (- x.score, - x.w_pos, x.body.length+1) }
 
     val bestExpert = if (sorted.nonEmpty) sorted.head else Clause.empty
 
@@ -245,9 +291,9 @@ object AuxFuncs extends LazyLogging {
       0.0
     } else {
       if (firingRuleIds.toSet.contains(bestExpert.##.toString)) {
-        bestExpert.w
+        bestExpert.w_pos
       } else if (nonFiringRuleIds.toSet.contains(bestExpert.##.toString)) {
-        - bestExpert.w
+        - bestExpert.w_pos
       } else {
         throw new RuntimeException(s"\nRule:\n${rule.tostring}\nwith id: ${rule.##} " +
           s"is contained neither in the firing, nor the non-firing rules")
@@ -421,13 +467,13 @@ object AuxFuncs extends LazyLogging {
 
     if (useAvgWeights) {
       newInit foreach { r =>
-        r.w = r.avgWeight
-        r.refinements foreach( r1 => r1.w = r1.avgWeight )
+        r.w_pos = r.avgWeight
+        r.refinements foreach( r1 => r1.w_pos = r1.avgWeight )
       }
 
       newTerm foreach { r =>
-        r.w = r.avgWeight
-        r.refinements foreach( r1 => r1.w = r1.avgWeight )
+        r.w_pos = r.avgWeight
+        r.refinements foreach( r1 => r1.w_pos = r1.avgWeight )
       }
     }
 
@@ -535,15 +581,15 @@ object AuxFuncs extends LazyLogging {
 
   // The head of a weighted rule is of the form: marked(ruleId, "weight", actualHead)
   def marked(c: Clause, globals: Globals) = {
-    val cc = Clause(head=Literal(functor = "marked", terms=List(c.##.toString, s""""${c.w}"""", c.head)), body=c.withTypePreds(globals).body)
-    cc.w = c.w
+    val cc = Clause(head=Literal(functor = "marked", terms=List(c.##.toString, s""""${c.w_pos}"""", c.head)), body=c.withTypePreds(globals).body)
+    cc.w_pos = c.w_pos
     cc
   }
 
   // The head of a weighted rule is of the form: marked(ruleId, actualHead)
   def markedQuickAndDirty(c: Clause, globals: Globals) = {
     val cc = Clause(head=Literal(functor = "marked", terms=List(c.##.toString, c.head)), body=c.withTypePreds(globals).body)
-    cc.w = c.w
+    cc.w_pos = c.w_pos
     cc
   }
 

@@ -17,7 +17,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
                                val trainingDataFunction: T => Iterator[Example],
                                val testingDataFunction: T => Iterator[Example],
                                val writeExprmtResultsTo: String = "") extends Actor {
-  val learningRate = 1.0
+  val learningRate = 0.2 //0.2
 
   val epsilon = 0.9 // used in the randomized version
 
@@ -31,7 +31,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
   // with receiveFeedbackBias for heads returns heads.
   val receiveFeedbackBias = 1.0 //0.5
 
-  val conservativeRuleGeneration = true
+  val conservativeRuleGeneration = false
 
   // A rule must make this much % of the total FPs before it is specialized
   val percentOfMistakesBeforeSpecialize = 0
@@ -256,8 +256,17 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
   }
 
   def wrapUp_NO_TEST() = {
-    logger.info(Theory(stateHandler.ensemble.initiationRules.sortBy(x => -x.w)).showWithStats)
-    logger.info(Theory(stateHandler.ensemble.terminationRules.sortBy(x => -x.w)).showWithStats)
+
+    def show(in: List[Clause]) = {
+      in.sortBy(x => -x.w_pos).
+        map(x => x.showWithStats + "\n" + x.refinements.sortBy(x => -x.w_pos).map(x => x.showWithStats).mkString("\n      ")).mkString("\n")
+    }
+
+    //logger.info(show(stateHandler.ensemble.initiationRules))
+    //logger.info(show(stateHandler.ensemble.terminationRules))
+
+    logger.info(Theory(stateHandler.ensemble.initiationRules.sortBy(x => -x.w_pos)).showWithStats)
+    logger.info(Theory(stateHandler.ensemble.terminationRules.sortBy(x => -x.w_pos)).showWithStats)
 
     logger.info(s"Prequential error vector:\n${stateHandler.perBatchError.mkString(",")}")
     logger.info(s"Prequential error vector (Accumulated Error):\n${stateHandler.perBatchError.scanLeft(0.0)(_ + _).tail}")

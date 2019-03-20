@@ -83,7 +83,7 @@ object FullDatasetHoldOut extends LazyLogging {
             }
         }
       } else { // no chunking for testing data
-        /*
+        ///*
         val firstDataPoint = data.next()
         val annotation = firstDataPoint.annotation
         val narrative = firstDataPoint.narrative
@@ -93,17 +93,17 @@ object FullDatasetHoldOut extends LazyLogging {
         }
         val e = new Example(annot = merged._1, nar = merged._2, _time = time)
         Iterator(e)
-        */
+        //*/
 
         // comment the above and uncomment this to have chunked data
-        ///*
+        /*
         data.grouped(opts.chunkSize).map { x =>
           //data.sliding(opts.chunkSize).map { x =>
           x.foldLeft(Example()) { (z, y) =>
             new Example(annot = z.annotation ++ y.annotation, nar = z.narrative ++ y.narrative, _time = x.head.time)
           }
         }
-        //*/
+        */
       }
     }
     exmplIters.foldLeft(Iterator[Example]())(_ ++ _)

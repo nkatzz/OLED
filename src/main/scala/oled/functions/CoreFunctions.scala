@@ -189,8 +189,8 @@ trait CoreFunctions {
 
     } else {
       s"\n===========================================================\n" +
-        s"\nClause (score: ${c.score} | tps: ${c.tps} fps: ${c.fps} fns: ${c.fns} | MLN-weight: ${format(c.mlnWeight)} | WM weight: ${format(c.w)})\n\n${c.tostring}\n\nwas refined to" +
-        s" (new score: ${c1.score} | tps: ${c1.tps} fps: ${c1.fps} fns: ${c1.fns} | MLN-weight: ${format(c1.mlnWeight)} | WM weight: ${format(c1.w)})\n\n${c1.tostring}\n\nε: $hoeffding, ΔG: $observedDiff, examples used: $n" +
+        s"\nClause (score: ${c.score} | tps: ${c.tps} fps: ${c.fps} fns: ${c.fns} | MLN-weight: ${format(c.mlnWeight)} | WM weight: ${format(c.w_pos)})\n\n${c.tostring}\n\nwas refined to" +
+        s" (new score: ${c1.score} | tps: ${c1.tps} fps: ${c1.fps} fns: ${c1.fns} | MLN-weight: ${format(c1.mlnWeight)} | WM weight: ${format(c1.w_pos)})\n\n${c1.tostring}\n\nε: $hoeffding, ΔG: $observedDiff, examples used: $n" +
         //s"\nall refs: \n\n ${c.refinements.sortBy(z => -z.score).map(x => x.tostring+" "+" | score "+x.score+" | similarity "+similarity(x)).mkString("\n")}" +
         //s"\nall refs: \n\n ${c.refinements.sortBy(z => (-z.score,z.body.length+1)).map(x => x.tostring+" | score "+x.score+" (tps|fps|fns): "+(x.tps,x.fps,x.fns)).mkString("\n")}" +
         s"\n===========================================================\n"

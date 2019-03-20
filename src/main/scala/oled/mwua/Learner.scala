@@ -601,10 +601,10 @@ class Learner[T <: Source](val inps: RunningOptions,
   private def showInfo(parent: Clause, child: Clause) = {
 
     logger.info(s"\nRule (id: ${parent.##} | score: ${parent.score} | tps: ${parent.tps} fps: ${parent.fps} " +
-      s"fns: ${parent.fns} | ExpertWeight: ${parent.w} " +
+      s"fns: ${parent.fns} | ExpertWeight: ${parent.w_pos} " +
       s"AvgExpertWeight: ${parent.avgWeight})\n${parent.tostring}\nwas refined to" +
       s"(id: ${child.##} | score: ${child.score} | tps: ${child.tps} fps: ${child.fps} fns: ${child.fns} | " +
-      s"ExpertWeight: ${child.w} AvgExpertWeight: ${child.avgWeight})\n${child.tostring}")
+      s"ExpertWeight: ${child.w_pos} AvgExpertWeight: ${child.avgWeight})\n${child.tostring}")
 
   }
 
@@ -623,7 +623,7 @@ class Learner[T <: Source](val inps: RunningOptions,
       //logger.info(s"Predicting with ${merged.tostring}")
 
       // just for debugging
-      val weightsBefore = merged.clauses.map(x => x.w)
+      val weightsBefore = merged.clauses.map(x => x.w_pos)
       // just for debugging
       val inertiaBefore = inertiaExpert.map(x => x)
 
@@ -678,8 +678,8 @@ class Learner[T <: Source](val inps: RunningOptions,
                 val currentFluent = parsed.terms.head.tostring
                 val (initiatedBy, terminatedBy) = (y._2._1, y._2._2)
 
-                val initWeightSum = if (initiatedBy.nonEmpty) initiatedBy.map(x => markedMap(x).w).sum else 0.0
-                val termWeightSum = if (terminatedBy.nonEmpty) terminatedBy.map(x => markedMap(x).w).sum else 0.0
+                val initWeightSum = if (initiatedBy.nonEmpty) initiatedBy.map(x => markedMap(x).w_pos).sum else 0.0
+                val termWeightSum = if (terminatedBy.nonEmpty) terminatedBy.map(x => markedMap(x).w_pos).sum else 0.0
 
                 // only updates weights when we're not running in test mode.
                 val prediction =
@@ -784,7 +784,7 @@ class Learner[T <: Source](val inps: RunningOptions,
       totalFNs = totalFNs ++ restFNs
 
       // Just for debugging.
-      val weightsAfter = merged.clauses.map(x => x.w)
+      val weightsAfter = merged.clauses.map(x => x.w_pos)
       //just for debugging
       val inertiaAfter = inertiaExpert.map(x => x)
 
@@ -815,7 +815,7 @@ class Learner[T <: Source](val inps: RunningOptions,
       var merged = if (inputTheory == Theory()) getMergedTheory(testOnly) else inputTheory
 
       // just for debugging
-      val weightsBefore = merged.clauses.map(x => x.w)
+      val weightsBefore = merged.clauses.map(x => x.w_pos)
       // just for debugging
       val inertiaBefore = inertiaExpert.map(x => x)
 
@@ -891,8 +891,8 @@ class Learner[T <: Source](val inps: RunningOptions,
                     x._2.head.functor.contains("terminated") && !terminatedBy.toSet.contains(x._1))
                 //*/
 
-                val initWeightSum = if (initiatedBy.nonEmpty) initiatedBy.map(x => markedMap(x).w).sum else 0.0
-                val termWeightSum = if (terminatedBy.nonEmpty) terminatedBy.map(x => markedMap(x).w).sum else 0.0
+                val initWeightSum = if (initiatedBy.nonEmpty) initiatedBy.map(x => markedMap(x).w_pos).sum else 0.0
+                val termWeightSum = if (terminatedBy.nonEmpty) terminatedBy.map(x => markedMap(x).w_pos).sum else 0.0
 
                 // only updates weights when we're not running in test mode.
                 val prediction =
@@ -975,7 +975,7 @@ class Learner[T <: Source](val inps: RunningOptions,
                               filter(r => nonFiringInitRules.keySet.contains(r.##.toString)).
                               filter(s => s.score > ruleToSpecialize.score).
                               filter(r => !theory.head.clauses.exists(r1 => r1.thetaSubsumes(r) && r.thetaSubsumes(r1))).
-                              sortBy { x => (- x.w, - x.score, x.body.length+1) }
+                              sortBy { x => (- x.w_pos, - x.score, x.body.length+1) }
 
                           if (suitableRefs.nonEmpty) {
                             performedSpecialization = true
@@ -1040,7 +1040,7 @@ class Learner[T <: Source](val inps: RunningOptions,
                               filter(r => nonFiringTermRules.keySet.contains(r.##.toString)).
                               filter(s => s.score > ruleToSpecialize.score).
                               filter(r => !theory.tail.head.clauses.exists(r1 => r1.thetaSubsumes(r) && r.thetaSubsumes(r1))).
-                              sortBy { x => (- x.w, - x.score, x.body.length+1) }
+                              sortBy { x => (- x.w_pos, - x.score, x.body.length+1) }
 
                           if (suitableRefs.nonEmpty) {
                             performedSpecialization = true
@@ -1099,7 +1099,7 @@ class Learner[T <: Source](val inps: RunningOptions,
       totalFNs = totalFNs ++ restFNs
 
       // Just for debugging.
-      val weightsAfter = merged.clauses.map(x => x.w)
+      val weightsAfter = merged.clauses.map(x => x.w_pos)
       //just for debugging
       val inertiaAfter = inertiaExpert.map(x => x)
 
@@ -1167,8 +1167,8 @@ class Learner[T <: Source](val inps: RunningOptions,
 
     val (initiatedBy, terminatedBy) = (init, term)
 
-    val initWeightSum = if (initiatedBy.nonEmpty) initiatedBy.map(x => markedMap(x).w).sum else 0.0
-    val termWeightSum = if (terminatedBy.nonEmpty) terminatedBy.map(x => markedMap(x).w).sum else 0.0
+    val initWeightSum = if (initiatedBy.nonEmpty) initiatedBy.map(x => markedMap(x).w_pos).sum else 0.0
+    val termWeightSum = if (terminatedBy.nonEmpty) terminatedBy.map(x => markedMap(x).w_pos).sum else 0.0
 
     val inertiaExpertPrediction = getInertiaExpertPrediction(currentFluent)
 
@@ -1253,7 +1253,7 @@ class Learner[T <: Source](val inps: RunningOptions,
     //val (predictAtomHolds, holdsWeight) = (if (_predictAtomHolds > 0) true else false, _predictAtomHolds)
 
     updateAnalyticsBuffers(currentAtom, initWeightSum, termWeightSum,
-      nonFiringInitRules.values.map(_.w).sum, nonFiringTermRules.values.map(_.w).sum,
+      nonFiringInitRules.values.map(_.w_pos).sum, nonFiringTermRules.values.map(_.w_pos).sum,
       predictInitiated, predictTerminated, inertiaExpertPrediction, holdsWeight)
 
     /*

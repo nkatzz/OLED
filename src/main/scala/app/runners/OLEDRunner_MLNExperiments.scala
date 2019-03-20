@@ -51,7 +51,8 @@ object OLEDRunner_MLNExperiments {
 
       //val foldPath = "/home/nkatz/dev/CAVIAR_MLN/CAVIAR_MLN/move/fold_9"
 
-      val foldPath = args.map(x => x.split("=")).find(x => x(0) == "--foldpath").getOrElse(throw new RuntimeException("--foldpath missing."))(1)
+      val foldPath = args.map(x => x.split("=")).find(x => x(0) == "--foldpath").
+        getOrElse(throw new RuntimeException("--foldpath missing."))(1)
 
       val inps = CMDArgs.getOLEDInputArgs(args)
 

@@ -17,7 +17,7 @@ class RuleEnsemble {
    * */
   var rules: List[Clause] = List[Clause]()
 
-  // if testHandCrafted is true we do not update weights or structure. It is
+  // if testHandCrafted is true we do not update weights or structure.
   def merged(inps: RunningOptions, testHandCrafted: Boolean = false) = {
 
     val _merged = if (rules.isEmpty) Theory(initiationRules ++ terminationRules) else Theory(rules)
@@ -33,11 +33,11 @@ class RuleEnsemble {
   }
 
   def normalizeWeights = {
-    val initWeightsSum = initiationRules.map(x => x.w).sum
-    val termWeightsSum = terminationRules.map(x => x.w).sum
+    val initWeightsSum = initiationRules.map(x => x.w_pos).sum
+    val termWeightsSum = terminationRules.map(x => x.w_pos).sum
     val totalWeight = initWeightsSum + termWeightsSum
-    initiationRules.foreach(x => x.w = x.w / totalWeight.toDouble)
-    terminationRules.foreach(x => x.w = x.w / totalWeight.toDouble)
+    initiationRules.foreach(x => x.w_pos = x.w_pos / totalWeight.toDouble)
+    terminationRules.foreach(x => x.w_pos = x.w_pos / totalWeight.toDouble)
   }
 
 

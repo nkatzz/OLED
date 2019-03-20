@@ -99,7 +99,9 @@ case class Clause(head: PosLiteral = PosLiteral(),
   // This is a "general-purpose" weight variable, the intention is to use this
   // for all online convex optimization methods that we'll try (e.g. winnow, AdaGrad, Adam etc).
   // Currently, it's only used for the multiplicative weights update framework.
-  var w: Double = 1.0
+  var w_pos : Double = 1.0
+
+  var w_neg : Double = 1.0
 
   // This is used in the (sleeping) expert setting, for randomized prediction.
   var selectionProbability = 0.0
@@ -108,11 +110,20 @@ case class Clause(head: PosLiteral = PosLiteral(),
   var weightUpdateCount = 0.0
   var avgWeight = 0.0
 
-
   def updateRunningWeightAvg(newWeight: Double) = {
     val newAvg = ((avgWeight * weightUpdateCount) + newWeight)/(weightUpdateCount + 1)
     avgWeight = newAvg
     weightUpdateCount += 1
+  }
+
+  // Counts the updates to the w variable to calculate the running average
+  var negWeightUpdateCount = 0.0
+  var avgNegWeight = 0.0
+
+  def updateNegRunningWeightAvg(newWeight: Double) = {
+    val newAvg = ((avgNegWeight * negWeightUpdateCount) + newWeight)/(negWeightUpdateCount + 1)
+    avgNegWeight = newAvg
+    negWeightUpdateCount += 1
   }
 
   private val weights = new ListBuffer[Double]
@@ -570,7 +581,7 @@ case class Clause(head: PosLiteral = PosLiteral(),
       if(! Globals.glvalues("distributed").toBoolean) (tps*tpw, fps*fpw, fns*fnw)
       else (this.getTotalTPs, this.getTotalFPs, this.getTotalFNs)
     s"score:" + s" $scoreFunction, tps: $tps_, fps: $fps_, fns: $fns_ | " +
-      s"MLN-weight: ${format(this.mlnWeight)} | Expert Weight (total/avg): ${this.w}/${this.avgWeight} " +
+      s"MLN-weight: ${format(this.mlnWeight)} | Expert Weight (pos/neg/avgPos/avgNeg): $w_pos/$w_neg/$avgWeight/$avgNegWeight " +
       s"Evaluated on: ${this.getTotalSeenExmpls} examples\n$tostring"
   }
 
@@ -629,19 +640,24 @@ case class Clause(head: PosLiteral = PosLiteral(),
       }
     }
 
+    // 7-3-2019: I'll try this: Start with a conjunction of 2 literals at the body, instead of 1. Then,
+    // add new ones one by one.
+
     val specializationDepth = Globals.glvalues("specializationDepth").toInt
     val candidateList = this.supportSet.clauses.flatMap(_.body).distinct.filter(!this.body.contains(_))
     val refinementsSets =
       (for (x <- 1 to specializationDepth) yield x).foldLeft(List[List[Clause]]()) { (accum, depth) =>
         val z = for ( lits <- candidateList.toSet.subsets(depth).toVector if !redundant(lits) ) yield Clause(this.head, this.body ++ lits)
         val z_ = Theory.compressTheory(z)
-        accum :+ z_ 
+        accum :+ z_
     }
     val flattend = refinementsSets.flatten
     flattend.foreach{ refinement =>
       refinement.parentClause = this
       //------------------------------------
       refinement.mlnWeight = this.mlnWeight
+      //------------------------------------
+      refinement.w_pos = this.w_pos
       //------------------------------------
       refinement.supportSet = this.supportSet
       //------------------------------------

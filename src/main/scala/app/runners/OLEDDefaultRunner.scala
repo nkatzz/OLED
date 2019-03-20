@@ -48,7 +48,7 @@ object OLEDDefaultRunner extends LazyLogging {
 
       val runningOptions = CMDArgs.getOLEDInputArgs(args)
 
-      ///* This works for the github demo
+      /* This works for the github demo
       val trainingDataOptions = new DefaultMongoDataOptions(
         dbName = runningOptions.train,
         collectionName = runningOptions.mongoCollection,
@@ -69,10 +69,10 @@ object OLEDDefaultRunner extends LazyLogging {
 
       val trainingDataFunction: DefaultMongoDataOptions => Iterator[Example] = getMongoData
       val testingDataFunction: DefaultMongoDataOptions => Iterator[Example] = getMongoData
-      //*/
+      */
 
-      /*
-      val dataset = MeetingTrainTestSets.meeting1
+      ///*
+      val dataset = MeetingTrainTestSets.meeting6
 
       val trainingDataOptions =
         new MongoDataOptions(dbNames = dataset._1,
@@ -84,7 +84,7 @@ object OLEDDefaultRunner extends LazyLogging {
 
       val trainingDataFunction: MongoDataOptions => Iterator[Example] = FullDatasetHoldOut.getMongoData
       val testingDataFunction: MongoDataOptions => Iterator[Example] = FullDatasetHoldOut.getMongoData
-      */
+      //*/
 
       val system = ActorSystem("HoeffdingLearningSystem")
       val startMsg = if (runningOptions.evalth != "None") "eval" else "start"

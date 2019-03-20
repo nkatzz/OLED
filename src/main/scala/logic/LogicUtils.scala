@@ -61,7 +61,7 @@ object LogicUtils {
     cc.countsPerNode = c.countsPerNode
     cc.mlnWeight = c.mlnWeight
     cc.subGradient = c.subGradient
-    cc.w = c.w
+    cc.w_pos = c.w_pos
     cc.totalTPs = c.totalTPs
     cc.totalFPs = c.totalFPs
     cc.totalFNs = c.totalFNs
