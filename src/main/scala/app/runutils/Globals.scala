@@ -39,6 +39,8 @@ object Globals {
     new Globals("")
   }
 
+  var hedgePredictionThreshold = 0.0 // Quick & dirty, for experiment
+
   var timeDebug = List[Double]()
 
   var scoringFunction = "default" // precision for initiation, recall for termination

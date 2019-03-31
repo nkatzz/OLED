@@ -62,18 +62,28 @@ object Test extends App {
 object AuxFuncs extends LazyLogging {
 
 
-  def reduceWeights(ruleIds: Vector[String], idsMap: Map[String, Clause], learningRate: Double) = {
-    ruleIds.foreach { id =>
-      val rule = idsMap(id)
-      //val newWeight = rule.w*0.5
-      //val newWeight = rule.w * Math.pow(Math.E, -2.0)
-      val newWeight = rule.w_pos * Math.pow(Math.E, (-1.0) * learningRate)
-      rule.w_pos = newWeight
-      rule.updateRunningWeightAvg(newWeight)
-
-      // for presenting analytics
-      rule.updateWeightsBuffer(rule.w_pos)
+  def reduceWeights(ruleIds: Vector[String], idsMap: Map[String, Clause], learningRate: Double, weightUpdateStrategy: String = "winnow") = {
+    if (weightUpdateStrategy == "winnow") {
+      ruleIds.foreach { id =>
+        val rule = idsMap(id)
+        val newWeight = rule.w_pos * Math.pow(Math.E, (-1.0) * learningRate)
+        rule.w_pos = newWeight
+        rule.updateRunningWeightAvg(newWeight)
+        // for presenting analytics
+        rule.updateWeightsBuffer(rule.w_pos)
+      }
+    } else {
+      // Hedge
+      ruleIds.foreach { id =>
+        val rule = idsMap(id)
+        val newWeight = rule.w_pos * learningRate
+        rule.w_pos = newWeight
+        rule.updateRunningWeightAvg(newWeight)
+        // for presenting analytics
+        rule.updateWeightsBuffer(rule.w_pos)
+      }
     }
+
   }
 
   def reduceWeightsBalanced(ruleIds: Vector[String], idsMap: Map[String, Clause], learningRate: Double, whichWeights: String) = {

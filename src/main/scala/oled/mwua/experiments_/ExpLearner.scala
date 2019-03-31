@@ -1,22 +1,26 @@
-package oled.mwua
+package oled.mwua.experiments_
 
-import java.io.{File, PrintWriter}
-
-import akka.actor.Actor
 import app.runutils.IOHandling.Source
 import app.runutils.RunningOptions
-import logic.Examples.Example
+import com.typesafe.scalalogging.LazyLogging
 import logic.{Clause, Theory}
+import logic.Examples.Example
+import oled.mwua.{ExpertAdviceFunctions, StateHandler}
 import org.slf4j.LoggerFactory
 
 import scala.util.matching.Regex
 
-class Learner_NEW[T <: Source](val inps: RunningOptions,
-                               val trainingDataOptions: T,
-                               val testingDataOptions: T,
-                               val trainingDataFunction: T => Iterator[Example],
-                               val testingDataFunction: T => Iterator[Example],
-                               val writeExprmtResultsTo: String = "") extends Actor {
+/**
+  * Created by nkatz at 31/3/2019
+  */
+class ExpLearner[T <: Source](val inps: RunningOptions,
+                              val trainingDataOptions: T,
+                              val testingDataOptions: T,
+                              val trainingDataFunction: T => Iterator[Example],
+                              val testingDataFunction: T => Iterator[Example],
+                              val writeExprmtResultsTo: String = "") extends LazyLogging {
+
+
   val learningRate = 0.05 //0.2
 
   val epsilon = 0.9 // used in the randomized version
@@ -84,7 +88,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
   */
 
 
-  private val logger = LoggerFactory.getLogger(self.path.name)
+  //private val logger = LoggerFactory.getLogger(self.path.name)
 
   private val withec = true
 
@@ -135,53 +139,46 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
 
 
 
-  def receive = {
+  def run() = {
+    data = getTrainData
 
-    case "start" => {
+    if (this.data.isEmpty) {
+      logger.error(s"Input source ${inps.train} is empty.")
+      System.exit(-1)
+    }
 
-      data = getTrainData
+    var done = false
 
-      if (this.data.isEmpty) {
-        logger.error(s"Input source ${inps.train} is empty.")
-        System.exit(-1)
-      }
+    var out = (0, 0, 0)
 
-      var done = false
+    while(! done) {
 
-      while(! done) {
-
-        val nextBatch = getNextBatch(lleNoise = false)
-        logger.info(s"Processing batch $batchCounter")
-        if (nextBatch.isEmpty) {
-          logger.info(s"Finished the data.")
-          endTime = System.nanoTime()
-          logger.info("Done.")
-          //workers foreach(w => w ! PoisonPill)
-          wrapUp()
-          done = true
-          context.system.terminate()
+      val nextBatch = getNextBatch(lleNoise = false)
+      logger.info(s"Processing batch $batchCounter")
+      if (nextBatch.isEmpty) {
+        logger.info(s"Finished the data.")
+        endTime = System.nanoTime()
+        logger.info("Done.")
+        //workers foreach(w => w ! PoisonPill)
+        out = wrapUp()
+        done = true
+      } else {
+        val trueLabels = nextBatch.annotation.toSet
+        if (inputTheory.isEmpty) {
+          ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
+            stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
+            batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
+            receiveFeedbackBias, conservativeRuleGeneration, weightUpdateStrategy)
         } else {
-          val trueLabels = nextBatch.annotation.toSet
-
-          if (inputTheory.isEmpty) {
-            ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
-              stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
-              batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
-              receiveFeedbackBias, conservativeRuleGeneration, weightUpdateStrategy)
-          } else {
-            ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
-              stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
-              batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
-              receiveFeedbackBias, conservativeRuleGeneration, weightUpdateStrategy, inputTheory = Some(inputTheory))
-          }
+          ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
+            stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
+            batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
+            receiveFeedbackBias, conservativeRuleGeneration, weightUpdateStrategy, inputTheory = Some(inputTheory))
         }
       }
     }
-
+    out
   }
-
-
-
 
 
   def wrapUp() = {
@@ -221,16 +218,16 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
         logger.info(s"\nReceived feedback on ${_stateHandler.receivedFeedback} rounds")
       }
 
-      val tps = stateHandler.totalTPs
-      val fps = stateHandler.totalFPs
-      val fns = stateHandler.totalFNs
+      val tps = _stateHandler.totalTPs
+      val fps = _stateHandler.totalFPs
+      val fns = _stateHandler.totalFNs
 
-      val microPrecision = tps.toDouble/(tps.toDouble + fps.toDouble)
-      val microRecall = tps.toDouble/(tps.toDouble + fns.toDouble)
-      val microFscore = (2*microPrecision*microRecall)/(microPrecision+microRecall)
+      //val microPrecision = tps.toDouble/(tps.toDouble + fps.toDouble)
+      //val microRecall = tps.toDouble/(tps.toDouble + fns.toDouble)
+      //val microFscore = (2*microPrecision*microRecall)/(microPrecision+microRecall)
 
-      println(s"Micro F1-score on test set: $microFscore")
-
+      //println(s"Micro F1-score on test set: $microFscore")
+      (tps, fps, fns)
     } else {
       wrapUp_NO_TEST()
     }
@@ -266,21 +263,21 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
 
     logger.info(s"Total number of rounds: ${stateHandler.totalNumberOfRounds}")
 
-    /*
+    ///*
     val tps = stateHandler.totalTPs
     val fps = stateHandler.totalFPs
     val fns = stateHandler.totalFNs
 
-    val microPrecision = tps.toDouble/(tps.toDouble + fps.toDouble)
-    val microRecall = tps.toDouble/(tps.toDouble + fns.toDouble)
-    val microFscore = (2*microPrecision*microRecall)/(microPrecision+microRecall)
-
-    println(s"Micro F1-score: $microFscore")
-    */
+    //val microPrecision = tps.toDouble/(tps.toDouble + fps.toDouble)
+    //val microRecall = tps.toDouble/(tps.toDouble + fns.toDouble)
+    //val microFscore = (2*microPrecision*microRecall)/(microPrecision+microRecall)
+    //println(s"Micro F1-score: $microFscore")
+    //*/
 
     if (receiveFeedbackBias != 1.0) {
       logger.info(s"\nReceived feedback on ${stateHandler.receivedFeedback} rounds")
     }
+    (tps, fps, fns)
   }
 
 }

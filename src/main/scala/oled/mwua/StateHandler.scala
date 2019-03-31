@@ -52,9 +52,7 @@ class StateHandler {
   /*-----------------------------*/
   var groundingTimes: Vector[Double] = Vector[Double]()
 
-  def updateGrndsTimes(t: Double) = {
-    groundingTimes = groundingTimes :+ t
-  }
+  def updateGrndsTimes(t: Double) = { groundingTimes = groundingTimes :+ t }
 
   /*-----------------*/
   /* Stats variables */
