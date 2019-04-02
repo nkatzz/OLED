@@ -39,7 +39,7 @@ object Globals {
     new Globals("")
   }
 
-  var hedgePredictionThreshold = 0.0 // Quick & dirty, for experiment
+  var hedgePredictionThreshold = 0.0 // Quick & dirty, for experiments
 
   var timeDebug = List[Double]()
 

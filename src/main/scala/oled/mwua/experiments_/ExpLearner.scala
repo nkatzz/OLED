@@ -21,7 +21,7 @@ class ExpLearner[T <: Source](val inps: RunningOptions,
                               val writeExprmtResultsTo: String = "") extends LazyLogging {
 
 
-  val learningRate = 0.05 //0.2
+  val learningRate = 0.2 //0.2
 
   val epsilon = 0.9 // used in the randomized version
 
@@ -225,6 +225,8 @@ class ExpLearner[T <: Source](val inps: RunningOptions,
       //val microPrecision = tps.toDouble/(tps.toDouble + fps.toDouble)
       //val microRecall = tps.toDouble/(tps.toDouble + fns.toDouble)
       //val microFscore = (2*microPrecision*microRecall)/(microPrecision+microRecall)
+
+      println(tps, fps, fns)
 
       //println(s"Micro F1-score on test set: $microFscore")
       (tps, fps, fns)

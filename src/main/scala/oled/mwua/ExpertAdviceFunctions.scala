@@ -41,6 +41,10 @@ object ExpertAdviceFunctions extends LazyLogging {
               incompleteTrueAtoms: Option[Set[String]] = None,
               inputTheory: Option[List[Clause]] = None) = {
 
+    //======================================
+    //stateHandler.ensemble.removeZeroWeights
+    //======================================
+
     var batchError = 0
     var batchFPs = 0
     var batchFNs = 0
@@ -58,8 +62,8 @@ object ExpertAdviceFunctions extends LazyLogging {
       val weightThreshold = 0.0
       //val (goodInit, goodTerm) = getFinalRules(stateHandler)
 
-      //hedgePredictionThreshold = 0.2
-      hedgePredictionThreshold = Globals.hedgePredictionThreshold
+      hedgePredictionThreshold = 0.5
+      //hedgePredictionThreshold = Globals.hedgePredictionThreshold
 
       val (goodInit, goodTerm) = getFinalRulesDefault(stateHandler, weightThreshold)
       stateHandler.ensemble.initiationRules = goodInit
@@ -71,8 +75,8 @@ object ExpertAdviceFunctions extends LazyLogging {
     //*/
 
     var spliceInput = Map.empty[String, Double]
-    stateHandler.batchCounter = batchCounter
 
+    stateHandler.batchCounter = batchCounter
 
     var alreadyProcessedAtoms = Set.empty[String]
     val predictAndUpdateTimed = Utils.time {
@@ -118,7 +122,8 @@ object ExpertAdviceFunctions extends LazyLogging {
 
                 val (_prediction, _inertiaExpertPrediction, _initWeightSum, _termWeightSum) =
                   if (weightUpdateStrategy == "winnow") predict(atom, stateHandler, markedMap)
-                  else predictHedge(atom, stateHandler, markedMap)  //predict(atom, stateHandler, markedMap)
+                  else predictHedge(atom, stateHandler, markedMap)
+                  //else ClassicSleepingExpertsHedge.predictHedge_NO_INERTIA(atom, stateHandler, markedMap)
 
                 prediction = _prediction
                 inertiaExpertPrediction = _inertiaExpertPrediction
@@ -127,7 +132,6 @@ object ExpertAdviceFunctions extends LazyLogging {
 
               } else {
                 val (_prediction_, _totalWeight, _selected) = predictRandomized(atom, stateHandler, markedMap)
-                //val (_prediction_, _totalWeight, _selected) = predict_NEW(atom, stateHandler, markedMap)
                 prediction = _prediction_
                 totalWeight = _totalWeight
                 selected = _selected
@@ -233,9 +237,17 @@ object ExpertAdviceFunctions extends LazyLogging {
               if (update) {
                 stateHandler.receivedFeedback += 1
                 if (!randomizedPrediction) {
-                  // Updates weights only after a mistake (in the TP case it just updates the inertia expert)
+                  // in Winnow mode this updates weights only after a mistake (in the TP case it just updates the inertia expert)
+
+                  ///*
                   updateWeights(atom, prediction, inertiaExpertPrediction, initWeightSum,
                     termWeightSum, predictedLabel, markedMap, feedback, stateHandler, learningRate, weightUpdateStrategy)
+                  // */
+
+                  /*
+                  ClassicSleepingExpertsHedge.updateWeights_NO_INERTIA(atom, prediction, inertiaExpertPrediction, initWeightSum,
+                    termWeightSum, predictedLabel, markedMap, feedback, stateHandler, learningRate, weightUpdateStrategy)
+                  */
 
                   // Do not normalize when splice is used, to allow for larger confidence values
                   /*
@@ -320,28 +332,11 @@ object ExpertAdviceFunctions extends LazyLogging {
 
     //logger.info(s"Batch processing time: ${predictAndUpdateTimed._2}")
     if (batchError > 0) {
-      logger.info(s"*** Batch #$batchCounter Total mistakes: ${batchFPs+batchFNs} (FPs: $batchFPs | FNs: $batchFNs). Total batch atoms: $batchAtoms ***")
+      logger.info(s"*** Batch #$batchCounter Total mistakes: ${batchFPs+batchFNs} " +
+        s"(FPs: $batchFPs | FNs: $batchFNs). Total batch atoms: $batchAtoms ***")
     }
   }
 
-
-  // Rules used for test phase
-  // This method is used only when we have two sub-experts per rule
-  // (each consistently predicting true/false respectively).
-  // I'm not sure if this setting makes any sense. This method is currently
-  // not used anywhere.
-  def getFinalRules(s: StateHandler) = {
-
-    def filterGoodRules(x: List[Clause]) = {
-      val isGood = (r: Clause) => r.w_pos > r.w_neg
-      x.foldLeft(List.empty[Clause]) { (accum, rule) =>
-        if (isGood(rule)) accum :+ rule else accum
-      }
-    }
-    val init = filterGoodRules(s.ensemble.initiationRules)
-    val term = filterGoodRules(s.ensemble.terminationRules)
-    (init, term)
-  }
 
   def getFinalRulesDefault(s: StateHandler, weightThreshold: Double) = {
 
@@ -489,22 +484,45 @@ object ExpertAdviceFunctions extends LazyLogging {
       markedMap.filter(x => x._2.head.functor.contains(what) && !awake.contains(x._1))
     }
 
-    val nonFiringInitRules = getSleeping("initiated")
-    val nonFiringTermRules = getSleeping("terminated")
+    val sleepingInitRules = getSleeping("initiated")
+    val sleepingTermRules = getSleeping("terminated")
 
     def updateScore(what: String) = {
-      updateRulesScore(what, atom.initiatedBy.map(x => markedMap(x)), nonFiringInitRules.values.toVector,
-        atom.terminatedBy.map(x => markedMap(x)), nonFiringTermRules.values.toVector)
+      updateRulesScore(what, atom.initiatedBy.map(x => markedMap(x)), sleepingInitRules.values.toVector,
+        atom.terminatedBy.map(x => markedMap(x)), sleepingTermRules.values.toVector)
     }
+
+    var outcome = ""
 
     if (is_TP(predictedLabel, feedback)) {
-      val holdsWeight = inertiaExpertPrediction + initWeightSum
-      stateHandler.inertiaExpert.updateWeight(currentFluent, holdsWeight)
-      updateScore("TP")
-      if (hedge) reduceWeights(atom.terminatedBy, markedMap, learningRate, "hedge")
-    }
+      outcome = "TP"
+      if (hedge) {
+        // Reduce the weights of termination rules.
+        reduceWeights(atom.terminatedBy, markedMap, learningRate, "hedge")
 
-    if (is_FP_mistake(predictedLabel, feedback)) {
+        // Inertia is correct here, so if the inertia expert knows about the
+        // current fluent we leave the weight unchanged. If not (i.e. the fluent is
+        // initiated for the first time) we deal with that after all weights of other
+        // experts have been updated. We then set the inertia weight of this fluent
+        // to the weighted sum of the experts for this fluent (the actual prediction value).
+        // If we update the weight of the inertia expert before normalization
+        // then we have that the total weight of the ensemble after
+        // the update // W_{t+1} might be larger than the total weight before the update (W_t).
+        // This breaks things up (W_{t+1} is always smaller since erroneous rules are penalized,
+        // while the weight of correct ones is left unchanged). This has the effect of actually
+        // increasing the weight of correct rules after the normalization:
+        // W = W_{t}/W_{t+1} > 1, since W_{t} > W_{t+1} => w_{i,t+1} = W * w_{i,t} > w_{i,t},
+        // where w_{i,t} is the weight of the i-th expert (which is unchanged is the expert is correct).
+        // If this is messed-up, we'll end-up reducing the weight of correct experts after each round.
+
+      } else {
+        // Winnow
+        val holdsWeight = inertiaExpertPrediction + initWeightSum
+        stateHandler.inertiaExpert.updateWeight(currentFluent, holdsWeight)
+      }
+
+    } else if (is_FP_mistake(predictedLabel, feedback)) {
+      outcome = "FP"
       if (!hedge) {
         reduceWeights(atom.initiatedBy, markedMap, learningRate)
         increaseWeights(atom.terminatedBy, markedMap, learningRate)
@@ -514,26 +532,25 @@ object ExpertAdviceFunctions extends LazyLogging {
 
       if (inertiaExpertPrediction > 0.0) {
         val newWeight =
-          if (!hedge) {
-            inertiaExpertPrediction * Math.pow(Math.E, (-1.0) * learningRate)
-          } else {
-            inertiaExpertPrediction * learningRate
-          }
+          if (!hedge) inertiaExpertPrediction * Math.pow(Math.E, (-1.0) * learningRate)
+          else inertiaExpertPrediction * learningRate
         stateHandler.inertiaExpert.updateWeight(currentFluent, newWeight)
       } else {
         // Remember this since it was recognized. This is the correct approach,
         // since we're doing sequential prediction. If we make an FP mistake at the
         // next round we reduce the inertia weight and add termination rules.
-        stateHandler.inertiaExpert.updateWeight(currentFluent, prediction)
-      }
-      updateScore("FP")
-    }
+        //stateHandler.inertiaExpert.updateWeight(currentFluent, prediction)
 
-    if (is_FN_mistake(predictedLabel, feedback)) {
+        // I don't think so... this doesn't make much sense. Do nothing
+      }
+
+    } else if (is_FN_mistake(predictedLabel, feedback)) {
+      outcome = "FN"
       if (!hedge) {
         increaseWeights(atom.initiatedBy, markedMap, learningRate)
         reduceWeights(atom.terminatedBy, markedMap, learningRate)
 
+        // In Winnow, we also promote the inertia expert if it knows something for the current fluent
         if (inertiaExpertPrediction > 0.0) {
           val newWeight = inertiaExpertPrediction * Math.pow(Math.E, 1.0 * learningRate)
           //newWeight = if (newWeight.isPosInfinity) stateHandler.inertiaExpert.getWeight(currentFluent) else newWeight
@@ -542,41 +559,85 @@ object ExpertAdviceFunctions extends LazyLogging {
 
       } else {
         reduceWeights(atom.terminatedBy, markedMap, learningRate, "hedge")
+        // In Hedge, event if inertia predicts here it is correct, so we leave its weight unchanged.
       }
-      updateScore("FN")
+
+    } else { // TN
+      outcome = "TN"
+      stateHandler.inertiaExpert.forget(currentFluent)
+      if (hedge) reduceWeights(atom.initiatedBy, markedMap, learningRate, "hedge")
+
     }
 
-    if (is_TN(predictedLabel, feedback)) {
-      stateHandler.inertiaExpert.forget(currentFluent)
-      updateScore("TN")
-      if (hedge) {
-        reduceWeights(atom.initiatedBy, markedMap, learningRate, "hedge")
-      }
-    }
+    updateScore(outcome)
 
     if (hedge) {
+
       // Re-normalize weights of awake experts
-      val inertCurrentWeight = stateHandler.inertiaExpert.getWeight(currentFluent)
+
       val getTotalWeight = (x: Vector[Clause]) => x.map(x => x.w_pos).sum
-      val updateWeight = (x: Clause, y: Double) => x.w_pos = y
+
       val awakeInitRules = atom.initiatedBy.map(x => markedMap(x))
       val awakeTermRules = atom.terminatedBy.map(x => markedMap(x))
       val totalInitWeightAfter = getTotalWeight(awakeInitRules)
       val totalTermWeightAfter = getTotalWeight(awakeTermRules)
+
+      val inertCurrentWeight = stateHandler.inertiaExpert.getWeight(currentFluent)
+
       val totalWeightAfter = inertCurrentWeight + totalInitWeightAfter + totalTermWeightAfter
 
       val mult = totalWeightBeforeUpdate/totalWeightAfter
 
-      if (!mult.isNaN) {
+      val updateWeight = (rule: Clause, y: Double) => {
 
-        awakeInitRules.foreach(x =>  updateWeight(x, (totalWeightBeforeUpdate/totalWeightAfter) * x.w_pos ) )
-        awakeTermRules.foreach(x =>  updateWeight(x, (totalWeightBeforeUpdate/totalWeightAfter) * x.w_pos ) )
-        if (stateHandler.inertiaExpert.knowsAbout(currentFluent)) {
-          stateHandler.inertiaExpert.updateWeight(currentFluent, (totalWeightBeforeUpdate/totalWeightAfter) * inertCurrentWeight)
+        if (rule.tostring.replaceAll("\\s", "") == "initiatedAt(meeting(X0,X1),X2):-happensAt(active(X0),X2),happensAt(active(X1),X2).") {
+
+          if (outcome == "FP") {
+            val stop = "stop"
+          }
+
+          println("-----------------------------------------------------------")
+          println(s"Batch: ${stateHandler.batchCounter} time: ${atom.time}")
+          println(s"fluent: $currentFluent, prediction: $outcome")
+          println(s"Rule id: ${rule.##}")
+          println(rule.tostring)
+          //println(s"predicted|feedback: $predictedLabel|$feedback")
+          println(s"Inertia before|after: $inertiaExpertPrediction|$inertCurrentWeight")
+          println(s"Total init before|after: $initWeightSum|$totalInitWeightAfter")
+          println(s"Total term before|after: $termWeightSum|$totalTermWeightAfter")
+          println(s"Total weight before|after: ${inertiaExpertPrediction+initWeightSum+termWeightSum}|${inertCurrentWeight+totalInitWeightAfter+totalTermWeightAfter}")
+          println(s"mult: $mult")
+          println(s"This rule's weight current|new: ${rule.w_pos}|$y")
+
+
+
+          val totalAwakeWeightAfterNormalization = {
+            val initAfter = getTotalWeight(awakeInitRules)
+            val termAfter = getTotalWeight(awakeTermRules)
+            initAfter + termAfter + inertCurrentWeight
+          }
+
+          println(s"Total Awake weight after normalization: $totalAwakeWeightAfterNormalization")
+
+          println("-----------------------------------------------------------")
         }
-
+        rule.w_pos = y
       }
 
+      if (!mult.isNaN) {
+        awakeInitRules.foreach(x =>  updateWeight(x, mult * x.w_pos ) )
+        awakeTermRules.foreach(x =>  updateWeight(x, mult * x.w_pos ) )
+        if (stateHandler.inertiaExpert.knowsAbout(currentFluent)) {
+          stateHandler.inertiaExpert.updateWeight(currentFluent, mult * inertCurrentWeight)
+        }
+      }
+
+      if (outcome == "TP" || outcome == "FP") { // should we do this for FP as well (remember the fluent)?
+        // If we recognized the fluent successfully during at this round, remember it
+        if (!stateHandler.inertiaExpert.knowsAbout(currentFluent)) {
+          stateHandler.inertiaExpert.updateWeight(currentFluent, prediction)
+        }
+      }
 
     }
   }
@@ -633,7 +694,7 @@ object ExpertAdviceFunctions extends LazyLogging {
         // If we leave the if (stateHandler.inertiaExpert.knowsAbout(atom.fluent)) clause here
         // we get many more mistakes. On the other hand, it seems more reasonable to generate
         // termination rules only when the fluent holds by inertia... (don't know what to do)
-        if (stateHandler.inertiaExpert.knowsAbout(atom.fluent)) { //stateHandler.inertiaExpert.knowsAbout(atom.fluent)
+        if (stateHandler.inertiaExpert.knowsAbout(atom.fluent)) {
           updatedStructure = generateNewRule(batch, currentAtom, inps, "FP", logger, stateHandler, "terminatedAt", 1.0)
         }
       } else {
@@ -648,22 +709,15 @@ object ExpertAdviceFunctions extends LazyLogging {
       }
       // Also, in the case of an FP mistake we try to specialize awake initiation rules.
       if (atom.initiatedBy.nonEmpty) {
-        ///*
+        // We are doing this after each batch
+        /*
         val (topLevelAwakeRules, topLevelAsleepRules) = splitAwakeAsleep(stateHandler.ensemble.initiationRules, atom.initiatedBy.toSet)
-        //val expandedInit = SingleCoreOLEDFunctions.
-        // expandRules(Theory((topLevelAwakeRules ++ topLevelAsleepRules).toList.filter(x => x.refinements.nonEmpty)), inps, logger)
         val expandedInit = SingleCoreOLEDFunctions.
           expandRules(Theory(topLevelAwakeRules.toList.filter(x => x.refinements.nonEmpty)), inps, logger)
         if (expandedInit._2) {
           stateHandler.ensemble.initiationRules = expandedInit._1.clauses ++ topLevelAsleepRules
           updatedStructure = true
         }
-        //*/
-        // This is for expanding to a sleeping refinement immediately after an FP mistake. No much sense in doing that.
-        /*
-        val break_? = specialize(atom, stateHandler, markedMap, "initiated", inps,
-          logger, percentOfMistakesBeforeSpecialize, "FP", randomizedPrediction, selected, specializeAllAwakeOnMistake)
-        if (break_?) break
         */
       }
     }
@@ -685,22 +739,15 @@ object ExpertAdviceFunctions extends LazyLogging {
       }
       // Also, in the case of an FP mistake we try to specialize awake termination rules.
       if (atom.terminatedBy.nonEmpty) {
-        ///*
+        // We are doing this after each batch
+        /*
         val (topLevelAwakeRules, topLevelAsleepRules) = splitAwakeAsleep(stateHandler.ensemble.terminationRules, atom.terminatedBy.toSet)
-        //val expandedInit = SingleCoreOLEDFunctions.
-        // expandRules(Theory((topLevelAwakeRules ++ topLevelAsleepRules).toList.filter(x => x.refinements.nonEmpty)), inps, logger)
         val expandedInit = SingleCoreOLEDFunctions.
           expandRules(Theory(topLevelAwakeRules.toList.filter(x => x.refinements.nonEmpty)), inps, logger)
         if (expandedInit._2) {
           stateHandler.ensemble.terminationRules = expandedInit._1.clauses ++ topLevelAsleepRules
           updatedStructure = true
         }
-        //*/
-        // This is for expanding to a sleeping refinement immediately after an FP mistake. No much sense in doing that.
-        /*
-        val break_? = specialize(atom, stateHandler, markedMap, "terminated", inps,
-            logger, percentOfMistakesBeforeSpecialize, "FN", randomizedPrediction, selected, specializeAllAwakeOnMistake)
-        if (break_?) break
         */
       }
     }
@@ -906,15 +953,28 @@ object ExpertAdviceFunctions extends LazyLogging {
                       logger: org.slf4j.Logger, stateHandler: StateHandler,
                       what: String, totalWeight: Double, removePastExperts: Boolean = false) = {
 
+    def isRedundant(newRule: Clause) = {
+      val getAllBottomRules = (x: List[Clause]) => x.flatMap(y => y.supportSet.clauses)
+      val allBottomRules = {
+        if (newRule.head.functor.contains("initiated")) getAllBottomRules(stateHandler.ensemble.initiationRules)
+        else getAllBottomRules(stateHandler.ensemble.terminationRules)
+      }
+      allBottomRules.exists(c => newRule.thetaSubsumes(c))
+    }
     var generatedRule = false
     val newRule = generateNewExpert(batch, currentAtom, inps.globals, what, totalWeight)
-    if (!newRule.equals(Clause.empty)) {
-      logger.info(s"Generated new $what rule in response to $mistakeType atom: $currentAtom")
-      stateHandler.addRule(newRule)
-      generatedRule = true
-    } else {
-      logger.info(s"At batch ${stateHandler.batchCounter}: Failed to generate bottom rule from $mistakeType mistake with atom: $currentAtom")
-    }
+    //if (!isRedundant(newRule)) {
+      if (!newRule.equals(Clause.empty)) {
+        logger.info(s"Generated new $what rule in response to $mistakeType atom: $currentAtom")
+        stateHandler.addRule(newRule)
+        generatedRule = true
+      } else {
+        logger.info(s"At batch ${stateHandler.batchCounter}: Failed to generate bottom rule from $mistakeType mistake with atom: $currentAtom")
+      }
+    //} else {
+      //logger.info(s"At batch ${stateHandler.batchCounter}: Dropped redundant bottom rule.")
+    //}
+
     generatedRule
   }
 
@@ -1169,8 +1229,8 @@ object ExpertAdviceFunctions extends LazyLogging {
   def predictHedge(a: AtomTobePredicted, stateHanlder: StateHandler, markedMap: Map[String, Clause]) = {
 
     // Here we assume that initiation rules predict '1' and termination rules predict '0'.
-    // The prediction is a number in [0,1] resulting from the weighted avegare of the experts predictions:
-    // prediction = (Sum_{weight of awake init rules} + inertia_weight) / Sum_{weight of awake term rules}
+    // The prediction is a number in [0,1] resulting from the weighted avegage of the experts predictions:
+    // prediction = (Sum_{weight of awake init rules} + inertia_weight) / (Sum_{weight of awake term rules} + Sum_{weight of awake init rules} + inertia_weight)
     // if prediction > threshold (e.g. 0.5) then we predict holds, else false
 
     val (_, _, awakeInit, awakeTerm, currentFluent) = (a.atom, a.time, a.initiatedBy, a.terminatedBy, a.fluent)
@@ -1181,10 +1241,11 @@ object ExpertAdviceFunctions extends LazyLogging {
     val termWeightSum = if (awakeTerm.nonEmpty) awakeTerm.map(x => markedMap(x).w_pos).sum else 0.0
 
     val _prediction = (inertiaExpertPrediction + initWeightSum) / (inertiaExpertPrediction + initWeightSum + termWeightSum)
+    //val _prediction = initWeightSum / (initWeightSum + termWeightSum)
 
     val prediction = if (_prediction.isNaN) 0.0 else _prediction
 
-    //val prediction = initWeightSum / (initWeightSum + termWeightSum)
+
     (prediction, inertiaExpertPrediction, initWeightSum, termWeightSum)
 
   }

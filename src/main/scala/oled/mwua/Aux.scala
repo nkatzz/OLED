@@ -77,6 +77,7 @@ object AuxFuncs extends LazyLogging {
       ruleIds.foreach { id =>
         val rule = idsMap(id)
         val newWeight = rule.w_pos * learningRate
+        //val newWeight = rule.w_pos * Math.pow(Math.E, (-1.0) * learningRate)
         rule.w_pos = newWeight
         rule.updateRunningWeightAvg(newWeight)
         // for presenting analytics

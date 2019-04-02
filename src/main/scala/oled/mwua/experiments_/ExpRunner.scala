@@ -20,7 +20,9 @@ object ExpRunner extends LazyLogging {
 
   def main(args: Array[String]) = {
 
-    val thresholds = List(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
+    //val thresholds = List(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
+
+    val thresholds = List(0.5)
 
     val dataSets = Vector(MeetingTrainTestSets.meeting1, MeetingTrainTestSets.meeting2,
       MeetingTrainTestSets.meeting3,MeetingTrainTestSets.meeting4,

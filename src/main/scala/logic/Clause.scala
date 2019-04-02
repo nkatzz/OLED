@@ -657,7 +657,7 @@ case class Clause(head: PosLiteral = PosLiteral(),
       //------------------------------------
       refinement.mlnWeight = this.mlnWeight
       //------------------------------------
-      refinement.w_pos = this.w_pos
+      //refinement.w_pos = this.w_pos
       //------------------------------------
       refinement.supportSet = this.supportSet
       //------------------------------------

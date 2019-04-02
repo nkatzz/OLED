@@ -12,6 +12,36 @@ class RuleEnsemble {
   var initiationRules: List[Clause] = List[Clause]()
   var terminationRules: List[Clause] = List[Clause]()
 
+  def removeZeroWeights = {
+    // Maybe I should remove rules with zero weight only when they have at least one literal at their body...
+    val noZeroInit = initiationRules.filter(x => x.w_pos > 0.0)
+    val noZeroTerm = terminationRules.filter(x => x.w_pos > 0.0)
+    initiationRules = noZeroInit
+    terminationRules = noZeroTerm
+  }
+
+  /*
+  // From each subsumption lattice return the rule with the highest weight. This is
+  // used in a cross-validation setting
+  def outputRules = {
+
+    def findBest(c: Clause) = {
+      val _bestRef = c.refinements.sortBy(x => -x.w_pos)
+      if (_bestRef.nonEmpty) {
+        val bestRef = _bestRef.head
+        if (c.w_pos > bestRef.w_pos) c else bestRef
+      } else {
+        c
+      }
+    }
+
+    val bestInit = initiationRules.map(x => findBest(x))
+    val bestTerm = terminationRules.map(x => findBest(x))
+
+    (bestInit, bestTerm)
+  }
+  */
+
   /*
    * "rules" is used in case we are not learning with the Event Calculus. In the opposite case this var it is empty.
    * */
