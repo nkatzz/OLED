@@ -1,6 +1,8 @@
 package oled.mwua
 
+import app.runutils.RunningOptions
 import logic.Clause
+import logic.Examples.Example
 import oled.mwua.AuxFuncs.{increaseWeights, reduceWeights, updateRulesScore}
 import oled.mwua.ExpertAdviceFunctions._
 import oled.mwua.HelperClasses.AtomTobePredicted
@@ -17,6 +19,114 @@ import oled.mwua.HelperClasses.AtomTobePredicted
  * */
 
 object ClassicSleepingExpertsHedge {
+
+
+
+
+
+  def updateStructure_NEW_HEDGE(atom: AtomTobePredicted,
+                          markedMap: Map[String, Clause],
+                          predictedLabel: String,
+                          feedback: String,
+                          batch: Example,
+                          currentAtom: String,
+                          inps: RunningOptions,
+                          logger: org.slf4j.Logger,
+                          stateHandler: StateHandler,
+                          percentOfMistakesBeforeSpecialize: Int,
+                          randomizedPrediction: Boolean,
+                          selected: String,
+                          specializeAllAwakeOnMistake: Boolean,
+                          conservativeRuleGeneration: Boolean,
+                          generateNewRuleFlag: Boolean) = {
+
+    def getAwakeBottomRules(what: String) = {
+      if (what == "initiatedAt") atom.initiatedBy.filter(x => markedMap(x).isBottomRule)
+      else atom.terminatedBy.filter(x => markedMap(x).isBottomRule)
+    }
+
+    def splitAwakeAsleep(rulesToSplit: List[Clause], awakeIds: Set[String]) = {
+      val rulesToSplitIds = rulesToSplit.map(_##).toSet
+      val (topLevelAwakeRules, topLevelAsleepRules) = rulesToSplit.foldLeft(Vector.empty[Clause], Vector.empty[Clause]) { (x, rule) =>
+        val isAwake = awakeIds.contains(rule.##.toString)
+        val isTopLevel = rulesToSplitIds.contains(rule.##)
+        if (isAwake) if (isTopLevel) (x._1 :+ rule, x._2) else (x._1, x._2) // then it's a refinement rule
+        else if (isTopLevel) (x._1, x._2 :+ rule) else (x._1, x._2) // then it's a refinement rule
+      }
+      (topLevelAwakeRules, topLevelAsleepRules)
+    }
+
+    var updatedStructure = false
+
+    if (is_FP_mistake(predictedLabel, feedback)) {
+      val awakeBottomRules = getAwakeBottomRules("terminatedAt")
+      // We don't have firing termination rules so we'll try to generate one.
+      // If we're in conservative mode, we generate new rules only if none awake currently exists
+      // Also, we are always conservative with termination rules. We generate new ones only if the FP
+      // holds by inertia. Otherwise it doesn't make much sense.
+      if (generateNewRuleFlag ) {//&& awakeBottomRules.isEmpty //atom.terminatedBy.isEmpty
+        // If we leave the if (stateHandler.inertiaExpert.knowsAbout(atom.fluent)) clause here
+        // we get many more mistakes. On the other hand, it seems more reasonable to generate
+        // termination rules only when the fluent holds by inertia... (don't know what to do)
+        if (stateHandler.inertiaExpert.knowsAbout(atom.fluent)) {
+          updatedStructure = generateNewRule(batch, currentAtom, inps, "FP", logger, stateHandler, "terminatedAt", 1.0)
+        }
+      }
+      // Also, in the case of an FP mistake we try to specialize awake initiation rules.
+      if (atom.initiatedBy.nonEmpty) {
+        // We are doing this after each batch
+        /*
+        val (topLevelAwakeRules, topLevelAsleepRules) = splitAwakeAsleep(stateHandler.ensemble.initiationRules, atom.initiatedBy.toSet)
+        val expandedInit = SingleCoreOLEDFunctions.
+          expandRules(Theory(topLevelAwakeRules.toList.filter(x => x.refinements.nonEmpty)), inps, logger)
+        if (expandedInit._2) {
+          stateHandler.ensemble.initiationRules = expandedInit._1.clauses ++ topLevelAsleepRules
+          updatedStructure = true
+        }
+        */
+      }
+    }
+
+    if (is_FN_mistake(predictedLabel, feedback)) {
+      val awakeBottomRules = getAwakeBottomRules("initiatedAt")
+      if (generateNewRuleFlag) { // atom.initiatedBy.isEmpty
+        // We don't have firing initiation rules. Generate one.
+        if (awakeBottomRules.isEmpty) {
+          updatedStructure = generateNewRule(batch, currentAtom, inps, "FN", logger, stateHandler, "initiatedAt", 1.0)
+        }
+      } else {
+        if (!conservativeRuleGeneration) {
+          // If we are not in conservative mode we try to generate new initiation rules even if awake initiation
+          // rules already exist. We only do so if the current example has not already been compressed into an existing
+          // bottom rule.
+          if (awakeBottomRules.isEmpty) {
+            updatedStructure = generateNewRule_1(batch, currentAtom, inps, logger, stateHandler, "initiatedAt", 1.0)
+          }
+        }
+      }
+      // Also, in the case of an FP mistake we try to specialize awake termination rules.
+      if (atom.terminatedBy.nonEmpty) {
+        // We are doing this after each batch
+        /*
+        val (topLevelAwakeRules, topLevelAsleepRules) = splitAwakeAsleep(stateHandler.ensemble.terminationRules, atom.terminatedBy.toSet)
+        val expandedInit = SingleCoreOLEDFunctions.
+          expandRules(Theory(topLevelAwakeRules.toList.filter(x => x.refinements.nonEmpty)), inps, logger)
+        if (expandedInit._2) {
+          stateHandler.ensemble.terminationRules = expandedInit._1.clauses ++ topLevelAsleepRules
+          updatedStructure = true
+        }
+        */
+      }
+    }
+    updatedStructure
+  }
+
+
+
+
+
+
+
 
 
   def predictHedge_NO_INERTIA(a: AtomTobePredicted, stateHanlder: StateHandler, markedMap: Map[String, Clause]) = {
