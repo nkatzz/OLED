@@ -313,7 +313,7 @@ object ExpertAdviceFunctions extends LazyLogging {
           // Try to specialize all rules currently in the ensemble
           // Just to be on the safe side filter out rules with no refinements
           // (i.e. rules that have "reached" their bottom rule).
-          ///*
+          /*
           val expandedInit =
             SingleCoreOLEDFunctions.expandRules(Theory(stateHandler.ensemble.initiationRules.filter(x => x.refinements.nonEmpty)),
               inps, Logger(this.getClass).underlying)
@@ -324,7 +324,7 @@ object ExpertAdviceFunctions extends LazyLogging {
 
           stateHandler.ensemble.initiationRules = expandedInit._1.clauses
           stateHandler.ensemble.terminationRules = expandedTerm._1.clauses
-          //*/
+          */
         }
       }
     }
@@ -345,14 +345,18 @@ object ExpertAdviceFunctions extends LazyLogging {
 
     val isGood = (r: Clause) => r.w_pos >= weightThreshold
 
-    def getGoodRules(x: List[Clause]) = {
+    def getGoodRules(x: List[Clause], threshold: Double) = {
       x.foldLeft(List.empty[Clause]) { (accum, rule) =>
-        if (rule.w_pos >= weightThreshold) accum :+ rule else accum
+        if (rule.w_pos >= threshold) accum :+ rule else accum
       }
     }
 
-    val init = getGoodRules(s.ensemble.initiationRules)
-    val term = getGoodRules(s.ensemble.terminationRules)
+    //val init = getGoodRules(s.ensemble.initiationRules, 0.00001)
+    //val term = getGoodRules(s.ensemble.terminationRules, 20)
+
+    val init = getGoodRules(s.ensemble.initiationRules, weightThreshold)
+    val term = getGoodRules(s.ensemble.terminationRules, weightThreshold)
+
     (init, term)
 
   }
@@ -489,9 +493,10 @@ object ExpertAdviceFunctions extends LazyLogging {
     val awakeTermRules = atom.terminatedBy.map(x => markedMap(x))
     // Create a map with the rules and their current weight. We'll use
     // to show the weight updates in the case of Hedge.
-    var rulesMap = scala.collection.mutable.Map.empty[Int, (String, Double, Double)]
-    awakeInitRules.foreach(x => rulesMap += (x.## -> (x.tostring, x.w_pos, 0.0) ) )
-    awakeTermRules.foreach(x => rulesMap += (x.## -> (x.tostring, x.w_pos, 0.0) ) )
+    var initRulesMap = scala.collection.mutable.Map.empty[Int, (String, Double)]
+    var termRulesMap = scala.collection.mutable.Map.empty[Int, (String, Double)]
+    awakeInitRules.foreach(x => initRulesMap += (x.## -> (x.tostring, x.w_pos) ) )
+    awakeTermRules.foreach(x => termRulesMap += (x.## -> (x.tostring, x.w_pos) ) )
 
     val totalWeightBeforeUpdate = inertiaExpertPrediction + initWeightSum + termWeightSum
 
@@ -589,11 +594,17 @@ object ExpertAdviceFunctions extends LazyLogging {
 
     if (hedge) {
       // Re-normalize weights of awake experts
-      val totalInitWeightAfter = getTotalWeight(awakeInitRules)
-      val totalTermWeightAfter = getTotalWeight(awakeTermRules)
-      val inertCurrentWeight = stateHandler.inertiaExpert.getWeight(currentFluent)
-      val totalWeightAfter = inertCurrentWeight + totalInitWeightAfter + totalTermWeightAfter
-      val mult = totalWeightBeforeUpdate/totalWeightAfter
+
+      val totalInitWeightPrevious = initRulesMap.map(x => x._2._2).sum
+      val totalTermWeightPrevious = termRulesMap.map(x => x._2._2).sum
+
+      var totalInitWeightAfterWeightsUpdate = getTotalWeight(awakeInitRules) // the updates have already taken place
+      var totalTermWeightAfterWeightsUpdate  = getTotalWeight(awakeTermRules) // the updates have already taken place
+
+      var inertAfterWeightUpdate = stateHandler.inertiaExpert.getWeight(currentFluent)
+      var totalWeightAfterUpdate = inertAfterWeightUpdate + totalInitWeightAfterWeightsUpdate + totalTermWeightAfterWeightsUpdate
+
+      val mult = totalWeightBeforeUpdate/totalWeightAfterUpdate
 
       val updateWeight = (rule: Clause, y: Double) => rule.w_pos = y
 
@@ -601,20 +612,33 @@ object ExpertAdviceFunctions extends LazyLogging {
         awakeInitRules.foreach(x =>  updateWeight(x, mult * x.w_pos ) )
         awakeTermRules.foreach(x =>  updateWeight(x, mult * x.w_pos ) )
         if (stateHandler.inertiaExpert.knowsAbout(currentFluent)) {
-          stateHandler.inertiaExpert.updateWeight(currentFluent, mult * inertCurrentWeight)
+          stateHandler.inertiaExpert.updateWeight(currentFluent, mult * inertAfterWeightUpdate)
         }
       }
 
       val totalEnsembleWeightBefore = totalWeightBeforeUpdate
-      val totalEnsembleWeightAfter =
-        getTotalWeight(awakeInitRules) + getTotalWeight(awakeTermRules) + stateHandler.inertiaExpert.getWeight(currentFluent)
 
-      if (totalEnsembleWeightAfter - totalEnsembleWeightBefore <= Math.pow(10,-4)) generateNewRule = true
+      // after normalization
+      val totalInitWeightAfterNormalization = getTotalWeight(awakeInitRules)
+      val totalTermWeightAfterNormalization = getTotalWeight(awakeTermRules)
+      val inertAfterNormalization = stateHandler.inertiaExpert.getWeight(currentFluent)
+
+      val totalEnsembleWeightAfter = totalInitWeightAfterNormalization + totalTermWeightAfterNormalization + inertAfterNormalization
+
+      // This is wrong. The total AWAKE weight of the ensemble is supposed to remain the same.
+      // Differences are due to number precision of Doubles. It's the total initiation or termination
+      // weight that is the key here. If the total initiation weight does not drop after an FP,
+      // generate new termination rules. Similarly, if the total termination weight does not drop
+      // after an FN, generate new initiation rules.
+      //if (totalEnsembleWeightAfter - totalEnsembleWeightBefore <= Math.pow(10,-4)) generateNewRule = true
+
+      if (outcome == "FP" && totalInitWeightAfterNormalization >= totalInitWeightAfterWeightsUpdate) generateNewRule = true
+      if (outcome == "FN" && totalTermWeightAfterNormalization >= totalTermWeightAfterWeightsUpdate) generateNewRule = true
 
       /* DEBUGGING INFO */
       def debuggingInfo(x: Vector[Clause], what: String) = {
         x foreach { rule =>
-          val entry = rulesMap(rule.##)
+          val entry = if (what == "initiated") initRulesMap(rule.##) else termRulesMap(rule.##)
           println(s"$what, weight prev/current: ${entry._2}/${rule.w_pos}\n${entry._1}")
         }
       }
@@ -622,12 +646,12 @@ object ExpertAdviceFunctions extends LazyLogging {
       if (outcome == "FP") {
         println("======================================================================")
         println(s"prediction: $prediction actual $outcome")
-        println(s"Inertia before|after: $inertiaExpertPrediction|$inertCurrentWeight")
-        println(s"Total init before|after: $initWeightSum|$totalInitWeightAfter")
-        println(s"Total term before|after: $termWeightSum|$totalTermWeightAfter")
+        println(s"Inertia before|after weights update & normalization: $inertAfterWeightUpdate|$inertAfterNormalization")
+        println(s"Total init before|after weights update & normalization: $totalInitWeightAfterWeightsUpdate|$totalInitWeightAfterNormalization")
+        println(s"Total term before|after weights update & normalization: $totalTermWeightAfterWeightsUpdate|$totalTermWeightAfterNormalization")
         debuggingInfo(awakeInitRules, "initiated")
         debuggingInfo(awakeTermRules, "terminated")
-        println(s"total weight before/after: $totalEnsembleWeightBefore/$totalEnsembleWeightAfter equal: ${totalEnsembleWeightBefore == totalEnsembleWeightAfter}")
+        println(s"total weight before/after weights update & normalization: $totalEnsembleWeightBefore/$totalEnsembleWeightAfter equal: ${totalEnsembleWeightBefore == totalEnsembleWeightAfter}")
         println("======================================================================")
       }
 

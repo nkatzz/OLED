@@ -17,7 +17,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
                                val trainingDataFunction: T => Iterator[Example],
                                val testingDataFunction: T => Iterator[Example],
                                val writeExprmtResultsTo: String = "") extends Actor {
-  val learningRate = 0.8 //1.0 //0.05 //0.2
+  val learningRate = 0.2 //1.0 //0.05 //0.2
 
   val epsilon = 0.9 //0.9 // used in the randomized version
 
@@ -200,6 +200,10 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
         val ensemble = stateHandler.ensemble
         val init = ensemble.initiationRules.filter(x => x.body.nonEmpty)
         val term = ensemble.terminationRules.filter(x => x.body.nonEmpty)
+
+        //val init = (ensemble.initiationRules ++ ensemble.initiationRules.flatMap(x => x.refinements :+ x.supportSet.clauses.head)).filter(x => x.body.nonEmpty)
+        //val term = (ensemble.terminationRules ++ ensemble.terminationRules.flatMap(x => x.refinements :+ x.supportSet.clauses.head)).filter(x => x.body.nonEmpty)
+
         ensemble.initiationRules = init
         ensemble.terminationRules = term
         ensemble

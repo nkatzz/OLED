@@ -1,8 +1,9 @@
 package oled.mwua
 
 import app.runutils.RunningOptions
-import logic.Clause
+import logic.{Clause, Theory}
 import logic.Examples.Example
+import oled.functions.SingleCoreOLEDFunctions
 import oled.mwua.AuxFuncs.{increaseWeights, reduceWeights, updateRulesScore}
 import oled.mwua.ExpertAdviceFunctions._
 import oled.mwua.HelperClasses.AtomTobePredicted
@@ -64,18 +65,20 @@ object ClassicSleepingExpertsHedge {
       // If we're in conservative mode, we generate new rules only if none awake currently exists
       // Also, we are always conservative with termination rules. We generate new ones only if the FP
       // holds by inertia. Otherwise it doesn't make much sense.
-      if (generateNewRuleFlag ) {//&& awakeBottomRules.isEmpty //atom.terminatedBy.isEmpty
+      if (generateNewRuleFlag && awakeBottomRules.isEmpty ) {//&& awakeBottomRules.isEmpty //atom.terminatedBy.isEmpty
         // If we leave the if (stateHandler.inertiaExpert.knowsAbout(atom.fluent)) clause here
         // we get many more mistakes. On the other hand, it seems more reasonable to generate
         // termination rules only when the fluent holds by inertia... (don't know what to do)
         if (stateHandler.inertiaExpert.knowsAbout(atom.fluent)) {
+          // Let's try this: Discard the entire terminated ensemble generated so far
+          //stateHandler.ensemble.terminationRules = Nil
           updatedStructure = generateNewRule(batch, currentAtom, inps, "FP", logger, stateHandler, "terminatedAt", 1.0)
         }
       }
       // Also, in the case of an FP mistake we try to specialize awake initiation rules.
       if (atom.initiatedBy.nonEmpty) {
         // We are doing this after each batch
-        /*
+        ///*
         val (topLevelAwakeRules, topLevelAsleepRules) = splitAwakeAsleep(stateHandler.ensemble.initiationRules, atom.initiatedBy.toSet)
         val expandedInit = SingleCoreOLEDFunctions.
           expandRules(Theory(topLevelAwakeRules.toList.filter(x => x.refinements.nonEmpty)), inps, logger)
@@ -83,7 +86,7 @@ object ClassicSleepingExpertsHedge {
           stateHandler.ensemble.initiationRules = expandedInit._1.clauses ++ topLevelAsleepRules
           updatedStructure = true
         }
-        */
+        //*/
       }
     }
 
@@ -107,7 +110,7 @@ object ClassicSleepingExpertsHedge {
       // Also, in the case of an FP mistake we try to specialize awake termination rules.
       if (atom.terminatedBy.nonEmpty) {
         // We are doing this after each batch
-        /*
+        ///*
         val (topLevelAwakeRules, topLevelAsleepRules) = splitAwakeAsleep(stateHandler.ensemble.terminationRules, atom.terminatedBy.toSet)
         val expandedInit = SingleCoreOLEDFunctions.
           expandRules(Theory(topLevelAwakeRules.toList.filter(x => x.refinements.nonEmpty)), inps, logger)
@@ -115,7 +118,7 @@ object ClassicSleepingExpertsHedge {
           stateHandler.ensemble.terminationRules = expandedInit._1.clauses ++ topLevelAsleepRules
           updatedStructure = true
         }
-        */
+        //*/
       }
     }
     updatedStructure
