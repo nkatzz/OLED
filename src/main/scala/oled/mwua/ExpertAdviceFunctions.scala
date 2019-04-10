@@ -274,9 +274,11 @@ object ExpertAdviceFunctions extends LazyLogging {
                       randomizedPrediction, selected, specializeAllAwakeOnMistake, conservativeRuleGeneration)
                     */
 
+                    ///*
                     val structureUpdate_? = ClassicSleepingExpertsHedge.updateStructure_NEW_HEDGE(atom, markedMap, predictedLabel, feedback, batch,
                       currentAtom, inps, Logger(this.getClass).underlying, stateHandler, percentOfMistakesBeforeSpecialize,
                       randomizedPrediction, selected, specializeAllAwakeOnMistake, conservativeRuleGeneration, generateNewRuleFlag)
+                    //*/
 
                     if (structureUpdate_?) break
                   }
@@ -598,6 +600,10 @@ object ExpertAdviceFunctions extends LazyLogging {
       val totalInitWeightPrevious = initRulesMap.map(x => x._2._2).sum
       val totalTermWeightPrevious = termRulesMap.map(x => x._2._2).sum
 
+      val initWeightsAfterUpdatesMap = awakeInitRules.map(x => (x.##, x.w_pos))
+      val termWeightsAfterUpdatesMap = awakeTermRules.map(x => (x.##, x.w_pos))
+      val allRulesWeightsAfterUpdatesMap = (initWeightsAfterUpdatesMap ++ termWeightsAfterUpdatesMap).toMap
+
       var totalInitWeightAfterWeightsUpdate = getTotalWeight(awakeInitRules) // the updates have already taken place
       var totalTermWeightAfterWeightsUpdate  = getTotalWeight(awakeTermRules) // the updates have already taken place
 
@@ -616,14 +622,14 @@ object ExpertAdviceFunctions extends LazyLogging {
         }
       }
 
-      val totalEnsembleWeightBefore = totalWeightBeforeUpdate
-
       // after normalization
       val totalInitWeightAfterNormalization = getTotalWeight(awakeInitRules)
       val totalTermWeightAfterNormalization = getTotalWeight(awakeTermRules)
       val inertAfterNormalization = stateHandler.inertiaExpert.getWeight(currentFluent)
 
-      val totalEnsembleWeightAfter = totalInitWeightAfterNormalization + totalTermWeightAfterNormalization + inertAfterNormalization
+      val totalEnsembleWeightBefore = totalWeightBeforeUpdate
+      val totalEnsembleWeightAfterUpdates = totalInitWeightAfterWeightsUpdate + totalTermWeightAfterWeightsUpdate + inertAfterWeightUpdate
+      val totalEnsembleWeightAfterNormalization = totalInitWeightAfterNormalization + totalTermWeightAfterNormalization + inertAfterNormalization
 
       // This is wrong. The total AWAKE weight of the ensemble is supposed to remain the same.
       // Differences are due to number precision of Doubles. It's the total initiation or termination
@@ -632,26 +638,26 @@ object ExpertAdviceFunctions extends LazyLogging {
       // after an FN, generate new initiation rules.
       //if (totalEnsembleWeightAfter - totalEnsembleWeightBefore <= Math.pow(10,-4)) generateNewRule = true
 
-      if (outcome == "FP" && totalInitWeightAfterNormalization >= totalInitWeightAfterWeightsUpdate) generateNewRule = true
-      if (outcome == "FN" && totalTermWeightAfterNormalization >= totalTermWeightAfterWeightsUpdate) generateNewRule = true
+      if (outcome == "FP" && totalInitWeightAfterNormalization >= totalInitWeightPrevious) generateNewRule = true
+      if (outcome == "FN" && totalTermWeightAfterNormalization >= totalTermWeightPrevious) generateNewRule = true
 
       /* DEBUGGING INFO */
       def debuggingInfo(x: Vector[Clause], what: String) = {
         x foreach { rule =>
           val entry = if (what == "initiated") initRulesMap(rule.##) else termRulesMap(rule.##)
-          println(s"$what, weight prev/current: ${entry._2}/${rule.w_pos}\n${entry._1}")
+          println(s"$what, weight prev/after update/after normalization: ${entry._2}/${allRulesWeightsAfterUpdatesMap(rule.##)}/${rule.w_pos}\n${entry._1}")
         }
       }
 
       if (outcome == "FP") {
         println("======================================================================")
-        println(s"prediction: $prediction actual $outcome")
-        println(s"Inertia before|after weights update & normalization: $inertAfterWeightUpdate|$inertAfterNormalization")
-        println(s"Total init before|after weights update & normalization: $totalInitWeightAfterWeightsUpdate|$totalInitWeightAfterNormalization")
-        println(s"Total term before|after weights update & normalization: $totalTermWeightAfterWeightsUpdate|$totalTermWeightAfterNormalization")
-        debuggingInfo(awakeInitRules, "initiated")
-        debuggingInfo(awakeTermRules, "terminated")
-        println(s"total weight before/after weights update & normalization: $totalEnsembleWeightBefore/$totalEnsembleWeightAfter equal: ${totalEnsembleWeightBefore == totalEnsembleWeightAfter}")
+        println(s"prediction: $prediction, actual: $outcome, fluent: $currentFluent")
+        println(s"Inertia before|after weights update|after normalization: $inertiaExpertPrediction|$inertAfterWeightUpdate|$inertAfterNormalization")
+        println(s"Total init before|after weights update & normalization: $totalInitWeightPrevious|$totalInitWeightAfterWeightsUpdate|$totalInitWeightAfterNormalization")
+        println(s"Total term before|after weights update & normalization: $totalTermWeightPrevious|$totalTermWeightAfterWeightsUpdate|$totalTermWeightAfterNormalization")
+        //debuggingInfo(awakeInitRules, "initiated")
+        //debuggingInfo(awakeTermRules, "terminated")
+        println(s"total weight before/after updates/normalization: $totalEnsembleWeightBefore/$totalEnsembleWeightAfterUpdates/$totalEnsembleWeightAfterNormalization equal: ${totalEnsembleWeightBefore == totalEnsembleWeightAfterNormalization}")
         println("======================================================================")
       }
 

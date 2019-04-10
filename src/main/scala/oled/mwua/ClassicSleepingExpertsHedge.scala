@@ -71,7 +71,7 @@ object ClassicSleepingExpertsHedge {
         // termination rules only when the fluent holds by inertia... (don't know what to do)
         if (stateHandler.inertiaExpert.knowsAbout(atom.fluent)) {
           // Let's try this: Discard the entire terminated ensemble generated so far
-          //stateHandler.ensemble.terminationRules = Nil
+          //if (atom.terminatedBy.nonEmpty) stateHandler.ensemble.terminationRules = Nil
           updatedStructure = generateNewRule(batch, currentAtom, inps, "FP", logger, stateHandler, "terminatedAt", 1.0)
         }
       }
@@ -95,6 +95,8 @@ object ClassicSleepingExpertsHedge {
       if (generateNewRuleFlag) { // atom.initiatedBy.isEmpty
         // We don't have firing initiation rules. Generate one.
         if (awakeBottomRules.isEmpty) {
+          // Let's try this: Discard the entire initiated ensemble generated so far
+          //if (atom.initiatedBy.nonEmpty) stateHandler.ensemble.initiationRules = Nil
           updatedStructure = generateNewRule(batch, currentAtom, inps, "FN", logger, stateHandler, "initiatedAt", 1.0)
         }
       } else {

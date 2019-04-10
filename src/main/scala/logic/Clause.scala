@@ -640,11 +640,11 @@ case class Clause(head: PosLiteral = PosLiteral(),
       }
     }
 
-    // 7-3-2019: I'll try this: Start with a conjunction of 2 literals at the body, instead of 1. Then,
-    // add new ones one by one.
-
     val specializationDepth = Globals.glvalues("specializationDepth").toInt
     val candidateList = this.supportSet.clauses.flatMap(_.body).distinct.filter(!this.body.contains(_))
+
+    // This is the original implementation
+    ///*
     val refinementsSets =
       (for (x <- 1 to specializationDepth) yield x).foldLeft(List[List[Clause]]()) { (accum, depth) =>
         val z = for ( lits <- candidateList.toSet.subsets(depth).toVector if !redundant(lits) ) yield Clause(this.head, this.body ++ lits)
@@ -652,7 +652,23 @@ case class Clause(head: PosLiteral = PosLiteral(),
         accum :+ z_
     }
     val flattend = refinementsSets.flatten
-    flattend.foreach{ refinement =>
+    //*/
+
+    // 6-6-2019: I'll try this: Start with a conjunction of 2 literals at the body, instead of 1. Then,
+    // add new ones one by one.
+    /*
+    val flattend = {
+      if (this.body.isEmpty) {
+        val t = candidateList.toSet.subsets(2).filter(x => !redundant(x)).map(x => Clause(this.head, this.body ++ x)).toList
+        Theory.compressTheory(t)
+      } else {
+        val t = candidateList.map(x => Clause(this.head, this.body :+ x))
+        Theory.compressTheory(t)
+      }
+    }
+    */
+
+    flattend.foreach { refinement =>
       refinement.parentClause = this
       //------------------------------------
       refinement.mlnWeight = this.mlnWeight
@@ -670,6 +686,9 @@ case class Clause(head: PosLiteral = PosLiteral(),
         refinement.countsPerNode = newMap
       }
     }
+
+
+
     this.refinements = flattend
   }
 
