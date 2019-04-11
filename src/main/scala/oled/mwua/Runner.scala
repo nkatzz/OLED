@@ -104,11 +104,14 @@ object Runner extends LazyLogging {
 
       /* This is for running on the training set and then performing prequential evaluation on the test set. */
       ///*
-      val dataset = MeetingTrainTestSets.meeting2
+      val dataset = MeetingTrainTestSets.meeting9
       //val dataset = MeetingTrainTestSets.meeting1
 
+      //val trainShuffled = scala.uti                  l.Random.shuffle(dataset._1)
+      //logger.info(s"\nData order:\n$trainShuffled")
+
       val trainingDataOptions =
-        new MongoDataOptions(dbNames = dataset._1,
+        new MongoDataOptions(dbNames = dataset._1, //trainShuffled, //,
           chunkSize = runningOptions.chunkSize, targetConcept = runningOptions.targetHLE, sortDbByField = "time", what = "training")
 
       val testingDataOptions =

@@ -22,7 +22,16 @@ import oled.mwua.HelperClasses.AtomTobePredicted
 object ClassicSleepingExpertsHedge {
 
 
-
+  def splitAwakeAsleep(rulesToSplit: List[Clause], awakeIds: Set[String]) = {
+    val rulesToSplitIds = rulesToSplit.map(_##).toSet
+    val (topLevelAwakeRules, topLevelAsleepRules) = rulesToSplit.foldLeft(Vector.empty[Clause], Vector.empty[Clause]) { (x, rule) =>
+      val isAwake = awakeIds.contains(rule.##.toString)
+      val isTopLevel = rulesToSplitIds.contains(rule.##)
+      if (isAwake) if (isTopLevel) (x._1 :+ rule, x._2) else (x._1, x._2) // then it's a refinement rule
+      else if (isTopLevel) (x._1, x._2 :+ rule) else (x._1, x._2) // then it's a refinement rule
+    }
+    (topLevelAwakeRules, topLevelAsleepRules)
+  }
 
 
   def updateStructure_NEW_HEDGE(atom: AtomTobePredicted,
@@ -46,25 +55,10 @@ object ClassicSleepingExpertsHedge {
       else atom.terminatedBy.filter(x => markedMap(x).isBottomRule)
     }
 
-    def splitAwakeAsleep(rulesToSplit: List[Clause], awakeIds: Set[String]) = {
-      val rulesToSplitIds = rulesToSplit.map(_##).toSet
-      val (topLevelAwakeRules, topLevelAsleepRules) = rulesToSplit.foldLeft(Vector.empty[Clause], Vector.empty[Clause]) { (x, rule) =>
-        val isAwake = awakeIds.contains(rule.##.toString)
-        val isTopLevel = rulesToSplitIds.contains(rule.##)
-        if (isAwake) if (isTopLevel) (x._1 :+ rule, x._2) else (x._1, x._2) // then it's a refinement rule
-        else if (isTopLevel) (x._1, x._2 :+ rule) else (x._1, x._2) // then it's a refinement rule
-      }
-      (topLevelAwakeRules, topLevelAsleepRules)
-    }
-
     var updatedStructure = false
 
     if (is_FP_mistake(predictedLabel, feedback)) {
       val awakeBottomRules = getAwakeBottomRules("terminatedAt")
-      // We don't have firing termination rules so we'll try to generate one.
-      // If we're in conservative mode, we generate new rules only if none awake currently exists
-      // Also, we are always conservative with termination rules. We generate new ones only if the FP
-      // holds by inertia. Otherwise it doesn't make much sense.
       if (generateNewRuleFlag && awakeBottomRules.isEmpty ) {//&& awakeBottomRules.isEmpty //atom.terminatedBy.isEmpty
         // If we leave the if (stateHandler.inertiaExpert.knowsAbout(atom.fluent)) clause here
         // we get many more mistakes. On the other hand, it seems more reasonable to generate

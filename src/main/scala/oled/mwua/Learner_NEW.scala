@@ -204,8 +204,11 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
         //val init = (ensemble.initiationRules ++ ensemble.initiationRules.flatMap(x => x.refinements :+ x.supportSet.clauses.head)).filter(x => x.body.nonEmpty)
         //val term = (ensemble.terminationRules ++ ensemble.terminationRules.flatMap(x => x.refinements :+ x.supportSet.clauses.head)).filter(x => x.body.nonEmpty)
 
-        ensemble.initiationRules = init
-        ensemble.terminationRules = term
+        ensemble.initiationRules = Theory(init).compress.clauses
+        ensemble.terminationRules = Theory(term).compress.clauses
+
+        //ensemble.initiationRules = init
+        //ensemble.terminationRules = term
         ensemble
       }
 

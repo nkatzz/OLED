@@ -165,6 +165,7 @@ object MeetingTrainTestSets {
 
 
   private val train2 =
+    /*
     Vector("caviar-video-1-meeting-moving", "caviar-video-3", "caviar-video-6",
       "caviar-video-13-meeting", "caviar-video-7", "caviar-video-8",
       "caviar-video-14-meeting-moving", "caviar-video-9", "caviar-video-10",
@@ -174,6 +175,9 @@ object MeetingTrainTestSets {
       "caviar-video-22-meeting-moving", "caviar-video-23-moving", "caviar-video-25",
       "caviar-video-24-meeting-moving", "caviar-video-26", "caviar-video-27",
       "caviar-video-28-meeting", "caviar-video-5", "caviar-video-30")
+     */
+    // This ordering seems to be giving good results in terms of the rules it learns
+    Vector("caviar-video-21-meeting-moving", "caviar-video-11", "caviar-video-6", "caviar-video-3", "caviar-video-8", "caviar-video-24-meeting-moving", "caviar-video-10", "caviar-video-25", "caviar-video-1-meeting-moving", "caviar-video-27", "caviar-video-16", "caviar-video-28-meeting", "caviar-video-18", "caviar-video-5", "caviar-video-14-meeting-moving", "caviar-video-13-meeting", "caviar-video-30", "caviar-video-20-meeting-moving", "caviar-video-22-meeting-moving", "caviar-video-9", "caviar-video-17", "caviar-video-12-moving", "caviar-video-15", "caviar-video-26", "caviar-video-7", "caviar-video-19-meeting-moving", "caviar-video-23-moving")
   private val test2 = Vector("caviar-video-2-meeting-moving", "caviar-video-29", "caviar-video-4")
 
   val meeting2: (Vector[String], Vector[String]) = (train2, test2)

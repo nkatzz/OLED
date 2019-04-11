@@ -59,7 +59,7 @@ object ExpertAdviceFunctions extends LazyLogging {
     ///*
     val isTestPhase = receiveFeedbackBias == 0.0
     if (isTestPhase) {
-      val weightThreshold = 0.00001
+      val weightThreshold = 0.00001 // 0.0
       //val (goodInit, goodTerm) = getFinalRules(stateHandler)
 
       hedgePredictionThreshold = 0.5
@@ -345,11 +345,11 @@ object ExpertAdviceFunctions extends LazyLogging {
 
   def getFinalRulesDefault(s: StateHandler, weightThreshold: Double) = {
 
-    val isGood = (r: Clause) => r.w_pos >= weightThreshold
+    val isGood = (r: Clause) => r.w_pos > weightThreshold //r.w_pos >= weightThreshold
 
     def getGoodRules(x: List[Clause], threshold: Double) = {
       x.foldLeft(List.empty[Clause]) { (accum, rule) =>
-        if (rule.w_pos >= threshold) accum :+ rule else accum
+        if (isGood(rule)) accum :+ rule else accum
       }
     }
 
@@ -656,7 +656,7 @@ object ExpertAdviceFunctions extends LazyLogging {
         println(s"Total init before|after weights update & normalization: $totalInitWeightPrevious|$totalInitWeightAfterWeightsUpdate|$totalInitWeightAfterNormalization")
         println(s"Total term before|after weights update & normalization: $totalTermWeightPrevious|$totalTermWeightAfterWeightsUpdate|$totalTermWeightAfterNormalization")
         //debuggingInfo(awakeInitRules, "initiated")
-        //debuggingInfo(awakeTermRules, "terminated")
+        debuggingInfo(awakeTermRules, "terminated")
         println(s"total weight before/after updates/normalization: $totalEnsembleWeightBefore/$totalEnsembleWeightAfterUpdates/$totalEnsembleWeightAfterNormalization equal: ${totalEnsembleWeightBefore == totalEnsembleWeightAfterNormalization}")
         println("======================================================================")
       }
