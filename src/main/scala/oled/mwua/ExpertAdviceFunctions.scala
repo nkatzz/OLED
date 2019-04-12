@@ -59,7 +59,7 @@ object ExpertAdviceFunctions extends LazyLogging {
     ///*
     val isTestPhase = receiveFeedbackBias == 0.0
     if (isTestPhase) {
-      val weightThreshold = 0.00001 // 0.0
+      val weightThreshold = 0.01//0.00001 //1.1 // // 0.0
       //val (goodInit, goodTerm) = getFinalRules(stateHandler)
 
       hedgePredictionThreshold = 0.5
@@ -315,7 +315,7 @@ object ExpertAdviceFunctions extends LazyLogging {
           // Try to specialize all rules currently in the ensemble
           // Just to be on the safe side filter out rules with no refinements
           // (i.e. rules that have "reached" their bottom rule).
-          /*
+          ///*
           val expandedInit =
             SingleCoreOLEDFunctions.expandRules(Theory(stateHandler.ensemble.initiationRules.filter(x => x.refinements.nonEmpty)),
               inps, Logger(this.getClass).underlying)
@@ -326,7 +326,7 @@ object ExpertAdviceFunctions extends LazyLogging {
 
           stateHandler.ensemble.initiationRules = expandedInit._1.clauses
           stateHandler.ensemble.terminationRules = expandedTerm._1.clauses
-          */
+          //*/
         }
       }
     }
@@ -353,11 +353,11 @@ object ExpertAdviceFunctions extends LazyLogging {
       }
     }
 
-    //val init = getGoodRules(s.ensemble.initiationRules, 0.00001)
-    //val term = getGoodRules(s.ensemble.terminationRules, 20)
-
     val init = getGoodRules(s.ensemble.initiationRules, weightThreshold)
     val term = getGoodRules(s.ensemble.terminationRules, weightThreshold)
+
+    //val init = (s.ensemble.initiationRules ++ s.ensemble.initiationRules.flatMap(x => x.refinements :+ x.supportSet.clauses.head)).filter(x => x.body.nonEmpty)
+    //val term = (s.ensemble.terminationRules ++ s.ensemble.terminationRules.flatMap(x => x.refinements :+ x.supportSet.clauses.head)).filter(x => x.body.nonEmpty)
 
     (init, term)
 
@@ -645,7 +645,7 @@ object ExpertAdviceFunctions extends LazyLogging {
       def debuggingInfo(x: Vector[Clause], what: String) = {
         x foreach { rule =>
           val entry = if (what == "initiated") initRulesMap(rule.##) else termRulesMap(rule.##)
-          println(s"$what, weight prev/after update/after normalization: ${entry._2}/${allRulesWeightsAfterUpdatesMap(rule.##)}/${rule.w_pos}\n${entry._1}")
+          println(s"weight prev/after update/after normalization: ${entry._2}/${allRulesWeightsAfterUpdatesMap(rule.##)}/${rule.w_pos} (tps,fps,fns): (${rule.tps},${rule.fps},${rule.fns})\n${entry._1}")
         }
       }
 
@@ -655,7 +655,9 @@ object ExpertAdviceFunctions extends LazyLogging {
         println(s"Inertia before|after weights update|after normalization: $inertiaExpertPrediction|$inertAfterWeightUpdate|$inertAfterNormalization")
         println(s"Total init before|after weights update & normalization: $totalInitWeightPrevious|$totalInitWeightAfterWeightsUpdate|$totalInitWeightAfterNormalization")
         println(s"Total term before|after weights update & normalization: $totalTermWeightPrevious|$totalTermWeightAfterWeightsUpdate|$totalTermWeightAfterNormalization")
-        //debuggingInfo(awakeInitRules, "initiated")
+        println("AWAKE INIT:")
+        debuggingInfo(awakeInitRules, "initiated")
+        println("AWAKE TERM:")
         debuggingInfo(awakeTermRules, "terminated")
         println(s"total weight before/after updates/normalization: $totalEnsembleWeightBefore/$totalEnsembleWeightAfterUpdates/$totalEnsembleWeightAfterNormalization equal: ${totalEnsembleWeightBefore == totalEnsembleWeightAfterNormalization}")
         println("======================================================================")
@@ -982,7 +984,8 @@ object ExpertAdviceFunctions extends LazyLogging {
 
   def generateNewRule(batch: Example, currentAtom: String, inps: RunningOptions, mistakeType: String,
                       logger: org.slf4j.Logger, stateHandler: StateHandler,
-                      what: String, totalWeight: Double, removePastExperts: Boolean = false) = {
+                      what: String, totalWeight: Double, removePastExperts: Boolean = false,
+                      otherAwakeExperts: Vector[Clause] = Vector.empty[Clause]) = {
 
     def isRedundant(newRule: Clause) = {
       val getAllBottomRules = (x: List[Clause]) => x.flatMap(y => y.supportSet.clauses)
@@ -993,7 +996,7 @@ object ExpertAdviceFunctions extends LazyLogging {
       allBottomRules.exists(c => newRule.thetaSubsumes(c))
     }
     var generatedRule = false
-    val newRule = generateNewExpert(batch, currentAtom, inps.globals, what, totalWeight)
+    val newRule = generateNewExpert(batch, currentAtom, inps.globals, what, totalWeight, otherAwakeExperts)
     //if (!isRedundant(newRule)) {
       if (!newRule.equals(Clause.empty)) {
         logger.info(s"Generated new $what rule in response to $mistakeType atom: $currentAtom")

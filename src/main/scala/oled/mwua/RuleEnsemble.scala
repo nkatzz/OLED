@@ -12,12 +12,20 @@ class RuleEnsemble {
   var initiationRules: List[Clause] = List[Clause]()
   var terminationRules: List[Clause] = List[Clause]()
 
+  /* Currently not used anywhere. */
   def removeZeroWeights = {
     // Maybe I should remove rules with zero weight only when they have at least one literal at their body...
     val noZeroInit = initiationRules.filter(x => x.w_pos > 0.0)
     val noZeroTerm = terminationRules.filter(x => x.w_pos > 0.0)
     initiationRules = noZeroInit
     terminationRules = noZeroTerm
+  }
+
+  val initiationRuleSets: scala.collection.mutable.Map[Int, Set[Int]] = scala.collection.mutable.Map[Int, Set[Int]]()
+  val terminationRuleSets: scala.collection.mutable.Map[Int, Set[Int]] = scala.collection.mutable.Map[Int, Set[Int]]()
+
+  def updateRuleSets(awakeFraction:String, ruleSet: scala.collection.mutable.Map[Int, Set[Int]], markedMap: Map[String, Clause]) = {
+
   }
 
   /*
@@ -62,6 +70,7 @@ class RuleEnsemble {
     }
   }
 
+  /* Currently not used anywhere. */
   def normalizeWeights = {
     val initWeightsSum = initiationRules.map(x => x.w_pos).sum
     val termWeightsSum = terminationRules.map(x => x.w_pos).sum

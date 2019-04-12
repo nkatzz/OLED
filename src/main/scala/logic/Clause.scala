@@ -613,9 +613,9 @@ case class Clause(head: PosLiteral = PosLiteral(),
 
   def condition = true
 
-  /* generates candidate refinements for the Hoeffding test.
-     The otherNodesNames is used only in the distributed setting. */
-  def generateCandidateRefs(gl: Globals): Unit = {
+  /* generates candidate refinements for the Hoeffding test. otherAwakeRules is used by
+  * Hedge (sleeping experts) to avoid generating refinements that already exist. */
+  def generateCandidateRefs(gl: Globals, otherAwakeExperts: Vector[Clause] = Vector.empty[Clause]): Unit = {
 
     /*
     * Checks if a specialization is redundant. Currently a specialization is
@@ -651,7 +651,10 @@ case class Clause(head: PosLiteral = PosLiteral(),
         val z_ = Theory.compressTheory(z)
         accum :+ z_
     }
-    val flattend = refinementsSets.flatten
+
+    // The filtering is used by Hedge
+    val flattend = refinementsSets.flatten.filter( ref => !otherAwakeExperts.exists(rule => rule.thetaSubsumes(ref) && ref.thetaSubsumes(rule)) )
+    //val flattend = refinementsSets.flatten.filter( ref => !otherAwakeExperts.exists(rule => ref.thetaSubsumes(rule)) )
     //*/
 
     // 6-6-2019: I'll try this: Start with a conjunction of 2 literals at the body, instead of 1. Then,

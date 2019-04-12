@@ -158,7 +158,9 @@ object AuxFuncs extends LazyLogging {
   }
 
   /* Learns a new termination rule from an FP data point. */
-  def generateNewExpert(dataBatch: Example, fpAtom: String, globals: Globals, what: String, totalWeight: Double) = {
+  def generateNewExpert(dataBatch: Example, fpAtom: String,
+                        globals: Globals, what: String, totalWeight: Double,
+                        otherAwakeExperts: Vector[Clause] = Vector.empty[Clause]) = {
 
     val strippedBatch = Example(annot = List(fpAtom), nar = dataBatch.narrative, _time = dataBatch.time)
 
@@ -172,7 +174,7 @@ object AuxFuncs extends LazyLogging {
       // newRule here is an empty-bodied rule along with the newly-generated bottom clause.
       // Populate the newRule's refinements
 
-      newRule.generateCandidateRefs(globals)
+      newRule.generateCandidateRefs(globals, otherAwakeExperts)
 
       newRule.w_pos = totalWeight
       newRule.refinements.foreach(x => x.w_pos = totalWeight)

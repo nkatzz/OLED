@@ -198,6 +198,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
 
       _stateHandler.ensemble = {
         val ensemble = stateHandler.ensemble
+
         val init = ensemble.initiationRules.filter(x => x.body.nonEmpty)
         val term = ensemble.terminationRules.filter(x => x.body.nonEmpty)
 

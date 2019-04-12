@@ -64,9 +64,14 @@ object ClassicSleepingExpertsHedge {
         // we get many more mistakes. On the other hand, it seems more reasonable to generate
         // termination rules only when the fluent holds by inertia... (don't know what to do)
         if (stateHandler.inertiaExpert.knowsAbout(atom.fluent)) {
-          // Let's try this: Discard the entire terminated ensemble generated so far
-          //if (atom.terminatedBy.nonEmpty) stateHandler.ensemble.terminationRules = Nil
-          updatedStructure = generateNewRule(batch, currentAtom, inps, "FP", logger, stateHandler, "terminatedAt", 1.0)
+
+          // Use the rest of the awake termination rules to compare the new
+          // ones to and make sure that no redundant rules are generated:
+          val awakeTerminationRules = atom.terminatedBy.map( x => markedMap(x) )
+
+          updatedStructure =
+            generateNewRule(batch, currentAtom, inps, "FP", logger,
+              stateHandler, "terminatedAt", 1.0, otherAwakeExperts = awakeTerminationRules)
         }
       }
       // Also, in the case of an FP mistake we try to specialize awake initiation rules.
@@ -89,9 +94,14 @@ object ClassicSleepingExpertsHedge {
       if (generateNewRuleFlag) { // atom.initiatedBy.isEmpty
         // We don't have firing initiation rules. Generate one.
         if (awakeBottomRules.isEmpty) {
-          // Let's try this: Discard the entire initiated ensemble generated so far
-          //if (atom.initiatedBy.nonEmpty) stateHandler.ensemble.initiationRules = Nil
-          updatedStructure = generateNewRule(batch, currentAtom, inps, "FN", logger, stateHandler, "initiatedAt", 1.0)
+
+          // Use the rest of the awake termination rules to compare the new
+          // ones to and make sure that no redundant rules are generated:
+          val awakeInitiationRules = atom.initiatedBy.map(x => markedMap(x))
+
+          updatedStructure =
+            generateNewRule(batch, currentAtom, inps, "FN", logger,
+              stateHandler, "initiatedAt", 1.0, otherAwakeExperts = awakeInitiationRules)
         }
       } else {
         if (!conservativeRuleGeneration) {
