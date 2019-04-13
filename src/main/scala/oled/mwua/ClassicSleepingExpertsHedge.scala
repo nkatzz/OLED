@@ -59,11 +59,11 @@ object ClassicSleepingExpertsHedge {
 
     if (is_FP_mistake(predictedLabel, feedback)) {
       val awakeBottomRules = getAwakeBottomRules("terminatedAt")
-      if (generateNewRuleFlag && awakeBottomRules.isEmpty ) {//&& awakeBottomRules.isEmpty //atom.terminatedBy.isEmpty
+      if (generateNewRuleFlag ) {//&& awakeBottomRules.isEmpty //atom.terminatedBy.isEmpty
         // If we leave the if (stateHandler.inertiaExpert.knowsAbout(atom.fluent)) clause here
         // we get many more mistakes. On the other hand, it seems more reasonable to generate
         // termination rules only when the fluent holds by inertia... (don't know what to do)
-        if (stateHandler.inertiaExpert.knowsAbout(atom.fluent)) {
+        //if (stateHandler.inertiaExpert.knowsAbout(atom.fluent)) {
 
           // Use the rest of the awake termination rules to compare the new
           // ones to and make sure that no redundant rules are generated:
@@ -72,7 +72,7 @@ object ClassicSleepingExpertsHedge {
           updatedStructure =
             generateNewRule(batch, currentAtom, inps, "FP", logger,
               stateHandler, "terminatedAt", 1.0, otherAwakeExperts = awakeTerminationRules)
-        }
+        //}
       }
       // Also, in the case of an FP mistake we try to specialize awake initiation rules.
       if (atom.initiatedBy.nonEmpty) {

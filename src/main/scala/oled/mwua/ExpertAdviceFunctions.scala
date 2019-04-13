@@ -35,7 +35,8 @@ object ExpertAdviceFunctions extends LazyLogging {
               specializeAllAwakeOnMistake: Boolean,
               receiveFeedbackBias: Double,
               conservativeRuleGeneration: Boolean = true,
-              weightUpdateStrategy: String = "winnow", // this is either 'hedge' or 'winnow'
+              weightUpdateStrategy: String = "winnow", // this is either 'hedge' or 'winnow',
+              withInertia: Boolean = true,
               splice: Option[Map[String, Double] => (Set[EvidenceAtom], Evidence)] = None,
               mapper: Option[Set[EvidenceAtom] => Vector[String]] = None,
               incompleteTrueAtoms: Option[Set[String]] = None,
@@ -59,7 +60,7 @@ object ExpertAdviceFunctions extends LazyLogging {
     ///*
     val isTestPhase = receiveFeedbackBias == 0.0
     if (isTestPhase) {
-      val weightThreshold = 0.01//0.00001 //1.1 // // 0.0
+      val weightThreshold = 1.0 //0.00001 //1.1 // // 0.0
       //val (goodInit, goodTerm) = getFinalRules(stateHandler)
 
       hedgePredictionThreshold = 0.5
@@ -122,7 +123,7 @@ object ExpertAdviceFunctions extends LazyLogging {
 
                 val (_prediction, _inertiaExpertPrediction, _initWeightSum, _termWeightSum) =
                   if (weightUpdateStrategy == "winnow") predict(atom, stateHandler, markedMap)
-                  else predictHedge(atom, stateHandler, markedMap)
+                  else predictHedge(atom, stateHandler, markedMap, withInertia)
                   //else ClassicSleepingExpertsHedge.predictHedge_NO_INERTIA(atom, stateHandler, markedMap)
 
                 prediction = _prediction
@@ -243,7 +244,7 @@ object ExpertAdviceFunctions extends LazyLogging {
 
                   ///*
                   generateNewRuleFlag = updateWeights(atom, prediction, inertiaExpertPrediction, initWeightSum,
-                    termWeightSum, predictedLabel, markedMap, feedback, stateHandler, learningRate, weightUpdateStrategy)
+                    termWeightSum, predictedLabel, markedMap, feedback, stateHandler, learningRate, weightUpdateStrategy, withInertia)
                   // */
 
                   /*
@@ -480,7 +481,7 @@ object ExpertAdviceFunctions extends LazyLogging {
   def updateWeights(atom: AtomTobePredicted, prediction: Double, inertiaExpertPrediction: Double,
                     initWeightSum: Double, termWeightSum: Double, predictedLabel: String,
                     markedMap: Map[String, Clause], feedback: String, stateHandler: StateHandler,
-                    learningRate: Double, weightUpdateStrategy: String) = {
+                    learningRate: Double, weightUpdateStrategy: String, withInertia: Boolean = true) = {
 
     var generateNewRule = false
 
@@ -490,17 +491,27 @@ object ExpertAdviceFunctions extends LazyLogging {
 
     val getTotalWeight = (x: Vector[Clause]) => x.map(x => x.w_pos).sum
 
-    // These are used for debugging
-    val awakeInitRules = atom.initiatedBy.map(x => markedMap(x))
-    val awakeTermRules = atom.terminatedBy.map(x => markedMap(x))
+    // These Include empty-bodied rules. Only for score (default, foilgain) update. Used for Hoeffding tests only
+    val _awakeInitRules = atom.initiatedBy.map(x => markedMap(x))
+    val _awakeTermRules = atom.terminatedBy.map(x => markedMap(x))
+
+    val awakeInitRules = _awakeInitRules.filter(x => x.body.nonEmpty) // exclude empty-bodied rules from prediction and weight normalization
+    val awakeTermRules = _awakeTermRules.filter(x => x.body.nonEmpty) // exclude empty-bodied rules from prediction and weight normalization
+
     // Create a map with the rules and their current weight. We'll use
-    // to show the weight updates in the case of Hedge.
+    // to show the weight updates in the case of Hedge (this is for debugging).
     var initRulesMap = scala.collection.mutable.Map.empty[Int, (String, Double)]
     var termRulesMap = scala.collection.mutable.Map.empty[Int, (String, Double)]
     awakeInitRules.foreach(x => initRulesMap += (x.## -> (x.tostring, x.w_pos) ) )
     awakeTermRules.foreach(x => termRulesMap += (x.## -> (x.tostring, x.w_pos) ) )
 
-    val totalWeightBeforeUpdate = inertiaExpertPrediction + initWeightSum + termWeightSum
+    val totalWeightBeforeUpdate =
+      if (withInertia) {
+        inertiaExpertPrediction + initWeightSum + termWeightSum
+      } else {
+        initWeightSum + termWeightSum
+      }
+
 
     def getSleeping(what: String) = {
       val awake = if (what == "initiated") atom.initiatedBy.toSet else atom.terminatedBy.toSet
@@ -511,8 +522,7 @@ object ExpertAdviceFunctions extends LazyLogging {
     val sleepingTermRules = getSleeping("terminated")
 
     def updateScore(what: String) = {
-      updateRulesScore(what, atom.initiatedBy.map(x => markedMap(x)), sleepingInitRules.values.toVector,
-        atom.terminatedBy.map(x => markedMap(x)), sleepingTermRules.values.toVector)
+      updateRulesScore(what, _awakeInitRules, sleepingInitRules.values.toVector, _awakeTermRules, sleepingTermRules.values.toVector)
     }
 
     var outcome = ""
@@ -546,6 +556,11 @@ object ExpertAdviceFunctions extends LazyLogging {
 
     } else if (is_FP_mistake(predictedLabel, feedback)) {
       outcome = "FP"
+
+      if (atom.fluent == "moving(id6,id5)") {
+        val stop = "stop"
+      }
+
       if (!hedge) {
         reduceWeights(atom.initiatedBy, markedMap, learningRate)
         increaseWeights(atom.terminatedBy, markedMap, learningRate)
@@ -582,7 +597,7 @@ object ExpertAdviceFunctions extends LazyLogging {
 
       } else {
         reduceWeights(atom.terminatedBy, markedMap, learningRate, "hedge")
-        // In Hedge, event if inertia predicts here it is correct, so we leave its weight unchanged.
+        // In Hedge, even if inertia predicts here it is correct, so we leave its weight unchanged.
       }
 
     } else { // TN
@@ -604,11 +619,16 @@ object ExpertAdviceFunctions extends LazyLogging {
       val termWeightsAfterUpdatesMap = awakeTermRules.map(x => (x.##, x.w_pos))
       val allRulesWeightsAfterUpdatesMap = (initWeightsAfterUpdatesMap ++ termWeightsAfterUpdatesMap).toMap
 
-      var totalInitWeightAfterWeightsUpdate = getTotalWeight(awakeInitRules) // the updates have already taken place
-      var totalTermWeightAfterWeightsUpdate  = getTotalWeight(awakeTermRules) // the updates have already taken place
+      val totalInitWeightAfterWeightsUpdate = getTotalWeight(awakeInitRules) // the updates have already taken place
+      val totalTermWeightAfterWeightsUpdate  = getTotalWeight(awakeTermRules) // the updates have already taken place
 
-      var inertAfterWeightUpdate = stateHandler.inertiaExpert.getWeight(currentFluent)
-      var totalWeightAfterUpdate = inertAfterWeightUpdate + totalInitWeightAfterWeightsUpdate + totalTermWeightAfterWeightsUpdate
+      val inertAfterWeightUpdate = stateHandler.inertiaExpert.getWeight(currentFluent)
+      val totalWeightAfterUpdate =
+        if (withInertia) {
+          inertAfterWeightUpdate + totalInitWeightAfterWeightsUpdate + totalTermWeightAfterWeightsUpdate
+        } else {
+          totalInitWeightAfterWeightsUpdate + totalTermWeightAfterWeightsUpdate
+        }
 
       val mult = totalWeightBeforeUpdate/totalWeightAfterUpdate
 
@@ -628,8 +648,20 @@ object ExpertAdviceFunctions extends LazyLogging {
       val inertAfterNormalization = stateHandler.inertiaExpert.getWeight(currentFluent)
 
       val totalEnsembleWeightBefore = totalWeightBeforeUpdate
-      val totalEnsembleWeightAfterUpdates = totalInitWeightAfterWeightsUpdate + totalTermWeightAfterWeightsUpdate + inertAfterWeightUpdate
-      val totalEnsembleWeightAfterNormalization = totalInitWeightAfterNormalization + totalTermWeightAfterNormalization + inertAfterNormalization
+      val totalEnsembleWeightAfterUpdates =
+        if (withInertia) {
+          totalInitWeightAfterWeightsUpdate + totalTermWeightAfterWeightsUpdate + inertAfterWeightUpdate
+        } else {
+          totalTermWeightAfterWeightsUpdate + inertAfterWeightUpdate
+        }
+
+      val totalEnsembleWeightAfterNormalization =
+        if (withInertia) {
+          totalInitWeightAfterNormalization + totalTermWeightAfterNormalization + inertAfterNormalization
+        } else {
+          totalTermWeightAfterNormalization + inertAfterNormalization
+        }
+
 
       // This is wrong. The total AWAKE weight of the ensemble is supposed to remain the same.
       // Differences are due to number precision of Doubles. It's the total initiation or termination
@@ -649,23 +681,25 @@ object ExpertAdviceFunctions extends LazyLogging {
         }
       }
 
-      if (outcome == "FP") {
+      if (outcome == "FP") { //|| outcome == "FN"
         println("======================================================================")
         println(s"prediction: $prediction, actual: $outcome, fluent: $currentFluent")
-        println(s"Inertia before|after weights update|after normalization: $inertiaExpertPrediction|$inertAfterWeightUpdate|$inertAfterNormalization")
+        if (withInertia) {
+          println(s"Inertia before|after weights update|after normalization: $inertiaExpertPrediction|$inertAfterWeightUpdate|$inertAfterNormalization")
+        }
         println(s"Total init before|after weights update & normalization: $totalInitWeightPrevious|$totalInitWeightAfterWeightsUpdate|$totalInitWeightAfterNormalization")
         println(s"Total term before|after weights update & normalization: $totalTermWeightPrevious|$totalTermWeightAfterWeightsUpdate|$totalTermWeightAfterNormalization")
-        println("AWAKE INIT:")
-        debuggingInfo(awakeInitRules, "initiated")
-        println("AWAKE TERM:")
-        debuggingInfo(awakeTermRules, "terminated")
+        //println("AWAKE INIT:")
+        //debuggingInfo(awakeInitRules, "initiated")
+        //println("AWAKE TERM:")
+        //debuggingInfo(awakeTermRules, "terminated")
         println(s"total weight before/after updates/normalization: $totalEnsembleWeightBefore/$totalEnsembleWeightAfterUpdates/$totalEnsembleWeightAfterNormalization equal: ${totalEnsembleWeightBefore == totalEnsembleWeightAfterNormalization}")
         println("======================================================================")
       }
 
 
 
-      if (outcome == "TP" || outcome == "FP") { // should we do this for FP as well (remember the fluent)?
+      if (outcome == "TP") { // || outcome == "FP" // should we do this for FP as well (remember the fluent)? NO! MESSES THINGS UP. Generates wrong termination rules
         // If we recognized the fluent successfully during at this round, remember it
         if (!stateHandler.inertiaExpert.knowsAbout(currentFluent)) {
           stateHandler.inertiaExpert.updateWeight(currentFluent, prediction)
@@ -1260,7 +1294,7 @@ object ExpertAdviceFunctions extends LazyLogging {
     */
   }
 
-  def predictHedge(a: AtomTobePredicted, stateHanlder: StateHandler, markedMap: Map[String, Clause]) = {
+  def predictHedge(a: AtomTobePredicted, stateHanlder: StateHandler, markedMap: Map[String, Clause], withInertia: Boolean = true) = {
 
     // Here we assume that initiation rules predict '1' and termination rules predict '0'.
     // The prediction is a number in [0,1] resulting from the weighted avegage of the experts predictions:
@@ -1271,10 +1305,19 @@ object ExpertAdviceFunctions extends LazyLogging {
 
     val inertiaExpertPrediction = stateHanlder.inertiaExpert.getWeight(currentFluent)
 
-    val initWeightSum = if (awakeInit.nonEmpty) awakeInit.map(x => markedMap(x).w_pos).sum else 0.0
-    val termWeightSum = if (awakeTerm.nonEmpty) awakeTerm.map(x => markedMap(x).w_pos).sum else 0.0
+    //val initWeightSum = if (awakeInit.nonEmpty) awakeInit.map(x => markedMap(x).w_pos).sum else 0.0
+    //val termWeightSum = if (awakeTerm.nonEmpty) awakeTerm.map(x => markedMap(x).w_pos).sum else 0.0
 
-    val _prediction = (inertiaExpertPrediction + initWeightSum) / (inertiaExpertPrediction + initWeightSum + termWeightSum)
+    val initWeightSum = if (awakeInit.nonEmpty) awakeInit.map(x => markedMap(x)).filter(x => x.body.nonEmpty).map(x => x.w_pos).sum else 0.0
+    val termWeightSum = if (awakeTerm.nonEmpty) awakeTerm.map(x => markedMap(x)).filter(x => x.body.nonEmpty).map(x => x.w_pos).sum else 0.0
+
+    val _prediction =
+      if (withInertia) {
+        (inertiaExpertPrediction + initWeightSum) / (inertiaExpertPrediction + initWeightSum + termWeightSum)
+      } else {
+        initWeightSum / (initWeightSum + termWeightSum)
+      }
+
     //val _prediction = initWeightSum / (initWeightSum + termWeightSum)
 
     val prediction = if (_prediction.isNaN) 0.0 else _prediction

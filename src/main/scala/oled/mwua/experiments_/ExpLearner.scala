@@ -1,7 +1,7 @@
 package oled.mwua.experiments_
 
 import app.runutils.IOHandling.Source
-import app.runutils.RunningOptions
+import app.runutils.{Globals, RunningOptions}
 import com.typesafe.scalalogging.LazyLogging
 import logic.{Clause, Theory}
 import logic.Examples.Example
@@ -21,7 +21,11 @@ class ExpLearner[T <: Source](val inps: RunningOptions,
                               val writeExprmtResultsTo: String = "") extends LazyLogging {
 
 
-  val learningRate = 0.2 //0.2
+  val learningRate = Globals.sleepingExpertsLearningRate
+
+  val receiveFeedbackBias = Globals.sleepingExpertsFeedBackBias
+
+  val withInertia = Globals.hedgeInertia
 
   val epsilon = 0.9 // used in the randomized version
 
@@ -32,11 +36,6 @@ class ExpLearner[T <: Source](val inps: RunningOptions,
 
   // This is either 'winnow' or 'hedge'
   val weightUpdateStrategy = "hedge"//"winnow"
-
-  // Set this to 1.0 to simulate the case of constant feedback at each round.
-  // For values < 1.0 we only update weights and structure if a biased coin
-  // with receiveFeedbackBias for heads returns heads.
-  val receiveFeedbackBias = 1.0 //0.5
 
   val conservativeRuleGeneration = false
 
@@ -71,22 +70,6 @@ class ExpLearner[T <: Source](val inps: RunningOptions,
       stateHandler
     }
   }
-
-
-  // Just print-out all the data (vag wanted it).
-  /*
-  val test = {
-    val pw = new PrintWriter(new File("/home/nkatz/Desktop/caviar-whole" ))
-    data = getTrainData
-    while (data.hasNext) {
-      val x = data.next()
-      val a = (x.annotation ++ x.narrative).mkString("\n")+"\n\n% New Batch\n\n"
-      pw.write(a)
-    }
-    pw.close()
-  }
-  */
-
 
   //private val logger = LoggerFactory.getLogger(self.path.name)
 
@@ -149,7 +132,7 @@ class ExpLearner[T <: Source](val inps: RunningOptions,
 
     var done = false
 
-    var out = (0, 0, 0)
+    var out = (0, 0, 0, 0.0, Vector.empty[Double])
 
     while(! done) {
 
@@ -168,12 +151,12 @@ class ExpLearner[T <: Source](val inps: RunningOptions,
           ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
             stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
             batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
-            receiveFeedbackBias, conservativeRuleGeneration, weightUpdateStrategy)
+            receiveFeedbackBias, conservativeRuleGeneration, weightUpdateStrategy, withInertia)
         } else {
           ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
             stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
             batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
-            receiveFeedbackBias, conservativeRuleGeneration, weightUpdateStrategy, inputTheory = Some(inputTheory))
+            receiveFeedbackBias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, inputTheory = Some(inputTheory))
         }
       }
     }
@@ -221,15 +204,7 @@ class ExpLearner[T <: Source](val inps: RunningOptions,
       val tps = _stateHandler.totalTPs
       val fps = _stateHandler.totalFPs
       val fns = _stateHandler.totalFNs
-
-      //val microPrecision = tps.toDouble/(tps.toDouble + fps.toDouble)
-      //val microRecall = tps.toDouble/(tps.toDouble + fns.toDouble)
-      //val microFscore = (2*microPrecision*microRecall)/(microPrecision+microRecall)
-
-      println(tps, fps, fns)
-
-      //println(s"Micro F1-score on test set: $microFscore")
-      (tps, fps, fns)
+      (tps, fps, fns, 0.0, Vector.empty[Double])
     } else {
       wrapUp_NO_TEST()
     }
@@ -251,6 +226,9 @@ class ExpLearner[T <: Source](val inps: RunningOptions,
     logger.info(Theory(stateHandler.ensemble.terminationRules.sortBy(x => -x.w_pos)).showWithStats)
 
     logger.info(s"Prequential error vector:\n${stateHandler.perBatchError.mkString(",")}")
+
+    val accumError = stateHandler.perBatchError.scanLeft(0.0)(_ + _).tail
+
     logger.info(s"Prequential error vector (Accumulated Error):\n${stateHandler.perBatchError.scanLeft(0.0)(_ + _).tail}")
     logger.info(s"Total TPs: ${stateHandler.totalTPs}, Total FPs: ${stateHandler.totalFPs}, Total FNs: ${stateHandler.totalFNs}, Total TNs: ${stateHandler.totalTNs}")
     logger.info(s"Total time: ${(endTime - startTime)/1000000000.0}")
@@ -270,16 +248,16 @@ class ExpLearner[T <: Source](val inps: RunningOptions,
     val fps = stateHandler.totalFPs
     val fns = stateHandler.totalFNs
 
-    //val microPrecision = tps.toDouble/(tps.toDouble + fps.toDouble)
-    //val microRecall = tps.toDouble/(tps.toDouble + fns.toDouble)
-    //val microFscore = (2*microPrecision*microRecall)/(microPrecision+microRecall)
+    val microPrecision = tps.toDouble/(tps.toDouble + fps.toDouble)
+    val microRecall = tps.toDouble/(tps.toDouble + fns.toDouble)
+    val microFscore = (2*microPrecision*microRecall)/(microPrecision+microRecall)
     //println(s"Micro F1-score: $microFscore")
     //*/
 
     if (receiveFeedbackBias != 1.0) {
       logger.info(s"\nReceived feedback on ${stateHandler.receivedFeedback} rounds")
     }
-    (tps, fps, fns)
+    (tps, fps, fns, microFscore, accumError)
   }
 
 }

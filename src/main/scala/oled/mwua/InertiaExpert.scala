@@ -12,8 +12,10 @@ class InertiaExpert {
     weightMemory -= fluent
   }
 
+  val decayingFactor = 1.0 //0.05
+
   def getWeight(fluent: String) = {
-    if (weightMemory.keySet.contains(fluent)) weightMemory(fluent) else 0.0
+    if (weightMemory.keySet.contains(fluent)) weightMemory(fluent) * decayingFactor else 0.0
   }
 
   def updateWeight(fluent: String, newWeight: Double) = {

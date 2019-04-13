@@ -39,7 +39,11 @@ object Globals {
     new Globals("")
   }
 
-  var hedgePredictionThreshold = 0.0 // Quick & dirty, for experiments
+  //var hedgePredictionThreshold = 0.0 // Quick & dirty, for experiments
+
+  var sleepingExpertsLearningRate = 0.0 // Quick & dirty, for experiments
+  var sleepingExpertsFeedBackBias = 0.0
+  var hedgeInertia = false
 
   var timeDebug = List[Double]()
 

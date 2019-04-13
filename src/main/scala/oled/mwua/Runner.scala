@@ -1,6 +1,8 @@
 package oled.mwua
 
 import akka.actor.{ActorSystem, Props}
+import app.runners.MLNDataHandler
+import app.runners.MLNDataHandler.MLNDataOptions
 import app.runutils.CMDArgs
 import app.runutils.IOHandling.MongoSource
 import com.mongodb.casbah.{MongoClient, MongoCollection}
@@ -94,35 +96,43 @@ object Runner extends LazyLogging {
       //logger.info(s"\nData order:\n$trainShuffled")
 
       /* This is for running with the entire CAVIAR (no test set)*/
-      /*
+      ///*
       val trainingDataOptions =
         new MongoDataOptions(dbNames = train2, //trainShuffled ,//dataset._1,
           chunkSize = runningOptions.chunkSize, targetConcept = runningOptions.targetHLE, sortDbByField = "time", what = "training")
 
       val testingDataOptions = trainingDataOptions
-      */
+      //*/
 
       /* This is for running on the training set and then performing prequential evaluation on the test set. */
-      ///*
-      val dataset = MeetingTrainTestSets.meeting2
+      /*
+      val dataset = MeetingTrainTestSets.meeting5
       //val dataset = MeetingTrainTestSets.meeting1
 
       //val trainShuffled = scala.util.Random.shuffle(dataset._1)
       //logger.info(s"\nData order:\n$trainShuffled")
 
       val trainingDataOptions =
-        new MongoDataOptions(dbNames = dataset._1, //trainShuffled, //,
+        new MongoDataOptions(dbNames = dataset._1,//trainShuffled, //
           chunkSize = runningOptions.chunkSize, targetConcept = runningOptions.targetHLE, sortDbByField = "time", what = "training")
 
       val testingDataOptions =
         new MongoDataOptions(dbNames = dataset._2,
           chunkSize = runningOptions.chunkSize, targetConcept = runningOptions.targetHLE, sortDbByField = "time", what = "testing")
-      //*/
-
-
+      */
       val trainingDataFunction: MongoDataOptions => Iterator[Example] = FullDatasetHoldOut.getMongoData
-
       val testingDataFunction: MongoDataOptions => Iterator[Example] = FullDatasetHoldOut.getMongoData
+
+
+
+
+
+      /*
+      val trainingDataOptions = new MLNDataOptions("/home/nkatz/dev/CAVIAR_MLN/CAVIAR_MLN/move/fold_1", runningOptions.chunkSize)
+      val testingDataOptions = new MLNDataOptions("/home/nkatz/dev/CAVIAR_MLN/CAVIAR_MLN/move/fold_1", runningOptions.chunkSize)
+      val trainingDataFunction: MLNDataOptions => Iterator[Example] = MLNDataHandler.getTrainingData
+      val testingDataFunction: MLNDataOptions => Iterator[Example] = MLNDataHandler.getTestingData
+      */
 
       val system = ActorSystem("HoeffdingLearningSystem")
 
