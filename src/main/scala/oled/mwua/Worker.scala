@@ -19,18 +19,10 @@ class Worker(val inps: RunningOptions) extends Actor {
   def receive = {
 
     case msg: ProcessBatchMsg =>
-      val p = utils.Utils.time { processExample(msg.theory, msg.batch, msg.targetClass, inps, logger, learningWeights = true) }
+      val p = utils.Utils.time { processExample(msg.theory, msg.batch, msg.targetClass, inps, logger, learningWeights = false) }
       val (r, batchTime) = (p._1, p._2)
       val fmsg = new FinishedBatchMsg(r._1, r._2, r._3, r._4, r._5, r._6, batchTime, msg.targetClass)
       sender ! fmsg
+
   }
-
-
-
-
-
-
-
-
-
 }

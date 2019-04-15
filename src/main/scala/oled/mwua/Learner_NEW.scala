@@ -17,7 +17,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
                                val trainingDataFunction: T => Iterator[Example],
                                val testingDataFunction: T => Iterator[Example],
                                val writeExprmtResultsTo: String = "") extends Actor {
-  val learningRate = 0.3 //1.0 //0.05 //0.2 // 1.0 usually works for winnow
+  val learningRate = 0.2 //1.0 //0.05 //0.2 // 1.0 usually works for winnow
 
   val epsilon = 0.9 //0.9 // used in the randomized version
 
@@ -26,7 +26,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
   // If this is false, some non-determinism is introduced (number of mistakes may vary slightly from round to round)
   val specializeAllAwakeRulesOnFPMistake = false
 
-  val withInertia = false
+  val withInertia = true
 
   // This is either 'winnow' or 'hedge'
   val weightUpdateStrategy = "hedge" //"winnow" // "hedge"

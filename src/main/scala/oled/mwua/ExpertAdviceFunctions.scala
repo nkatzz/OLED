@@ -265,7 +265,7 @@ object ExpertAdviceFunctions extends LazyLogging {
                 }
 
                 if (predictedLabel != feedback) {
-                  if (!withInputTheory) { // we only update weights when an input theory is given
+                  if (!withInputTheory) { // we only update structure when an input theory is given
                     // Shouldn't we update the weights on newly generated rules here?
                     // Of course it's just 1 example, no big deal, but still...
 
@@ -316,18 +316,21 @@ object ExpertAdviceFunctions extends LazyLogging {
           // Try to specialize all rules currently in the ensemble
           // Just to be on the safe side filter out rules with no refinements
           // (i.e. rules that have "reached" their bottom rule).
-          ///*
-          val expandedInit =
-            SingleCoreOLEDFunctions.expandRules(Theory(stateHandler.ensemble.initiationRules.filter(x => x.refinements.nonEmpty)),
-              inps, Logger(this.getClass).underlying)
 
-          val expandedTerm =
-            SingleCoreOLEDFunctions.expandRules(Theory(stateHandler.ensemble.terminationRules.filter(x => x.refinements.nonEmpty)),
-              inps, Logger(this.getClass).underlying)
+          if (!withInputTheory) { // Update structure only when we are learning from scratch
+            ///*
+            val expandedInit =
+              SingleCoreOLEDFunctions.expandRules(Theory(stateHandler.ensemble.initiationRules.filter(x => x.refinements.nonEmpty)),
+                inps, Logger(this.getClass).underlying)
 
-          stateHandler.ensemble.initiationRules = expandedInit._1.clauses
-          stateHandler.ensemble.terminationRules = expandedTerm._1.clauses
-          //*/
+            val expandedTerm =
+              SingleCoreOLEDFunctions.expandRules(Theory(stateHandler.ensemble.terminationRules.filter(x => x.refinements.nonEmpty)),
+                inps, Logger(this.getClass).underlying)
+
+            stateHandler.ensemble.initiationRules = expandedInit._1.clauses
+            stateHandler.ensemble.terminationRules = expandedTerm._1.clauses
+            //*/
+          }
         }
       }
     }

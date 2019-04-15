@@ -187,6 +187,7 @@ class Learner_OLD_DEBUG[T <: Source](val inps: RunningOptions,
       }
       logger.info(s"Prequential error vector:\n${prequentialError.mkString(",")}")
       logger.info(s"Prequential error vector (Accumulated Error):\n${prequentialError.scanLeft(0.0)(_ + _).tail}")
+      logger.info(s"Total TPs: $TPs, total FPs: $FPs, total FNs: $FNs")
 
       context.system.terminate()
     }
@@ -238,8 +239,8 @@ class Learner_OLD_DEBUG[T <: Source](val inps: RunningOptions,
     } else {
       //evaluate(nextBatch)
       //evaluateTest(nextBatch)
-      //evaluateTest_NEW(nextBatch)
-      evaluateTest_NEW_EXPAND_WHEN_NEEDED(nextBatch)
+      evaluateTest_NEW(nextBatch)
+      //evaluateTest_NEW_EXPAND_WHEN_NEEDED(nextBatch)
     }
   }
 
@@ -341,6 +342,10 @@ class Learner_OLD_DEBUG[T <: Source](val inps: RunningOptions,
 
 
 
+  var TPs = 0
+  var FPs = 0
+  var FNs = 0
+
   def evaluate(batch: Example, inputTheoryFile: String = ""): Unit = {
 
     if (inps.prequential) {
@@ -353,10 +358,11 @@ class Learner_OLD_DEBUG[T <: Source](val inps: RunningOptions,
 
         val merged = Theory( init.clauses.filter(p => p.precision >= inps.pruneThreshold) ++ term.clauses.filter(p => p.recall >= inps.pruneThreshold) )
 
-        val (tps, fps, fns, precision, recall, fscore) = eval(merged, batch, inps)
+        val (tps, fps, fns, precision, recall, fscore) = eval(merged, batch, inps, inputTheoryFile)
 
-        // I think this is wrong, the correct error is the number of mistakes (fps+fns)
-        //currentError = s"TPs: $tps, FPs: $fps, FNs: $fns, error (|true state| - |inferred state|): ${math.abs(batch.annotation.toSet.size - (tps+fps))}"
+        TPs += tps
+        FPs += fps
+        FNs += fns
 
         val error = (fps+fns).toDouble
 

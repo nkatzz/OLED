@@ -354,11 +354,11 @@ class Learner[T <: Source](val inps: RunningOptions,
       }
     } else {
 
-      //evaluate(nextBatch)
+      evaluate(nextBatch)
 
       //evaluateTest(nextBatch)
 
-      evaluateTest_NEW(nextBatch)
+      //evaluateTest_NEW(nextBatch)
 
       //evaluateTest_NEW_EXPAND_WHEN_NEEDED(nextBatch)
 
@@ -410,13 +410,15 @@ class Learner[T <: Source](val inps: RunningOptions,
     logger.info(s"Prequential error vector:\n${prequentialError.mkString(",")}")
     logger.info(s"Prequential error vector (Accumulated Error):\n${prequentialError.scanLeft(0.0)(_ + _).tail}")
 
+    logger.info(s"Total TPs: $TPs, total FPs: $FPs, total FNs: $FNs")
+
     if (this.writeExprmtResultsTo != "") {
       // Just for quick and dirty experiments
       val x = prequentialError.scanLeft(0.0)(_ + _).tail.toString()
       Utils.writeToFile(new File(this.writeExprmtResultsTo), "append") { p => List(x).foreach(p.println) }
     }
 
-    logger.info(s"Total TPs: ${totalTPs.size}, Total FPs: ${totalFPs.size}, Total FNs: ${totalFNs.size}")
+    //logger.info(s"Total TPs: ${totalTPs.size}, Total FPs: ${totalFPs.size}, Total FNs: ${totalFNs.size}")
 
     if (trainingDataOptions != testingDataOptions) {
 
@@ -468,7 +470,9 @@ class Learner[T <: Source](val inps: RunningOptions,
 
 
 
-
+  var TPs = 0
+  var FPs = 0
+  var FNs = 0
 
 
   def evaluate(batch: Example, inputTheoryFile: String = ""): Unit = {
@@ -489,6 +493,11 @@ class Learner[T <: Source](val inps: RunningOptions,
         //currentError = s"TPs: $tps, FPs: $fps, FNs: $fns, error (|true state| - |inferred state|): ${math.abs(batch.annotation.toSet.size - (tps+fps))}"
 
         val error = (fps+fns).toDouble
+
+        TPs += tps
+        FPs += fps
+        FNs += fns
+
 
         currentError = s"Number of mistakes (FPs+FNs) "
         this.prequentialError = this.prequentialError :+ error
