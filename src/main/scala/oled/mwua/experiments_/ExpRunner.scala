@@ -72,10 +72,12 @@ object ExpRunner extends LazyLogging {
             val result = learner.run()
 
             //(Int, Int, Int, Double, Vector[Double])
-            val (tps, fps, fns, fscore, errorVec) = (result._1,result._2,result._3,result._4,result._5)
+            val (tps, fps, fns, fscore, errorVec, fscoreVec) = (result._1,result._2,result._3,result._4,result._5, result._6)
 
             val msg = s"${runningOptions.targetHLE}, rate: $rate, feedback bias: $bias, " +
-              s"inertia: $withInertia\ntps: $tps, fps: $fps, fns: $fns, total error: ${fps+fns}, fscore: $fscore\nerror vector:\n$errorVec\n\n"
+              s"inertia: $withInertia\ntps: $tps, fps: $fps, fns: $fns, total error: ${fps+fns}, " +
+              s"fscore: $fscore\nerror vector:\n$errorVec\nprequential " +
+              s"F1-score vector:\n$fscoreVec\nAverage prequential F1-score:${fscoreVec.sum/fscoreVec.length}\n\n"
 
             println(msg)
 

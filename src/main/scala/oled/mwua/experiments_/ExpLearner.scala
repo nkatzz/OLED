@@ -132,7 +132,7 @@ class ExpLearner[T <: Source](val inps: RunningOptions,
 
     var done = false
 
-    var out = (0, 0, 0, 0.0, Vector.empty[Double])
+    var out = (0, 0, 0, 0.0, Vector.empty[Double], Vector.empty[Double])
 
     while(! done) {
 
@@ -204,7 +204,7 @@ class ExpLearner[T <: Source](val inps: RunningOptions,
       val tps = _stateHandler.totalTPs
       val fps = _stateHandler.totalFPs
       val fns = _stateHandler.totalFNs
-      (tps, fps, fns, 0.0, Vector.empty[Double])
+      (tps, fps, fns, 0.0, Vector.empty[Double], Vector.empty[Double])
     } else {
       wrapUp_NO_TEST()
     }
@@ -230,6 +230,8 @@ class ExpLearner[T <: Source](val inps: RunningOptions,
     val accumError = stateHandler.perBatchError.scanLeft(0.0)(_ + _).tail
 
     logger.info(s"Prequential error vector (Accumulated Error):\n${stateHandler.perBatchError.scanLeft(0.0)(_ + _).tail}")
+    logger.info(s"Prequential F1-score:\n${stateHandler.runningF1Score}")
+    logger.info(s"Average prequential F1-score: ${stateHandler.runningF1Score.sum/stateHandler.runningF1Score.length}")
     logger.info(s"Total TPs: ${stateHandler.totalTPs}, Total FPs: ${stateHandler.totalFPs}, Total FNs: ${stateHandler.totalFNs}, Total TNs: ${stateHandler.totalTNs}")
     logger.info(s"Total time: ${(endTime - startTime)/1000000000.0}")
 
@@ -257,7 +259,7 @@ class ExpLearner[T <: Source](val inps: RunningOptions,
     if (receiveFeedbackBias != 1.0) {
       logger.info(s"\nReceived feedback on ${stateHandler.receivedFeedback} rounds")
     }
-    (tps, fps, fns, microFscore, accumError)
+    (tps, fps, fns, microFscore, accumError, stateHandler.runningF1Score)
   }
 
 }
