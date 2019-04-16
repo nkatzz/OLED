@@ -137,28 +137,29 @@ object Runner extends LazyLogging {
       val system = ActorSystem("HoeffdingLearningSystem")
 
       // use also start to evaluate a hand-crafted theory, the whole thing is hard-coded in Learner_NEW
-      val startMsg = "start"//if (runningOptions.evalth != "None") "eval" else "start"
+      val startMsg = if (runningOptions.evalth != "None") "eval" else "start"
 
       // use a hand-crafted theory for sequential prediction (updates the weights but not the structure of the rules).
       //--evalth=/home/nkatz/Desktop/theory
       //val startMsg = "predict"
 
-      ///*
+      /*
       system.actorOf(Props(new Learner_NEW(runningOptions, trainingDataOptions, testingDataOptions, trainingDataFunction,
         testingDataFunction)), name = "Learner") ! startMsg
-      //*/
+      */
 
+      // Use this to evaluate a hand-crafted theory
       /*
       system.actorOf(Props(new Learner_OLD_DEBUG(runningOptions, trainingDataOptions, testingDataOptions, trainingDataFunction,
         testingDataFunction)), name = "Learner") ! startMsg
       */
 
 
-      // This is for evaluating OLED
-      /*
+      // Use this for evaluating OLED
+      ///*
       system.actorOf(Props(new Learner(runningOptions, trainingDataOptions, testingDataOptions, trainingDataFunction,
         testingDataFunction)), name = "Learner") ! startMsg
-       */
+      //*/
     }
   }
 

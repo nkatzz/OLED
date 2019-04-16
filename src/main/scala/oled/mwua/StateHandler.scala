@@ -64,7 +64,17 @@ class StateHandler {
 
   var batchCounter = 0
 
-  var perBatchError: Vector[Int] = Vector[Int]()
+  var perBatchError: Vector[Int] = Vector.empty[Int]
+
+  var runningF1Score: Vector[Double] = Vector.empty[Double]
+
+  def updateRunningF1Score = {
+    val currentPrecision = totalTPs.toDouble/(totalTPs+totalFPs)
+    val currentRecall = totalTPs.toDouble/(totalTPs+totalFNs)
+    val _currentF1Score = 2*currentPrecision*currentRecall/(currentPrecision+currentRecall)
+    val currentF1Score = if (_currentF1Score.isNaN) 0.0 else _currentF1Score
+    runningF1Score = runningF1Score :+ currentF1Score
+  }
 
   var receivedFeedback = 0
 

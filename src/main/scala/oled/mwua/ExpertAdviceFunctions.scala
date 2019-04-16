@@ -312,6 +312,7 @@ object ExpertAdviceFunctions extends LazyLogging {
           }
           finishedBatch = true
           stateHandler.perBatchError = stateHandler.perBatchError :+ batchError
+          stateHandler.updateRunningF1Score
 
           // Try to specialize all rules currently in the ensemble
           // Just to be on the safe side filter out rules with no refinements
@@ -335,9 +336,7 @@ object ExpertAdviceFunctions extends LazyLogging {
       }
     }
 
-
     //println(s"Batch processing time: ${predictAndUpdateTimed._2}")
-
 
     //logger.info(s"Batch processing time: ${predictAndUpdateTimed._2}")
     if (batchError > 0) {

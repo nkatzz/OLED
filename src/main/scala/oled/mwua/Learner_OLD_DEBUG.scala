@@ -187,6 +187,7 @@ class Learner_OLD_DEBUG[T <: Source](val inps: RunningOptions,
       }
       logger.info(s"Prequential error vector:\n${prequentialError.mkString(",")}")
       logger.info(s"Prequential error vector (Accumulated Error):\n${prequentialError.scanLeft(0.0)(_ + _).tail}")
+      logger.info(s"Prequential F1-Score:\n$runningF1Score")
       logger.info(s"Total TPs: $TPs, total FPs: $FPs, total FNs: $FNs")
 
       context.system.terminate()
@@ -346,6 +347,8 @@ class Learner_OLD_DEBUG[T <: Source](val inps: RunningOptions,
   var FPs = 0
   var FNs = 0
 
+  var runningF1Score = Vector.empty[Double]
+
   def evaluate(batch: Example, inputTheoryFile: String = ""): Unit = {
 
     if (inps.prequential) {
@@ -363,6 +366,12 @@ class Learner_OLD_DEBUG[T <: Source](val inps: RunningOptions,
         TPs += tps
         FPs += fps
         FNs += fns
+
+        val currentPrecision = TPs.toDouble/(TPs+FPs)
+        val currentRecall = TPs.toDouble/(TPs+FNs)
+        val _currentF1Score = 2*currentPrecision*currentRecall/(currentPrecision+currentRecall)
+        val currentF1Score = if (_currentF1Score.isNaN) 0.0 else _currentF1Score
+        runningF1Score = runningF1Score :+ currentF1Score
 
         val error = (fps+fns).toDouble
 

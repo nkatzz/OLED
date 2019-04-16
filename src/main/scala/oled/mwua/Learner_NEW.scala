@@ -42,8 +42,8 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
   val percentOfMistakesBeforeSpecialize = 0
 
   // have this set to "" for a regular run without an input theory
-  //val inputTheoryFile = "/home/nkatz/Desktop/theory"
-  val inputTheoryFile = ""
+  val inputTheoryFile = "/home/nkatz/Desktop/theory"
+  //val inputTheoryFile = ""
 
   val inputTheory: List[Clause] = {
     def matches(p: Regex, str: String) = p.pattern.matcher(str).matches
@@ -263,6 +263,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
 
     logger.info(s"Prequential error vector:\n${stateHandler.perBatchError.mkString(",")}")
     logger.info(s"Prequential error vector (Accumulated Error):\n${stateHandler.perBatchError.scanLeft(0.0)(_ + _).tail}")
+    logger.info(s"Prequential (running) F1-score:\n${stateHandler.runningF1Score}")
     logger.info(s"Total TPs: ${stateHandler.totalTPs}, Total FPs: ${stateHandler.totalFPs}, Total FNs: ${stateHandler.totalFNs}, Total TNs: ${stateHandler.totalTNs}")
     logger.info(s"Total time: ${(endTime - startTime)/1000000000.0}")
 
