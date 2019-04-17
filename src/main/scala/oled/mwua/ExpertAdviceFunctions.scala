@@ -232,22 +232,22 @@ object ExpertAdviceFunctions extends LazyLogging {
 
               // Handles whether we receive feedback or not.
               val update = {
-                ///*
+                /*
                 if (receiveFeedbackBias == 1.0) {
                   true
                 } else {
                   val p = Math.random()
                   if (p <= receiveFeedbackBias) true else false
                 }
-                //*/
-                /*
+                */
+                ///*
                 if (atomCounter < feedBackGap) {
                   false
                 } else if (atomCounter == feedBackGap) {
                   atomCounter = 0
                   true
                 } else throw new RuntimeException("Problem with atom counter for feedback gap...")
-                */
+                //*/
               }
 
               var generateNewRuleFlag = false
