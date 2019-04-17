@@ -17,7 +17,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
                                val trainingDataFunction: T => Iterator[Example],
                                val testingDataFunction: T => Iterator[Example],
                                val writeExprmtResultsTo: String = "") extends Actor {
-  val learningRate = 0.005 //1.0 //0.05 //0.2 // 1.0 usually works for winnow
+  val learningRate = 0.2 //1.0 //0.05 //0.2 // 1.0 usually works for winnow
 
   val epsilon = 0.9 //0.9 // used in the randomized version
 
@@ -36,7 +36,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
   // Set this to 1.0 to simulate the case of constant feedback at each round.
   // For values < 1.0 we only update weights and structure if a biased coin
   // with receiveFeedbackBias for heads returns heads.
-  val receiveFeedbackBias = 1.0 //0.5
+  val receiveFeedbackBias = 0.1 //0.5
 
   val conservativeRuleGeneration = true
 

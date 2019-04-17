@@ -101,7 +101,7 @@ object ExpertAdviceFunctions extends LazyLogging {
 
             if (!alreadyProcessedAtoms.contains(currentAtom)) {
 
-              if (feedBackGap != 0) atomCounter += 1
+              if (feedBackGap != 0) atomCounter += 1 // used for experiments with the feedback gap
 
               //logger.info(s"predicting with:\n${stateHandler.ensemble.merged(inps).tostring}")
 
@@ -232,20 +232,22 @@ object ExpertAdviceFunctions extends LazyLogging {
 
               // Handles whether we receive feedback or not.
               val update = {
-                /*
+                ///*
                 if (receiveFeedbackBias == 1.0) {
                   true
                 } else {
                   val p = Math.random()
                   if (p <= receiveFeedbackBias) true else false
                 }
-                */
+                //*/
+                /*
                 if (atomCounter < feedBackGap) {
                   false
                 } else if (atomCounter == feedBackGap) {
                   atomCounter = 0
                   true
                 } else throw new RuntimeException("Problem with atom counter for feedback gap...")
+                */
               }
 
               var generateNewRuleFlag = false
@@ -298,7 +300,7 @@ object ExpertAdviceFunctions extends LazyLogging {
                   }
                 }
               } else {
-                // Here we do not receive feedback. We need to handle inertia here
+                // Here we do not receive feedback. We need to handle inertia here.
                 // Note that if feedback is received inertia is handled at the updateWeights method.
                 // If the prediction is TP (TN) the fluent is added (removed) from the inertia memory.
                 // If the prediction is incorrect, then in the FP case the fluent is added to the inertia
@@ -306,6 +308,7 @@ object ExpertAdviceFunctions extends LazyLogging {
                 // in subsequent rounds if it persists. In the FN case we reduce the inertia weight (if non-zero)
                 // for the erroneously predicted fluent. Here we are in the case where no feedback is received
                 // (so its purely testing and/or providing an inference service), so we need to handle inertia.
+                /*
                 if (predictedLabel == "true") {
                   if (!stateHandler.inertiaExpert.knowsAbout(atom.fluent))
                     stateHandler.inertiaExpert.updateWeight(atom.fluent, prediction)
@@ -313,6 +316,7 @@ object ExpertAdviceFunctions extends LazyLogging {
                   if (!stateHandler.inertiaExpert.knowsAbout(atom.fluent))
                     stateHandler.inertiaExpert.forget(atom.fluent)
                 }
+                */
               }
 
               // Not a very good idea to do this here (comment, last line). The reason to do it here is to
