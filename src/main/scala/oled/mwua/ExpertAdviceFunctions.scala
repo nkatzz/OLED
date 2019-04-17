@@ -37,6 +37,7 @@ object ExpertAdviceFunctions extends LazyLogging {
               conservativeRuleGeneration: Boolean = true,
               weightUpdateStrategy: String = "winnow", // this is either 'hedge' or 'winnow',
               withInertia: Boolean = true,
+              feedBackGap: Int = 0,
               splice: Option[Map[String, Double] => (Set[EvidenceAtom], Evidence)] = None,
               mapper: Option[Set[EvidenceAtom] => Vector[String]] = None,
               incompleteTrueAtoms: Option[Set[String]] = None,
@@ -51,6 +52,8 @@ object ExpertAdviceFunctions extends LazyLogging {
     var batchFNs = 0
     var batchAtoms = 0
     var finishedBatch = false
+
+    var atomCounter = 0 //used for feedback gap
 
     var hedgePredictionThreshold = 0.5
 
@@ -97,6 +100,8 @@ object ExpertAdviceFunctions extends LazyLogging {
             val currentAtom = atom.atom
 
             if (!alreadyProcessedAtoms.contains(currentAtom)) {
+
+              if (feedBackGap != 0) atomCounter += 1
 
               //logger.info(s"predicting with:\n${stateHandler.ensemble.merged(inps).tostring}")
 
@@ -227,12 +232,20 @@ object ExpertAdviceFunctions extends LazyLogging {
 
               // Handles whether we receive feedback or not.
               val update = {
+                /*
                 if (receiveFeedbackBias == 1.0) {
                   true
                 } else {
                   val p = Math.random()
                   if (p <= receiveFeedbackBias) true else false
                 }
+                */
+                if (atomCounter < feedBackGap) {
+                  false
+                } else if (atomCounter == feedBackGap) {
+                  atomCounter = 0
+                  true
+                } else throw new RuntimeException("Problem with atom counter for feedback gap...")
               }
 
               var generateNewRuleFlag = false
