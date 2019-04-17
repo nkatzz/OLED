@@ -291,7 +291,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
     println(s"Micro F1-score: $microFscore")
     */
 
-    if (receiveFeedbackBias != 1.0) {
+    if (receiveFeedbackBias != 1.0 || feedbackGap != 0) {
       logger.info(s"\nReceived feedback on ${stateHandler.receivedFeedback} rounds")
     }
   }
