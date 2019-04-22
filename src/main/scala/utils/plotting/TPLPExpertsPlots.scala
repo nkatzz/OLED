@@ -23,12 +23,12 @@ object TPLPExpertsPlots extends App {
     val OLED = data.next().split(",").map(_.toDouble).toVector
     val OLED_MLN = data.next().split(",").map(_.toDouble).toVector
     val OLED_Experts = data.next().split(",").map(_.toDouble).toVector
-    Figure("meeting-prequential-mistakes").
-      plot(handCrafted).
-      plot()(handCraftedExperts). //plot(marker = X, markFillColor = BLUE)(handCraftedExperts).
-      plot(color = GREEN!70!BLACK)(OLED).
-      plot(color = ORANGE)(OLED_MLN).
-      plot(color = BLACK)(OLED_Experts)
+    Figure("meeting-prequential-mistakes")
+    .plot(color = BLACK, marker = X, markStrokeColor = BLACK)(makeSparse(handCrafted)).
+      plot(color = BLUE, marker = TRIANGLE, markStrokeColor = BLUE)(makeSparse(handCraftedExperts)).
+      plot(color = GREEN!70!BLACK, marker = CIRCLE, markStrokeColor = GREEN!70!BLACK)(makeSparse(OLED)).
+      plot(color = ORANGE, marker = PLUS, markStrokeColor = ORANGE)(makeSparse(OLED_MLN)).
+      plot(color = RED, marker = ASTERISK, markStrokeColor = RED)(makeSparse(OLED_Experts))
       .havingLegends("\\footnotesize \\textsf{HandCrafted}", "\\footnotesize \\textsf{HandCrafted-EXP}", "\\footnotesize \\textsf{OLED}",
         "\\footnotesize \\textsf{OLED-MLN}", "\\footnotesize \\textsf{OLED-EXP}")
       .havingLegendPos(NORTH_WEST)
@@ -47,11 +47,11 @@ object TPLPExpertsPlots extends App {
     val OLED_MLN = data.next().split(",").map(_.toDouble).toVector
     val OLED_Experts = data.next().split(",").map(_.toDouble).toVector
     Figure("meeting-prequential-fscore")
-      .plot(handCrafted).
-      plot()(handCraftedExperts). //plot(marker = X, markFillColor = BLUE)(handCraftedExperts).
-      plot(color = GREEN!70!BLACK)(OLED).
-      plot(color = ORANGE)(OLED_MLN).
-      plot(color = BLACK)(OLED_Experts)
+      .plot(color = BLACK, marker = X, markStrokeColor = BLACK)(makeSparse(handCrafted)).
+      plot(color = BLUE, marker = TRIANGLE, markStrokeColor = BLUE)(makeSparse(handCraftedExperts)).
+      plot(color = GREEN!70!BLACK, marker = CIRCLE, markStrokeColor = GREEN!70!BLACK)(makeSparse(OLED)).
+      plot(color = ORANGE, marker = PLUS, markStrokeColor = ORANGE)(makeSparse(OLED_MLN)).
+      plot(color = RED, marker = ASTERISK, markStrokeColor = RED)(makeSparse(OLED_Experts))
       .havingLegends("\\footnotesize \\textsf{HandCrafted}", "\\footnotesize \\textsf{HandCrafted-EXP}", "\\footnotesize \\textsf{OLED}",
         "\\footnotesize \\textsf{OLED-MLN}", "\\footnotesize \\textsf{OLED-EXP}")
       .havingLegendPos(SOUTH_EAST)
@@ -70,11 +70,11 @@ object TPLPExpertsPlots extends App {
     val OLED_MLN = data.next().split(",").map(_.toDouble).toVector
     val OLED_Experts = data.next().split(",").map(_.toDouble).toVector
     Figure("moving-prequential-fscore")
-      .plot(handCrafted).
-      plot()(handCraftedExperts). //plot(marker = X, markFillColor = BLUE)(handCraftedExperts).
-      plot(color = GREEN!70!BLACK)(OLED).
-      plot(color = ORANGE)(OLED_MLN).
-      plot(color = BLACK)(OLED_Experts)
+      .plot(color = BLACK, marker = X, markStrokeColor = BLACK)(makeSparse(handCrafted)).
+      plot(color = BLUE, marker = TRIANGLE, markStrokeColor = BLUE)(makeSparse(handCraftedExperts)).
+      plot(color = GREEN!70!BLACK, marker = CIRCLE, markStrokeColor = GREEN!70!BLACK)(makeSparse(OLED)).
+      plot(color = ORANGE, marker = PLUS, markStrokeColor = ORANGE)(makeSparse(OLED_MLN)).
+      plot(color = RED, marker = ASTERISK, markStrokeColor = RED)(makeSparse(OLED_Experts))
       .havingLegends("\\footnotesize \\textsf{HandCrafted}", "\\footnotesize \\textsf{HandCrafted-EXP}", "\\footnotesize \\textsf{OLED}",
       "\\footnotesize \\textsf{OLED-MLN}", "\\footnotesize \\textsf{OLED-EXP}")
       .havingLegendPos(SOUTH_EAST)
@@ -93,11 +93,11 @@ object TPLPExpertsPlots extends App {
     val OLED_MLN = data.next().split(",").map(_.toDouble).toVector
     val OLED_Experts = data.next().split(",").map(_.toDouble).toVector
     Figure("moving-prequential-mistakes")
-    .plot(handCrafted).
-      plot()(handCraftedExperts). //plot(marker = X, markFillColor = BLUE)(handCraftedExperts).
-      plot(color = GREEN!70!BLACK)(OLED).
-      plot(color = ORANGE)(OLED_MLN).
-      plot(color = BLACK)(OLED_Experts)
+    .plot(color = BLACK, marker = X, markStrokeColor = BLACK)(makeSparse(handCrafted)).
+      plot(color = BLUE, marker = TRIANGLE, markStrokeColor = BLUE)(makeSparse(handCraftedExperts)).
+      plot(color = GREEN!70!BLACK, marker = CIRCLE, markStrokeColor = GREEN!70!BLACK)(makeSparse(OLED)).
+      plot(color = ORANGE, marker = PLUS, markStrokeColor = ORANGE)(makeSparse(OLED_MLN)).
+      plot(color = RED, marker = ASTERISK, markStrokeColor = RED)(makeSparse(OLED_Experts))
       .havingLegends("\\footnotesize \\textsf{HandCrafted}", "\\footnotesize \\textsf{HandCrafted-EXP}", "\\footnotesize \\textsf{OLED}",
         "\\footnotesize \\textsf{OLED-MLN}", "\\footnotesize \\textsf{OLED-EXP}")
       .havingLegendPos(NORTH_WEST)
@@ -106,6 +106,17 @@ object TPLPExpertsPlots extends App {
       havingTitle("\\emph{Moving}").
       saveAsPDF(savePath)
     //.show()
+  }
+
+  def makeSparse(input: Vector[Double]): Vector[(Double, Double)] = {
+    val l = input.length
+    input.zipWithIndex.foldLeft(Vector.empty[(Double, Double)]) {
+      case (output, (x, i)) =>
+        if (output.isEmpty) output :+ (i.toDouble, x)
+        else if (i == l - 1) output :+ (i.toDouble, x)
+        else if (output.last._2 != x) output :+ (i.toDouble, x)
+        else output
+    }
   }
 
 }

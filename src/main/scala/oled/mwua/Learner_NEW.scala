@@ -23,7 +23,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
 
   val randomizedPrediction = false
 
-  val feedbackGap = 50
+  val feedbackGap = 100
 
   // If this is false, some non-determinism is introduced (number of mistakes may vary slightly from round to round)
   val specializeAllAwakeRulesOnFPMistake = false
@@ -36,7 +36,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
   // Set this to 1.0 to simulate the case of constant feedback at each round.
   // For values < 1.0 we only update weights and structure if a biased coin
   // with receiveFeedbackBias for heads returns heads.
-  val receiveFeedbackBias = 0.1 //0.5
+  val receiveFeedbackBias = 0.2 //0.5
 
   val conservativeRuleGeneration = true
 
