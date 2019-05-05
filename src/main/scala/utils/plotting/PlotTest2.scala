@@ -43,7 +43,9 @@ object PlotTest2 extends App {
     ///*
     Figure("rendezvous-msgs").plot(syncTime).plot(asyncTime).havingLegendPos(LegendPos.NORTH_EAST).
       havingLegends("sync","async").
-      havingXLabel("Number of cores").havingYLabel("Number of messages").havingAxisXLabels(Seq("2","4","8","16")).saveAsPDF(savePath)
+      havingXLabel("Number of cores").
+      havingYLabel("Number of messages").
+      havingAxisXLabels(Seq("2","4","8","16")).saveAsPDF(savePath)
     //*/
     /*
     Figure("loitering-time").bar(syncTime).plot(asyncTime).havingLegendPos(LegendPos.NORTH_EAST).

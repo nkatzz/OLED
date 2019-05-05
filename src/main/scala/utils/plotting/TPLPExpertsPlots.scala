@@ -11,10 +11,88 @@ import scalatikz.graphics.pgf.enums.Mark.DOT
 
 object TPLPExpertsPlots extends App {
 
-  plotMovingF1Scores("/home/nkatz/Desktop/TPLP-2019-results/moving-prequential-comparison-PrequentialF1Score", "/home/nkatz/Desktop/TPLP-2019-results")
-  plotMovingMistakes("/home/nkatz/Desktop/TPLP-2019-results/moving-prequential-comparison-MistakeNum", "/home/nkatz/Desktop/TPLP-2019-results")
-  plotMeetingMistakes("/home/nkatz/Desktop/TPLP-2019-results/meeting-prequential-comparison-MistakeNum", "/home/nkatz/Desktop/TPLP-2019-results")
-  plotMeetingF1Scores("/home/nkatz/Desktop/TPLP-2019-results/meeting-prequential-comparison-PrequentialF1Score", "/home/nkatz/Desktop/TPLP-2019-results")
+  //plotMovingF1Scores("/home/nkatz/Desktop/TPLP-2019-results/moving-prequential-comparison-PrequentialF1Score", "/home/nkatz/Desktop/TPLP-2019-results")
+  //plotMovingMistakes("/home/nkatz/Desktop/TPLP-2019-results/moving-prequential-comparison-MistakeNum", "/home/nkatz/Desktop/TPLP-2019-results")
+  //plotMeetingMistakes("/home/nkatz/Desktop/TPLP-2019-results/meeting-prequential-comparison-MistakeNum", "/home/nkatz/Desktop/TPLP-2019-results")
+  //plotMeetingF1Scores("/home/nkatz/Desktop/TPLP-2019-results/meeting-prequential-comparison-PrequentialF1Score", "/home/nkatz/Desktop/TPLP-2019-results")
+
+  //plotLimitedFeedbackMeeting("/home/nkatz/Desktop/TPLP-2019-results")
+  //plotLimitedFeedbackMoving("/home/nkatz/Desktop/TPLP-2019-results")
+
+  //plotLimitedFeedbackMovingBarChart("/home/nkatz/Desktop/TPLP-2019-results")
+  //plotLimitedFeedbackMeetingBarChart("/home/nkatz/Desktop/TPLP-2019-results")
+
+
+  plotPrequentialTimeMeeting("/home/nkatz/Desktop/TPLP-2019-results")
+
+  def plotPrequentialTimeMeeting(savePath: String) = {
+    val times = Vector(12.0, 53.0, 118.0, 92.0)
+    Figure("meeting-prequential-time").
+      bar(color = BLUE!50!BLACK, barWidth = 0.3)(times).
+      havingYLabel("\\textbf{Time (sec)}").
+      havingAxisXLabels(Seq("\\textsf{\\footnotesize HandCrafted-EXP}",
+        "\\textsf{\\footnotesize OLED}", "\\textsf{\\footnotesize OLED-MLN}",
+        "\\textsf{\\footnotesize OLED-EXP}")).
+      havingTitle("\\emph{Meeting}").
+      saveAsPDF(savePath)
+
+  }
+
+  def plotLimitedFeedbackMovingBarChart(savePath: String) = {
+    val feedbackProbs = Vector(0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0)
+    val fscores = Vector(0.834, 0.843, 0.896, 0.934, 0.948, 0.963, 0.966, 0.968, 0.968, 0.968)
+    val t = feedbackProbs zip fscores
+    Figure("moving-limited-feedback")
+      .stem(color = BLUE!50!BLACK, marker = CIRCLE)(t)
+      .havingXLabel("\\textbf{Feedback probability}").
+      havingYLabel("\\textbf{Prequential $F_1$-score (final)}").havingYLimits(0.5, 1.0).
+      havingAxisXLabels(Seq("0.1","0.2","0.3","0.4","0.5","0.6","0.7","0.8","0.9","1.0")).
+      havingTitle("\\emph{Moving}")
+      .saveAsPDF(savePath)
+  }
+
+  def plotLimitedFeedbackMeetingBarChart(savePath: String) = {
+    val feedbackProbs = Vector(0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0)
+    val fscores = Vector(0.822, 0.845, 0.883, 0.905, 0.948, 0.963, 0.966, 0.968, 0.968, 0.968)
+    val t = feedbackProbs zip fscores
+    Figure("meeting-limited-feedback")
+      .stem(color = BLUE!50!BLACK, marker = CIRCLE)(t)
+      //.bar(t)
+      .havingXLabel("\\textbf{Feedback probability}").
+      havingYLabel("\\textbf{Prequential $F_1$-score (final)}").havingYLimits(0.5, 1.0).
+      havingAxisXLabels(Seq("0.1","0.2","0.3","0.4","0.5","0.6","0.7","0.8","0.9","1.0")).
+      havingTitle("\\emph{Meeting}")
+      .saveAsPDF(savePath)
+  }
+
+  def plotLimitedFeedbackMoving(savePath: String) = {
+    val feedbackProbs = Vector(0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0)
+    val fscores = Vector(0.834, 0.843, 0.896, 0.934, 0.948, 0.963, 0.966, 0.968, 0.968, 0.968)
+
+    val t = feedbackProbs zip fscores
+
+    Figure("moving-limited-feedback").plot(t).havingLegendPos(LegendPos.NORTH_EAST).
+      //havingLegends("sync","async").
+      havingXLabel("Feedback probability").
+      havingYLabel("Prequential $F_1$-score (final)").havingYLimits(0.5, 1.0).
+      havingAxisXLabels(Seq("0.1","0.2","0.3","0.4","0.5","0.6","0.7","0.8","0.9","1.0")).
+      havingTitle("\\emph{Moving}").
+      saveAsPDF(savePath)
+  }
+
+  def plotLimitedFeedbackMeeting(savePath: String) = {
+    val feedbackProbs = Vector(0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0)
+    val fscores = Vector(0.822, 0.845, 0.883, 0.905, 0.948, 0.963, 0.966, 0.968, 0.968, 0.968)
+
+    val t = feedbackProbs zip fscores
+
+    Figure("meeting-limited-feedback").plot(t).havingLegendPos(LegendPos.NORTH_EAST).
+      //havingLegends("sync","async").
+      havingXLabel("Feedback probability").
+      havingYLabel("Prequential $F_1$-score (final)").havingYLimits(0.5, 1.0).
+      havingAxisXLabels(Seq("0.1","0.2","0.3","0.4","0.5","0.6","0.7","0.8","0.9","1.0")).
+      havingTitle("\\emph{Meeting}").saveAsPDF(savePath)
+  }
 
   def plotMeetingMistakes(dataPath: String, savePath: String) = {
     val data = Source.fromFile(dataPath).getLines.filter( x => !x.isEmpty && !x.startsWith("%"))//.split(",")
