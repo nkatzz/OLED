@@ -22,11 +22,40 @@ object TPLPExpertsPlots extends App {
   //plotLimitedFeedbackMovingBarChart("/home/nkatz/Desktop/TPLP-2019-results")
   //plotLimitedFeedbackMeetingBarChart("/home/nkatz/Desktop/TPLP-2019-results")
 
-
   plotPrequentialTimeMeeting("/home/nkatz/Desktop/TPLP-2019-results")
+  plotPrequentialTimeMoving("/home/nkatz/Desktop/TPLP-2019-results")
+
+  plotRulesNumMeeting("/home/nkatz/Desktop/TPLP-2019-results")
+  plotRulesNumMoving("/home/nkatz/Desktop/TPLP-2019-results")
+
+  //plotMeetingRulesNum("/home/nkatz/Desktop/TPLP-2019-results/meeting-rules-number", "/home/nkatz/Desktop/TPLP-2019-results")
+
+  def plotRulesNumMeeting(savePath: String) = {
+    val times = Vector(88.0, 118.0, 79.0)
+    val _times = Vector(9.0, 25.0, 15.0)
+    Figure("meeting-prequential-rules-num").
+      bar(color = BLUE!50!BLACK, barWidth = 0.2)(times).bar(color = RED!50!BLACK, barWidth = 0.2)(_times).
+      havingYLabel("\\textbf{Number of Rules}").
+      havingAxisXLabels(Seq("\\textsf{\\footnotesize OLED}", "\\textsf{\\footnotesize OLED-MLN}",
+        "\\textsf{\\footnotesize OLED-EXP}")).
+      havingTitle("\\emph{Meeting},ybar").havingLegends("Average", "Useful").havingLegendPos(NORTH_WEST).
+      saveAsPDF(savePath)
+  }
+
+  def plotRulesNumMoving(savePath: String) = {
+    val times = Vector(75.0, 92.0, 65.0)
+    val _times = Vector(10.0, 20.0, 14.0)
+    Figure("moving-prequential-rules-num").
+      bar(color = BLUE!50!BLACK, barWidth = 0.2)(times).bar(color = RED!50!BLACK, barWidth = 0.2)(_times).
+      havingYLabel("\\textbf{Number of Rules}").
+      havingAxisXLabels(Seq("\\textsf{\\footnotesize OLED}", "\\textsf{\\footnotesize OLED-MLN}",
+        "\\textsf{\\footnotesize OLED-EXP}")).
+      havingTitle("\\emph{Moving},ybar").havingLegends("Average", "Useful").havingLegendPos(NORTH_WEST).
+      saveAsPDF(savePath)
+  }
 
   def plotPrequentialTimeMeeting(savePath: String) = {
-    val times = Vector(12.0, 53.0, 118.0, 92.0)
+    val times = Vector(12.0, 43.0, 118.0, 62.0)
     Figure("meeting-prequential-time").
       bar(color = BLUE!50!BLACK, barWidth = 0.3)(times).
       havingYLabel("\\textbf{Time (sec)}").
@@ -35,7 +64,18 @@ object TPLPExpertsPlots extends App {
         "\\textsf{\\footnotesize OLED-EXP}")).
       havingTitle("\\emph{Meeting}").
       saveAsPDF(savePath)
+  }
 
+  def plotPrequentialTimeMoving(savePath: String) = {
+    val times = Vector(14.0, 48.0, 104.0, 58.0)
+    Figure("moving-prequential-time").
+      bar(color = BLUE!50!BLACK, barWidth = 0.3)(times).
+      havingYLabel("\\textbf{Time (sec)}").
+      havingAxisXLabels(Seq("\\textsf{\\footnotesize HandCrafted-EXP}",
+        "\\textsf{\\footnotesize OLED}", "\\textsf{\\footnotesize OLED-MLN}",
+        "\\textsf{\\footnotesize OLED-EXP}")).
+      havingTitle("\\emph{Moving}").
+      saveAsPDF(savePath)
   }
 
   def plotLimitedFeedbackMovingBarChart(savePath: String) = {
@@ -93,6 +133,8 @@ object TPLPExpertsPlots extends App {
       havingAxisXLabels(Seq("0.1","0.2","0.3","0.4","0.5","0.6","0.7","0.8","0.9","1.0")).
       havingTitle("\\emph{Meeting}").saveAsPDF(savePath)
   }
+
+
 
   def plotMeetingMistakes(dataPath: String, savePath: String) = {
     val data = Source.fromFile(dataPath).getLines.filter( x => !x.isEmpty && !x.startsWith("%"))//.split(",")

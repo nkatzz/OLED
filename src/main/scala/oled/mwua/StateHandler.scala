@@ -47,6 +47,21 @@ class StateHandler {
     }
   }
 
+  def pruneUnderPerformingRules(weightThreshold: Double) = {
+
+    def pruneRefinements(topRule: Clause) = {
+      val goodRefs = topRule.refinements.filter(x => x.w_pos >= weightThreshold)
+      topRule.refinements = goodRefs
+    }
+
+    ensemble.initiationRules.foreach(x => pruneRefinements(x))
+    ensemble.terminationRules.foreach(x => pruneRefinements(x))
+    val goodInitRules = ensemble.initiationRules.filter(x => x.body.isEmpty || (x.body.nonEmpty && x.w_pos >= weightThreshold) )
+    ensemble.initiationRules = goodInitRules
+    val goodTermRules = ensemble.terminationRules.filter(x => x.body.isEmpty || (x.body.nonEmpty && x.w_pos >= weightThreshold) )
+    ensemble.terminationRules = goodTermRules
+  }
+
   /*-----------------------------*/
   /* Grounding-related variables */
   /*-----------------------------*/
@@ -67,6 +82,8 @@ class StateHandler {
   var perBatchError: Vector[Int] = Vector.empty[Int]
 
   var runningF1Score: Vector[Double] = Vector.empty[Double]
+
+  var runningRulesNumber: Vector[Int] = Vector.empty[Int]
 
   def updateRunningF1Score = {
     val currentPrecision = totalTPs.toDouble/(totalTPs+totalFPs)

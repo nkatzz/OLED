@@ -331,6 +331,8 @@ object ExpertAdviceFunctions extends LazyLogging {
           stateHandler.perBatchError = stateHandler.perBatchError :+ batchError
           stateHandler.updateRunningF1Score
 
+          stateHandler.pruneUnderPerformingRules(0.0000000000001)
+
           // Try to specialize all rules currently in the ensemble
           // Just to be on the safe side filter out rules with no refinements
           // (i.e. rules that have "reached" their bottom rule).
@@ -1231,6 +1233,10 @@ object ExpertAdviceFunctions extends LazyLogging {
 
     val ensemble = stateHandler.ensemble
     val merged = ensemble.merged(inps, withInputTheory)
+
+    stateHandler.runningRulesNumber = stateHandler.runningRulesNumber :+ merged.size
+
+    //println(s"Number of rules: ${merged.size}")
 
     //println(s"Predicting with:\n${merged.tostring}")
 
