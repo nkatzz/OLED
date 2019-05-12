@@ -11,10 +11,10 @@ import scalatikz.graphics.pgf.enums.Mark.DOT
 
 object TPLPExpertsPlots extends App {
 
-  //plotMovingF1Scores("/home/nkatz/Desktop/TPLP-2019-results/moving-prequential-comparison-PrequentialF1Score", "/home/nkatz/Desktop/TPLP-2019-results")
-  //plotMovingMistakes("/home/nkatz/Desktop/TPLP-2019-results/moving-prequential-comparison-MistakeNum", "/home/nkatz/Desktop/TPLP-2019-results")
-  //plotMeetingMistakes("/home/nkatz/Desktop/TPLP-2019-results/meeting-prequential-comparison-MistakeNum", "/home/nkatz/Desktop/TPLP-2019-results")
-  //plotMeetingF1Scores("/home/nkatz/Desktop/TPLP-2019-results/meeting-prequential-comparison-PrequentialF1Score", "/home/nkatz/Desktop/TPLP-2019-results")
+  plotMovingF1Scores("/home/nkatz/Desktop/TPLP-2019-results/moving-prequential-comparison-PrequentialF1Score", "/home/nkatz/Desktop/TPLP-2019-results")
+  plotMovingMistakes("/home/nkatz/Desktop/TPLP-2019-results/moving-prequential-comparison-MistakeNum", "/home/nkatz/Desktop/TPLP-2019-results")
+  plotMeetingMistakes("/home/nkatz/Desktop/TPLP-2019-results/meeting-prequential-comparison-MistakeNum", "/home/nkatz/Desktop/TPLP-2019-results")
+  plotMeetingF1Scores("/home/nkatz/Desktop/TPLP-2019-results/meeting-prequential-comparison-PrequentialF1Score", "/home/nkatz/Desktop/TPLP-2019-results")
 
   //plotLimitedFeedbackMeeting("/home/nkatz/Desktop/TPLP-2019-results")
   //plotLimitedFeedbackMoving("/home/nkatz/Desktop/TPLP-2019-results")
@@ -22,17 +22,54 @@ object TPLPExpertsPlots extends App {
   //plotLimitedFeedbackMovingBarChart("/home/nkatz/Desktop/TPLP-2019-results")
   //plotLimitedFeedbackMeetingBarChart("/home/nkatz/Desktop/TPLP-2019-results")
 
-  plotPrequentialTimeMeeting("/home/nkatz/Desktop/TPLP-2019-results")
-  plotPrequentialTimeMoving("/home/nkatz/Desktop/TPLP-2019-results")
+  //plotPrequentialTimeMeeting("/home/nkatz/Desktop/TPLP-2019-results")
+  //plotPrequentialTimeMoving("/home/nkatz/Desktop/TPLP-2019-results")
 
-  plotRulesNumMeeting("/home/nkatz/Desktop/TPLP-2019-results")
-  plotRulesNumMoving("/home/nkatz/Desktop/TPLP-2019-results")
+  //plotRulesNumMeeting("/home/nkatz/Desktop/TPLP-2019-results")
+  //plotRulesNumMoving("/home/nkatz/Desktop/TPLP-2019-results")
 
   //plotMeetingRulesNum("/home/nkatz/Desktop/TPLP-2019-results/meeting-rules-number", "/home/nkatz/Desktop/TPLP-2019-results")
 
+  //plotMovingCrossVal("/home/nkatz/Desktop/TPLP-2019-results")
+  //plotMeetingCrossVal("/home/nkatz/Desktop/TPLP-2019-results")
+
+  def plotMeetingCrossVal(savePath: String) = {
+    val fscores = Vector(0.762, 0.863, 0.861, 0.822, 0.843, 0.889, 0.906)
+    Figure("meeting-cross-val")
+      //.stem(color = BLUE!50!BLACK, marker = CIRCLE)(fscores)
+      .bar(color = BLUE!50!BLACK, barWidth = 0.2)(fscores)
+      .havingYLabel("\\textbf{Average $F_1$-score (test set)}").havingYLimits(0.5, 1.0).
+      havingAxisXLabels(Seq("\\textsf{\\scriptsize HC}",
+        "\\textsf{\\scriptsize HC-MM}",
+        "\\textsf{\\scriptsize XHAIL}",
+        "\\textsf{\\scriptsize HC-EXP}",
+        "\\textsf{\\scriptsize OLED}",
+        "\\textsf{\\scriptsize OLED-MLN}",
+        "\\textsf{\\scriptsize OLED-EXP}")).rotateXTicks(20)
+      .havingTitle("\\emph{Meeting}")
+      .saveAsPDF(savePath)
+  }
+
+  def plotMovingCrossVal(savePath: String) = {
+    val fscores = Vector(0.751, 0.890, 0.841, 0.802, 0.789, 0.857, 0.847)
+    Figure("moving-cross-val")
+      //.stem(color = BLUE!50!BLACK, marker = CIRCLE)(fscores)
+    .bar(color = BLUE!50!BLACK, barWidth = 0.2)(fscores)
+      .havingYLabel("\\textbf{Average $F_1$-score (test set)}").havingYLimits(0.5, 1.0).
+      havingAxisXLabels(Seq("\\textsf{\\scriptsize HC}",
+        "\\textsf{\\scriptsize HC-MM}",
+        "\\textsf{\\scriptsize XHAIL}",
+        "\\textsf{\\scriptsize HC-EXP}",
+        "\\textsf{\\scriptsize OLED}",
+        "\\textsf{\\scriptsize OLED-MLN}",
+        "\\textsf{\\scriptsize OLED-EXP}")).rotateXTicks(20)
+      .havingTitle("\\emph{Moving}")
+      .saveAsPDF(savePath)
+  }
+
   def plotRulesNumMeeting(savePath: String) = {
     val times = Vector(88.0, 118.0, 79.0)
-    val _times = Vector(9.0, 25.0, 15.0)
+    val _times = Vector(9.0, 19.0, 15.0)
     Figure("meeting-prequential-rules-num").
       bar(color = BLUE!50!BLACK, barWidth = 0.2)(times).bar(color = RED!50!BLACK, barWidth = 0.2)(_times).
       havingYLabel("\\textbf{Number of Rules}").
@@ -44,7 +81,7 @@ object TPLPExpertsPlots extends App {
 
   def plotRulesNumMoving(savePath: String) = {
     val times = Vector(75.0, 92.0, 65.0)
-    val _times = Vector(10.0, 20.0, 14.0)
+    val _times = Vector(10.0, 18.0, 14.0)
     Figure("moving-prequential-rules-num").
       bar(color = BLUE!50!BLACK, barWidth = 0.2)(times).bar(color = RED!50!BLACK, barWidth = 0.2)(_times).
       havingYLabel("\\textbf{Number of Rules}").
@@ -155,6 +192,8 @@ object TPLPExpertsPlots extends App {
       .havingXLabel("\\textbf{Time} $\\mathbf{(\\times 50)}$")
       .havingYLabel("\\textbf{Acummulated Mistakes}").
       havingTitle("\\emph{Meeting}").
+      //havingTitle("\\emph{Meeting},ybar").
+      //havingAxisXLabels(Seq("0","5K","10K","15K","20K","25K")).
       saveAsPDF(savePath)
     //.show()
   }
@@ -178,6 +217,7 @@ object TPLPExpertsPlots extends App {
       .havingXLabel("\\textbf{Time} $\\mathbf{(\\times 50)}$")
       .havingYLabel("\\textbf{Prequential $F_1$-score}").
       havingTitle("\\emph{Meeting}").
+      //havingAxisXLabels(Seq("0","5K","10K","15K","20K","25K")).
       saveAsPDF(savePath)
     //.show()
   }
@@ -201,6 +241,7 @@ object TPLPExpertsPlots extends App {
       .havingXLabel("\\textbf{Time} $\\mathbf{(\\times 50)}$")
       .havingYLabel("\\textbf{Prequential $F_1$-score}").
       havingTitle("\\emph{Moving}").
+      //havingAxisXLabels(Seq("0","5K","10K","15K","20K","25K")).
       saveAsPDF(savePath)
     //.show()
   }
