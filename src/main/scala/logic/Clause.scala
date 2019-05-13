@@ -235,7 +235,7 @@ case class Clause(head: PosLiteral = PosLiteral(),
 
 
 
-  def foilGain(funct: String) = {
+  def   foilGain(funct: String) = {
 
     val thisCoverage = if (funct == "precision") this.precision else this.recall
     val parentCoverage = if (funct == "precision") parentClause.precision else parentClause.recall

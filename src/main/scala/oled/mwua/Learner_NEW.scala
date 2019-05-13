@@ -28,7 +28,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
   // If this is false, some non-determinism is introduced (number of mistakes may vary slightly from round to round)
   val specializeAllAwakeRulesOnFPMistake = false
 
-  val withInertia = true
+  val withInertia = false
 
   // This is either 'winnow' or 'hedge'
   val weightUpdateStrategy = "hedge" //"winnow" // "hedge"
@@ -36,7 +36,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
   // Set this to 1.0 to simulate the case of constant feedback at each round.
   // For values < 1.0 we only update weights and structure if a biased coin
   // with receiveFeedbackBias for heads returns heads.
-  val receiveFeedbackBias = 1.0 //0.2 //0.5
+  val receiveFeedbackBias = 0.8 //0.2 //0.5
 
   val conservativeRuleGeneration = true
 

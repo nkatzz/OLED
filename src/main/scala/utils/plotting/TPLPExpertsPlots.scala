@@ -11,10 +11,13 @@ import scalatikz.graphics.pgf.enums.Mark.DOT
 
 object TPLPExpertsPlots extends App {
 
-  plotMovingF1Scores("/home/nkatz/Desktop/TPLP-2019-results/moving-prequential-comparison-PrequentialF1Score", "/home/nkatz/Desktop/TPLP-2019-results")
-  plotMovingMistakes("/home/nkatz/Desktop/TPLP-2019-results/moving-prequential-comparison-MistakeNum", "/home/nkatz/Desktop/TPLP-2019-results")
-  plotMeetingMistakes("/home/nkatz/Desktop/TPLP-2019-results/meeting-prequential-comparison-MistakeNum", "/home/nkatz/Desktop/TPLP-2019-results")
-  plotMeetingF1Scores("/home/nkatz/Desktop/TPLP-2019-results/meeting-prequential-comparison-PrequentialF1Score", "/home/nkatz/Desktop/TPLP-2019-results")
+  plotMeetingMistakesInertiaNoInertia("/home/nkatz/Desktop/TPLP-2019-results/meeting-inertia-experiments-mistakes", "/home/nkatz/Desktop/TPLP-2019-results")
+  plotMovingMistakesInertiaNoInertia("/home/nkatz/Desktop/TPLP-2019-results/moving-inertia-experiments-mistakes", "/home/nkatz/Desktop/TPLP-2019-results")
+
+  //plotMovingF1Scores("/home/nkatz/Desktop/TPLP-2019-results/moving-prequential-comparison-PrequentialF1Score", "/home/nkatz/Desktop/TPLP-2019-results")
+  //plotMovingMistakes("/home/nkatz/Desktop/TPLP-2019-results/moving-prequential-comparison-MistakeNum", "/home/nkatz/Desktop/TPLP-2019-results")
+  //plotMeetingMistakes("/home/nkatz/Desktop/TPLP-2019-results/meeting-prequential-comparison-MistakeNum", "/home/nkatz/Desktop/TPLP-2019-results")
+  //plotMeetingF1Scores("/home/nkatz/Desktop/TPLP-2019-results/meeting-prequential-comparison-PrequentialF1Score", "/home/nkatz/Desktop/TPLP-2019-results")
 
   //plotLimitedFeedbackMeeting("/home/nkatz/Desktop/TPLP-2019-results")
   //plotLimitedFeedbackMoving("/home/nkatz/Desktop/TPLP-2019-results")
@@ -171,6 +174,44 @@ object TPLPExpertsPlots extends App {
       havingTitle("\\emph{Meeting}").saveAsPDF(savePath)
   }
 
+
+  def plotMeetingMistakesInertiaNoInertia(dataPath: String, savePath: String) = {
+    val data = Source.fromFile(dataPath).getLines.filter( x => !x.isEmpty && !x.startsWith("%"))//.split(",")
+    val inertia = data.next().split(",").map(_.toDouble).toVector
+    val noInertia = data.next().split(",").map(_.toDouble).toVector
+
+    Figure("meeting-inertia-no-inertia-mistakes")
+      .plot(color = RED, marker = X, markStrokeColor = RED)(makeSparse(inertia)).
+      plot(color = BLUE, marker = TRIANGLE, markStrokeColor = BLUE)(makeSparse(noInertia))
+      .havingLegends("\\footnotesize \\textsf{OLED-EXP-inertia}", "\\footnotesize \\textsf{OLED-EXP-no-inertia}")
+      .havingLegendPos(NORTH_WEST)
+      .havingXLabel("\\textbf{Time} $\\mathbf{(\\times 50)}$")
+      .havingYLabel("\\textbf{Acummulated Mistakes}").
+      havingTitle("\\emph{Meeting}").
+      //havingTitle("\\emph{Meeting},ybar").
+      //havingAxisXLabels(Seq("0","5K","10K","15K","20K","25K")).
+      saveAsPDF(savePath)
+    //.show()
+  }
+
+  def plotMovingMistakesInertiaNoInertia(dataPath: String, savePath: String) = {
+    val data = Source.fromFile(dataPath).getLines.filter( x => !x.isEmpty && !x.startsWith("%"))//.split(",")
+    val inertia = data.next().split(",").map(_.toDouble).toVector
+    val noInertia = data.next().split(",").map(_.toDouble).toVector
+
+    Figure("moving-inertia-no-inertia-mistakes")
+      .plot(color = RED, marker = X, markStrokeColor = RED)(makeSparse(inertia)).
+      plot(color = BLUE, marker = TRIANGLE, markStrokeColor = BLUE)(makeSparse(noInertia))
+      .havingLegends("\\footnotesize \\textsf{OLED-EXP-inertia}", "\\footnotesize \\textsf{OLED-EXP-no-inertia}")
+      .havingLegendPos(NORTH_WEST)
+      .havingXLabel("\\textbf{Time} $\\mathbf{(\\times 50)}$")
+      .havingYLabel("\\textbf{Acummulated Mistakes}").
+      havingTitle("\\emph{Moving}").
+      //havingTitle("\\emph{Meeting},ybar").
+      //havingAxisXLabels(Seq("0","5K","10K","15K","20K","25K")).
+      saveAsPDF(savePath)
+    //.show()
+  }
 
 
   def plotMeetingMistakes(dataPath: String, savePath: String) = {
