@@ -11,8 +11,12 @@ import scalatikz.graphics.pgf.enums.Mark.DOT
 
 object TPLPExpertsPlots extends App {
 
-  plotMeetingMistakesInertiaNoInertia("/home/nkatz/Desktop/TPLP-2019-results/meeting-inertia-experiments-mistakes", "/home/nkatz/Desktop/TPLP-2019-results")
-  plotMovingMistakesInertiaNoInertia("/home/nkatz/Desktop/TPLP-2019-results/moving-inertia-experiments-mistakes", "/home/nkatz/Desktop/TPLP-2019-results")
+  //plotMeetingMistakesInertiaNoInertia("/home/nkatz/Desktop/TPLP-2019-results/meeting-inertia-experiments-mistakes", "/home/nkatz/Desktop/TPLP-2019-results")
+  //plotMovingMistakesInertiaNoInertia("/home/nkatz/Desktop/TPLP-2019-results/moving-inertia-experiments-mistakes", "/home/nkatz/Desktop/TPLP-2019-results")
+
+  //plotPrequentialTimesTogether("/home/nkatz/Desktop/TPLP-2019-results")
+
+  plotCrossValBothCEs("/home/nkatz/Desktop/TPLP-2019-results")
 
   //plotMovingF1Scores("/home/nkatz/Desktop/TPLP-2019-results/moving-prequential-comparison-PrequentialF1Score", "/home/nkatz/Desktop/TPLP-2019-results")
   //plotMovingMistakes("/home/nkatz/Desktop/TPLP-2019-results/moving-prequential-comparison-MistakeNum", "/home/nkatz/Desktop/TPLP-2019-results")
@@ -35,6 +39,23 @@ object TPLPExpertsPlots extends App {
 
   //plotMovingCrossVal("/home/nkatz/Desktop/TPLP-2019-results")
   //plotMeetingCrossVal("/home/nkatz/Desktop/TPLP-2019-results")
+
+  def plotCrossValBothCEs(savePath: String) = {
+    val fscoresMeeting = Vector(0.762, 0.863, 0.861, 0.822, 0.843, 0.889, 0.906)
+    val fscoresMoving = Vector(0.751, 0.890, 0.841, 0.802, 0.789, 0.857, 0.847)
+    Figure("cross-val-both-CEs").bar(color = BLUE!50!BLACK, barWidth = 0.2)(fscoresMoving).
+      bar(color = RED!50!BLACK, barWidth = 0.2)(fscoresMeeting)
+      .havingYLabel("\\textbf{Average $F_1$-score (test set)}").havingYLimits(0.5, 1.0).
+      havingAxisXLabels(Seq("\\textsf{\\scriptsize HC}",
+        "\\textsf{\\scriptsize HC-MM}",
+        "\\textsf{\\scriptsize XHAIL}",
+        "\\textsf{\\scriptsize HC-EXP}",
+        "\\textsf{\\scriptsize OLED}",
+        "\\textsf{\\scriptsize OLED-MLN}",
+        "\\textsf{\\scriptsize OLED-EXP}")).rotateXTicks(20)
+      .havingTitle("\\emph{},ybar").havingLegends("\\emph{Moving}", "\\emph{Meeting}").havingLegendPos(NORTH_WEST)
+      .saveAsPDF(savePath)
+  }
 
   def plotMeetingCrossVal(savePath: String) = {
     val fscores = Vector(0.762, 0.863, 0.861, 0.822, 0.843, 0.889, 0.906)
@@ -91,6 +112,19 @@ object TPLPExpertsPlots extends App {
       havingAxisXLabels(Seq("\\textsf{\\footnotesize OLED}", "\\textsf{\\footnotesize OLED-MLN}",
         "\\textsf{\\footnotesize OLED-EXP}")).
       havingTitle("\\emph{Moving},ybar").havingLegends("Average", "Useful").havingLegendPos(NORTH_WEST).
+      saveAsPDF(savePath)
+  }
+
+  def plotPrequentialTimesTogether(savePath: String) = {
+    val timesMeeting = Vector(12.0, 43.0, 104.0, 58.0)
+    val timesMoving = Vector(14.0, 48.0, 118.0, 62.0)
+    Figure("prequential-times-both-CEs").
+      bar(color = YELLOW!50!BLACK, barWidth = 0.3)(timesMoving).bar(color = GREEN!50!BLACK, barWidth = 0.3)(timesMeeting).
+      havingYLabel("\\textbf{Time (sec)}").
+      havingAxisXLabels(Seq("\\textsf{\\footnotesize HC-EXP}",
+        "\\textsf{\\footnotesize OLED}", "\\textsf{\\footnotesize OLED-MLN}",
+        "\\textsf{\\footnotesize OLED-EXP}")).
+      havingTitle("\\emph{},ybar").havingLegends("\\emph{Moving}", "\\emph{Meeting}").havingLegendPos(NORTH_WEST).
       saveAsPDF(savePath)
   }
 

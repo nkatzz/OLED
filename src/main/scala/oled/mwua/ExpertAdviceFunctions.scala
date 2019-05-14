@@ -47,6 +47,14 @@ object ExpertAdviceFunctions extends LazyLogging {
     //stateHandler.ensemble.removeZeroWeights
     //======================================
 
+    val streaming = true
+
+    if (batchCounter == 169) {
+      val stop = "stop"
+    }
+
+    //println(batch.narrative, batch.annotation)
+
     var batchError = 0
     var batchFPs = 0
     var batchFNs = 0
@@ -88,7 +96,7 @@ object ExpertAdviceFunctions extends LazyLogging {
 
         //val startTime = System.nanoTime()
 
-        val (markedProgram, markedMap, groundingsMap) = groundEnsemble(batch, inps, stateHandler, withInputTheory)
+        val (markedProgram, markedMap, groundingsMap) = groundEnsemble(batch, inps, stateHandler, withInputTheory, streaming)
         val sortedAtomsToBePredicted = sortGroundingsByTime(groundingsMap)
 
         //val endTime = System.nanoTime()
@@ -1229,7 +1237,13 @@ object ExpertAdviceFunctions extends LazyLogging {
   def groundEnsemble(batch: Example,
                      inps: RunningOptions,
                      stateHandler: StateHandler,
-                     withInputTheory: Boolean = false) = {
+                     withInputTheory: Boolean = false,
+                     streaming: Boolean = false) = {
+
+
+    if (batch.annotation.nonEmpty) {
+      val stop = "stop"
+    }
 
     val ensemble = stateHandler.ensemble
     val merged = ensemble.merged(inps, withInputTheory)
@@ -1251,7 +1265,7 @@ object ExpertAdviceFunctions extends LazyLogging {
 
     val e = batch.narrativeASP.mkString("\n")
 
-    val groundingsMapTimed = Utils.time { computeRuleGroundings(inps, markedProgram, markedMap, e) }
+    val groundingsMapTimed = Utils.time { computeRuleGroundings(inps, markedProgram, markedMap, e, streaming = streaming) }
     val groundingsMap = groundingsMapTimed._1
     val groundingsTime = groundingsMapTimed._2
     stateHandler.updateGrndsTimes(groundingsTime)

@@ -327,7 +327,8 @@ object AuxFuncs extends LazyLogging {
   * */
 
   def computeRuleGroundings(inps: RunningOptions, markedProgram: String,
-                            markedMap: Map[String, Clause], batch: String, trueAtoms: Set[String] = Set[String]()) = {
+                            markedMap: Map[String, Clause], batch: String,
+                            trueAtoms: Set[String] = Set[String](), streaming: Boolean = false) = {
 
     /*
     val targetFluent = {
@@ -376,7 +377,9 @@ object AuxFuncs extends LazyLogging {
     val initGrndRule = s"grounding(I, holdsAt(F,Te)) :- rule(I), fluent(F), marked(I, initiatedAt(F,Ts) ), next(Ts,Te), time(Te), time(Ts)."
     val termGrndRule = s"grounding(I, holdsAt(F,Te)) :- rule(I), fluent(F), marked(I, terminatedAt(F,Ts) ), next(Ts,Te), time(Te), time(Ts)."
 
-    val fluentGroundings = s"fluentGrnd(holdsAt(F,T)) :- fluent(F), time(T)."
+    val fluentGroundings =
+      if (!streaming) s"fluentGrnd(holdsAt(F,T)) :- fluent(F), time(T)."
+      else s"fluentGrnd(holdsAt(F,T1)) :- fluent(F), time(T1), time(T0), next(T0,T1)."
 
     val directives = s"\n$initGrndRule\n$termGrndRule\n$fluentGroundings\n"
 

@@ -5,12 +5,15 @@ import app.runners.MLNDataHandler
 import app.runners.MLNDataHandler.MLNDataOptions
 import app.runutils.CMDArgs
 import app.runutils.IOHandling.MongoSource
+import com.mongodb.casbah.commons.MongoDBObject
 import com.mongodb.casbah.{MongoClient, MongoCollection}
 import com.typesafe.scalalogging.LazyLogging
 import experiments.caviar.FullDatasetHoldOut.MongoDataOptions
 import experiments.caviar.{FullDatasetHoldOut, MeetingTrainTestSets}
+import experiments.datautils.caviar_data.CopyCAVIAR.{mc, newDB, newDBName}
 import logic.Examples.Example
 import utils.DataUtils.Interval
+import com.mongodb.casbah.Imports._
 
 /**
   * Created by nkatz at 2/11/2018
@@ -123,10 +126,6 @@ object Runner extends LazyLogging {
       val trainingDataFunction: MongoDataOptions => Iterator[Example] = FullDatasetHoldOut.getMongoData
       val testingDataFunction: MongoDataOptions => Iterator[Example] = FullDatasetHoldOut.getMongoData
 
-
-
-
-
       /*
       val trainingDataOptions = new MLNDataOptions("/home/nkatz/dev/CAVIAR_MLN/CAVIAR_MLN/move/fold_1", runningOptions.chunkSize)
       val testingDataOptions = new MLNDataOptions("/home/nkatz/dev/CAVIAR_MLN/CAVIAR_MLN/move/fold_1", runningOptions.chunkSize)
@@ -142,6 +141,32 @@ object Runner extends LazyLogging {
       // use a hand-crafted theory for sequential prediction (updates the weights but not the structure of the rules).
       //--evalth=/home/nkatz/Desktop/theory
       //val startMsg = "predict"
+
+      ///*
+      // This is used to generate the "streaming" version of CAVIAR, where each entry in the database
+      // consists of the observations at time t plus the labels at time t+1.
+      val data = trainingDataFunction(trainingDataOptions)
+      val dataPairs = data.sliding(2)
+      val mc = MongoClient()
+
+      val newDBName = s"caviar-streaming-${runningOptions.targetHLE}"
+      val newDB = mc(newDBName)("examples")
+      mc.dropDatabase(newDBName)
+
+      var count = 0
+
+      dataPairs foreach { pair =>
+        val (first, second) = (pair.head, pair.tail.head)
+        // The predictionTime atom is used by Aux.computeRuleGroundings to generate query atoms at the appropriate time point
+        val observations = first.narrative :+ s"time(${first.time.toInt+40})"
+        val labels = second.annotation
+        //val entry = MongoDBObject("time" -> first.time) ++ ("annotation" -> labels ) ++ ("narrative" -> observations)
+        val entry = MongoDBObject("time" -> count) ++ ("annotation" -> labels ) ++ ("narrative" -> observations)
+        count += 1
+        if (labels.nonEmpty) println(entry)
+        newDB.insert(entry)
+      }
+      //*/
 
       ///*
       system.actorOf(Props(new Learner_NEW(runningOptions, trainingDataOptions, testingDataOptions, trainingDataFunction,
