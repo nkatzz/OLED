@@ -30,7 +30,7 @@ object Runner_Streaming extends LazyLogging {
       val system = ActorSystem("HoeffdingLearningSystem")
 
       // use also start to evaluate a hand-crafted theory, the whole thing is hard-coded in Learner_NEW
-      val startMsg = "start"//if (runningOptions.evalth != "None") "eval" else "start"
+      val startMsg = "start-streaming" //"start"//if (runningOptions.evalth != "None") "eval" else "start"
 
       system.actorOf(Props(new Learner_NEW(runningOptions, trainingDataOptions, testingDataOptions, trainingDataFunction,
         testingDataFunction)), name = "Learner") ! startMsg

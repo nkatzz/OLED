@@ -48,9 +48,13 @@ object ExpertAdviceFunctions extends LazyLogging {
     //stateHandler.ensemble.removeZeroWeights
     //======================================
 
-    val streaming = false //true
+    val streaming = true //true
 
     if (batchCounter == 57) { //169
+      val stop = "stop"
+    }
+
+    if (batch.annotation.nonEmpty) {
       val stop = "stop"
     }
 
@@ -81,8 +85,10 @@ object ExpertAdviceFunctions extends LazyLogging {
       val (goodInit, goodTerm) = getFinalRulesDefault(stateHandler, weightThreshold)
       stateHandler.ensemble.initiationRules = goodInit
       stateHandler.ensemble.terminationRules = goodTerm
-      logger.info(s"Testing with Initiation:\n${Theory(stateHandler.ensemble.initiationRules.sortBy(x => -x.w_pos)).showWithStats}")
-      logger.info(s"Testing with Termination:\n${Theory(stateHandler.ensemble.terminationRules.sortBy(x => -x.w_pos)).showWithStats}")
+      if (!streaming) {
+        logger.info(s"Testing with Initiation:\n${Theory(stateHandler.ensemble.initiationRules.sortBy(x => -x.w_pos)).showWithStats}")
+        logger.info(s"Testing with Termination:\n${Theory(stateHandler.ensemble.terminationRules.sortBy(x => -x.w_pos)).showWithStats}")
+      }
       withInputTheory = true
     }
     //*/
@@ -345,7 +351,19 @@ object ExpertAdviceFunctions extends LazyLogging {
           stateHandler.perBatchError = stateHandler.perBatchError :+ batchError
           stateHandler.updateRunningF1Score
 
-          stateHandler.pruneUnderPerformingRules(0.0000000000001)
+
+          //=======================================================
+          //=======================================================
+          //=======================================================
+          //*******************************************************
+
+          // I need to get this to work
+          //stateHandler.pruneUnderPerformingRules(0.0000000000001)
+
+          //*******************************************************
+          //=======================================================
+          //=======================================================
+          //=======================================================
 
           // Try to specialize all rules currently in the ensemble
           // Just to be on the safe side filter out rules with no refinements

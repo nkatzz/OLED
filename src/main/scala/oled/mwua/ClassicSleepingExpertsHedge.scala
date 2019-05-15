@@ -71,18 +71,20 @@ object ClassicSleepingExpertsHedge {
           val awakeTerminationRules = atom.terminatedBy.map( x => markedMap(x) )
 
           // This generates bottom clause heads with adbuction
-          ///*
+          /*
           updatedStructure =
             generateNewRule(batch, currentAtom, inps, "FP", logger,
               stateHandler, "terminatedAt", 1.0, otherAwakeExperts = awakeTerminationRules)
-           //*/
+           */
 
-        /*
+        // This generates a bottom rule head by simply generating an initiation/termination atom
+        // for a fluent from the previous time point from which a mistake is made (no abduction).
+        // TO USE THIS THE streaming VARIABLE AT THE BEGINNING OF THE PROCESS METHOD NEEDS TO BE SET TO true
+        ///*
         updatedStructure =
           generateNewExpert_NEW(batch, atom, previousTime, inps, "FP", logger,
             stateHandler, "terminatedAt", 1.0, otherAwakeExperts = awakeTerminationRules)
-
-         */
+        //*/
         //}
       }
       // Also, in the case of an FP mistake we try to specialize awake initiation rules.
@@ -111,16 +113,20 @@ object ClassicSleepingExpertsHedge {
           val awakeInitiationRules = atom.initiatedBy.map(x => markedMap(x))
 
           // This generates bottom clause heads with adbuction
-          ///*
+          /*
           updatedStructure =
             generateNewRule(batch, currentAtom, inps, "FN", logger,
               stateHandler, "initiatedAt", 1.0, otherAwakeExperts = awakeInitiationRules)
-          //*/
-          /*
+          */
+
+          // This generates a bottom rule head by simply generating an initiation/termination atom
+          // for a fluent from the previous time point from which a mistake is made (no abduction).
+          // TO USE THIS THE streaming VARIABLE AT THE BEGINNING OF THE PROCESS METHOD NEEDS TO BE SET TO true
+          ///*
           updatedStructure =
             generateNewExpert_NEW(batch, atom, previousTime, inps, "FP", logger,
               stateHandler, "initiatedAt", 1.0, otherAwakeExperts = awakeInitiationRules)
-          */
+          //*/
         }
       } else {
         if (!conservativeRuleGeneration) {

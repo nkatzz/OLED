@@ -1,6 +1,6 @@
 package oled.mwua
 
-import java.io.{File, PrintWriter}
+import java.io.{BufferedWriter, File, FileWriter, PrintWriter}
 
 import akka.actor.Actor
 import app.runutils.IOHandling.Source
@@ -137,23 +137,26 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
     }
   }
 
+  def logEmptyDataError() = {
+    if (this.data.isEmpty) {
+      logger.error(s"Input source ${inps.train} is empty.")
+      System.exit(-1)
+    }
+  }
+
+  def wrapupAndShutDown() = {
+
+  }
+
 
 
   def receive = {
 
     case "start" => {
-
       data = getTrainData
-
-      if (this.data.isEmpty) {
-        logger.error(s"Input source ${inps.train} is empty.")
-        System.exit(-1)
-      }
-
+      logEmptyDataError()
       var done = false
-
       while(! done) {
-
         val nextBatch = getNextBatch(lleNoise = false)
         logger.info(s"Processing batch $batchCounter")
         if (nextBatch.isEmpty) {
@@ -180,6 +183,56 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
           }
         }
       }
+    }
+
+    case "start-streaming" => {
+      data = getTrainData
+      val slidingData = data.sliding(100)
+      logEmptyDataError()
+      var done = false
+      var acuumMistakes = Vector.empty[Int]
+      while (!done) {
+        val dataSlice = slidingData.next()
+        if (dataSlice.isEmpty) {
+          logger.info(s"Finished.")
+          endTime = System.nanoTime()
+          logger.info("Done.")
+          //workers foreach(w => w ! PoisonPill)
+          wrapUp()
+          done = true
+          context.system.terminate()
+        } else {
+          // Train on the first data point of the slice, test on the rest.
+          val train = dataSlice.head
+          val trueLabels = train.annotation.toSet
+          ExpertAdviceFunctions.process(train, train.annotation.toSet, inps,
+            stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
+            batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
+            receiveFeedbackBias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap)
+
+          // test
+          val test = dataSlice.tail
+
+          println(s"training on ${train.time} testing on ${test.map(x => x.time).mkString(" ")}")
+
+          stateHandler.perBatchError = Vector.empty[Int]
+          test foreach { batch =>
+            val trueLabels = batch.annotation.toSet
+            val _receiveFeedbackBias = 0.0
+            ExpertAdviceFunctions.process(batch, batch.annotation.toSet, inps,
+              stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
+              batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake, _receiveFeedbackBias,
+              conservativeRuleGeneration, weightUpdateStrategy)
+          }
+          val currentError = stateHandler.perBatchError.sum
+          acuumMistakes = acuumMistakes :+ currentError
+          //println(acuumMistakes)
+        }
+      }
+      val file = new File("/home/nkatz/Desktop/moving-streaming")
+      val bw = new BufferedWriter(new FileWriter(file))
+      bw.write(acuumMistakes.mkString(","))
+      bw.close()
     }
 
   }
