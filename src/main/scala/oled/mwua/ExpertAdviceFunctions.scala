@@ -13,6 +13,7 @@ import oled.functions.SingleCoreOLEDFunctions
 import oled.mwua.AuxFuncs._
 import oled.mwua.HelperClasses.AtomTobePredicted
 import utils.Utils
+import xhail.Xhail
 
 import scala.util.control.Breaks._
 
@@ -47,9 +48,9 @@ object ExpertAdviceFunctions extends LazyLogging {
     //stateHandler.ensemble.removeZeroWeights
     //======================================
 
-    val streaming = true
+    val streaming = false //true
 
-    if (batchCounter == 169) {
+    if (batchCounter == 57) { //169
       val stop = "stop"
     }
 
@@ -96,8 +97,10 @@ object ExpertAdviceFunctions extends LazyLogging {
 
         //val startTime = System.nanoTime()
 
-        val (markedProgram, markedMap, groundingsMap) = groundEnsemble(batch, inps, stateHandler, withInputTheory, streaming)
+        val (markedProgram, markedMap, groundingsMap, times) = groundEnsemble(batch, inps, stateHandler, withInputTheory, streaming)
         val sortedAtomsToBePredicted = sortGroundingsByTime(groundingsMap)
+
+        val orderedTimes = (sortedAtomsToBePredicted.map(x => x.time) ++ times.toVector).sorted
 
         //val endTime = System.nanoTime()
 
@@ -299,9 +302,12 @@ object ExpertAdviceFunctions extends LazyLogging {
                     */
 
                     ///*
-                    val structureUpdate_? = ClassicSleepingExpertsHedge.updateStructure_NEW_HEDGE(atom, markedMap, predictedLabel, feedback, batch,
-                      currentAtom, inps, Logger(this.getClass).underlying, stateHandler, percentOfMistakesBeforeSpecialize,
-                      randomizedPrediction, selected, specializeAllAwakeOnMistake, conservativeRuleGeneration, generateNewRuleFlag)
+                    val previousTime = if (streaming) orderedTimes( orderedTimes.indexOf(atom.time) -1 ) else 0
+                    val structureUpdate_? =
+                      ClassicSleepingExpertsHedge.updateStructure_NEW_HEDGE(atom, previousTime, markedMap, predictedLabel,
+                        feedback, batch, currentAtom, inps, Logger(this.getClass).underlying, stateHandler,
+                        percentOfMistakesBeforeSpecialize, randomizedPrediction, selected, specializeAllAwakeOnMistake,
+                        conservativeRuleGeneration, generateNewRuleFlag)
                     //*/
 
                     if (structureUpdate_?) break
@@ -1045,6 +1051,66 @@ object ExpertAdviceFunctions extends LazyLogging {
     }
   }
 
+
+  def generateNewExpert_NEW(batch: Example, currentAtom: AtomTobePredicted, previousTimePoint: Int,
+                            inps: RunningOptions, mistakeType: String, logger: org.slf4j.Logger,
+                            stateHandler: StateHandler, what: String, totalWeight: Double,
+                            removePastExperts: Boolean = false, otherAwakeExperts: Vector[Clause] = Vector.empty[Clause]) = {
+
+    def isRedundant(newRule: Clause) = {
+      val getAllBottomRules = (x: List[Clause]) => x.flatMap(y => y.supportSet.clauses)
+      val allBottomRules = {
+        if (newRule.head.functor.contains("initiated")) getAllBottomRules(stateHandler.ensemble.initiationRules)
+        else getAllBottomRules(stateHandler.ensemble.terminationRules)
+      }
+      allBottomRules.exists(c => newRule.thetaSubsumes(c))
+    }
+    var generatedRule = false
+
+    val newRule = {
+      val headAtom = s"$what(${currentAtom.fluent},$previousTimePoint)"
+      val xhailInput = Map("annotation" -> batch.annotationASP, "narrative" -> batch.narrativeASP)
+      val bkFile = if (what == "initiatedAt") inps.globals.BK_INITIATED_ONLY else inps.globals.BK_TERMINATED_ONLY
+      val aspFile: File = Utils.getTempFile("aspinput", ".lp")
+      val (_, bcs) = Xhail.generateKernel(List(headAtom), examples = xhailInput, aspInputFile = aspFile, bkFile=bkFile, globals = inps.globals)
+
+      val _bottomClause = bcs.head
+
+      val topRule = {
+        val c = Clause(head = _bottomClause.head, body = List())
+        c.addToSupport(_bottomClause)
+        c
+      }
+
+      val _newRule = {
+        if (bcs.isEmpty) {
+          Clause.empty
+        } else {
+          // newRule here is an empty-bodied rule along with the newly-generated bottom clause.
+          // Populate the newRule's refinements.
+          topRule.generateCandidateRefs(inps.globals, otherAwakeExperts)
+          topRule.w_pos = totalWeight
+          topRule.refinements.foreach(x => x.w_pos = totalWeight)
+          topRule
+        }
+      }
+      _newRule
+    }
+
+    if (!newRule.equals(Clause.empty)) {
+      logger.info(s"Generated new $what rule in response to $mistakeType atom: $currentAtom")
+      //=========================================
+      // Store the new rule in the state handler
+      stateHandler.addRule(newRule)
+      //=========================================
+      generatedRule = true
+    } else {
+      logger.info(s"At batch ${stateHandler.batchCounter}: Failed to generate bottom rule from $mistakeType mistake with atom: $currentAtom")
+    }
+    generatedRule
+  }
+
+
   def generateNewRule(batch: Example, currentAtom: String, inps: RunningOptions, mistakeType: String,
                       logger: org.slf4j.Logger, stateHandler: StateHandler,
                       what: String, totalWeight: Double, removePastExperts: Boolean = false,
@@ -1266,11 +1332,12 @@ object ExpertAdviceFunctions extends LazyLogging {
     val e = batch.narrativeASP.mkString("\n")
 
     val groundingsMapTimed = Utils.time { computeRuleGroundings(inps, markedProgram, markedMap, e, streaming = streaming) }
-    val groundingsMap = groundingsMapTimed._1
+    val groundingsMap = groundingsMapTimed._1._1
+    val times = groundingsMapTimed._1._2
     val groundingsTime = groundingsMapTimed._2
     stateHandler.updateGrndsTimes(groundingsTime)
 
-    (markedProgram, markedMap, groundingsMap)
+    (markedProgram, markedMap, groundingsMap, times)
   }
 
 

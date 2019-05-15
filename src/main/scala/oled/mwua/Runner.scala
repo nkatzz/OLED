@@ -109,7 +109,7 @@ object Runner extends LazyLogging {
 
       /* This is for running on the training set and then performing prequential evaluation on the test set. */
       /*
-      val dataset = MeetingTrainTestSets.meeting5
+      val dataset = MeetingTrainTestSets.meeting1
       //val dataset = MeetingTrainTestSets.meeting1
 
       //val trainShuffled = scala.util.Random.shuffle(dataset._1)
@@ -142,7 +142,7 @@ object Runner extends LazyLogging {
       //--evalth=/home/nkatz/Desktop/theory
       //val startMsg = "predict"
 
-      ///*
+      /*
       // This is used to generate the "streaming" version of CAVIAR, where each entry in the database
       // consists of the observations at time t plus the labels at time t+1.
       val data = trainingDataFunction(trainingDataOptions)
@@ -158,6 +158,7 @@ object Runner extends LazyLogging {
       dataPairs foreach { pair =>
         val (first, second) = (pair.head, pair.tail.head)
         // The predictionTime atom is used by Aux.computeRuleGroundings to generate query atoms at the appropriate time point
+        //val observations = first.narrative :+ List(s"time(${first.time.toInt+40})", s"predictionTime(${first.time.toInt+40})")
         val observations = first.narrative :+ s"time(${first.time.toInt+40})"
         val labels = second.annotation
         //val entry = MongoDBObject("time" -> first.time) ++ ("annotation" -> labels ) ++ ("narrative" -> observations)
@@ -166,7 +167,7 @@ object Runner extends LazyLogging {
         if (labels.nonEmpty) println(entry)
         newDB.insert(entry)
       }
-      //*/
+      */
 
       ///*
       system.actorOf(Props(new Learner_NEW(runningOptions, trainingDataOptions, testingDataOptions, trainingDataFunction,

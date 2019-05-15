@@ -28,7 +28,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
   // If this is false, some non-determinism is introduced (number of mistakes may vary slightly from round to round)
   val specializeAllAwakeRulesOnFPMistake = false
 
-  val withInertia = true
+  val withInertia = false
 
   // This is either 'winnow' or 'hedge'
   val weightUpdateStrategy = "hedge" //"winnow" // "hedge"

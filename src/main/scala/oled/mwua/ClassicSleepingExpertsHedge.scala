@@ -35,20 +35,21 @@ object ClassicSleepingExpertsHedge {
 
 
   def updateStructure_NEW_HEDGE(atom: AtomTobePredicted,
-                          markedMap: Map[String, Clause],
-                          predictedLabel: String,
-                          feedback: String,
-                          batch: Example,
-                          currentAtom: String,
-                          inps: RunningOptions,
-                          logger: org.slf4j.Logger,
-                          stateHandler: StateHandler,
-                          percentOfMistakesBeforeSpecialize: Int,
-                          randomizedPrediction: Boolean,
-                          selected: String,
-                          specializeAllAwakeOnMistake: Boolean,
-                          conservativeRuleGeneration: Boolean,
-                          generateNewRuleFlag: Boolean) = {
+                                previousTime: Int,
+                                markedMap: Map[String, Clause],
+                                predictedLabel: String,
+                                feedback: String,
+                                batch: Example,
+                                currentAtom: String,
+                                inps: RunningOptions,
+                                logger: org.slf4j.Logger,
+                                stateHandler: StateHandler,
+                                percentOfMistakesBeforeSpecialize: Int,
+                                randomizedPrediction: Boolean,
+                                selected: String,
+                                specializeAllAwakeOnMistake: Boolean,
+                                conservativeRuleGeneration: Boolean,
+                                generateNewRuleFlag: Boolean) = {
 
     def getAwakeBottomRules(what: String) = {
       if (what == "initiatedAt") atom.initiatedBy.filter(x => markedMap(x).isBottomRule)
@@ -69,9 +70,19 @@ object ClassicSleepingExpertsHedge {
           // ones to and make sure that no redundant rules are generated:
           val awakeTerminationRules = atom.terminatedBy.map( x => markedMap(x) )
 
+          // This generates bottom clause heads with adbuction
+          ///*
           updatedStructure =
             generateNewRule(batch, currentAtom, inps, "FP", logger,
               stateHandler, "terminatedAt", 1.0, otherAwakeExperts = awakeTerminationRules)
+           //*/
+
+        /*
+        updatedStructure =
+          generateNewExpert_NEW(batch, atom, previousTime, inps, "FP", logger,
+            stateHandler, "terminatedAt", 1.0, otherAwakeExperts = awakeTerminationRules)
+
+         */
         //}
       }
       // Also, in the case of an FP mistake we try to specialize awake initiation rules.
@@ -99,9 +110,17 @@ object ClassicSleepingExpertsHedge {
           // ones to and make sure that no redundant rules are generated:
           val awakeInitiationRules = atom.initiatedBy.map(x => markedMap(x))
 
+          // This generates bottom clause heads with adbuction
+          ///*
           updatedStructure =
             generateNewRule(batch, currentAtom, inps, "FN", logger,
               stateHandler, "initiatedAt", 1.0, otherAwakeExperts = awakeInitiationRules)
+          //*/
+          /*
+          updatedStructure =
+            generateNewExpert_NEW(batch, atom, previousTime, inps, "FP", logger,
+              stateHandler, "initiatedAt", 1.0, otherAwakeExperts = awakeInitiationRules)
+          */
         }
       } else {
         if (!conservativeRuleGeneration) {

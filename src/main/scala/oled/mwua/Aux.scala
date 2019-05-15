@@ -383,7 +383,7 @@ object AuxFuncs extends LazyLogging {
 
     val directives = s"\n$initGrndRule\n$termGrndRule\n$fluentGroundings\n"
 
-    val program = batch + markedProgram + "\n#include \""+inps.entryPath+"/bk.lp\"." + directives + "\n#show.\n#show grounding/2.\n#show fluentGrnd/1." //"\n#show.\n#show tp/2.\n#show fp/2.\n#show fn/2."
+    val program = batch + markedProgram + "\n#include \""+inps.entryPath+"/bk.lp\"." + directives + "\n#show.\n#show grounding/2.\n#show fluentGrnd/1.\n#show time/1." //"\n#show.\n#show tp/2.\n#show fp/2.\n#show fn/2."
     val f2 = Utils.getTempFile(s"quick-and-dirty",".lp")
     Utils.writeToFile(f2, "append")(p => List(program) foreach p.println)
     val paaath = f2.getCanonicalPath
@@ -393,13 +393,17 @@ object AuxFuncs extends LazyLogging {
 
     val allInferredAtoms = result
 
-    val (ruleGroundings, allFluentGroundings) = allInferredAtoms.foldLeft(Set[String](), Set[String]()) { (accum, atom) =>
+    val (ruleGroundings, allFluentGroundings, times) = allInferredAtoms.foldLeft(Set[String](), Set[String](), Set[Int]()) { (accum, atom) =>
       if (atom.startsWith("grounding")) {
-        (accum._1 + atom, accum._2)
+        (accum._1 + atom, accum._2, accum._3)
       } else if (atom.startsWith("fluentGrnd")) {
         val parsed = Literal.parse(atom)
         val actualGroundFluent = parsed.terms.head.tostring
-        (accum._1, accum._2 + actualGroundFluent)
+        (accum._1, accum._2 + actualGroundFluent, accum._3)
+      } else if (atom.startsWith("time")) {
+        val parsed = Literal.parse(atom)
+        val time = parsed.terms.head.tostring.toInt
+        (accum._1, accum._2, accum._3 + time)
       } else {
         throw new RuntimeException(s"Found unexpected ground atom (not matching the atom signatures specified in the grounding directives): $atom")
       }
@@ -454,7 +458,7 @@ object AuxFuncs extends LazyLogging {
     }
     //*/
 
-    map
+    (map, times)
 
   }
 

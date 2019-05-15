@@ -248,7 +248,9 @@ object Xhail extends ASPResultsParser with LazyLogging {
   def generateKernel(abdModel: List[String],
                      alternativePath: String = "",
                      examples: Map[String, List[String]],
-                     aspInputFile: java.io.File, bkFile: String, globals: Globals): (List[Clause], List[Clause]) = {
+                     aspInputFile: java.io.File,
+                     bkFile: String,
+                     globals: Globals): (List[Clause], List[Clause]) = {
 
     //val bkFile = globals.BK_WHOLE_EC
 

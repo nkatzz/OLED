@@ -532,7 +532,8 @@ class Learner_OLD_DEBUG[T <: Source](val inps: RunningOptions,
           computeRuleGroundings(inps, markedProgram, markedMap, e, trueAtoms)
         }
 
-        val groundingsMap = groundingsMapTimed._1
+        val groundingsMap = groundingsMapTimed._1._1
+        val times = groundingsMapTimed._1._2
         val groundingsTime = groundingsMapTimed._2
 
         totalgroundingsTime += groundingsTime
@@ -706,7 +707,7 @@ class Learner_OLD_DEBUG[T <: Source](val inps: RunningOptions,
           computeRuleGroundings(inps, markedProgram, markedMap, e, trueAtoms)
         }
 
-        val groundingsMap = groundingsMapTimed._1
+        val groundingsMap = groundingsMapTimed._1._1
         val groundingsTime = groundingsMapTimed._2
 
         totalgroundingsTime += groundingsTime
