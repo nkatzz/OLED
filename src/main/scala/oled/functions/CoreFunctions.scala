@@ -240,6 +240,7 @@ trait CoreFunctions {
     val f = Utils.getTempFile("isConsistent",".lp")
     Utils.writeLine(program, f, "overwrite")
     val answerSet = ASP.solve(task = Globals.INFERENCE, aspInputFile = f)
+    f.delete()
     if (answerSet.nonEmpty) {
       val atoms = answerSet.head.atoms
       atoms.foreach { a=>

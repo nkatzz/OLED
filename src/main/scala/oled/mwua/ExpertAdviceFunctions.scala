@@ -1092,6 +1092,8 @@ object ExpertAdviceFunctions extends LazyLogging {
       val aspFile: File = Utils.getTempFile("aspinput", ".lp")
       val (_, bcs) = Xhail.generateKernel(List(headAtom), examples = xhailInput, aspInputFile = aspFile, bkFile=bkFile, globals = inps.globals)
 
+      aspFile.delete()
+
       val _bottomClause = bcs.head
 
       val topRule = {

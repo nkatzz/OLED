@@ -389,6 +389,8 @@ object AuxFuncs extends LazyLogging {
     val paaath = f2.getCanonicalPath
     val _result = ASP.solve(task = Globals.SCORE_RULES, aspInputFile = new File(paaath))
 
+    f2.delete() // For long execution periods, waiting to delete on exit may exhaust the available space
+
     val result = if (_result.nonEmpty) _result.head.atoms.toSet else Set[String]()
 
     val allInferredAtoms = result

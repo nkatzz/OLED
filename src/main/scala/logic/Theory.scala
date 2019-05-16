@@ -184,6 +184,8 @@ case class Theory(clauses: List[Clause] = List()) extends Expression with LazyLo
     val path = f.getCanonicalPath
     val answerSet = ASP.solve(task = Globals.SCORE_RULES, aspInputFile = new File(path))
 
+    f.delete()
+
     answerSet match {
       case Nil =>
         throw new RuntimeException("Got an empty answer set during rule evaluation (at least times count should be returned)")
@@ -277,6 +279,8 @@ case class Theory(clauses: List[Clause] = List()) extends Expression with LazyLo
     Utils.writeToFile(f, "append")(p => List(all) foreach p.println)
     val path = f.getCanonicalPath
     val answerSet = ASP.solve(task = Globals.SCORE_RULES, aspInputFile = new File(path))
+
+    f.delete()
 
     answerSet match {
       case Nil =>
@@ -385,6 +389,8 @@ case class Theory(clauses: List[Clause] = List()) extends Expression with LazyLo
     Utils.writeToFile(f, "append")(p => List(all) foreach p.println)
     val path = f.getCanonicalPath
     val answerSet = ASP.solve(task = Globals.SCORE_RULES, aspInputFile = new File(path))
+
+    f.delete()
 
     //val (exampleCounts, tpss, fpss, fnss) = (List[String](), List[String](), List[String](), List[String]())
 

@@ -28,7 +28,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
   // If this is false, some non-determinism is introduced (number of mistakes may vary slightly from round to round)
   val specializeAllAwakeRulesOnFPMistake = false
 
-  val withInertia = false
+  val withInertia = true
 
   // This is either 'winnow' or 'hedge'
   val weightUpdateStrategy = "hedge" //"winnow" // "hedge"
@@ -213,7 +213,8 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
           // test
           val test = dataSlice.tail
 
-          println(s"training on ${train.time} testing on ${test.map(x => x.time).mkString(" ")}")
+          //println(s"training on ${train.time} testing on ${test.map(x => x.time).mkString(" ")}")
+          //println(s"training on ${train.time}")
 
           stateHandler.perBatchError = Vector.empty[Int]
           test foreach { batch =>
@@ -226,10 +227,10 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
           }
           val currentError = stateHandler.perBatchError.sum
           acuumMistakes = acuumMistakes :+ currentError
-          //println(acuumMistakes)
+          println(s"trained on ${train.time}, current error: $currentError")
         }
       }
-      val file = new File("/home/nkatz/Desktop/moving-streaming")
+      val file = new File("/home/nkatz/Desktop/meeting-streaming")
       val bw = new BufferedWriter(new FileWriter(file))
       bw.write(acuumMistakes.mkString(","))
       bw.close()

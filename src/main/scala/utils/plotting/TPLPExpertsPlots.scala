@@ -12,11 +12,13 @@ import scalatikz.graphics.pgf.enums.Mark.DOT
 object TPLPExpertsPlots extends App {
 
   //plotMeetingMistakesInertiaNoInertia("/home/nkatz/Desktop/TPLP-2019-results/meeting-inertia-experiments-mistakes", "/home/nkatz/Desktop/TPLP-2019-results")
-  //plotMovingMistakesInertiaNoInertia("/home/nkatz/Desktop/TPLP-2019-results/moving-inertia-experiments-mistakes", "/home/nkatz/Desktop/TPLP-2019-results")
+  plotMovingMistakesInertiaNoInertia("/home/nkatz/Desktop/TPLP-2019-results/moving-inertia-experiments-mistakes", "/home/nkatz/Desktop/TPLP-2019-results")
 
   //plotPrequentialTimesTogether("/home/nkatz/Desktop/TPLP-2019-results")
 
-  plotCrossValBothCEs("/home/nkatz/Desktop/TPLP-2019-results")
+  //plotTest("/home/nkatz/Desktop/meet", "/home/nkatz/Desktop/TPLP-2019-results")
+
+  //plotCrossValBothCEs("/home/nkatz/Desktop/TPLP-2019-results")
 
   //plotMovingF1Scores("/home/nkatz/Desktop/TPLP-2019-results/moving-prequential-comparison-PrequentialF1Score", "/home/nkatz/Desktop/TPLP-2019-results")
   //plotMovingMistakes("/home/nkatz/Desktop/TPLP-2019-results/moving-prequential-comparison-MistakeNum", "/home/nkatz/Desktop/TPLP-2019-results")
@@ -208,6 +210,23 @@ object TPLPExpertsPlots extends App {
       havingTitle("\\emph{Meeting}").saveAsPDF(savePath)
   }
 
+
+  def plotTest(dataPath: String, savePath: String) = {
+    val data = Source.fromFile(dataPath).getLines.filter( x => !x.isEmpty && !x.startsWith("%"))//.split(",")
+    val k = data.next().split(",").map(_.toDouble).toVector
+
+    Figure("aaaaaaaaaaaaa")
+      .plot(color = RED, marker = X, markStrokeColor = RED)(makeSparse(k))
+      //havingLegends("\\footnotesize \\textsf{OLED-EXP-inertia}", "\\footnotesize \\textsf{OLED-EXP-no-inertia}")
+      //.havingLegendPos(NORTH_WEST)
+      .havingXLabel("\\textbf{Time} $\\mathbf{(\\times 50)}$")
+      .havingYLabel("\\textbf{Mistakes}").
+      havingTitle("\\emph{Meeting}").
+      //havingTitle("\\emph{Meeting},ybar").
+      //havingAxisXLabels(Seq("0","5K","10K","15K","20K","25K")).
+      saveAsPDF(savePath)
+
+  }
 
   def plotMeetingMistakesInertiaNoInertia(dataPath: String, savePath: String) = {
     val data = Source.fromFile(dataPath).getLines.filter( x => !x.isEmpty && !x.startsWith("%"))//.split(",")
