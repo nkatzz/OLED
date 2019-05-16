@@ -62,6 +62,9 @@ object Test extends App {
 object AuxFuncs extends LazyLogging {
 
 
+  val quickAnDirtyFile = new java.io.File("/tmp/quick-and-dirty.lp")
+
+
   def reduceWeights(ruleIds: Vector[String], idsMap: Map[String, Clause], learningRate: Double, weightUpdateStrategy: String = "winnow") = {
     if (weightUpdateStrategy == "winnow") {
       ruleIds.foreach { id =>
@@ -384,12 +387,16 @@ object AuxFuncs extends LazyLogging {
     val directives = s"\n$initGrndRule\n$termGrndRule\n$fluentGroundings\n"
 
     val program = batch + markedProgram + "\n#include \""+inps.entryPath+"/bk.lp\"." + directives + "\n#show.\n#show grounding/2.\n#show fluentGrnd/1.\n#show time/1." //"\n#show.\n#show tp/2.\n#show fp/2.\n#show fn/2."
-    val f2 = Utils.getTempFile(s"quick-and-dirty",".lp")
+
+    //val f2 = Utils.getTempFile(s"quick-and-dirty",".lp")
+    val f2 = quickAnDirtyFile
+    Utils.clearFile(f2.getAbsolutePath)
     Utils.writeToFile(f2, "append")(p => List(program) foreach p.println)
     val paaath = f2.getCanonicalPath
+
     val _result = ASP.solve(task = Globals.SCORE_RULES, aspInputFile = new File(paaath))
 
-    f2.delete() // For long execution periods, waiting to delete on exit may exhaust the available space
+    //f2.delete() // For long execution periods, waiting to delete on exit may exhaust the available space
 
     val result = if (_result.nonEmpty) _result.head.atoms.toSet else Set[String]()
 

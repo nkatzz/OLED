@@ -188,10 +188,11 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
     case "start-streaming" => {
       data = getTrainData
       val slidingData = data.sliding(100)
-      logEmptyDataError()
+
       var done = false
       var acuumMistakes = Vector.empty[Int]
-      while (!done) {
+      //while (!done) {
+      while (slidingData.hasNext) {
         val dataSlice = slidingData.next()
         if (dataSlice.isEmpty) {
           logger.info(s"Finished.")
@@ -230,10 +231,20 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
           println(s"trained on ${train.time}, current error: $currentError")
         }
       }
-      val file = new File("/home/nkatz/Desktop/meeting-streaming")
+
+      val file = new File(s"/home/nkatz/Desktop/${inps.targetHLE}-streaming")
       val bw = new BufferedWriter(new FileWriter(file))
       bw.write(acuumMistakes.mkString(","))
       bw.close()
+
+      logger.info(s"Finished.")
+      endTime = System.nanoTime()
+      logger.info("Done.")
+      //workers foreach(w => w ! PoisonPill)
+      wrapUp()
+      done = true
+      context.system.terminate()
+
     }
 
   }

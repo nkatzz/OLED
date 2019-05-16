@@ -54,7 +54,7 @@ object Runner_Streaming extends LazyLogging {
         case _ => new Example(annot = e.annotation filter (_.contains(opts.targetConcept)), nar = e.narrative, _time = e.time)
       }
     }
-    dataIterator
+    dataIterator//.take(1000)
   }
 
 }
