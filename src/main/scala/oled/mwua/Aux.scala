@@ -62,7 +62,7 @@ object Test extends App {
 object AuxFuncs extends LazyLogging {
 
 
-  val quickAnDirtyFile = new java.io.File("/tmp/quick-and-dirty.lp")
+
 
 
   def reduceWeights(ruleIds: Vector[String], idsMap: Map[String, Clause], learningRate: Double, weightUpdateStrategy: String = "winnow") = {
@@ -376,6 +376,7 @@ object AuxFuncs extends LazyLogging {
     //------------------------------------------------------------------------------------------------------------
     //val directives = s"\n$tpRule1\n$tpRule2\n$fpRule\n$fnRule"
 
+    val quickAnDirtyFile = new java.io.File(s"/tmp/${inps.targetHLE}-quick-and-dirty.lp")
 
     val initGrndRule = s"grounding(I, holdsAt(F,Te)) :- rule(I), fluent(F), marked(I, initiatedAt(F,Ts) ), next(Ts,Te), time(Te), time(Ts)."
     val termGrndRule = s"grounding(I, holdsAt(F,Te)) :- rule(I), fluent(F), marked(I, terminatedAt(F,Ts) ), next(Ts,Te), time(Te), time(Ts)."
