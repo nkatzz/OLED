@@ -16,7 +16,7 @@ object TPLPExpertsPlots extends App {
 
   //plotPrequentialTimesTogether("/home/nkatz/Desktop/TPLP-2019-results")
 
-  //plotMeetingStreaming("/home/nkatz/Desktop/TPLP-2019-results/meeting-streaming", "/home/nkatz/Desktop/TPLP-2019-results")
+  plotMeetingStreaming("/home/nkatz/Desktop/TPLP-2019-results/meeting-streaming", "/home/nkatz/Desktop/TPLP-2019-results")
   plotMovingStreaming("/home/nkatz/Desktop/TPLP-2019-results/moving-streaming", "/home/nkatz/Desktop/TPLP-2019-results")
 
 
@@ -223,7 +223,7 @@ object TPLPExpertsPlots extends App {
     val data = Source.fromFile(dataPath).getLines.filter( x => !x.isEmpty && !x.startsWith("%"))//.split(",")
 
     val k1 = data.next().split(",").map(_.toDouble).toVector
-    //val k1 = skip(k, 0)
+    //val k1 = skip(k, 50)
     //val k1 = k.grouped(10).toVector.map(x => x.sum.toDouble/x.length)
 
     Figure("meeting-streaming")
@@ -247,7 +247,7 @@ object TPLPExpertsPlots extends App {
     val data = Source.fromFile(dataPath).getLines.filter( x => !x.isEmpty && !x.startsWith("%"))//.split(",")
 
     val k1 = data.next().split(",").map(_.toDouble).toVector
-    //val k1 = skip(k, 0)
+    //val k1 = skip(k, 50)
     //val k1 = k.grouped(10).toVector.map(x => x.sum.toDouble/x.length)
 
     Figure("moving-streaming")
