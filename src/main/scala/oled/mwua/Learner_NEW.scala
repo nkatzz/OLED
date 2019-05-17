@@ -206,10 +206,19 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
           // Train on the first data point of the slice, test on the rest.
           val train = dataSlice.head
           val trueLabels = train.annotation.toSet
-          ExpertAdviceFunctions.process(train, train.annotation.toSet, inps,
-            stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
-            batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
-            receiveFeedbackBias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap)
+
+          if (inputTheory.isEmpty) {
+            ExpertAdviceFunctions.process(train, train.annotation.toSet, inps,
+              stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
+              batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
+              receiveFeedbackBias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap)
+          } else {
+            ExpertAdviceFunctions.process(train, train.annotation.toSet, inps,
+              stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
+              batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
+              receiveFeedbackBias, conservativeRuleGeneration, weightUpdateStrategy, withInertia,
+              feedbackGap, inputTheory = Some(inputTheory))
+          }
 
           // test
           val test = dataSlice.tail
@@ -221,10 +230,19 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
           test foreach { batch =>
             val trueLabels = batch.annotation.toSet
             val _receiveFeedbackBias = 0.0
-            ExpertAdviceFunctions.process(batch, batch.annotation.toSet, inps,
-              stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
-              batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake, _receiveFeedbackBias,
-              conservativeRuleGeneration, weightUpdateStrategy)
+
+            if (inputTheory.isEmpty) {
+              ExpertAdviceFunctions.process(batch, batch.annotation.toSet, inps,
+                stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
+                batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake, _receiveFeedbackBias,
+                conservativeRuleGeneration, weightUpdateStrategy)
+            } else {
+              ExpertAdviceFunctions.process(batch, batch.annotation.toSet, inps,
+                stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
+                batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake, _receiveFeedbackBias,
+                conservativeRuleGeneration, weightUpdateStrategy, inputTheory = Some(inputTheory))
+            }
+
           }
           val currentError = stateHandler.perBatchError.sum
           acuumMistakes = acuumMistakes :+ currentError
