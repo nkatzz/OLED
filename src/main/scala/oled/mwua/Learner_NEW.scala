@@ -187,7 +187,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
 
     case "start-streaming" => {
       data = getTrainData
-      val slidingData = data.sliding(100)
+      val slidingData = data.sliding(20)
 
       var done = false
       var acuumMistakes = Vector.empty[Int]

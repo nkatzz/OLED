@@ -12,11 +12,14 @@ import scalatikz.graphics.pgf.enums.Mark.DOT
 object TPLPExpertsPlots extends App {
 
   //plotMeetingMistakesInertiaNoInertia("/home/nkatz/Desktop/TPLP-2019-results/meeting-inertia-experiments-mistakes", "/home/nkatz/Desktop/TPLP-2019-results")
-  plotMovingMistakesInertiaNoInertia("/home/nkatz/Desktop/TPLP-2019-results/moving-inertia-experiments-mistakes", "/home/nkatz/Desktop/TPLP-2019-results")
+  //plotMovingMistakesInertiaNoInertia("/home/nkatz/Desktop/TPLP-2019-results/moving-inertia-experiments-mistakes", "/home/nkatz/Desktop/TPLP-2019-results")
 
   //plotPrequentialTimesTogether("/home/nkatz/Desktop/TPLP-2019-results")
 
-  //plotTest("/home/nkatz/Desktop/meet", "/home/nkatz/Desktop/TPLP-2019-results")
+  //plotMeetingStreaming("/home/nkatz/Desktop/TPLP-2019-results/meeting-streaming", "/home/nkatz/Desktop/TPLP-2019-results")
+  plotMovingStreaming("/home/nkatz/Desktop/TPLP-2019-results/moving-streaming", "/home/nkatz/Desktop/TPLP-2019-results")
+
+
 
   //plotCrossValBothCEs("/home/nkatz/Desktop/TPLP-2019-results")
 
@@ -211,12 +214,20 @@ object TPLPExpertsPlots extends App {
   }
 
 
-  def plotTest(dataPath: String, savePath: String) = {
-    val data = Source.fromFile(dataPath).getLines.filter( x => !x.isEmpty && !x.startsWith("%"))//.split(",")
-    val k = data.next().split(",").map(_.toDouble).toVector
+  def plotMeetingStreaming(dataPath: String, savePath: String) = {
 
-    Figure("aaaaaaaaaaaaa")
-      .plot(color = RED, marker = X, markStrokeColor = RED)(makeSparse(k))
+    // skip every n elements from vector
+    def skip[A](l:Vector[A], n:Int) =
+      l.zipWithIndex.collect {case (e,i) if ((i+1) % n) == 0 => e} // (i+1) because zipWithIndex is 0-based
+
+    val data = Source.fromFile(dataPath).getLines.filter( x => !x.isEmpty && !x.startsWith("%"))//.split(",")
+
+    val k1 = data.next().split(",").map(_.toDouble).toVector
+    //val k1 = skip(k, 0)
+    //val k1 = k.grouped(10).toVector.map(x => x.sum.toDouble/x.length)
+
+    Figure("meeting-streaming")
+      .plot(color = RED)(makeSparse(k1))
       //havingLegends("\\footnotesize \\textsf{OLED-EXP-inertia}", "\\footnotesize \\textsf{OLED-EXP-no-inertia}")
       //.havingLegendPos(NORTH_WEST)
       .havingXLabel("\\textbf{Time} $\\mathbf{(\\times 50)}$")
@@ -225,8 +236,32 @@ object TPLPExpertsPlots extends App {
       //havingTitle("\\emph{Meeting},ybar").
       //havingAxisXLabels(Seq("0","5K","10K","15K","20K","25K")).
       saveAsPDF(savePath)
-
   }
+
+  def plotMovingStreaming(dataPath: String, savePath: String) = {
+
+    // skip every n elements from vector
+    def skip[A](l:Vector[A], n:Int) =
+      l.zipWithIndex.collect {case (e,i) if ((i+1) % n) == 0 => e} // (i+1) because zipWithIndex is 0-based
+
+    val data = Source.fromFile(dataPath).getLines.filter( x => !x.isEmpty && !x.startsWith("%"))//.split(",")
+
+    val k1 = data.next().split(",").map(_.toDouble).toVector
+    //val k1 = skip(k, 0)
+    //val k1 = k.grouped(10).toVector.map(x => x.sum.toDouble/x.length)
+
+    Figure("moving-streaming")
+      .plot(color = RED)(makeSparse(k1))
+      //havingLegends("\\footnotesize \\textsf{OLED-EXP-inertia}", "\\footnotesize \\textsf{OLED-EXP-no-inertia}")
+      //.havingLegendPos(NORTH_WEST)
+      .havingXLabel("\\textbf{Time} $\\mathbf{(\\times 50)}$")
+      .havingYLabel("\\textbf{Mistakes}").
+      havingTitle("\\emph{Moving}").
+      //havingTitle("\\emph{Meeting},ybar").
+      //havingAxisXLabels(Seq("0","5K","10K","15K","20K","25K")).
+      saveAsPDF(savePath)
+  }
+
 
   def plotMeetingMistakesInertiaNoInertia(dataPath: String, savePath: String) = {
     val data = Source.fromFile(dataPath).getLines.filter( x => !x.isEmpty && !x.startsWith("%"))//.split(",")
