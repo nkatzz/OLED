@@ -16,7 +16,40 @@ object PlotTest2 extends App {
 
   //plotMeeting2passLogScale("/home/nkatz/Desktop/oled-winnow-results/meeting-2-passes-new", "/home/nkatz/Desktop/oled-winnow-results")
 
-  plotMaritime("/home/nkatz/Desktop/oled-winnow-results/maritime/brest/rendezvous/speedup", "/home/nkatz/Desktop/oled-winnow-results/maritime/brest/rendezvous")
+  //plotMaritime("/home/nkatz/Desktop/oled-winnow-results/maritime/brest/rendezvous/speedup", "/home/nkatz/Desktop/oled-winnow-results/maritime/brest/rendezvous")
+
+  plotTK_prequential("/home/nkatz/Dropbox/Track-&-Know/Athens-Plenary-6-2019")
+
+  plotTK_holdout("/home/nkatz/Dropbox/Track-&-Know/Athens-Plenary-6-2019")
+
+  def plotTK_prequential(savePath: String) = {
+    //val oled =     Vector(355,823,1744,2300,2640,2724,2738,2738,2738,2738)
+    //val oled_exp = Vector(54,158,348,348,562,562,624,624,624,624)
+
+    val oled =     Vector(355,1744,2640,2738,2738)
+    val oled_exp = Vector(54,348,562,624,624)
+
+    Figure("dangerousDrivingPrequential").plot(oled).plot(oled_exp).havingLegendPos(LegendPos.NORTH_WEST).
+      havingLegends("\\scriptsize OLED","\\scriptsize OLED-EXP").
+      havingXLabel("Time").
+      havingYLabel("Accumulated Number of Mistakes")//.saveAsPDF(savePath)
+      .havingAxisXLabels(Seq("10K","20K","30K","40K","50K")).havingTitle("DangerousDriving (Prequential Evaluation)").saveAsPDF(savePath)
+  }
+
+  def plotTK_holdout(savePath: String) = {
+    //val oled =     Vector(355,823,1744,2300,2640,2724,2738,2738,2738,2738)
+    //val oled_exp = Vector(54,158,348,348,562,562,624,624,624,624)
+
+    val oled =     Vector(0.48,0.786,0.923,0.968,0.968)
+    val oled_exp = Vector(0.42,0.825,0.820,0.971,0.978)
+
+    Figure("dangerousDrivingHoldout").plot(oled).plot(oled_exp).havingLegendPos(LegendPos.NORTH_WEST).
+      havingLegends("\\scriptsize OLED","\\scriptsize OLED-EXP").
+      havingXLabel("Time").
+      havingYLabel("$F_1$-score on test-Set")//.saveAsPDF(savePath)
+      .havingAxisXLabels(Seq("10K","20K","30K","40K","50K")).havingTitle("DangerousDriving (Holdout Evaluation)").saveAsPDF(savePath)
+  }
+
 
   def plotMaritime(dataPath: String, savePath: String) = {
     val data = Source.fromFile(dataPath).getLines.filter( x => !x.isEmpty && !x.startsWith("%"))//.split(",")

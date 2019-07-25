@@ -44,8 +44,8 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
   val percentOfMistakesBeforeSpecialize = 0
 
   // have this set to "" for a regular run without an input theory
-  val inputTheoryFile = "/home/nkatz/Desktop/theory"
-  //val inputTheoryFile = ""
+  //val inputTheoryFile = "/home/nkatz/Desktop/theory"
+  val inputTheoryFile = ""
 
   val inputTheory: List[Clause] = {
     def matches(p: Regex, str: String) = p.pattern.matcher(str).matches

@@ -21,11 +21,11 @@ class ExpLearner[T <: Source](val inps: RunningOptions,
                               val writeExprmtResultsTo: String = "") extends LazyLogging {
 
 
-  val learningRate = Globals.sleepingExpertsLearningRate
+  val learningRate: Double = Globals.sleepingExpertsLearningRate
 
-  val receiveFeedbackBias = Globals.sleepingExpertsFeedBackBias
+  val receiveFeedbackBias: Double = Globals.sleepingExpertsFeedBackBias
 
-  val withInertia = Globals.hedgeInertia
+  val withInertia: Boolean = Globals.hedgeInertia
 
   val epsilon = 0.9 // used in the randomized version
 
