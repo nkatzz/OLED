@@ -31,7 +31,6 @@ import scala.collection.mutable.ListBuffer
 
 object LogicUtils {
 
-
   /*
   * Simplifies a rule by removing redundant comparison predicates from its body.
   * */

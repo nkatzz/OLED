@@ -64,6 +64,12 @@ object AuxFuncs extends LazyLogging {
 
 
 
+  def showRuleWithSpecialization(rule: Clause) = {
+    val toStrWithWeight = (x: Clause) => s"${x.w_pos} x.tostring"
+    val ruletoStr = toStrWithWeight(rule)
+    val refstoStr = rule.refinements.map(x => toStrWithWeight(x))
+    ruletoStr + "\n" + refstoStr.mkString("\n")
+  }
 
   def reduceWeights(ruleIds: Vector[String], idsMap: Map[String, Clause], learningRate: Double, weightUpdateStrategy: String = "winnow") = {
     if (weightUpdateStrategy == "winnow") {
