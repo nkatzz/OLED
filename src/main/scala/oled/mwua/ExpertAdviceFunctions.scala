@@ -1118,7 +1118,7 @@ object ExpertAdviceFunctions extends LazyLogging {
     }
 
     if (!newRule.equals(Clause.empty)) {
-      logger.info(s"Generated new $what rule in response to $mistakeType atom: $currentAtom")
+      logger.info(s"Generated new $what rule in response to $mistakeType atom: ${currentAtom.atom}")
       //=========================================
       // Store the new rule in the state handler
       stateHandler.addRule(newRule)

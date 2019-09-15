@@ -124,7 +124,7 @@ object ClassicSleepingExpertsHedge {
           // TO USE THIS THE streaming VARIABLE AT THE BEGINNING OF THE PROCESS METHOD NEEDS TO BE SET TO true
           ///*
           updatedStructure =
-            generateNewExpert_NEW(batch, atom, previousTime, inps, "FP", logger,
+            generateNewExpert_NEW(batch, atom, previousTime, inps, "FN", logger,
               stateHandler, "initiatedAt", 1.0, otherAwakeExperts = awakeInitiationRules)
           //*/
         }

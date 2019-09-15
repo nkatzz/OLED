@@ -104,7 +104,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
   // This is optional. A testing set (for holdout evaluation) may not be provided.
   private var testingData = Iterator[Example]()
 
-  // Counts the number of precessed batches. Used to determine when to
+  // Counts the number of processed batches. Used to determine when to
   // perform holdout evaluation on the test set. Incremented whenever a
   // new batch is fetched (see the getNextBatch() method)
   private var batchCounter = 0
@@ -207,6 +207,10 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
           val train = dataSlice.head
           val trueLabels = train.annotation.toSet
 
+          if (train.time == "193") {
+            val stop = "stop"
+          }
+
           if (inputTheory.isEmpty) {
             ExpertAdviceFunctions.process(train, train.annotation.toSet, inps,
               stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
@@ -227,6 +231,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
           //println(s"training on ${train.time}")
 
           stateHandler.perBatchError = Vector.empty[Int]
+          /*
           test foreach { batch =>
             val trueLabels = batch.annotation.toSet
             val _receiveFeedbackBias = 0.0
@@ -244,6 +249,8 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
             }
 
           }
+          */
+
           val currentError = stateHandler.perBatchError.sum
           acuumMistakes = acuumMistakes :+ currentError
           println(s"trained on ${train.time}, current error: $currentError")
