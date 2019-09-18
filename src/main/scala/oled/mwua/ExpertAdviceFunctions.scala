@@ -44,73 +44,39 @@ object ExpertAdviceFunctions extends LazyLogging {
               incompleteTrueAtoms: Option[Set[String]] = None,
               inputTheory: Option[List[Clause]] = None) = {
 
-    //======================================
+    //========================================
     //stateHandler.ensemble.removeZeroWeights
-    //======================================
+    //========================================
 
     val streaming = true //true
-
-    if (batchCounter == 57) { //169
-      val stop = "stop"
-    }
-
-    if (batch.annotation.nonEmpty) {
-      val stop = "stop"
-    }
-
-    //println(batch.narrative, batch.annotation)
-
     var batchError = 0
     var batchFPs = 0
     var batchFNs = 0
     var batchAtoms = 0
-    var finishedBatch = false
-
     var atomCounter = 0 //used for feedback gap
-
-    var hedgePredictionThreshold = 0.5
-
+    val hedgePredictionThreshold = 0.5  //hedgePredictionThreshold = Globals.hedgePredictionThreshold
     var withInputTheory = inputTheory.isDefined
 
     /* TEST PHASE ONLY (NO WEIGHT/STRUCTURE UPDATE) */
     ///*
     val isTestPhase = receiveFeedbackBias == 0.0
     if (isTestPhase) {
-      val weightThreshold = 1.0 //0.00001 //1.1 // // 0.0
-      //val (goodInit, goodTerm) = getFinalRules(stateHandler)
-
-      hedgePredictionThreshold = 0.5
-      //hedgePredictionThreshold = Globals.hedgePredictionThreshold
-
-      val (goodInit, goodTerm) = getFinalRulesDefault(stateHandler, weightThreshold)
-      stateHandler.ensemble.initiationRules = goodInit
-      stateHandler.ensemble.terminationRules = goodTerm
-      if (!streaming) {
-        logger.info(s"Testing with Initiation:\n${Theory(stateHandler.ensemble.initiationRules.sortBy(x => -x.w_pos)).showWithStats}")
-        logger.info(s"Testing with Termination:\n${Theory(stateHandler.ensemble.terminationRules.sortBy(x => -x.w_pos)).showWithStats}")
-      }
+      setFinalTestingRules(stateHandler, streaming)
       withInputTheory = true
     }
     //*/
 
     var spliceInput = Map.empty[String, Double]
-
     stateHandler.batchCounter = batchCounter
 
     var alreadyProcessedAtoms = Set.empty[String]
+    var finishedBatch = false
+
     val predictAndUpdateTimed = Utils.time {
       while(!finishedBatch) {
 
-        //val startTime = System.nanoTime()
-
-        val (markedProgram, markedMap, groundingsMap, times) = groundEnsemble(batch, inps, stateHandler, withInputTheory, streaming)
-        val sortedAtomsToBePredicted = sortGroundingsByTime(groundingsMap)
-
-        val orderedTimes = (sortedAtomsToBePredicted.map(x => x.time) ++ times.toVector).sorted
-
-        //val endTime = System.nanoTime()
-
-        //println(s"Grounding time: ${(endTime - startTime)/1000000000.0}")
+        val (markedProgram, markedMap, groundingsMap, times, sortedAtomsToBePredicted, orderedTimes) =
+          ground(batch, inps, stateHandler, withInputTheory, streaming)
 
         breakable {
           sortedAtomsToBePredicted foreach { atom =>
@@ -120,10 +86,8 @@ object ExpertAdviceFunctions extends LazyLogging {
 
               if (feedBackGap != 0) atomCounter += 1 // used for experiments with the feedback gap
 
-              //logger.info(s"predicting with:\n${stateHandler.ensemble.merged(inps).tostring}")
-
-              // this should be place at the end of the iteration. In this way, if
-              // a break actuall occurs due to structure update we'll retrain on the
+              // this should be placed at the end of the iteration. In this way, if
+              // a break actual occurs due to structure update we'll retrain on the
               // current example to update weights of the new/revised rules and handle the
               // inertia buffer (e.g. an FN turns into a TP after the addition of an
               // initiation rule, the inertia expert now remembers the atom).
@@ -141,6 +105,9 @@ object ExpertAdviceFunctions extends LazyLogging {
               var termWeightSum = 0.0
               var totalWeight = 0.0
               var selected = ""
+
+              // The randomized prediction case has not been carried over to the PrequentialInference class.
+              // You need to modify the logic there to add it.
               if (!randomizedPrediction) {
 
                 val (_prediction, _inertiaExpertPrediction, _initWeightSum, _termWeightSum) =
@@ -160,6 +127,8 @@ object ExpertAdviceFunctions extends LazyLogging {
                 selected = _selected
               }
 
+              // This has not been carried over to the PrequentialInference class.
+              // You need to modify the logic there to add it.
               if(splice.isDefined) {
                 val time = atom.atomParsed.terms.tail.head.name
                 val eventAtom = atom.atomParsed.terms.head.asInstanceOf[Literal]
@@ -185,6 +154,8 @@ object ExpertAdviceFunctions extends LazyLogging {
                 }
               }
 
+              // This has not been carried over to the PrequentialInference class.
+              // You need to modify the logic there to add it.
               val feedback =
                 if (incompleteTrueAtoms.isDefined) {
                   getFeedback(atom, spliceInput, splice, mapper, incompleteTrueAtoms.get)
@@ -192,6 +163,8 @@ object ExpertAdviceFunctions extends LazyLogging {
                   getFeedback(atom, spliceInput, splice, mapper, trueAtoms)
                 }
 
+              // The Winnow case has not been carried over to the PrequentialInference class.
+              // You need to modify the logic there to add it.
               val predictedLabel =
                 if (weightUpdateStrategy == "winnow") {
                   if (prediction > 0) "true" else "false"
@@ -393,6 +366,19 @@ object ExpertAdviceFunctions extends LazyLogging {
     if (batchError > 0) {
       logger.info(s"*** Batch #$batchCounter Total mistakes: ${batchFPs+batchFNs} " +
         s"(FPs: $batchFPs | FNs: $batchFNs). Total batch atoms: $batchAtoms ***")
+    }
+  }
+
+
+
+  def setFinalTestingRules(stateHandler: StateHandler, streaming: Boolean) = {
+    val weightThreshold = 1.0 //0.00001 //1.1 // // 0.0
+    val (goodInit, goodTerm) = getFinalRulesDefault(stateHandler, weightThreshold)
+    stateHandler.ensemble.initiationRules = goodInit
+    stateHandler.ensemble.terminationRules = goodTerm
+    if (!streaming) {
+      logger.info(s"Testing with Initiation:\n${Theory(stateHandler.ensemble.initiationRules.sortBy(x => -x.w_pos)).showWithStats}")
+      logger.info(s"Testing with Termination:\n${Theory(stateHandler.ensemble.terminationRules.sortBy(x => -x.w_pos)).showWithStats}")
     }
   }
 
@@ -1318,6 +1304,20 @@ object ExpertAdviceFunctions extends LazyLogging {
   }
 
 
+  def ground(batch: Example,
+             inps: RunningOptions,
+             stateHandler: StateHandler,
+             withInputTheory: Boolean = false,
+             streaming: Boolean = false) = {
+    val startTime = System.nanoTime()
+    val (markedProgram, markedMap, groundingsMap, times) = groundEnsemble(batch, inps, stateHandler, withInputTheory, streaming)
+    val sortedAtomsToBePredicted = sortGroundingsByTime(groundingsMap)
+    val orderedTimes = (sortedAtomsToBePredicted.map(x => x.time) ++ times.toVector).sorted
+    val endTime = System.nanoTime()
+    println(s"Grounding time: ${(endTime - startTime)/1000000000.0}")
+    (markedProgram, markedMap, groundingsMap, times, sortedAtomsToBePredicted, orderedTimes)
+  }
+
   /* Generate groundings of the rules currently in the ensemble. */
 
   def groundEnsemble(batch: Example,
@@ -1326,18 +1326,11 @@ object ExpertAdviceFunctions extends LazyLogging {
                      withInputTheory: Boolean = false,
                      streaming: Boolean = false) = {
 
-
-    if (batch.annotation.nonEmpty) {
-      val stop = "stop"
-    }
-
     val ensemble = stateHandler.ensemble
     val merged = ensemble.merged(inps, withInputTheory)
-
     stateHandler.runningRulesNumber = stateHandler.runningRulesNumber :+ merged.size
 
     //println(s"Number of rules: ${merged.size}")
-
     //println(s"Predicting with:\n${merged.tostring}")
 
     val _marked = marked(merged.clauses.toVector, inps.globals)
