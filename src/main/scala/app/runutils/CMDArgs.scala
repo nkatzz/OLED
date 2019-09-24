@@ -199,7 +199,7 @@ object CMDArgs extends LazyLogging {
     Arg(name = "--with-inertia", valueType = "Boolean", text = "If true learns with inertia from edge interval points only.", default = "false"),
     Arg(name = "--weight-learning", valueType = "Boolean", text = "If true use AdaGrad to learn weighted clauses.", default = "false"),
     Arg(name = "--mln-weight-at-least", valueType = "Double", text = "Remove rules with mln-weight lower than this.", default = "0.1"),
-    Arg(name = "--parallel-clause-eval", valueType = "Boolean", text = "Evaluate clauses in parallel during weight learning.", default = "false"),
+    Arg(name = "--parallel-clause-eval", valueType = "Boolean", text = "Evaluate clauses in parallel during weight learning.", default = "true"),
     Arg(name = "--ada-delta", valueType = "Double", text = "Delta parameter for AdaGrad (weight learning).", default = "1.0"),
     Arg(name = "--ada-learn-rate", valueType = "Double", text = "Learning rate parameter (eta) for AdaGrad (weight learning).", default = "1.0"),
     Arg(name = "--ada-regularization", valueType = "Double", text = "Regularization parameter (lambda) for AdaGrad (weight learning).", default = "0.01"),
