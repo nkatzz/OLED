@@ -16,8 +16,8 @@ object TPLPExpertsPlots extends App {
 
   //plotPrequentialTimesTogether("/home/nkatz/Desktop/TPLP-2019-results")
 
-  plotMeetingStreaming("/home/nkatz/Desktop/TPLP-2019-results/meeting-streaming", "/home/nkatz/Desktop/TPLP-2019-results")
-  plotMovingStreaming("/home/nkatz/Desktop/TPLP-2019-results/moving-streaming", "/home/nkatz/Desktop/TPLP-2019-results")
+  //plotMeetingStreaming("/home/nkatz/Desktop/TPLP-2019-results/meeting-streaming", "/home/nkatz/Desktop/TPLP-2019-results")
+  //plotMovingStreaming("/home/nkatz/Desktop/TPLP-2019-results/moving-streaming", "/home/nkatz/Desktop/TPLP-2019-results")
 
 
 
@@ -25,7 +25,7 @@ object TPLPExpertsPlots extends App {
 
   //plotMovingF1Scores("/home/nkatz/Desktop/TPLP-2019-results/moving-prequential-comparison-PrequentialF1Score", "/home/nkatz/Desktop/TPLP-2019-results")
   //plotMovingMistakes("/home/nkatz/Desktop/TPLP-2019-results/moving-prequential-comparison-MistakeNum", "/home/nkatz/Desktop/TPLP-2019-results")
-  //plotMeetingMistakes("/home/nkatz/Desktop/TPLP-2019-results/meeting-prequential-comparison-MistakeNum", "/home/nkatz/Desktop/TPLP-2019-results")
+  plotMeetingMistakes("/home/nkatz/Desktop/TPLP-2019-results/meeting-prequential-comparison-MistakeNum", "/home/nkatz/Desktop/TPLP-2019-results")
   //plotMeetingF1Scores("/home/nkatz/Desktop/TPLP-2019-results/meeting-prequential-comparison-PrequentialF1Score", "/home/nkatz/Desktop/TPLP-2019-results")
 
   //plotLimitedFeedbackMeeting("/home/nkatz/Desktop/TPLP-2019-results")

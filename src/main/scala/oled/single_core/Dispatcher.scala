@@ -83,27 +83,24 @@ class Dispatcher[T <: Source](inps: RunningOptions,
       if (!weightLearning) {
         if (inps.withEventCalculs) {
           context.actorOf(Props(
-            new TheoryLearner(inps, trainingDataOptions, testingDataOptions,
-              trainingDataFunction, testingDataFunction, "initiated")),
+            new TheoryLearner(inps, trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction, "initiated")),
             name = s"initiated-learner-${this.##}") ! "go"
 
           context.actorOf(Props(
-            new TheoryLearner(inps, trainingDataOptions, testingDataOptions,
-              trainingDataFunction, testingDataFunction, "terminated")),
+            new TheoryLearner(inps, trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction, "terminated")),
             name = s"terminated-learner-${this.##}") ! "go"
         } else {
           context.actorOf(Props(
-            new TheoryLearner(inps, trainingDataOptions, testingDataOptions,
-              trainingDataFunction, testingDataFunction, "None")),
+            new TheoryLearner(inps, trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction, "None")),
             name = s"learner-${this.##}") ! "go"
         }
 
       } else {
 
-        //context.actorOf(Props(new oled.weightlearn.WeightedTheoryLearner_OLD(inps, trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction, "initiated")), name = s"initiated-learner-${this.##}") ! "go"
+        context.actorOf(Props(new woled.Learner(inps, trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction, "initiated")), name = s"learner-${this.##}") ! "go"
 
-        /* I need to fix learning without the EC here (see above)! */
-
+        // This is for running the old version without actual MPE inference
+        /*
         if (! inps.parallelClauseEval) {
           context.actorOf(Props(new oled.weightlearn.WeightedTheoryLearner(inps, trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction, "initiated")), name = s"initiated-learner-${this.##}") ! "go"
           context.actorOf(Props(new oled.weightlearn.WeightedTheoryLearner(inps, trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction, "terminated")), name = s"terminated-learner-${this.##}") ! "go"
@@ -111,6 +108,7 @@ class Dispatcher[T <: Source](inps: RunningOptions,
           context.actorOf(Props(new oled.weightlearn.parallel.WeightedTheoryLearner(inps, trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction, "initiated")), name = s"initiated-learner-${this.##}") ! "go"
           context.actorOf(Props(new oled.weightlearn.parallel.WeightedTheoryLearner(inps, trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction, "terminated")), name = s"terminated-learner-${this.##}") ! "go"
         }
+        */
 
       }
 

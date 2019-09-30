@@ -28,7 +28,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
   // If this is false, some non-determinism is introduced (number of mistakes may vary slightly from round to round)
   val specializeAllAwakeRulesOnFPMistake = false
 
-  val withInertia = true
+  val withInertia = false // true
 
   // This is either 'winnow' or 'hedge'
   val weightUpdateStrategy = "hedge" //"winnow" // "hedge"
@@ -36,7 +36,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
   // Set this to 1.0 to simulate the case of constant feedback at each round.
   // For values < 1.0 we only update weights and structure if a biased coin
   // with receiveFeedbackBias for heads returns heads.
-  val receiveFeedbackBias = 1.0 //0.2 //0.5
+  val receiveFeedbackBias = 1.0//0.09 //0.2 //0.5
 
   val conservativeRuleGeneration = true
 
@@ -156,6 +156,9 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
       data = getTrainData
       logEmptyDataError()
       var done = false
+
+      //var perBatchError: Vector[Int] = Vector.empty[Int]
+
       while(! done) {
         val nextBatch = getNextBatch(lleNoise = false)
         logger.info(s"Processing batch $batchCounter")
@@ -171,10 +174,37 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
           val trueLabels = nextBatch.annotation.toSet
 
           if (inputTheory.isEmpty) {
+
+            /*
+            // Dirty hack
+
+            //stateHandler.perBatchError = stateHandler.perBatchError :+ batchError
+
+            var bias = 0.0
+
+            val error = ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
+              stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
+              batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
+              bias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap)
+
+            perBatchError = perBatchError :+ error
+
+            bias = 1.0
+
+            ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
+              stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
+              batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
+              bias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap)
+
+            println(s"Per batch error:\n$perBatchError")
+
+             */
+
             ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
               stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
               batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
               receiveFeedbackBias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap)
+
           } else {
             ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
               stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
@@ -316,7 +346,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
           batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake, _receiveFeedbackBias,
           conservativeRuleGeneration, weightUpdateStrategy)
       }
-      logger.info(s"Prequential error vector:\n${_stateHandler.perBatchError.mkString(",")}")
+      logger.info(s"Prequential error vector:\n${_stateHandler.perBatchError.map(x => x.toDouble)}")
       logger.info(s"Prequential error vector (Accumulated Error):\n${_stateHandler.perBatchError.scanLeft(0.0)(_ + _).tail}")
       logger.info(s"Total TPs: ${_stateHandler.totalTPs}, Total FPs: ${_stateHandler.totalFPs}, Total FNs: ${_stateHandler.totalFNs}, Total TNs: ${_stateHandler.totalTNs}")
       if (_receiveFeedbackBias != 1.0) {
@@ -353,7 +383,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
     logger.info(Theory(stateHandler.ensemble.initiationRules.sortBy(x => -x.w_pos)).showWithStats)
     logger.info(Theory(stateHandler.ensemble.terminationRules.sortBy(x => -x.w_pos)).showWithStats)
 
-    logger.info(s"Prequential error vector:\n${stateHandler.perBatchError.mkString(",")}")
+    logger.info(s"Prequential error vector:\n${stateHandler.perBatchError.map(x => x.toDouble)}")
     logger.info(s"Prequential error vector (Accumulated Error):\n${stateHandler.perBatchError.scanLeft(0.0)(_ + _).tail}")
     logger.info(s"Prequential (running) F1-score:\n${stateHandler.runningF1Score}")
     logger.info(s"Running rules nymber:\n${stateHandler.runningRulesNumber}")

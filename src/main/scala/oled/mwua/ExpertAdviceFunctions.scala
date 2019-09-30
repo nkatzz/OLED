@@ -367,6 +367,8 @@ object ExpertAdviceFunctions extends LazyLogging {
       logger.info(s"*** Batch #$batchCounter Total mistakes: ${batchFPs+batchFNs} " +
         s"(FPs: $batchFPs | FNs: $batchFNs). Total batch atoms: $batchAtoms ***")
     }
+    // This is only needed for a dirty hack at Learner_NEW...
+    batchError
   }
 
 
@@ -537,7 +539,7 @@ object ExpertAdviceFunctions extends LazyLogging {
     val awakeInitRules = _awakeInitRules.filter(x => x.body.nonEmpty) // exclude empty-bodied rules from prediction and weight normalization
     val awakeTermRules = _awakeTermRules.filter(x => x.body.nonEmpty) // exclude empty-bodied rules from prediction and weight normalization
 
-    // Create a map with the rules and their current weight. We'll use
+    // Create a map with the rules and their current weight. We'll use it
     // to show the weight updates in the case of Hedge (this is for debugging).
     var initRulesMap = scala.collection.mutable.Map.empty[Int, (String, Double)]
     var termRulesMap = scala.collection.mutable.Map.empty[Int, (String, Double)]

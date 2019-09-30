@@ -25,6 +25,7 @@ import utils.lookaheads._
 import utils.parsers.ModesParser
 import BKHandling._
 import com.typesafe.scalalogging.LazyLogging
+import woled.State
 
 import scala.io.Source
 import scala.util.matching.Regex
@@ -165,8 +166,10 @@ object Globals {
 class Globals(val entryPath: String) extends LazyLogging {
 
   /*
-   * Global values and utilities used throughout the application
+   * Global values and utils.
    */
+
+  val state = new State
 
   val cwd: String = System.getProperty("user.dir") // Current working dir
   val inputPath: String = entryPath // Path to bk and modes files

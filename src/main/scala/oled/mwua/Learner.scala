@@ -221,7 +221,7 @@ class Learner[T <: Source](val inps: RunningOptions,
           logger.info(currentError)
         }
       }
-      logger.info(s"Prequential error vector:\n${prequentialError.mkString(",")}")
+      logger.info(s"Prequential error vector:\n${prequentialError.map(x => x.toDouble)}")
       logger.info(s"Prequential error vector (Accumulated Error):\n${prequentialError.scanLeft(0.0)(_ + _).tail}")
       //*/
 
@@ -256,7 +256,7 @@ class Learner[T <: Source](val inps: RunningOptions,
         }
       }
 
-      logger.info(s"\nPrequential error vector:\n${prequentialError.mkString(",")}")
+      logger.info(s"Prequential error vector:\n${prequentialError.map(x => x.toDouble)}")
       logger.info(s"\nPrequential error vector (Accumulated Error):\n${prequentialError.scanLeft(0.0)(_ + _).tail}")
       /*
       logger.info(s"\nTrue labels:\n$trueLabels")
@@ -407,7 +407,7 @@ class Learner[T <: Source](val inps: RunningOptions,
     logger.info(s"Total prediction & weights update time: $totalWeightsUpdateTime")
     logger.info(s"Total groundings computation time: $totalgroundingsTime")
 
-    logger.info(s"Prequential error vector:\n${prequentialError.mkString(",")}")
+    logger.info(s"Prequential error vector:\n${prequentialError.map(x => x.toDouble)}")
     logger.info(s"Prequential error vector (Accumulated Error):\n${prequentialError.scanLeft(0.0)(_ + _).tail}")
     logger.info(s"Prequential F1-score:\n$runningF1Score")
     logger.info(s"Total TPs: $TPs, total FPs: $FPs, total FNs: $FNs")

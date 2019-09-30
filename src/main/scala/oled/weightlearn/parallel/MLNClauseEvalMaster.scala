@@ -46,6 +46,7 @@ class MLNClauseEvalMaster(inps: RunningOptions, targetClass: String) extends Act
   }
 
   def receive = {
+
     case x: MLNClauseHandingMasterInput =>
 
       reset()
