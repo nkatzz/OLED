@@ -138,7 +138,7 @@ object WeightLearningFunctions {
       val unsatClauseBody = Literal(functor = proxyFunctor(clause.head.functor), terms = clause.head.terms :+ Constant(s"ruleId_$index"), isNAF = true)
       val unsatClause = Clause(head = unsatClauseHead.asPosLiteral, body = List(unsatClauseBody)++ typeAtoms)
 
-      // We also need the satified clauses
+      // We also need the satisfied clauses
       val satClauseHead = Literal(functor = "true_clause", terms = List(Constant(s"ruleId_$index"), proxyAtom(clause.head)) )
       // the body is the negation of the head
       val satClauseBody = Literal(functor = proxyFunctor(clause.head.functor), terms = clause.head.terms :+ Constant(s"ruleId_$index"))

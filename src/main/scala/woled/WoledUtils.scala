@@ -2,7 +2,7 @@ package woled
 
 import app.runutils.{Globals, RunningOptions}
 import logic.Examples.Example
-import logic.{Clause, Literal, LogicUtils, Theory}
+import logic.{Clause, Constant, Literal, LogicUtils, Theory, Variable}
 import lomrf.logic.{AtomSignature, Constant, EvidenceAtom, FunctionMapping, NormalForm, PredicateCompletion, PredicateCompletionMode}
 import lomrf.logic.parser.KBParser
 import lomrf.mln.grounding.MRFBuilder
@@ -63,7 +63,7 @@ object WoledUtils {
     }
 
     for (atom <- mlnEvidenceAtoms) {
-      val args = atom.terms.map(x => Constant(x.tostring)).toVector
+      val args = atom.terms.map(x => lomrf.logic.Constant(x.tostring)).toVector
       val domains = kb.predicateSchema(AtomSignature(atom.functor, args.length))
       domains.zip(args).foreach { case (domain, value) => const += domain -> value.symbol }
     }
@@ -96,7 +96,7 @@ object WoledUtils {
 
     for (atom <- mlnEvidenceAtoms) {
       val predicate = atom.functor
-      val args = atom.terms.map(x => Constant(x.tostring)).toVector
+      val args = atom.terms.map(x => lomrf.logic.Constant(x.tostring)).toVector
       evidenceBuilder.evidence += EvidenceAtom.asTrue(predicate, args)
     }
 
@@ -127,10 +127,10 @@ object WoledUtils {
         val groundAtom = iterator.value
         val state = if (groundAtom.getState) true else false
         // This is the way to get all atoms in the MAP-inferred state, either true of false.
-        result += atomID.decodeAtom(mln).get -> state
+        //result += atomID.decodeAtom(mln).get -> state
 
         // Let's keep only the true atoms to reduce the size of the map
-        //if (state) result += atomID.decodeAtom(mln).get -> state
+        if (state) result += atomID.decodeAtom(mln).get -> state
       }
     }
 
@@ -223,6 +223,157 @@ object WoledUtils {
     (functionMappings, MLNEvidenceAtoms, MLNConstantsToASPAtomsMap)
   }
 
+  /* - mapAtoms are the true atoms in the MAP-inferred state
+  *  - predictionsPerRuleMap is a map where each entrie's key is a rule id
+  *    and each value is a tuple with first/second coordinates being the actually correct/incorrect groundings of the rule.
+  *  - ruleIdsMap maps ids to actual rules.
+  * */
+  def compareMAPToActualState(mapAtoms: Set[String],
+                              predictionsPerRuleMap: Map[Int, (mutable.SortedSet[String], mutable.SortedSet[String])],
+                              ruleIdsMap: Map[Int, Clause]) = {
+
+    val (_mapInferenceInit, _mapInferenceTerm) = mapAtoms.foldLeft(Vector[String](), Vector[String]()) { (x, y) =>
+      if (y.startsWith("initiated")) (x._1 :+ y, x._2)
+      else if (y.startsWith("terminated")) (x._1, x._2 :+ y)
+      else (x._1, x._2)
+    }
+
+    val (mapInferenceInit, mapInferenceTerm) = (_mapInferenceInit.toSet, _mapInferenceTerm.toSet)
+
+    ruleIdsMap foreach { x =>
+      val (id, rule) = (x._1, x._2)
+      if (predictionsPerRuleMap.keySet.contains(id)) {
+        val counts = predictionsPerRuleMap(id)
+        val (correct, incorrect) = (counts._1, counts._2)
+        val compareWith = if (rule.head.functor == "initiatedAt") mapInferenceInit else mapInferenceTerm
+        val ruleTPs = compareWith.intersect(correct)
+        //val ruleFPs =
+      }
+    }
+
+  }
+
+  def generateSolveASPGroundingsMetaProgram(exmpl: Example, rules: Vector[Clause], inps: RunningOptions) = {
+
+    val zipped = rules zip (1 to rules.length)
+    val ruleIdsMap = zipped.map(x => x._2 -> x._1).toMap
+    val metaRules = generateMetaRules(rules, ruleIdsMap, inps)
+
+    val exmpls = (exmpl.narrativeASP ++ (exmpl.annotation.map(x => s"true($x)."))).mkString("\n")
+
+    // These meta-rules ensure that we only get answers for fluents, e.g. in CAVIAR we won't gat stuff like
+    // incorrectly_init(initiatedAt(meeting(a,a),4600),ruleId_45)
+
+    val fluentMetarules = "correctly_initiated(initiatedAt(F,T),RuleId) :- correctly_init(initiatedAt(F,T),RuleId),fluent(F).\n"+
+      "incorrectly_initiated(initiatedAt(F,T),RuleId) :- incorrectly_init(initiatedAt(F,T),RuleId),fluent(F).\n"+
+    "correctly_terminated(terminatedAt(F,T),RuleId) :- correctly_term(terminatedAt(F,T),RuleId),fluent(F).\n" +
+      "incorrectly_terminated(terminatedAt(F,T),RuleId) :- incorrectly_term(terminatedAt(F,T),RuleId),fluent(F).\n"
+
+    val show = s"#show.\n#show correctly_initiated/2.\n#show incorrectly_initiated/2.\n#show correctly_terminated/2.\n#show incorrectly_terminated/2."
+
+    val all = Vector(exmpls, metaRules.mkString("\n"), s"""#include "${inps.globals.BK_WHOLE_EC}".""", fluentMetarules, show).mkString("\n")
+
+    val f = Utils.getTempFile("meta-scoring", ".lp")
+
+    Utils.writeLine(all, f.getCanonicalPath, "overwrite")
+
+    val t = ASP.solve(task=Globals.INFERENCE, aspInputFile=f)
+
+    val answer = t.head.atoms
+
+    // The key to this map is a rule id, the values are tuples
+    // with the first/second coordinates being a set of correct/incorrect groundings
+    // and the third coordinate being the count of correctly NOT terminated groundings (in case of a termination rule).
+    val predictionsPerRuleMap = scala.collection.mutable.Map[Int, (scala.collection.mutable.SortedSet[String], scala.collection.mutable.SortedSet[String], Int)]()
+
+    answer foreach { atom =>
+      val parsed = Literal.parse(atom)
+      val funcSymbol = parsed.functor
+      val fluentInstance = parsed.terms.head.tostring
+      val ruleId = parsed.terms.tail.head.tostring.split("_")(1).toInt
+      if (!predictionsPerRuleMap.keySet.contains(ruleId)) predictionsPerRuleMap(ruleId) = (mutable.SortedSet[String](), mutable.SortedSet[String](), 0)
+      if (funcSymbol.startsWith("correctly")) {
+        predictionsPerRuleMap(ruleId)._1 += fluentInstance
+      } else if (funcSymbol.startsWith("incorrectly")) {
+        predictionsPerRuleMap(ruleId)._2 += fluentInstance
+      } else if (funcSymbol.startsWith("not_terminated_correctly_count")) {
+
+      } else {
+        throw new RuntimeException("Unexpected input")
+      }
+    }
+    (predictionsPerRuleMap, ruleIdsMap)
+  }
+
+  def generateMetaRules(rules: Vector[Clause], ruleIdsMap: Map[Int, Clause], inps: RunningOptions) = {
+
+    // Here we generate meta-rules from each rule. The intention is to capture:
+    // correctly_initiated, correctly_terminated, incorrectly_initiated, incorrectly_terminated
+
+    // Example with rule:
+    // initiatedAt(meet(X,Y),T) :- happensAt(active(X),T). (assume its id is 12)
+    // Correctly initiated meta-rule:
+    // correctly_init(initiatedAt(meet(X,Y),T), ruleId_12) :- happensAt(active(X),T), person(X), person(Y), time(T), true(holdsAt(meet(X,Y),Te)), next(T,Te).
+    // Incorrectly initiated meta-rule:
+    // incorrectly_init(initiatedAt(meet(X,Y),T), ruleId_12) :- happensAt(active(X),T), person(X), person(Y), time(T), not true(holdsAt(meet(X,Y),Te)), next(T,Te).
+
+    // Example with rule:
+    // terminatedAt(meet(X,Y),T) :- happensAt(walking(X),T). (assume its id is 23)
+    // Correctly terminated meta-rule:
+    // correctly_term(terminatedAt(meet(X,Y),T), ruleId_23) :- happensAt(walking(X),T), person(X), person(Y), time(T), true(holdsAt(meet(X,Y),T)), not true(holdsAt(meet(X,Y),Te)), next(T,Te).
+    // Incorrectly terminated meta-rule:
+    // incorrectly_term(terminatedAt(meet(X,Y),T), ruleId_23) :- happensAt(walking(X),T), person(X), person(Y), time(T), true(holdsAt(meet(X,Y),Te)), next(T,Te).
+
+    val metaRules = ruleIdsMap.foldLeft(Vector[String]()) { (accum, r) =>
+
+      val (ruleId, rule) = (r._1, r._2)
+
+      val typeAtoms = rule.toLiteralList.flatMap(x => x.getTypePredicates(inps.globals)).distinct.map(x => Literal.parse(x))
+      //val typeAtoms = rule.body.flatMap(x => x.getTypePredicates(inps.globals)).distinct.map(x => Literal.parse(x))
+      val timeVar = rule.head.terms.tail.head
+
+      val ruleFluent = rule.head.terms.head
+
+      //val fluentAtom = Literal(functor = "fluent", terms = List(logic.Variable("F")))
+      //val fluentVar = logic.Variable("F")
+
+      val nextTimeVar = logic.Variable("Te")
+
+      if (rule.head.functor == "initiatedAt") {
+        val head1 = Literal(functor = "correctly_init", terms = List(rule.head, logic.Constant(s"ruleId_$ruleId")))
+        val body1 = (rule.body ++ typeAtoms) ++ List(Literal(functor = "true", terms = List(Literal(functor = "holdsAt", terms = List(ruleFluent, nextTimeVar)))), Literal(functor = "next", terms = List(timeVar, nextTimeVar)))
+        val correctly_init = Clause(head1, body1)
+        val head2 = Literal(functor = "incorrectly_init", terms = List(rule.head, logic.Constant(s"ruleId_$ruleId")))
+        val body2 = (rule.body ++ typeAtoms) ++ List(Literal(functor = "true", terms = List(Literal(functor = "holdsAt", terms = List(ruleFluent, nextTimeVar))), isNAF = true), Literal(functor = "next", terms = List(timeVar, nextTimeVar)))
+        val incorrectly_init = Clause(head2, body2)
+
+        accum ++ Vector(correctly_init.tostring, incorrectly_init.tostring)
+      } else if (rule.head.functor == "terminatedAt") {
+
+        val head1 = Literal(functor = "correctly_term", terms = List(rule.head, logic.Constant(s"ruleId_$ruleId")))
+        val body1 = (rule.body ++ typeAtoms) ++ List(Literal(functor = "true", terms = List(Literal(functor = "holdsAt", terms = List(ruleFluent, timeVar)))), Literal(functor = "true", terms = List(Literal(functor = "holdsAt", terms = List(ruleFluent, nextTimeVar))), isNAF = true), Literal(functor = "next", terms = List(timeVar, nextTimeVar)))
+        val correctly_term = Clause(head1, body1)
+        val head2 = Literal(functor = "incorrectly_term", terms = List(rule.head, logic.Constant(s"ruleId_$ruleId")))
+        val body2 = (rule.body ++ typeAtoms) ++ List(Literal(functor = "true", terms = List(Literal(functor = "holdsAt", terms = List(ruleFluent, nextTimeVar)))), Literal(functor = "next", terms = List(timeVar, nextTimeVar)))
+
+        val incorrectly_term = Clause(head2, body2)
+
+        // We also need meta-rules for correctly_not_terminated:
+        // We'll do it like this: For each rule of the form e.g. terminatedAt(meeting(X,Y),T) :- happensAt(walking(X),T) with id ruleId we'll generate two meta-rules:
+        // terminatedAt(meeting(X,Y), T, ruleId) :- happensAt(walking(X),T), person(X), person(Y), time(T).
+        // terminatedAt_fluent(F, T, ruleId) :- terminatedAt(F, T, ruleId), fluent(F).
+        // correctly_not_terminated_count(ruleId, Count) :- Count = #count { F,T: not terminatedAt_fluent(F, T, ruleId), true(holdsAt(F,Te)), next(T,Te) }.
+        val rule1 = s"terminatedAt(${ruleFluent.tostring},${timeVar.tostring},ruleId_$ruleId) :- ${rule.body.map(x => x.tostring).mkString(",")},${typeAtoms.map(x => x.tostring).mkString(",")}."
+        val rule2 = s"terminatedAt_fluent(F, T, ruleId) :- terminatedAt(F, T, ruleId_$ruleId), fluent(F)."
+        val rule3 = s"not_terminated_correctly_count(ruleId_$ruleId,Count) :- Count = #count { F,T: not terminatedAt_fluent(F, T, ruleId), true(holdsAt(F,Te)), next(T,Te) }."
+
+        accum ++ Vector(correctly_term.tostring, incorrectly_term.tostring, rule1, rule2, rule3)
+      } else {
+        throw new RuntimeException(s"Unexpected input: ${rule.head.tostring}")
+      }
+    }
+    metaRules
+  }
 
 
   def generateNewRules(topTheory: Theory, e: Example, globals: Globals) = {

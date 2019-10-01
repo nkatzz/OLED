@@ -45,17 +45,23 @@ class Learner[T <: Source](inps: RunningOptions, trainingDataOptions: T,
         // In parallel, get a MAP-inferred state and compute the rules' groundings for comparison.
 
 
-
-        /*println("MAP INFERENCE")
+        println("MAP INFERENCE")
 
         val inferredState = WoledUtils.getInferredState(inps.globals.state.getAllRules(inps.globals), e, "MAP", inps)
 
         println(inferredState)
 
-        //val inferredStateASP =
+        val (predictionsPerRuleMap, ruleIdsMap) = WoledUtils.generateSolveASPGroundingsMetaProgram(e, inps.globals.state.getAllRules(inps.globals).toVector, inps)
+
+        val test = ""
+
+
+
+
+
 
         become(normalState)
-        self ! new FinishedBatch*/
+        self ! new FinishedBatch
       }
   }
 
