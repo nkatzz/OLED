@@ -9,13 +9,24 @@ import oled.functions.SingleCoreOLEDFunctions.generateNewRules
 import oled.weightlearn.parallel.IO.FinishedBatch
 import oled.weightlearn.parallel.WeightedTheoryLearner
 
-class Learner[T <: Source](inps: RunningOptions, trainingDataOptions: T,
+import scala.io.Source
+
+class Learner[T <: app.runutils.IOHandling.Source](inps: RunningOptions, trainingDataOptions: T,
                            testingDataOptions: T, trainingDataFunction: T => Iterator[Example],
                            testingDataFunction: T => Iterator[Example],
                            targetClass: String) extends
   WeightedTheoryLearner(inps, trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction, targetClass) {
 
   import context.become
+
+  var debug = 0
+
+  /* Use a hand-crafted theory for debugging */
+  val source = Source.fromFile("/home/nkatz/dev/BKExamples/BK-various-taks/WeightLearning/Caviar/fragment/meeting/ASP/asp-rules-test")
+  val list = source.getLines
+  val rulesList = list.map(x => Clause.parse(x)).toList
+  source.close
+  inps.globals.state.updateRules(rulesList)
 
 
   def inferenceState: Receive = {
@@ -44,18 +55,21 @@ class Learner[T <: Source](inps: RunningOptions, trainingDataOptions: T,
 
         // In parallel, get a MAP-inferred state and compute the rules' groundings for comparison.
 
-
         println("MAP INFERENCE")
 
-        val inferredState = WoledUtils.getInferredState(inps.globals.state.getAllRules(inps.globals), e, "MAP", inps)
 
-        println(inferredState)
+        // Infer (change for experts and OLED)
+        val rules = inps.globals.state.getAllRules(inps.globals)
+        val inferredState = WoledUtils.getInferredState(rules, e, "MAP", inps)
 
-        val (predictionsPerRuleMap, ruleIdsMap) = WoledUtils.generateSolveASPGroundingsMetaProgram(e, inps.globals.state.getAllRules(inps.globals).toVector, inps)
+        // Get batch error (change for experts and OLED)
+        val (predictionsPerRuleMap, ruleIdsMap) = WoledUtils.getTrueRulesGroundings(e, inps.globals.state.getAllRules(inps.globals).toVector, inps)
 
-        val test = ""
+        val (batchTPs, batchFPs, batchFNs) = WoledUtils.getRulesMistakes(inferredState.keySet, predictionsPerRuleMap, ruleIdsMap, e, inps)
 
+        println(s"Weights: ${rules.map(x => x.mlnWeight).mkString(" ")}")
 
+        debug += 1
 
 
 

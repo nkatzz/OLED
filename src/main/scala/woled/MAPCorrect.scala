@@ -20,12 +20,13 @@ object MAPCorrect extends App {
     AtomSignature("TerminatedAt", 2)
   )
 
-  val mlnBKFile = "/home/nkatz/dev/OLED-BK/BKExamples/BK-various-taks/WeightLearning/Caviar/fragment/meeting/MLN/MAPInferenceBK.mln"
+  val mlnBKFile = "/home/nkatz/dev/BKExamples/BK-various-taks/WeightLearning/Caviar/fragment/meeting/MLN/MAPInferenceBK.mln"
   val (kb, constants) = KB.fromFile(mlnBKFile)
   val formulas = kb.formulas
+
   val parser = new KBParser(kb.predicateSchema.map { case (x, y) => x -> y.toVector }, kb.functionSchema)
 
-  val evidenceFile = new File("/home/nkatz/dev/OLED-BK/BKExamples/BK-various-taks/WeightLearning/Caviar/fragment/meeting/MLN/23-Meet_Crowd.id0_id2.db")
+  val evidenceFile = new File("/home/nkatz/dev/BKExamples/BK-various-taks/WeightLearning/Caviar/fragment/meeting/MLN/23-Meet_Crowd.id0_id2.db")
   val evidence = Evidence.fromFiles(kb, constants, queryAtoms, Seq(evidenceFile), false, false)
 
   //========================================================================================
@@ -37,7 +38,7 @@ object MAPCorrect extends App {
   //val e = b.result()
   //========================================================================================
 
-  val source = Source.fromFile("/home/nkatz/dev/OLED-BK/BKExamples/BK-various-taks/WeightLearning/Caviar/fragment/meeting/ASP/asp-rules-test")
+  val source = Source.fromFile("/home/nkatz/dev/BKExamples/BK-various-taks/WeightLearning/Caviar/fragment/meeting/ASP/asp-rules-test")
   val list = source.getLines
   val rulesList = list.map(x => Clause.parse(x)).toList
   source.close
@@ -48,8 +49,11 @@ object MAPCorrect extends App {
 
   val ruleLiteralstoMLN = (head :: body).map(Literal.toMLNClauseLiteral)
 
+  val result = infer(rulesList)
 
-  println(infer(rulesList).mkString("\n"))
+  val trueHoldsInit = result.filter{ case (k, v) => (k.startsWith("Init") || k.startsWith("Holds")) && v }
+
+  println(s"Initiation & Holds atoms inferred as true:\n${trueHoldsInit.mkString("\n")}")
 
   def infer(rules: List[Clause]): Map[String, Boolean] = {
 
@@ -58,6 +62,8 @@ object MAPCorrect extends App {
       val body = rule.body.map(Literal.toMLNClauseLiteral(_).tostring_mln).mkString(" ^ ")
       parser.parseDefiniteClause(s"1 $head :- $body")
     }
+
+    //val definiteClauses = kb.definiteClauses
 
     definiteClauses.map(_.toText).foreach(println)
 
