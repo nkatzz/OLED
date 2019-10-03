@@ -22,11 +22,11 @@ class Learner[T <: app.runutils.IOHandling.Source](inps: RunningOptions, trainin
   var debug = 0
 
   /* Use a hand-crafted theory for debugging */
-  val source = Source.fromFile("/home/nkatz/dev/BKExamples/BK-various-taks/WeightLearning/Caviar/fragment/meeting/ASP/asp-rules-test")
+  /*val source = Source.fromFile("/home/nkatz/dev/BKExamples/BK-various-taks/WeightLearning/Caviar/fragment/meeting/ASP/asp-rules-test")
   val list = source.getLines
   val rulesList = list.map(x => Clause.parse(x)).toList
   source.close
-  inps.globals.state.updateRules(rulesList)
+  inps.globals.state.updateRules(rulesList)*/
 
 
   def inferenceState: Receive = {
@@ -55,8 +55,11 @@ class Learner[T <: app.runutils.IOHandling.Source](inps: RunningOptions, trainin
 
         // In parallel, get a MAP-inferred state and compute the rules' groundings for comparison.
 
-        println("MAP INFERENCE")
+        println(s"\n *** BATCH $debug *** ")
 
+        if (debug == 25) {
+          val stop = "stop"
+        }
 
         // Infer (change for experts and OLED)
         val rules = inps.globals.state.getAllRules(inps.globals)
@@ -67,7 +70,7 @@ class Learner[T <: app.runutils.IOHandling.Source](inps: RunningOptions, trainin
 
         val (batchTPs, batchFPs, batchFNs) = WoledUtils.getRulesMistakes(inferredState.keySet, predictionsPerRuleMap, ruleIdsMap, e, inps)
 
-        println(s"Weights: ${rules.map(x => x.mlnWeight).mkString(" ")}")
+
 
         debug += 1
 

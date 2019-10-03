@@ -89,6 +89,8 @@ class WeightedTheoryLearner[T <: Source](inps: RunningOptions, trainingDataOptio
           val endTime = System.nanoTime()
           val totalTime = (endTime - startTime)/1000000000.0
           logger.info(s"\nTheory:\n${topTheory.clauses.map(x => x.tostring).mkString("\n")}\nTraining time: $totalTime")
+          logger.info(s"Mistakes per batch:\n${inps.globals.state.perBatchError}")
+          logger.info(s"Accumulated mistakes per batch:\n${inps.globals.state.perBatchError.scanLeft(0.0)(_ + _).tail}")
           logger.info(s"Sending the theory to the parent actor")
           context.parent ! (topTheory, totalTime)
         } else {

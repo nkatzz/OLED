@@ -80,7 +80,40 @@ object WoledUtils {
       domains.zip(args).foreach { case (domain, value) => const += domain -> value.symbol }
     }
 
+    const += "dist" -> "34"
+    const += "dist" -> "30"
+    const += "dist" -> "25"
+    const += "dist" -> "24"
+
+    const += "event" -> "Inactive_A"
+    const += "event" -> "Inactive_B"
+
+    const += "event" -> "Walking_A"
+    const += "event" -> "Walking_Β"
+
+    const += "event" -> "Active_A"
+    const += "event" -> "Active_Β"
+
+    const += "event" -> "Disappear_A"
+    const += "event" -> "Disappear_Β"
+
+    const += "event" -> "Appear_A"
+    const += "event" -> "Appear_Β"
+
+    const += "event" -> "Abrupt_A"
+    const += "event" -> "Abrupt_Β"
+
+    const += "event" -> "Running_A"
+    const += "event" -> "Running_A"
+
+    /*val domains = const.result()
+    domains.foreach { case (name, set) =>
+      val constants = set.iterator
+      println(s"$name: [${constants.mkString(",")}]")
+    }*/
+
     val evidenceBuilder = EvidenceBuilder(kb.predicateSchema, kb.functionSchema, queryAtoms, Set.empty, const.result())
+    //val evidenceBuilder = EvidenceBuilder(kb.predicateSchema, kb.functionSchema, queryAtoms, Set.empty, domains)
 
     for (entry <- functionMappings) {
       val functionReturnConstant = entry._2._1
@@ -108,7 +141,6 @@ object WoledUtils {
     evidenceBuilder.functions += new FunctionMapping("Running_B", "running", Vector("B"))
 
     for (atom <- mlnEvidenceAtoms) {
-      println(atom.tostring)
       val predicate = atom.functor
       val args = atom.terms.map(x => lomrf.logic.Constant(x.tostring)).toVector
       evidenceBuilder.evidence += EvidenceAtom.asTrue(predicate, args)
@@ -117,12 +149,17 @@ object WoledUtils {
     val evidence = evidenceBuilder.result()
 
 
+    /*evidence.db.foreach { case (signature, aedb) =>
+      println(s"Evidence for atom signature $signature")
+      println("Summary:\n" + aedb)
+      for (id <- aedb.identity.indices) {
+        val args = aedb.identity.decode(id).get
+        val tv = aedb(id)
+        println(s"${signature.symbol}(${args.mkString(",")}) = $tv")
+      }
+    }*/
 
-    /* FOR DEBUGGING */
-    //println(evidence.db(queryAtoms.head).numberOfUnknown)
-    //println(evidence.db(queryAtoms.head).numberOfFalse)
-    //println(evidence.db(queryAtoms.tail.head).numberOfUnknown)
-    //println(evidence.db(queryAtoms.tail.head).numberOfFalse)
+
 
     //val resultedFormulas = PredicateCompletion(formulas, definiteClauses.toSet, PredicateCompletionMode.Decomposed)(kb.predicateSchema, kb.functionSchema, constants)
 
@@ -305,10 +342,10 @@ object WoledUtils {
   *  - ruleIdsMap maps ids to actual rules.
   * */
   def getRulesMistakes(inferredAtoms: Set[String],
-                              predictionsPerRuleMap: mutable.Map[Int, (mutable.SortedSet[String], mutable.SortedSet[String], Int)],
-                              ruleIdsMap: Map[Int, Clause],
-                              exmpl: Example,
-                              inps: RunningOptions) = {
+                       predictionsPerRuleMap: mutable.Map[Int, (mutable.SortedSet[String], mutable.SortedSet[String], Int)],
+                       ruleIdsMap: Map[Int, Clause],
+                       exmpl: Example,
+                       inps: RunningOptions) = {
 
     val (_mapInferenceInit, _mapInferenceTerm, _mapInferenceHolds) = inferredAtoms.foldLeft(Vector[String](), Vector[String](), Vector[String]()) { (x, y) =>
       if (y.startsWith("initiated")) (x._1 :+ y, x._2, x._3)
@@ -324,7 +361,12 @@ object WoledUtils {
     val batchFPs = mapInferenceHolds.diff(trueAtoms)
     val batchFNs = trueAtoms.diff(mapInferenceHolds)
 
-    println(s"MAP-HOLDS: ${mapInferenceHolds.size}, Batch TPs: ${batchTPs.size}, batch FPs: ${batchFPs.size}, batch FNs: ${batchFNs.size}")
+    inps.globals.state.perBatchError = inps.globals.state.perBatchError :+ (batchFPs.size+batchFNs.size)
+
+    /* DEBUGGING INFO */
+    val rules = ruleIdsMap.map(x => x._2).toVector
+    println(s"Batch TPs: ${batchTPs.size}, batch FPs: ${batchFPs.size}, batch FNs: ${batchFNs.size}")
+    println(s"weights before: ${rules.map(x => x.mlnWeight).mkString(" ")}")
 
     ruleIdsMap foreach { x =>
       val (id, rule) = (x._1, x._2)
@@ -337,8 +379,14 @@ object WoledUtils {
         val actuallyTrueGroundingsInMapInferredState = compareWith.intersect(correct)
         val actuallyFalseGroundingsInMapInferredState = compareWith.intersect(incorrect)
 
-        //println(s"True groundings: ${trueGroundingsInMapInferredState.size}, False groundings: ${falseGroundingsInMapInferredState.size}, Correctly not terminated: $correctlyNonTerminatedCount")
+        /*println(s"rule (${rule.mlnWeight}): ${rule.tostring}")
+        println(s"map inferred:\n$compareWith")
+        println(s"correct:\n$correct")
+        println(s"incorrect:\n$incorrect")
+        println(s"actually true:\n$actuallyTrueGroundingsInMapInferredState")
+        println(s"actually false:\n$actuallyFalseGroundingsInMapInferredState")*/
 
+        //println(s"True groundings: ${trueGroundingsInMapInferredState.size}, False groundings: ${falseGroundingsInMapInferredState.size}, Correctly not terminated: $correctlyNonTerminatedCount")
         //val currentSubgradient = inferredCounts(idx) - trueCounts(idx)
 
         // Just to be on the safe side...
@@ -359,6 +407,8 @@ object WoledUtils {
         if (difference > 0) rule.mlnWeight = if (value >= 0) difference else -difference
         else rule.mlnWeight = 0.0
 
+        val stop = "stop"
+
         // Update coverage counts for rule.
         // For initiation rules TPs = correct + correctlyTerminatedCount (since correctlyTerminatedCount = 0)
         // FPs = incorrect
@@ -368,6 +418,9 @@ object WoledUtils {
 
       }
     }
+
+    /* DEBUGGING INFO */
+    println(s"weights after:  ${rules.map(x => x.mlnWeight).mkString(" ")}")
 
     (batchTPs, batchFPs, batchFNs)
 

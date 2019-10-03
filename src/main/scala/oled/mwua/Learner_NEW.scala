@@ -144,75 +144,80 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
     }
   }
 
-  def wrapupAndShutDown() = {
+  def wrapupAndShutDown() = {}
 
+
+  def processData() = {
+    data = getTrainData
+    logEmptyDataError()
+    var done = false
+
+    //var perBatchError: Vector[Int] = Vector.empty[Int]
+
+    while(! done) {
+      val nextBatch = getNextBatch(lleNoise = false)
+      logger.info(s"Processing batch $batchCounter")
+      if (nextBatch.isEmpty) {
+        logger.info(s"Finished the data.")
+        endTime = System.nanoTime()
+        logger.info("Done.")
+        //workers foreach(w => w ! PoisonPill)
+        wrapUp()
+        done = true
+        context.system.terminate()
+      } else {
+        val trueLabels = nextBatch.annotation.toSet
+
+        if (inputTheory.isEmpty) {
+
+
+          //stateHandler.perBatchError = stateHandler.perBatchError :+ batchError
+
+          /*// Dirty hack
+          var bias = 0.0
+
+          val error = ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
+            stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
+            batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
+            bias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap)
+
+          perBatchError = perBatchError :+ error
+
+          bias = 1.0
+
+          ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
+            stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
+            batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
+            bias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap)
+
+          println(s"Per batch error:\n$perBatchError")
+          println(s"Accumulated Per batch error:\n${perBatchError.scanLeft(0.0)(_ + _).tail}")*/
+
+          ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
+            stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
+            batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
+            receiveFeedbackBias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap)
+
+        } else {
+          ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
+            stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
+            batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
+            receiveFeedbackBias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap, inputTheory = Some(inputTheory))
+        }
+      }
+    }
   }
-
 
 
   def receive = {
 
     case "start" => {
-      data = getTrainData
-      logEmptyDataError()
-      var done = false
 
-      //var perBatchError: Vector[Int] = Vector.empty[Int]
-
-      while(! done) {
-        val nextBatch = getNextBatch(lleNoise = false)
-        logger.info(s"Processing batch $batchCounter")
-        if (nextBatch.isEmpty) {
-          logger.info(s"Finished the data.")
-          endTime = System.nanoTime()
-          logger.info("Done.")
-          //workers foreach(w => w ! PoisonPill)
-          wrapUp()
-          done = true
-          context.system.terminate()
-        } else {
-          val trueLabels = nextBatch.annotation.toSet
-
-          if (inputTheory.isEmpty) {
-
-            /*
-            // Dirty hack
-
-            //stateHandler.perBatchError = stateHandler.perBatchError :+ batchError
-
-            var bias = 0.0
-
-            val error = ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
-              stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
-              batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
-              bias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap)
-
-            perBatchError = perBatchError :+ error
-
-            bias = 1.0
-
-            ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
-              stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
-              batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
-              bias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap)
-
-            println(s"Per batch error:\n$perBatchError")
-
-             */
-
-            ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
-              stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
-              batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
-              receiveFeedbackBias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap)
-
-          } else {
-            ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
-              stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
-              batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
-              receiveFeedbackBias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap, inputTheory = Some(inputTheory))
-          }
-        }
+      for( i <- (1 to 1) ) {
+        processData()
       }
+
+
     }
 
     case "start-streaming" => {
