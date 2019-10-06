@@ -20,7 +20,7 @@ package app.runutils
 import java.io.PrintWriter
 
 import logic.Modes.ModeAtom
-import logic.{Clause, Literal, Theory, Variable}
+import logic.{AtomSignature, Clause, Literal, Theory, Variable}
 import utils.lookaheads._
 import utils.parsers.ModesParser
 import BKHandling._
@@ -307,6 +307,14 @@ class Globals(val entryPath: String) extends LazyLogging {
       m.compRelation = x.compRelation
       m.comparisonTermPosition = x.comparisonTermPosition
     }
+  }
+
+  val headAtomSignatures: List[AtomSignature] = {
+    MODEHS.map(x => new AtomSignature(x.functor, x.arity))
+  }
+
+  val bodyAtomSignatures: List[AtomSignature] = {
+    MODEBS.map(x => new AtomSignature(x.functor, x.arity))
   }
 
   /* Reads the background knowledge from  $inputPath/bk.lp and produces helper files (e.g. for rule evaluation,

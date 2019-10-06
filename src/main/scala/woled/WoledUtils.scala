@@ -9,6 +9,7 @@ import lomrf.logic.{AtomSignature, Constant, EvidenceAtom, FunctionMapping, Norm
 import lomrf.logic.parser.KBParser
 import lomrf.mln.grounding.MRFBuilder
 import lomrf.mln.inference.ILP
+import lomrf.mln.learning.structure.ClauseConstructor
 import lomrf.mln.model.{AtomIdentityFunction, ConstantsDomainBuilder, EvidenceBuilder, KB, MLN}
 import utils.{ASP, Utils}
 import lomrf.mln.model.AtomIdentityFunctionOps._
@@ -44,7 +45,9 @@ object WoledUtils {
     )
 
     /* Get BK etc */
-    val mlnBKFile = s"${inps.entryPath}/MLN/MAPInferenceBK.mln"
+    //val mlnBKFile = s"${inps.entryPath}/MLN/MAPInferenceBK.mln"
+    val mlnBKFile = s"${inps.entryPath}/MAPInferenceBK.mln"
+
     val (kb, constants) = KB.fromFile(mlnBKFile)
     val formulas = kb.formulas
 
@@ -80,31 +83,98 @@ object WoledUtils {
       domains.zip(args).foreach { case (domain, value) => const += domain -> value.symbol }
     }
 
+    /* For CAVIAR fragment */
     const += "dist" -> "34"
     const += "dist" -> "30"
     const += "dist" -> "25"
     const += "dist" -> "24"
-
     const += "event" -> "Inactive_A"
     const += "event" -> "Inactive_B"
-
     const += "event" -> "Walking_A"
     const += "event" -> "Walking_Β"
-
     const += "event" -> "Active_A"
     const += "event" -> "Active_Β"
-
     const += "event" -> "Disappear_A"
     const += "event" -> "Disappear_Β"
-
     const += "event" -> "Appear_A"
     const += "event" -> "Appear_Β"
-
     const += "event" -> "Abrupt_A"
     const += "event" -> "Abrupt_Β"
+    const += "event" -> "Running_A"
+    const += "event" -> "Running_A"
 
-    const += "event" -> "Running_A"
-    const += "event" -> "Running_A"
+    /* For the entire CAVIAR */
+    const += "event" -> "Inactive_Id0"
+    const += "event" -> "Inactive_Id4"
+    const += "event" -> "Inactive_Id1"
+    const += "event" -> "Inactive_Id5"
+    const += "event" -> "Inactive_Id9"
+    const += "event" -> "Inactive_Id2"
+    const += "event" -> "Inactive_Id8"
+    const += "event" -> "Inactive_Id6"
+    const += "event" -> "Inactive_Id3"
+    const += "event" -> "Inactive_Id7"
+    const += "event" -> "Active_Id6"
+    const += "event" -> "Active_Id3"
+    const += "event" -> "Active_Id7"
+    const += "event" -> "Active_Id4"
+    const += "event" -> "Active_Id5"
+    const += "event" -> "Active_Id0"
+    const += "event" -> "Active_Id1"
+    const += "event" -> "Active_Id9"
+    const += "event" -> "Active_Id8"
+    const += "event" -> "Active_Id2"
+    const += "event" -> "Walking_Id4"
+    const += "event" -> "Walking_Id5"
+    const += "event" -> "Walking_Id9"
+    const += "event" -> "Walking_Id6"
+    const += "event" -> "Walking_Id7"
+    const += "event" -> "Walking_Id2"
+    const += "event" -> "Walking_Id1"
+    const += "event" -> "Walking_Id3"
+    const += "event" -> "Walking_Id8"
+    const += "event" -> "Walking_Id0"
+    const += "event" -> "Abrupt_Id6"
+    const += "event" -> "Abrupt_Id5"
+    const += "event" -> "Abrupt_Id0"
+    const += "event" -> "Abrupt_Id9"
+    const += "event" -> "Abrupt_Id4"
+    const += "event" -> "Abrupt_Id1"
+    const += "event" -> "Abrupt_Id8"
+    const += "event" -> "Abrupt_Id2"
+    const += "event" -> "Abrupt_Id3"
+    const += "event" -> "Abrupt_Id7"
+    const += "event" -> "Running_Id7"
+    const += "event" -> "Running_Id0"
+    const += "event" -> "Running_Id4"
+    const += "event" -> "Running_Id6"
+    const += "event" -> "Running_Id1"
+    const += "event" -> "Running_Id5"
+    const += "event" -> "Running_Id9"
+    const += "event" -> "Running_Id2"
+    const += "event" -> "Running_Id8"
+    const += "event" -> "Running_Id3"
+    const += "event" -> "Appear_Id0"
+    const += "event" -> "Appear_Id4"
+    const += "event" -> "Appear_Id3"
+    const += "event" -> "Appear_Id6"
+    const += "event" -> "Appear_Id8"
+    const += "event" -> "Appear_Id2"
+    const += "event" -> "Appear_Id9"
+    const += "event" -> "Appear_Id7"
+    const += "event" -> "Appear_Id1"
+    const += "event" -> "Appear_Id5"
+    const += "event" -> "Disappear_Id1"
+    const += "event" -> "Disappear_Id5"
+    const += "event" -> "Disappear_Id9"
+    const += "event" -> "Disappear_Id4"
+    const += "event" -> "Disappear_Id0"
+    const += "event" -> "Disappear_Id8"
+    const += "event" -> "Disappear_Id7"
+    const += "event" -> "Disappear_Id3"
+    const += "event" -> "Disappear_Id6"
+    const += "event" -> "Disappear_Id2"
+
 
     /*val domains = const.result()
     domains.foreach { case (name, set) =>
@@ -125,6 +195,7 @@ object WoledUtils {
     }
 
     /* For now we need these hard-coded. It's a LoMRF limitation not being able to have them dynamically*/
+    // This is for CAVIAR fragment
     evidenceBuilder.functions += new FunctionMapping("Inactive_A", "inactive", Vector("A"))
     evidenceBuilder.functions += new FunctionMapping("Inactive_B", "inactive", Vector("B"))
     evidenceBuilder.functions += new FunctionMapping("Walking_A", "walking", Vector("A"))
@@ -140,6 +211,79 @@ object WoledUtils {
     evidenceBuilder.functions += new FunctionMapping("Running_A", "running", Vector("A"))
     evidenceBuilder.functions += new FunctionMapping("Running_B", "running", Vector("B"))
 
+    // This is for the entire CAVIAR
+    evidenceBuilder.functions += new FunctionMapping("Inactive_Id0", "inactive", Vector("Id0"))
+    evidenceBuilder.functions += new FunctionMapping("Inactive_Id4", "inactive", Vector("Id4"))
+    evidenceBuilder.functions += new FunctionMapping("Inactive_Id1", "inactive", Vector("Id1"))
+    evidenceBuilder.functions += new FunctionMapping("Inactive_Id5", "inactive", Vector("Id5"))
+    evidenceBuilder.functions += new FunctionMapping("Inactive_Id9", "inactive", Vector("Id9"))
+    evidenceBuilder.functions += new FunctionMapping("Inactive_Id2", "inactive", Vector("Id2"))
+    evidenceBuilder.functions += new FunctionMapping("Inactive_Id8", "inactive", Vector("Id8"))
+    evidenceBuilder.functions += new FunctionMapping("Inactive_Id6", "inactive", Vector("Id6"))
+    evidenceBuilder.functions += new FunctionMapping("Inactive_Id3", "inactive", Vector("Id3"))
+    evidenceBuilder.functions += new FunctionMapping("Inactive_Id7", "inactive", Vector("Id7"))
+    evidenceBuilder.functions += new FunctionMapping("Active_Id6", "active", Vector("Id6"))
+    evidenceBuilder.functions += new FunctionMapping("Active_Id3", "active", Vector("Id3"))
+    evidenceBuilder.functions += new FunctionMapping("Active_Id7", "active", Vector("Id7"))
+    evidenceBuilder.functions += new FunctionMapping("Active_Id4", "active", Vector("Id4"))
+    evidenceBuilder.functions += new FunctionMapping("Active_Id5", "active", Vector("Id5"))
+    evidenceBuilder.functions += new FunctionMapping("Active_Id0", "active", Vector("Id0"))
+    evidenceBuilder.functions += new FunctionMapping("Active_Id1", "active", Vector("Id1"))
+    evidenceBuilder.functions += new FunctionMapping("Active_Id9", "active", Vector("Id9"))
+    evidenceBuilder.functions += new FunctionMapping("Active_Id8", "active", Vector("Id8"))
+    evidenceBuilder.functions += new FunctionMapping("Active_Id2", "active", Vector("Id2"))
+    evidenceBuilder.functions += new FunctionMapping("Walking_Id4", "walking", Vector("Id4"))
+    evidenceBuilder.functions += new FunctionMapping("Walking_Id5", "walking", Vector("Id5"))
+    evidenceBuilder.functions += new FunctionMapping("Walking_Id9", "walking", Vector("Id9"))
+    evidenceBuilder.functions += new FunctionMapping("Walking_Id6", "walking", Vector("Id6"))
+    evidenceBuilder.functions += new FunctionMapping("Walking_Id7", "walking", Vector("Id7"))
+    evidenceBuilder.functions += new FunctionMapping("Walking_Id2", "walking", Vector("Id2"))
+    evidenceBuilder.functions += new FunctionMapping("Walking_Id1", "walking", Vector("Id1"))
+    evidenceBuilder.functions += new FunctionMapping("Walking_Id3", "walking", Vector("Id3"))
+    evidenceBuilder.functions += new FunctionMapping("Walking_Id8", "walking", Vector("Id8"))
+    evidenceBuilder.functions += new FunctionMapping("Walking_Id0", "walking", Vector("Id0"))
+    evidenceBuilder.functions += new FunctionMapping("Abrupt_Id6", "abrupt", Vector("Id6"))
+    evidenceBuilder.functions += new FunctionMapping("Abrupt_Id5", "abrupt", Vector("Id5"))
+    evidenceBuilder.functions += new FunctionMapping("Abrupt_Id0", "abrupt", Vector("Id0"))
+    evidenceBuilder.functions += new FunctionMapping("Abrupt_Id9", "abrupt", Vector("Id9"))
+    evidenceBuilder.functions += new FunctionMapping("Abrupt_Id4", "abrupt", Vector("Id4"))
+    evidenceBuilder.functions += new FunctionMapping("Abrupt_Id1", "abrupt", Vector("Id1"))
+    evidenceBuilder.functions += new FunctionMapping("Abrupt_Id8", "abrupt", Vector("Id8"))
+    evidenceBuilder.functions += new FunctionMapping("Abrupt_Id2", "abrupt", Vector("Id2"))
+    evidenceBuilder.functions += new FunctionMapping("Abrupt_Id3", "abrupt", Vector("Id3"))
+    evidenceBuilder.functions += new FunctionMapping("Abrupt_Id7", "abrupt", Vector("Id7"))
+    evidenceBuilder.functions += new FunctionMapping("Running_Id7", "running", Vector("Id7"))
+    evidenceBuilder.functions += new FunctionMapping("Running_Id0", "running", Vector("Id0"))
+    evidenceBuilder.functions += new FunctionMapping("Running_Id4", "running", Vector("Id4"))
+    evidenceBuilder.functions += new FunctionMapping("Running_Id6", "running", Vector("Id6"))
+    evidenceBuilder.functions += new FunctionMapping("Running_Id1", "running", Vector("Id1"))
+    evidenceBuilder.functions += new FunctionMapping("Running_Id5", "running", Vector("Id5"))
+    evidenceBuilder.functions += new FunctionMapping("Running_Id9", "running", Vector("Id9"))
+    evidenceBuilder.functions += new FunctionMapping("Running_Id2", "running", Vector("Id2"))
+    evidenceBuilder.functions += new FunctionMapping("Running_Id8", "running", Vector("Id8"))
+    evidenceBuilder.functions += new FunctionMapping("Running_Id3", "running", Vector("Id3"))
+    evidenceBuilder.functions += new FunctionMapping("Appear_Id0", "appear", Vector("Id0"))
+    evidenceBuilder.functions += new FunctionMapping("Appear_Id4", "appear", Vector("Id4"))
+    evidenceBuilder.functions += new FunctionMapping("Appear_Id3", "appear", Vector("Id3"))
+    evidenceBuilder.functions += new FunctionMapping("Appear_Id6", "appear", Vector("Id6"))
+    evidenceBuilder.functions += new FunctionMapping("Appear_Id8", "appear", Vector("Id8"))
+    evidenceBuilder.functions += new FunctionMapping("Appear_Id2", "appear", Vector("Id2"))
+    evidenceBuilder.functions += new FunctionMapping("Appear_Id9", "appear", Vector("Id9"))
+    evidenceBuilder.functions += new FunctionMapping("Appear_Id7", "appear", Vector("Id7"))
+    evidenceBuilder.functions += new FunctionMapping("Appear_Id1", "appear", Vector("Id1"))
+    evidenceBuilder.functions += new FunctionMapping("Appear_Id5", "appear", Vector("Id5"))
+    evidenceBuilder.functions += new FunctionMapping("Disappear_Id1", "disappear", Vector("Id1"))
+    evidenceBuilder.functions += new FunctionMapping("Disappear_Id5", "disappear", Vector("Id5"))
+    evidenceBuilder.functions += new FunctionMapping("Disappear_Id9", "disappear", Vector("Id9"))
+    evidenceBuilder.functions += new FunctionMapping("Disappear_Id4", "disappear", Vector("Id4"))
+    evidenceBuilder.functions += new FunctionMapping("Disappear_Id0", "disappear", Vector("Id0"))
+    evidenceBuilder.functions += new FunctionMapping("Disappear_Id8", "disappear", Vector("Id8"))
+    evidenceBuilder.functions += new FunctionMapping("Disappear_Id7", "disappear", Vector("Id7"))
+    evidenceBuilder.functions += new FunctionMapping("Disappear_Id3", "disappear", Vector("Id3"))
+    evidenceBuilder.functions += new FunctionMapping("Disappear_Id6", "disappear", Vector("Id6"))
+    evidenceBuilder.functions += new FunctionMapping("Disappear_Id2", "disappear", Vector("Id2"))
+
+
     for (atom <- mlnEvidenceAtoms) {
       val predicate = atom.functor
       val args = atom.terms.map(x => lomrf.logic.Constant(x.tostring)).toVector
@@ -147,7 +291,6 @@ object WoledUtils {
     }
 
     val evidence = evidenceBuilder.result()
-
 
     /*evidence.db.foreach { case (signature, aedb) =>
       println(s"Evidence for atom signature $signature")
@@ -159,13 +302,8 @@ object WoledUtils {
       }
     }*/
 
-
-
-    //val resultedFormulas = PredicateCompletion(formulas, definiteClauses.toSet, PredicateCompletionMode.Decomposed)(kb.predicateSchema, kb.functionSchema, constants)
-
     val resultedFormulas = PredicateCompletion(formulas, definiteClauses.toSet, PredicateCompletionMode.Decomposed)(kb.predicateSchema, kb.functionSchema, constants)
-
-    val cnf = NormalForm.compileCNF(resultedFormulas)(constants).toVector
+    val cnf = ClauseConstructor.makeCNF(resultedFormulas)(constants).toVector
 
     // This prints out the lifted rules in CNF form.
     //println(cnf.map(_.toText()).mkString("\n"))
@@ -173,7 +311,6 @@ object WoledUtils {
     val mln = MLN(kb.schema, evidence, queryAtoms, cnf)
     val builder = new MRFBuilder(mln, createDependencyMap = true)
     val mrf = builder.buildNetwork
-
 
     /* FOR DEBUGGING (print out the ground program) */
     /*val constraints = mrf.constraints.iterator()
@@ -198,61 +335,13 @@ object WoledUtils {
       val state = a.getState
       // keep only inferred as true atoms, get the rest via CWA.
       if (state) result += atom -> state //result += atom -> state
-
-
-      if ( (atom.startsWith("Holds") || atom.startsWith("Initiated")) && state) {
-        val stop = ""
-      }
-
     }
-
-
-
-
-
-
-
-
-    /*var result = Map.empty[String, Boolean]
-    val queryStartID = mln.space.queryStartID
-    val queryEndID = mln.space.queryEndID
-    val iterator = mrf.atoms.iterator
-    while (iterator.hasNext) {
-      iterator.advance()
-      val atomID = iterator.key
-      if (atomID >= queryStartID && atomID <= queryEndID) {
-        val groundAtom = iterator.value
-        val state = if (groundAtom.getState) true else false
-
-        // This is the way to get all atoms in the MAP-inferred state, either true of false.
-        //result += atomID.decodeAtom(mln).get -> state
-
-        /* DEBUG */
-        val str = atomID.decodeAtom(mln).get
-        if ( (str.startsWith("Holds") || str.startsWith("Initi")) && state) {
-          val stop = ""
-        }
-
-        // Let's keep only the true atoms to reduce the size of the map
-        // (get the )
-        if (state) result += atomID.decodeAtom(mln).get -> state
-      }
-    }*/
-
-
-
 
     val resultToASP = inferredStateToASP(result, mlmConstsToAspAtomsMap)
-
-    if (resultToASP.nonEmpty) {
-      val stop = "stop"
-    }
-
     resultToASP //result
   }
 
   def inferredStateToASP(mapState: Map[String, Boolean], mlmConstsToAspAtomsMap: mutable.Map[String, String]) = {
-
     mapState.map { case (mlnAtom, truthValue) =>
       val _mlnAtom = {
         val (head, tail) = (mlnAtom.head, mlnAtom.tail)
@@ -263,7 +352,6 @@ object WoledUtils {
       }
       aspAtom -> truthValue
     }
-
   }
 
   /*
@@ -286,8 +374,8 @@ object WoledUtils {
 
     val all = (exmpl.annotationASP ++ exmpl.narrativeASP ++ bk)
 
-    val file = Utils.getTempFile("function-mappings", ".lp")
-    Utils.writeLine(all.mkString("\n"), file.getCanonicalPath, "overwrite")
+    val file = utils.Utils.getTempFile("function-mappings", ".lp")
+    utils.Utils.writeLine(all.mkString("\n"), file.getCanonicalPath, "overwrite")
     val stuff = ASP.solve(task=Globals.INFERENCE, aspInputFile=file).head.atoms
 
     val (fluents, events, nextAtoms) = stuff.foldLeft(List[String](), List[String](), List[String]()) { (x, y) =>
@@ -340,11 +428,13 @@ object WoledUtils {
   *    and each value is a tuple with first/second coordinates being the actually correct/incorrect groundings of the rule
   *    and the third coordinate is is the count of correct non-terminations (for terminatedAt rules).
   *  - ruleIdsMap maps ids to actual rules.
+  *  - exmplsCount is the total number of groundings in the current batch (the N for the Hoeffding test)
   * */
   def getRulesMistakes(inferredAtoms: Set[String],
                        predictionsPerRuleMap: mutable.Map[Int, (mutable.SortedSet[String], mutable.SortedSet[String], Int)],
                        ruleIdsMap: Map[Int, Clause],
                        exmpl: Example,
+                       exmplsCount: Int,
                        inps: RunningOptions) = {
 
     val (_mapInferenceInit, _mapInferenceTerm, _mapInferenceHolds) = inferredAtoms.foldLeft(Vector[String](), Vector[String](), Vector[String]()) { (x, y) =>
@@ -361,33 +451,31 @@ object WoledUtils {
     val batchFPs = mapInferenceHolds.diff(trueAtoms)
     val batchFNs = trueAtoms.diff(mapInferenceHolds)
 
-    inps.globals.state.perBatchError = inps.globals.state.perBatchError :+ (batchFPs.size+batchFNs.size)
-
     /* DEBUGGING INFO */
     val rules = ruleIdsMap.map(x => x._2).toVector
     println(s"Batch TPs: ${batchTPs.size}, batch FPs: ${batchFPs.size}, batch FNs: ${batchFNs.size}")
     println(s"weights before: ${rules.map(x => x.mlnWeight).mkString(" ")}")
 
+    val parentRules = scala.collection.mutable.Set[Clause]()
+
     ruleIdsMap foreach { x =>
       val (id, rule) = (x._1, x._2)
+
+      //println(rule.tostring)
+
       if (predictionsPerRuleMap.keySet.contains(id)) {
+
         val counts = predictionsPerRuleMap(id)
 
         // The correctlyTerminatedCount here is always zero for non-termination rules.
         val (correct, incorrect, correctlyNonTerminatedCount) = (counts._1, counts._2, counts._3)
         val compareWith = if (rule.head.functor == "initiatedAt") mapInferenceInit else mapInferenceTerm
+
+        // Instances proved by the rule, which are true in both the map-inferred state, and in the true state
         val actuallyTrueGroundingsInMapInferredState = compareWith.intersect(correct)
+
+        // Instances proved by the rule, which are true in the map-inferred state, but false in the true state
         val actuallyFalseGroundingsInMapInferredState = compareWith.intersect(incorrect)
-
-        /*println(s"rule (${rule.mlnWeight}): ${rule.tostring}")
-        println(s"map inferred:\n$compareWith")
-        println(s"correct:\n$correct")
-        println(s"incorrect:\n$incorrect")
-        println(s"actually true:\n$actuallyTrueGroundingsInMapInferredState")
-        println(s"actually false:\n$actuallyFalseGroundingsInMapInferredState")*/
-
-        //println(s"True groundings: ${trueGroundingsInMapInferredState.size}, False groundings: ${falseGroundingsInMapInferredState.size}, Correctly not terminated: $correctlyNonTerminatedCount")
-        //val currentSubgradient = inferredCounts(idx) - trueCounts(idx)
 
         // Just to be on the safe side...
         if (correctlyNonTerminatedCount != 0 && rule.head.functor != "terminatedAt") {
@@ -396,9 +484,9 @@ object WoledUtils {
 
         // Update weights (AdaGrad)
         //val currentSubgradient = inferredCounts(idx) - trueCounts(idx)
-        val lambda: Double = inps.adaRegularization //0.001 // 0.01 default
-        val eta: Double = inps.adaLearnRate//1.0 // default
-        val delta: Double = inps.adaGradDelta//1.0
+        val lambda = inps.adaRegularization //0.001 // 0.01 default
+        val eta  = inps.adaLearnRate//1.0 // default
+        val delta  = inps.adaGradDelta//1.0
         val currentSubgradient = actuallyTrueGroundingsInMapInferredState.size + actuallyFalseGroundingsInMapInferredState.size - correct.size
         rule.subGradient += currentSubgradient * currentSubgradient
         val coefficient = eta / (delta + math.sqrt(rule.subGradient))
@@ -407,13 +495,38 @@ object WoledUtils {
         if (difference > 0) rule.mlnWeight = if (value >= 0) difference else -difference
         else rule.mlnWeight = 0.0
 
-        val stop = "stop"
+        // This is used to score empty-bodied parent rules, which are not used for inference and thus they are not scored.
+        if (rule.parentClause.body.isEmpty) {
+          if (!parentRules.contains(rule.parentClause)) {
+            rule.parentClause.seenExmplsNum += exmplsCount
+            parentRules += rule.parentClause
+          }
+        }
 
-        // Update coverage counts for rule.
-        // For initiation rules TPs = correct + correctlyTerminatedCount (since correctlyTerminatedCount = 0)
+        // Update coverage counts for the current rule.
+        // For initiation rules:
+        // TPs = correct + correctlyTerminatedCount (since correctlyTerminatedCount is always 0 for such rule)
         // FPs = incorrect
-        // For termination rules TPs = correctly terminated + correctly not terminated = correct + correctlyTerminatedCount
+        // For termination rules:
+        // TPs = correctly terminated + correctly not terminated = correct + correctlyTerminatedCount
         // FPs = incorrect
+
+        // Should we replace these with actuallyTrueGroundingsInMapInferredState (for TPs) and actuallyFalseGroundingsInMapInferredState (for FPs)?
+        rule.tps += correct.size + correctlyNonTerminatedCount
+        if (rule.head.functor == "terminatedAt") {
+          rule.fns += incorrect.size
+        } else {
+          rule.fps += incorrect.size
+        }
+        rule.seenExmplsNum += exmplsCount
+
+        /*rule.tps += actuallyTrueGroundingsInMapInferredState.size + correctlyNonTerminatedCount
+        if (rule.head.functor == "terminatedAt") {
+          rule.fns += actuallyFalseGroundingsInMapInferredState.size
+        } else {
+          rule.fps += actuallyFalseGroundingsInMapInferredState.size
+        }
+        rule.seenExmplsNum += exmplsCount*/
 
 
       }
@@ -445,8 +558,8 @@ object WoledUtils {
 
     val correctlyNotTerminatedCountsMetarules =
       "terminatedAt(F, T, Id) :- correctly_terminated(terminatedAt(F,T),Id).\n"+
-        "terminatedAt(F, T, Id) :- incorrectly_terminated(terminatedAt(F,T),Id).\n"+
-        "correctly_not_terminatedAt_count(Id, Count) :- terminatedRuleId(Id), Count = #count {F,T: not terminatedAt(F, T, Id), true(holdsAt(F, Te)), next(T, Te), fluent(F), time(T)}."
+      "terminatedAt(F, T, Id) :- incorrectly_terminated(terminatedAt(F,T),Id).\n"+
+      "correctly_not_terminatedAt_count(Id, Count) :- terminatedRuleId(Id), Count = #count {F,T: not terminatedAt(F, T, Id), true(holdsAt(F, Te)), next(T, Te), fluent(F), time(T)}."
 
     // We need the ids of termination rules to reason with correctly not terminated rules.
     val terminatedRuleIds = ruleIdsMap.foldLeft(Vector[String]()) { (x, y) =>
@@ -454,19 +567,27 @@ object WoledUtils {
       if (rule.head.functor == "terminatedAt") x :+ s"terminatedRuleId(ruleId_$id)." else x
     }.mkString("\n")
 
-    val show = s"#show.\n#show correctly_initiated/2.\n#show incorrectly_initiated/2.\n#show correctly_terminated/2.\n#show incorrectly_terminated/2.\n#show correctly_not_terminatedAt_count/2."
+    val show = s"#show.\n#show correctly_initiated/2.\n#show incorrectly_initiated/2.\n#show correctly_terminated/2.\n#show incorrectly_terminated/2.\n#show correctly_not_terminatedAt_count/2.\n${inps.globals.SHOW_INTERPRETATIONS_COUNT}"
 
-    val all = Vector(exmpls, metaRules.mkString("\n"), s"""#include "${inps.globals.BK_WHOLE_EC}".""", fluentMetarules, correctlyNotTerminatedCountsMetarules, terminatedRuleIds,  show).mkString("\n")
+    val all = Vector(exmpls, metaRules.mkString("\n"), s"""#include "${inps.globals.BK_WHOLE_EC}".""", fluentMetarules, correctlyNotTerminatedCountsMetarules, terminatedRuleIds, inps.globals.EXAMPLE_COUNT_RULE, show).mkString("\n")
 
-    val f = Utils.getTempFile("meta-scoring", ".lp")
+    val f = utils.Utils.getTempFile("meta-scoring", ".lp")
 
-    Utils.writeLine(all, f.getCanonicalPath, "overwrite")
+    utils.Utils.writeLine(all, f.getCanonicalPath, "overwrite")
 
     val t = ASP.solve(task=Globals.INFERENCE, aspInputFile=f)
 
     val answer = if (t.nonEmpty) t.head.atoms else Nil
 
-    val (correctlyNotTerminatedCounts, rest) = answer.partition(x => x.startsWith("correctly_not_terminatedAt_count"))
+    //val (correctlyNotTerminatedCounts, rest) = answer.partition(x => x.startsWith("correctly_not_terminatedAt_count"))
+
+    val (correctlyNotTerminatedCounts, exmplCount, rest) = answer.foldLeft(Vector[String](), Vector[String](), Vector[String]()) { (x, y) =>
+      if (y.startsWith("correctly_not_terminatedAt_count")) (x._1 :+ y, x._2, x._3)
+      else if (y.startsWith("countGroundings")) (x._1, x._2 :+ y, x._3)
+      else (x._1, x._2, x._3 :+ y)
+    }
+
+    val currentTotalExmplsGroundingsCount = exmplCount.head.split("\\(")(1).split("\\)")(0).toInt
 
     // The key to this map is a rule id, the values are tuples
     // with the first/second coordinates being a set of correct/incorrect groundings
@@ -501,7 +622,7 @@ object WoledUtils {
       }
     }
 
-    (predictionsPerRuleMap, ruleIdsMap)
+    (predictionsPerRuleMap, ruleIdsMap, currentTotalExmplsGroundingsCount)
   }
 
   def generateMetaRules(rules: Vector[Clause], ruleIdsMap: Map[Int, Clause], inps: RunningOptions) = {
@@ -511,17 +632,19 @@ object WoledUtils {
 
     // Example with rule:
     // initiatedAt(meet(X,Y),T) :- happensAt(active(X),T). (assume its id is 12)
-    // Correctly initiated meta-rule:
+    // Meta-rules:
     // correctly_init(initiatedAt(meet(X,Y),T), ruleId_12) :- happensAt(active(X),T), person(X), person(Y), time(T), true(holdsAt(meet(X,Y),Te)), next(T,Te).
-    // Incorrectly initiated meta-rule:
+    // correctly_init(initiatedAt(meet(X,Y),T), ruleId_12) :- happensAt(active(X),T), person(X), person(Y), time(T), true(holdsAt(meet(X,Y),T)).
     // incorrectly_init(initiatedAt(meet(X,Y),T), ruleId_12) :- happensAt(active(X),T), person(X), person(Y), time(T), not true(holdsAt(meet(X,Y),Te)), next(T,Te).
+
 
     // Example with rule:
     // terminatedAt(meet(X,Y),T) :- happensAt(walking(X),T). (assume its id is 23)
-    // Correctly terminated meta-rule:
-    // correctly_term(terminatedAt(meet(X,Y),T), ruleId_23) :- happensAt(walking(X),T), person(X), person(Y), time(T), true(holdsAt(meet(X,Y),T)), not true(holdsAt(meet(X,Y),Te)), next(T,Te).
-    // Incorrectly terminated meta-rule:
+    // Meta-rules:
+    // correctly_term(terminatedAt(meet(X,Y),T), ruleId_23) :- happensAt(walking(X),T), person(X), person(Y), time(T), not true(holdsAt(meet(X,Y),Te)), next(T,Te).
+    // correctly_term(terminatedAt(meet(X,Y),T), ruleId_23) :- happensAt(walking(X),T), person(X), person(Y), time(T), not true(holdsAt(meet(X,Y),T)).
     // incorrectly_term(terminatedAt(meet(X,Y),T), ruleId_23) :- happensAt(walking(X),T), person(X), person(Y), time(T), true(holdsAt(meet(X,Y),Te)), next(T,Te).
+    // incorrectly_term(terminatedAt(meet(X,Y),T), ruleId_23) :- happensAt(walking(X),T), person(X), person(Y), time(T), true(holdsAt(meet(X,Y),T)).
 
     val metaRules = ruleIdsMap.foldLeft(Vector[String]()) { (accum, r) =>
       val (ruleId, rule) = (r._1, r._2)
@@ -530,22 +653,34 @@ object WoledUtils {
       val ruleFluent = rule.head.terms.head
       val nextTimeVar = logic.Variable("Te")
       if (rule.head.functor == "initiatedAt") {
+
         val head1 = Literal(functor = "correctly_init", terms = List(rule.head, logic.Constant(s"ruleId_$ruleId")))
-        val body1 = (rule.body ++ typeAtoms) ++ List(Literal(functor = "true", terms = List(Literal(functor = "holdsAt", terms = List(ruleFluent, nextTimeVar)))), Literal(functor = "next", terms = List(timeVar, nextTimeVar)))
-        val correctly_init = Clause(head1, body1)
+        val body11 = (rule.body ++ typeAtoms) ++ List(Literal(functor = "true", terms = List(Literal(functor = "holdsAt", terms = List(ruleFluent, nextTimeVar)))), Literal(functor = "next", terms = List(timeVar, nextTimeVar)))
+        val body12 = (rule.body ++ typeAtoms) ++ List(Literal(functor = "true", terms = List(Literal(functor = "holdsAt", terms = List(ruleFluent, timeVar)))))
+        val correctly_init1 = Clause(head1, body11)
+        val correctly_init2 = Clause(head1, body12)
+
         val head2 = Literal(functor = "incorrectly_init", terms = List(rule.head, logic.Constant(s"ruleId_$ruleId")))
         val body2 = (rule.body ++ typeAtoms) ++ List(Literal(functor = "true", terms = List(Literal(functor = "holdsAt", terms = List(ruleFluent, nextTimeVar))), isNAF = true), Literal(functor = "next", terms = List(timeVar, nextTimeVar)))
         val incorrectly_init = Clause(head2, body2)
-        accum ++ Vector(correctly_init.tostring, incorrectly_init.tostring)
+        accum ++ Vector(correctly_init1.tostring, correctly_init2.tostring, incorrectly_init.tostring)
+
       } else if (rule.head.functor == "terminatedAt") {
 
         val head1 = Literal(functor = "correctly_term", terms = List(rule.head, logic.Constant(s"ruleId_$ruleId")))
-        val body1 = (rule.body ++ typeAtoms) ++ List(Literal(functor = "true", terms = List(Literal(functor = "holdsAt", terms = List(ruleFluent, timeVar)))), Literal(functor = "true", terms = List(Literal(functor = "holdsAt", terms = List(ruleFluent, nextTimeVar))), isNAF = true), Literal(functor = "next", terms = List(timeVar, nextTimeVar)))
-        val correctly_term = Clause(head1, body1)
+        val body11 = (rule.body ++ typeAtoms) ++ List(Literal(functor = "true", terms = List(Literal(functor = "holdsAt", terms = List(ruleFluent, nextTimeVar))), isNAF = true), Literal(functor = "next", terms = List(timeVar, nextTimeVar)))
+        val body12 = (rule.body ++ typeAtoms) ++ List(Literal(functor = "true", terms = List(Literal(functor = "holdsAt", terms = List(ruleFluent, timeVar))), isNAF = true))
+        val correctly_term1 = Clause(head1, body11)
+        val correctly_term2 = Clause(head1, body12)
+
         val head2 = Literal(functor = "incorrectly_term", terms = List(rule.head, logic.Constant(s"ruleId_$ruleId")))
-        val body2 = (rule.body ++ typeAtoms) ++ List(Literal(functor = "true", terms = List(Literal(functor = "holdsAt", terms = List(ruleFluent, nextTimeVar)))), Literal(functor = "next", terms = List(timeVar, nextTimeVar)))
-        val incorrectly_term = Clause(head2, body2)
-        accum ++ Vector(correctly_term.tostring, incorrectly_term.tostring)
+        val body21 = (rule.body ++ typeAtoms) ++ List(Literal(functor = "true", terms = List(Literal(functor = "holdsAt", terms = List(ruleFluent, nextTimeVar)))), Literal(functor = "next", terms = List(timeVar, nextTimeVar)))
+        val body22 = (rule.body ++ typeAtoms) ++ List(Literal(functor = "true", terms = List(Literal(functor = "holdsAt", terms = List(ruleFluent, timeVar)))))
+
+        val incorrectly_term1 = Clause(head2, body21)
+        val incorrectly_term2 = Clause(head2, body22)
+        accum ++ Vector(correctly_term1.tostring, correctly_term2.tostring, incorrectly_term1.tostring, incorrectly_term2.tostring)
+
       } else {
         throw new RuntimeException(s"Unexpected input: ${rule.head.tostring}")
       }

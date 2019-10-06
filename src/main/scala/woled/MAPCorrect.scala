@@ -7,6 +7,7 @@ import lomrf.logic.parser.KBParser
 import lomrf.logic.{AtomSignature, Constant, EvidenceAtom, FunctionMapping, NormalForm, PredicateCompletion, PredicateCompletionMode}
 import lomrf.mln.grounding.MRFBuilder
 import lomrf.mln.inference.ILP
+import lomrf.mln.learning.structure.ClauseConstructor
 import lomrf.mln.model.AtomIdentityFunctionOps._
 import lomrf.mln.model.{Evidence, EvidenceBuilder, KB, MLN}
 
@@ -20,13 +21,16 @@ object MAPCorrect extends App {
     AtomSignature("TerminatedAt", 2)
   )
 
-  val mlnBKFile = "/home/nkatz/dev/BKExamples/BK-various-taks/WeightLearning/Caviar/fragment/meeting/MLN/MAPInferenceBK.mln"
+  //val mlnBKFile = "/home/nkatz/dev/BKExamples/BK-various-taks/WeightLearning/Caviar/fragment/meeting/MLN/MAPInferenceBK.mln"
+  val mlnBKFile = "/home/nkatz/dev/WOLED-DEBUG/bk-and-rules"
   val (kb, constants) = KB.fromFile(mlnBKFile)
   val formulas = kb.formulas
 
   val parser = new KBParser(kb.predicateSchema.map { case (x, y) => x -> y.toVector }, kb.functionSchema)
 
-  val evidenceFile = new File("/home/nkatz/dev/BKExamples/BK-various-taks/WeightLearning/Caviar/fragment/meeting/MLN/23-Meet_Crowd.id0_id2.db")
+  //val evidenceFile = new File("/home/nkatz/dev/BKExamples/BK-various-taks/WeightLearning/Caviar/fragment/meeting/MLN/23-Meet_Crowd.id0_id2.db")
+  val evidenceFile = new File("/home/nkatz/dev/WOLED-DEBUG/evidence")
+
   val evidence = Evidence.fromFiles(kb, constants, queryAtoms, Seq(evidenceFile), false, false)
 
   //========================================================================================
@@ -57,20 +61,25 @@ object MAPCorrect extends App {
 
   def infer(rules: List[Clause]): Map[String, Boolean] = {
 
-    val definiteClauses = rules.map { rule =>
+    /*val definiteClauses = rules.map { rule =>
       val head = Literal.toMLNClauseLiteral(rule.head.asLiteral).tostring_mln
       val body = rule.body.map(Literal.toMLNClauseLiteral(_).tostring_mln).mkString(" ^ ")
       parser.parseDefiniteClause(s"1 $head :- $body")
-    }
+    }*/
 
-    //val definiteClauses = kb.definiteClauses
+    val definiteClauses = kb.definiteClauses
 
     definiteClauses.map(_.toText).foreach(println)
 
     val resultedFormulas = PredicateCompletion(formulas, definiteClauses.toSet, PredicateCompletionMode.Decomposed)(kb.predicateSchema, kb.functionSchema, constants)
-    val cnf = NormalForm.compileCNF(resultedFormulas)(constants).toVector
 
-    cnf.map(_.toText()).foreach(println)
+    //val cnf = NormalForm.compileCNF(resultedFormulas)(constants).toVector
+
+    println("Coverting to CNF...")
+
+    val cnf = ClauseConstructor.makeCNF(resultedFormulas)(constants).toVector
+
+    cnf.filter(x => !x.isHard).map(x => x.toText()).foreach(println)
 
     val mln = MLN(kb.schema, evidence, queryAtoms, cnf)
     val builder = new MRFBuilder(mln, createDependencyMap = true)

@@ -483,19 +483,11 @@ object ASP extends ASPResultsParser with LazyLogging {
 
     val command = Seq("clingo", aspFile, mode, with_atom_undefiend, aspCores)
 
-    /* Writing to an outfile and reading the output from there
-       caused problems that looked like synchronization ones. Sometimes the outfile was empty.
-       I didn't manage to find out why. It seemed like the con  */
-    //val outFile = Utils.getTempFile(s"aspResult-${Thread.currentThread().getId}-${System.currentTimeMillis()}-${solveMode.##}-${task.##}",".lp") // that's thread-safe
-    //val result = (command.mkString(" ") #> outFile).! // this returns only the exit code
-    //val result = (command.mkString(" ") #> outFile).lineStream_!
-    // read the out file as soon as the solver is done
-    //val results = Source.fromFile(outFile.getCanonicalPath).getLines.toList
+
 
     val result = command.mkString(" ").lineStream_!
     val results = result.toList
 
-    // make sure its satisfiable
     val status = {
       val statusLine = results.filter(x => x.contains("SATISFIABLE") || x.contains("UNSATISFIABLE") || x.contains("OPTIMUM FOUND"))
       if (statusLine.length > 1) throw new RuntimeException(s"Not sure how to get the result from Clingo. The output is\n\n${results.mkString("\n")}")

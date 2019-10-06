@@ -18,22 +18,40 @@ class State {
   var totalFNs = 0
   var totalTNs = 0
 
-  def getTheory() = initiationRules ++ terminationRules
+  def getTopTheory() = initiationRules ++ terminationRules
 
-  // Returns all non empty-headed rules currently in the theory and their refinements
-  def getAllRules(gl: Globals) = {
-    val all  = getTheory()
-    all.flatMap { topRule =>
-      if (topRule.refinements.isEmpty) topRule.generateCandidateRefs(gl)
-      if (topRule.body.nonEmpty) List(topRule) ++ topRule.refinements else topRule.refinements
+  /* The "what" variable here is either "all" or "top".
+  *  "all" returns all non-empty bodied rules along with their
+  *  specializations, while "top" returns the top non-empty bodied rules.
+  *  */
+  def getAllRules(gl: Globals, what: String) = {
+    val topRules  = getTopTheory()
+    what match {
+      case "all" =>
+        topRules.flatMap { topRule =>
+          if (topRule.refinements.isEmpty) topRule.generateCandidateRefs(gl)
+          if (topRule.body.nonEmpty) List(topRule) ++ topRule.refinements else topRule.refinements
+        }
+      case "top" =>
+        topRules.filter(x => x.body.nonEmpty)
     }
+
   }
 
-  def updateRules(newRules: List[Clause]) = {
+  /* The "action" variable here is either "add" or "replace" */
+  def updateRules(newRules: List[Clause], action: String) = {
     val (init, term) = newRules.partition(x => x.head.functor == "initiatedAt")
-    initiationRules = initiationRules ++ init
-    terminationRules = terminationRules ++ term
+    action match {
+      case "add" =>
+        initiationRules = initiationRules ++ init
+        terminationRules = terminationRules ++ term
+      case "replace" =>
+        initiationRules = init
+        terminationRules = term
+    }
+
   }
+
 
 
 

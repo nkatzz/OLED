@@ -112,20 +112,20 @@ object LoMRFTest extends App {
   // ---------------------------------------------
 
 
-  //val weights = Array.fill[Double](numberOfClauses)(0.0)
-  //val sumSquareGradients = Array.fill[Int](numberOfClauses)(0)
+  /*val weights = Array.fill[Double](numberOfClauses)(0.0)
+  val sumSquareGradients = Array.fill[Int](numberOfClauses)(0)
 
-  //  val mrfBuilder = new MRFBuilder(mln, createDependencyMap = true)
-  //  val mrf = mrfBuilder.buildNetwork
+  val mrfBuilder = new MRFBuilder(mln, createDependencyMap = true)
+  val mrf = mrfBuilder.buildNetwork
 
-  //  WLearning.setAnnotatedState(mrf, annotationDB)
-  //  val trueCounts = WLearning.countGroundings(mrf, numberOfClauses)
-  //  println("True Counts: [" + trueCounts.deep.mkString(", ") + "]")
+  WLearning.setAnnotatedState(mrf, annotationDB)
+  val trueCounts = WLearning.countGroundings(mrf, numberOfClauses)
+  println("True Counts: [" + trueCounts.deep.mkString(", ") + "]")
 
   // Perform inference for the current weight vector and count true groundings
-  //val result = WLearning.infer(mrf, annotationDB, weights)
-  //  val solver = new ILP(mrf, annotationDB = annotationDB, lossAugmented = false, ilpSolver = Solver.LPSOLVE)
-  //  val result = solver.infer()
+  val result = WLearning.infer(mrf, annotationDB, weights)
+  val solver = new ILP(mrf, annotationDB = annotationDB, lossAugmented = false, ilpSolver = Solver.LPSOLVE)
+  val result = solver.infer()*/
 
   import lomrf.mln.model.AtomIdentityFunctionOps._
   def atoms2TXT(mrf: MRF) = {
