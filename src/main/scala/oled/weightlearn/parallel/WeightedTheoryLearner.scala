@@ -72,9 +72,7 @@ class WeightedTheoryLearner[T <: Source](inps: RunningOptions, trainingDataOptio
     this.repeatFor -= 1
     data = getTrainData
     if (data.isEmpty) { logger.error(s"No data received.") ; System.exit(-1) }
-    // start at normal state
     become(normalState)
-    // and send the first batch to self
     self ! getNextBatch
   }
 

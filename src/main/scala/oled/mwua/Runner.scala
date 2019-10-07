@@ -169,6 +169,7 @@ object Runner extends LazyLogging {
       }
       */
 
+      // This is the regular experts runner
       ///*
       system.actorOf(Props(new Learner_NEW(runningOptions, trainingDataOptions, testingDataOptions, trainingDataFunction,
         testingDataFunction)), name = "Learner") ! startMsg

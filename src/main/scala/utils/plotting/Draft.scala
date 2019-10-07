@@ -11,21 +11,24 @@ import scala.io.Source
 
 object Draft extends App {
 
-  //plot("/home/nkatz/Public/test", "/home/nkatz/Public")
+  plot("/home/nkatz/Public/test", "/home/nkatz/Public")
 
 
 
   def plot(dataPath: String, savePath: String) = {
 
     val data = Source.fromFile(dataPath).getLines.filter(x => !x.isEmpty && !x.startsWith("%")) //.split(",")
-    val handCrafted = data.next().split(",").map(_.toDouble).toVector
-    //val handCraftedExperts = data.next().split(",").map(_.toDouble).toVector
+
     //val OLED = data.next().split(",").map(_.toDouble).toVector
-    //val OLED_MLN = data.next().split(",").map(_.toDouble).toVector
-    //val OLED_Experts = data.next().split(",").map(_.toDouble).toVector
+    val OLED_MLN = data.next().split(",").map(_.toDouble).toVector
+    val OLED_Experts = data.next().split(",").map(_.toDouble).toVector
     Figure("meeting-prequential-mistakes")
       //.plot(color = BLACK, marker = X, markStrokeColor = BLACK)(makeSparse(handCrafted))
-      .plot(color = BLACK, marker = X, markStrokeColor = BLACK)(handCrafted)
+      //.plot(color = BLACK)(OLED)
+      .plot(color = BLUE)(OLED_MLN)
+      .plot(color = RED)(OLED_Experts)
+
+      .havingLegends("\\footnotesize \\textsf{WOLED}", "\\footnotesize \\textsf{Experts}")
 
       /*plot(color = BLUE, marker = TRIANGLE, markStrokeColor = BLUE)(makeSparse(handCraftedExperts)).
       plot(color = GREEN ! 70 ! BLACK, marker = CIRCLE, markStrokeColor = GREEN ! 70 ! BLACK)(makeSparse(OLED)).
@@ -34,13 +37,13 @@ object Draft extends App {
       .havingLegends("\\footnotesize \\textsf{HandCrafted}", "\\footnotesize \\textsf{HandCrafted-EXP}", "\\footnotesize \\textsf{OLED}",
         "\\footnotesize \\textsf{OLED-MLN}", "\\footnotesize \\textsf{OLED-EXP}")*/
       .havingLegendPos(NORTH_WEST)
-      .havingXLabel("\\textbf{Time} $\\mathbf{(\\times 50)}$")
+      .havingXLabel("Batches (size = 100)")
       .havingYLabel("\\textbf{Acummulated Mistakes}").
       havingTitle("\\emph{Meeting}").
       //havingTitle("\\emph{Meeting},ybar").
       //havingAxisXLabels(Seq("0","5K","10K","15K","20K","25K")).
-      saveAsPDF(savePath)
-    //.show()
+      //show()
+    saveAsPDF(savePath)
 
   }
 

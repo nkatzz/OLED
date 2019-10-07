@@ -152,7 +152,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
     logEmptyDataError()
     var done = false
 
-    //var perBatchError: Vector[Int] = Vector.empty[Int]
+    var perBatchError: Vector[Int] = Vector.empty[Int]
 
     while(! done) {
       val nextBatch = getNextBatch(lleNoise = false)
@@ -173,7 +173,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
 
           //stateHandler.perBatchError = stateHandler.perBatchError :+ batchError
 
-          /*// Dirty hack
+          // Dirty hack
           var bias = 0.0
 
           val error = ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
@@ -191,12 +191,12 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
             bias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap)
 
           println(s"Per batch error:\n$perBatchError")
-          println(s"Accumulated Per batch error:\n${perBatchError.scanLeft(0.0)(_ + _).tail}")*/
+          println(s"Accumulated Per batch error:\n${perBatchError.scanLeft(0.0)(_ + _).tail}")
 
-          ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
+          /*ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
             stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
             batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
-            receiveFeedbackBias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap)
+            receiveFeedbackBias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap)*/
 
         } else {
           ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
