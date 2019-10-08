@@ -224,7 +224,7 @@ case class Literal(functor: String = "", terms: List[Expression] = Nil, isNAF: B
 
   def asPosLiteral = {
     if (!this.isNAF) PosLiteral(this.functor, this.terms, this.isNAF, this.modeAtom, this.typePreds)
-    else throw new LogicException(s"Found negated literal casted as postive literal: ${this.tostring}}")
+    else throw new LogicException(s"Found negated literal casted as positive literal: ${this.tostring}}")
   }
 
   /*
@@ -285,7 +285,7 @@ case class Literal(functor: String = "", terms: List[Expression] = Nil, isNAF: B
       prefix + "(" + (for (
         a <- terms; x = a match {
         case x @ (_: Constant | _: Variable | _: Literal | _: PosLiteral) => x
-        case _ => throw new LogicException("Unxpected type of inner term while parsing Literal.")
+        case _ => throw new LogicException("Unexpected type of inner term while parsing Literal.")
       }
       ) yield x.tostringQuote).mkString(",") + ")"
   }
@@ -303,7 +303,7 @@ case class Literal(functor: String = "", terms: List[Expression] = Nil, isNAF: B
   }
 
   /**
-    * @return a mode declarartion atom that matches this literal.
+    * @return a mode declaration atom that matches this literal.
     * If none is found, returns the empty mode atom ( ModeAtom("",List() )
     */
 

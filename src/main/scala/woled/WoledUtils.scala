@@ -512,7 +512,7 @@ object WoledUtils {
         // FPs = incorrect
 
         // Should we replace these with actuallyTrueGroundingsInMapInferredState (for TPs) and actuallyFalseGroundingsInMapInferredState (for FPs)?
-        rule.tps += correct.size + correctlyNonTerminatedCount
+        rule.tps += correct.size //+ correctlyNonTerminatedCount
         if (rule.head.functor == "terminatedAt") {
           rule.fns += incorrect.size
         } else {

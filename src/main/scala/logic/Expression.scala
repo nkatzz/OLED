@@ -28,12 +28,12 @@ trait Expression {
    def name: String = ""
 
    def isVariabe = this match {
-      case v: Variable => true
+      case _: Variable => true
       case _ => false
    }
 
    def isConstant = this match {
-      case c: Constant => true
+      case _: Constant => true
       case _ => false
    }
 
