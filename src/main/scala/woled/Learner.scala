@@ -28,12 +28,12 @@ class Learner[T <: app.runutils.IOHandling.Source](inps: RunningOptions, trainin
 
   var batchCount = 0
 
-  /* Use a hand-crafted theory for debugging */
-  /*val source = Source.fromFile("/home/nkatz/dev/BKExamples/BK-various-taks/WeightLearning/Caviar/fragment/meeting/ASP/asp-rules-test")
+  // Use a hand-crafted theory for debugging
+  val source = Source.fromFile("/home/nkatz/dev/BKExamples/BK-various-taks/WeightLearning/Caviar/fragment/meeting/ASP/asp-rules-test")
   val list = source.getLines
   val rulesList = list.map(x => Clause.parse(x)).toList
   source.close
-  inps.globals.state.updateRules(rulesList)*/
+  inps.globals.state.updateRules(rulesList, "add")
 
 
   def inferenceState: Receive = { ??? }
@@ -53,6 +53,8 @@ class Learner[T <: app.runutils.IOHandling.Source](inps: RunningOptions, trainin
         val show = inps.globals.bodyAtomSignatures.map(x => s"#show ${x.tostring}.").mkString("\n")
         Vector(nar, include, show)
       }
+
+      // This transforms the actual data into an MLN-compatible form.
       val f = woled.Utils.dumpToFile(program)
       val t = ASP.solve(task=Globals.INFERENCE, aspInputFile=f)
       val answer = t.head.atoms
@@ -83,6 +85,9 @@ class Learner[T <: app.runutils.IOHandling.Source](inps: RunningOptions, trainin
 
       // MAP inference and getting true groundings with Clingo (see below should be performed in parallel)
       val inferredState = WoledUtils.getInferredState(Theory.compressTheory(rules), e, "MAP", inps)
+
+      val test = Scoring.score(e, inferredState, state.getAllRules(inps.globals, "all").toVector, inps)
+
 
       // Parallelizing this is trivial (to speed things up in case of many rules/large batches).
       // Simply split the rules to multiple workers, the grounding/counting tasks executed are completely rule-independent.

@@ -334,7 +334,8 @@ object WoledUtils {
       val atom = a.id.decodeAtom(mln).get
       val state = a.getState
       // keep only inferred as true atoms, get the rest via CWA.
-      if (state) result += atom -> state //result += atom -> state
+      //if (state) result += atom -> state //result += atom -> state
+      result += atom -> state
     }
 
     val resultToASP = inferredStateToASP(result, mlmConstsToAspAtomsMap)
