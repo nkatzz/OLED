@@ -10,6 +10,7 @@ import logic.Examples.Example
 import lomrf.logic.{AtomSignature, EvidenceAtom, TRUE}
 import lomrf.mln.model.Evidence
 import oled.functions.SingleCoreOLEDFunctions
+import oled.mwua
 import oled.mwua.AuxFuncs._
 import oled.mwua.HelperClasses.AtomTobePredicted
 import utils.Utils
@@ -48,6 +49,8 @@ object ExpertAdviceFunctions extends LazyLogging {
     //stateHandler.ensemble.removeZeroWeights
     //========================================
 
+
+
     val streaming = true //true
     var batchError = 0
     var batchFPs = 0
@@ -58,13 +61,13 @@ object ExpertAdviceFunctions extends LazyLogging {
     var withInputTheory = inputTheory.isDefined
 
     /* TEST PHASE ONLY (NO WEIGHT/STRUCTURE UPDATE) */
-    ///*
+    /*
     val isTestPhase = receiveFeedbackBias == 0.0
     if (isTestPhase) {
       setFinalTestingRules(stateHandler, streaming)
       withInputTheory = true
     }
-    //*/
+    */
 
     var spliceInput = Map.empty[String, Double]
     stateHandler.batchCounter = batchCounter
@@ -230,6 +233,7 @@ object ExpertAdviceFunctions extends LazyLogging {
                   if (p <= receiveFeedbackBias) true else false
                 }
                 //*/
+
                 /*
                 if (atomCounter < feedBackGap) {
                   false
@@ -293,6 +297,20 @@ object ExpertAdviceFunctions extends LazyLogging {
                   }
                 }
               } else {
+
+                /*===============================================================================================================*/
+                /* This is all helper/test code for updating weights after mini-batch prediction from all mistakes cumulatively. */
+                /*============================================ Test-helper code start ===========================================*/
+
+                /*val delayedUpdate = new DelayedUpdate(atom, prediction, inertiaExpertPrediction,
+                  initWeightSum, termWeightSum, predictedLabel, markedMap, feedback, stateHandler,
+                  learningRate, weightUpdateStrategy, withInertia, orderedTimes)
+
+                stateHandler.delayedUpdates = stateHandler.delayedUpdates :+ delayedUpdate*/
+
+                /* ============================================Test-helper code end =============================================*/
+                /*===============================================================================================================*/
+
                 // Here we do not receive feedback. We need to handle inertia here.
                 // Note that if feedback is received inertia is handled at the updateWeights method.
                 // If the prediction is TP (TN) the fluent is added (removed) from the inertia memory.
@@ -598,10 +616,6 @@ object ExpertAdviceFunctions extends LazyLogging {
     } else if (is_FP_mistake(predictedLabel, feedback)) {
       outcome = "FP"
 
-      if (atom.fluent == "moving(id6,id5)") {
-        val stop = "stop"
-      }
-
       if (!hedge) {
         reduceWeights(atom.initiatedBy, markedMap, learningRate)
         increaseWeights(atom.terminatedBy, markedMap, learningRate)
@@ -702,7 +716,6 @@ object ExpertAdviceFunctions extends LazyLogging {
         } else {
           totalTermWeightAfterNormalization + inertAfterNormalization
         }
-
 
       // This is wrong. The total AWAKE weight of the ensemble is supposed to remain the same.
       // Differences are due to number precision of Doubles. It's the total initiation or termination

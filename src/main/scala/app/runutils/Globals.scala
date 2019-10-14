@@ -330,10 +330,31 @@ class Globals(val entryPath: String) extends LazyLogging {
       "not terminatedAt(F,Ts), next(Ts, Te)."
     //private val RIGHT_BEFORE_DEF = "right_before(X,Z) :- time(X), time(Z), Z = X+40."
     ///*
-    val RIGHT_BEFORE_DEF ="\n#script (python)\ntimes = []\ndef collect_all(a):\n    times.append(a)\n    " +
+    /*val RIGHT_BEFORE_DEF ="\n#script (python)\ntimes = []\ndef collect_all(a):\n    times.append(a)\n    " +
       "return 1\ndef sorted():\n    times.sort()\n    return zip(range(len(times)), times)\n#end.\ncollect_all." +
       "\ncollect_all :- time(X), @collect_all(X) == 0.\nsorted_pair(X,N) :- collect_all, " +
-      "(X,N) = @sorted().\nnext(X, Y) :- sorted_pair(A,X), sorted_pair(A+1,Y).\n"
+      "(X,N) = @sorted().\nnext(X, Y) :- sorted_pair(A,X), sorted_pair(A+1,Y).\n"*/
+
+    val RIGHT_BEFORE_DEF =
+      """
+        |#script (python)
+        |times = []
+        |def collect_all(a):
+        |    times.append(a)
+        |    return 1
+        |def sorted():
+        |    times.sort()
+        |    return zip(range(len(times)), times)
+        |def end_time():
+        |    times.sort()
+        |    return times[-1]
+        |#end.
+        |collect_all.
+        |collect_all :- time(X), @collect_all(X) == 0.
+        |sorted_pair(X,N) :- collect_all, (X,N) = @sorted().
+        |next(X, Y) :- sorted_pair(A,X), sorted_pair(A+1,Y).
+        |endTime(X) :- X = @end_time().
+        |""".stripMargin
 
     //*/
     val INIT_TIME_DEF = "initialTime(X) :- time(X), #false : X > Y, time(Y)."

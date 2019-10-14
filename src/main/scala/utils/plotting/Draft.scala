@@ -19,7 +19,6 @@ object Draft extends App {
 
     val data = Source.fromFile(dataPath).getLines.filter(x => !x.isEmpty && !x.startsWith("%")) //.split(",")
 
-    //val OLED = data.next().split(",").map(_.toDouble).toVector
     val OLED_MLN = data.next().split(",").map(_.toDouble).toVector
     val OLED_Experts = data.next().split(",").map(_.toDouble).toVector
     Figure("meeting-prequential-mistakes")
@@ -37,8 +36,8 @@ object Draft extends App {
       .havingLegends("\\footnotesize \\textsf{HandCrafted}", "\\footnotesize \\textsf{HandCrafted-EXP}", "\\footnotesize \\textsf{OLED}",
         "\\footnotesize \\textsf{OLED-MLN}", "\\footnotesize \\textsf{OLED-EXP}")*/
       .havingLegendPos(NORTH_WEST)
-      .havingXLabel("Batches (size = 100)")
-      .havingYLabel("\\textbf{Acummulated Mistakes}").
+      .havingXLabel("\\footnotesize Batches (size = 100)")
+      .havingYLabel("\\footnotesize \\textbf{Acummulated Mistakes}").
       havingTitle("\\emph{Meeting}").
       //havingTitle("\\emph{Meeting},ybar").
       //havingAxisXLabels(Seq("0","5K","10K","15K","20K","25K")).

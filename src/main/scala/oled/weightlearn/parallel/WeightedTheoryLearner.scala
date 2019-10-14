@@ -86,7 +86,10 @@ class WeightedTheoryLearner[T <: Source](inps: RunningOptions, trainingDataOptio
         } else if (repeatFor == 0) {
           val endTime = System.nanoTime()
           val totalTime = (endTime - startTime)/1000000000.0
-          logger.info(s"\nTheory:\n${topTheory.clauses.map(x => x.tostring).mkString("\n")}\nTraining time: $totalTime")
+
+          val theory = if (topTheory.clauses.nonEmpty) topTheory.clauses else inps.globals.state.getAllRules(inps.globals, "top")
+
+          logger.info(s"\nTheory:\n${Theory(theory).showWithStats}\nTraining time: $totalTime")
           logger.info(s"Mistakes per batch:\n${inps.globals.state.perBatchError}")
           logger.info(s"Accumulated mistakes per batch:\n${inps.globals.state.perBatchError.scanLeft(0.0)(_ + _).tail}")
           logger.info(s"Sending the theory to the parent actor")

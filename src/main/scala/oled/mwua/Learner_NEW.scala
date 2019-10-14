@@ -5,10 +5,13 @@ import java.io.{BufferedWriter, File, FileWriter, PrintWriter}
 import akka.actor.Actor
 import app.runutils.IOHandling.Source
 import app.runutils.RunningOptions
+import com.typesafe.scalalogging.Logger
 import logic.Examples.Example
 import logic.{Clause, Theory}
+import oled.functions.SingleCoreOLEDFunctions
 import org.slf4j.LoggerFactory
 
+import scala.util.Random
 import scala.util.matching.Regex
 
 class Learner_NEW[T <: Source](val inps: RunningOptions,
@@ -44,8 +47,8 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
   val percentOfMistakesBeforeSpecialize = 0
 
   // have this set to "" for a regular run without an input theory
-  //val inputTheoryFile = "/home/nkatz/Desktop/theory"
-  val inputTheoryFile = ""
+  val inputTheoryFile = "/home/nkatz/dev/BKExamples/BK-various-taks/WeightLearning/Caviar/fragment/meeting/ASP/asp-rules-test"
+  //val inputTheoryFile = ""
 
   val inputTheory: List[Clause] = {
     def matches(p: Regex, str: String) = p.pattern.matcher(str).matches
@@ -173,7 +176,10 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
 
           //stateHandler.perBatchError = stateHandler.perBatchError :+ batchError
 
-          // Dirty hack
+          /*  ======================= Dirty hack ===============================*/
+
+          stateHandler.clearDelayedUpdates
+
           var bias = 0.0
 
           val error = ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
@@ -193,16 +199,100 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
           println(s"Per batch error:\n$perBatchError")
           println(s"Accumulated Per batch error:\n${perBatchError.scanLeft(0.0)(_ + _).tail}")
 
+          /*stateHandler.delayedUpdates foreach { u =>
+
+            val newRuleFlag = ExpertAdviceFunctions.updateWeights(u.atom, u.prediction, u.inertiaExpertPrediction, u.initWeightSum,
+              u.termWeightSum, u.predictedLabel, u.markedMap, u.feedback, stateHandler, u.learningRate, u.weightUpdateStrategy,
+              u.withInertia)
+
+            u.generateNewRuleFlag = newRuleFlag
+          }
+
+          var newRulesFrom = stateHandler.delayedUpdates.filter(_.generateNewRuleFlag)
+
+          /*newRulesFrom foreach { u =>
+
+            val previousTime = u.orderedTimes( u.orderedTimes.indexOf(u.atom.time) -1 )
+
+            ClassicSleepingExpertsHedge.updateStructure_NEW_HEDGE(u.atom, previousTime, u.markedMap, u.predictedLabel,
+              u.feedback, nextBatch, u.atom.atom, inps, Logger(this.getClass).underlying, stateHandler,
+              percentOfMistakesBeforeSpecialize, randomizedPrediction, "", false,
+              conservativeRuleGeneration, u.generateNewRuleFlag)
+
+          }*/
+
+          // Generating rules from each mistake breaks things down. Until we find a generic strategy for new rule
+          // generation (applicable to WOLED also), just generate say, 3 rules, randomly
+
+          if (newRulesFrom.nonEmpty) {
+
+            val random = new Random
+            for (i <- 1 to 3) {
+              val u = newRulesFrom(random.nextInt(newRulesFrom.length))
+              newRulesFrom = newRulesFrom.filter(x => x != u)
+
+              val previousTime = u.orderedTimes( u.orderedTimes.indexOf(u.atom.time) -1 )
+
+              ClassicSleepingExpertsHedge.updateStructure_NEW_HEDGE(u.atom, previousTime, u.markedMap, u.predictedLabel,
+                u.feedback, nextBatch, u.atom.atom, inps, Logger(this.getClass).underlying, stateHandler,
+                percentOfMistakesBeforeSpecialize, randomizedPrediction, "", false,
+                conservativeRuleGeneration, u.generateNewRuleFlag)
+
+            }
+
+          }
+
+          val expandedInit =
+            SingleCoreOLEDFunctions.expandRules(Theory(stateHandler.ensemble.initiationRules.filter(x => x.refinements.nonEmpty)),
+              inps, Logger(this.getClass).underlying)
+
+          val expandedTerm =
+            SingleCoreOLEDFunctions.expandRules(Theory(stateHandler.ensemble.terminationRules.filter(x => x.refinements.nonEmpty)),
+              inps, Logger(this.getClass).underlying)
+
+          stateHandler.ensemble.initiationRules = expandedInit._1.clauses
+          stateHandler.ensemble.terminationRules = expandedTerm._1.clauses
+
+          val allRules = (stateHandler.ensemble.initiationRules ++ stateHandler.ensemble.terminationRules).flatMap(x => List(x) ++ x.refinements)
+
+          println(s"\n\n====================== Theory Size: ${allRules.size}=======================")*/
+
+
+
+          // ACTUAL EXECUTION FLOW
           /*ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
             stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
             batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
             receiveFeedbackBias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap)*/
 
         } else {
+
+
+          var bias = 0.0
+
+          val error = ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
+            stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
+            batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
+            bias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap, inputTheory = Some(inputTheory))
+
+          perBatchError = perBatchError :+ error
+
+          bias = 1.0
+
           ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
             stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
             batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
-            receiveFeedbackBias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap, inputTheory = Some(inputTheory))
+            bias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap, inputTheory = Some(inputTheory))
+
+          println(s"Per batch error:\n$perBatchError")
+          println(s"Accumulated Per batch error:\n${perBatchError.scanLeft(0.0)(_ + _).tail}")
+
+
+
+          /*ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
+            stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
+            batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
+            receiveFeedbackBias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap, inputTheory = Some(inputTheory))*/
         }
       }
     }

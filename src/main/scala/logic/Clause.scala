@@ -93,7 +93,7 @@ case class Clause(head: PosLiteral = PosLiteral(),
   // v is a Structures.Stats instance carrying the current counts from N.
   var countsPerNode = scala.collection.mutable.Map[String, Structures.ClauseStats]()
 
-  var mlnWeight: Double = 1.0
+  var mlnWeight: Double = 0.0
   var subGradient: Double = 0.0
 
   // This is a "general-purpose" weight variable, the intention is to use this
@@ -252,7 +252,7 @@ case class Clause(head: PosLiteral = PosLiteral(),
         // If parentCoverage == 1.0 then the parent rule is perfect, no way to beat that, so set this rule's gain to 0
         // Note that otherwise we'll have the parent's log evaluated to 0 and the gain formula
         // returning a negative value (parentTPs * log(thisCoverage), which is < 0 since thisCoverage < 1).
-        // Eitherway, we only consider positive gain.
+        // Eitherway, we only care for positive gain.
         // If, on the other hand, parentCoverage == 0.0 then thisCoverage == 0 (the parent covers nothing, so no way for
         // this rule -- a refinement --  to cover something)
         0.0
@@ -500,7 +500,7 @@ case class Clause(head: PosLiteral = PosLiteral(),
       //gainInt
     } else if (this.head.functor == "terminatedAt") {
       Globals.scoringFunction match {
-        case "default" => if (!recall.isNaN) recall else 0.0
+        case "default" => if (!recall.isNaN) recall else 0.0 //if (!precision.isNaN) precision else 0.0 //if (!recall.isNaN) recall else 0.0
 
         //case "default" => weighted_recall
 
@@ -508,7 +508,7 @@ case class Clause(head: PosLiteral = PosLiteral(),
 
         //case "default" => if (!recall.isNaN) (1.0 - 1.0/(1.0+tps.toDouble)) * recall else 0.0
 
-        case "foilgain" => foilGain("recall")
+        case "foilgain" => foilGain("precision") //foilGain("recall")
         case "fscore" => fscore
         case _ => throw new RuntimeException("Error: No scoring function given.")
       }

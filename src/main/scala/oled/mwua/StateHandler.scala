@@ -1,12 +1,41 @@
 package oled.mwua
 
 import logic.Clause
+import oled.mwua.HelperClasses.AtomTobePredicted
 
 /**
   * Created by nkatz at 10/2/2019
   */
 
+
+
+//val delayedUpdate = new mwua.StateHandler.DelayedUpdate(atom, prediction, inertiaExpertPrediction,
+//  predictedLabel, feedback, stateHandler, epsilon, markedMap, totalWeight)
+
+class DelayedUpdate(val atom: AtomTobePredicted, val prediction: Double, val inertiaExpertPrediction: Double,
+                    val initWeightSum: Double, val termWeightSum: Double, val predictedLabel: String,
+                    val markedMap: Map[String, Clause], val feedback: String, val stateHandler: StateHandler,
+                    val learningRate: Double, val weightUpdateStrategy: String, val withInertia: Boolean = true,
+                    val orderedTimes: Vector[Int]) {
+
+  var generateNewRuleFlag: Boolean = false
+
+}
+
+
 class StateHandler {
+
+  /*===============================================================================================================*/
+  /* This is all helper/test code for updating weights after mini-batch prediction from all mistakes cumulatively. */
+  /* ============================================ Test-helper code start ==========================================*/
+
+
+  var delayedUpdates = Vector.empty[DelayedUpdate]
+
+  def clearDelayedUpdates = delayedUpdates = Vector.empty[DelayedUpdate]
+
+  /* ============================================ Test-helper code end ============================================*/
+  /*===============================================================================================================*/
 
   /*------------------------------------*/
   /* Stuff related to the rule ensemble */

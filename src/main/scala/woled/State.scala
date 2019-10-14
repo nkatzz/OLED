@@ -1,6 +1,6 @@
 package woled
 
-import app.runutils.Globals
+import app.runutils.{Globals, RunningOptions}
 import logic.Clause
 
 class State {
@@ -11,6 +11,9 @@ class State {
   var perBatchError: Vector[Int] = Vector.empty[Int]
 
   var runningRulesNumber: Vector[Int] = Vector.empty[Int]
+
+  // This is the number of examples seen so far, the N for the Hoeffding test.
+  var totalGroundings = 0
 
   var batchCounter = 0
   var totalTPs = 0
@@ -30,16 +33,28 @@ class State {
       case "all" =>
         topRules.flatMap { topRule =>
           if (topRule.refinements.isEmpty) topRule.generateCandidateRefs(gl)
-          if (topRule.body.nonEmpty) List(topRule) ++ topRule.refinements else topRule.refinements
+          //if (topRule.body.nonEmpty) List(topRule) ++ topRule.refinements else topRule.refinements
+          List(topRule) ++ topRule.refinements
         }
       case "top" =>
         topRules.filter(x => x.body.nonEmpty)
     }
+  }
 
+  def updateGroundingsCounts(newCount: Int) = {
+    val rules = getTopTheory()
+    rules foreach { rule =>
+      rule.seenExmplsNum += newCount
+      rule.supportSet.clauses.head.seenExmplsNum += newCount
+      rule.refinements foreach { ref =>
+        ref.seenExmplsNum += newCount
+      }
+    }
   }
 
   /* The "action" variable here is either "add" or "replace" */
-  def updateRules(newRules: List[Clause], action: String) = {
+  def updateRules(newRules: List[Clause], action: String, inps: RunningOptions) = {
+    newRules foreach { rule => if (rule.refinements.isEmpty) rule.generateCandidateRefs(inps.globals) }
     val (init, term) = newRules.partition(x => x.head.functor == "initiatedAt")
     action match {
       case "add" =>
