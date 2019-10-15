@@ -302,11 +302,11 @@ object ExpertAdviceFunctions extends LazyLogging {
                 /* This is all helper/test code for updating weights after mini-batch prediction from all mistakes cumulatively. */
                 /*============================================ Test-helper code start ===========================================*/
 
-                /*val delayedUpdate = new DelayedUpdate(atom, prediction, inertiaExpertPrediction,
+                val delayedUpdate = new DelayedUpdate(atom, prediction, inertiaExpertPrediction,
                   initWeightSum, termWeightSum, predictedLabel, markedMap, feedback, stateHandler,
                   learningRate, weightUpdateStrategy, withInertia, orderedTimes)
 
-                stateHandler.delayedUpdates = stateHandler.delayedUpdates :+ delayedUpdate*/
+                stateHandler.delayedUpdates = stateHandler.delayedUpdates :+ delayedUpdate
 
                 /* ============================================Test-helper code end =============================================*/
                 /*===============================================================================================================*/

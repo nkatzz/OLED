@@ -47,8 +47,8 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
   val percentOfMistakesBeforeSpecialize = 0
 
   // have this set to "" for a regular run without an input theory
-  val inputTheoryFile = "/home/nkatz/dev/BKExamples/BK-various-taks/WeightLearning/Caviar/fragment/meeting/ASP/asp-rules-test"
-  //val inputTheoryFile = ""
+  //val inputTheoryFile = "/home/nkatz/dev/BKExamples/BK-various-taks/WeightLearning/Caviar/fragment/meeting/ASP/asp-rules-test"
+  val inputTheoryFile = ""
 
   val inputTheory: List[Clause] = {
     def matches(p: Regex, str: String) = p.pattern.matcher(str).matches
@@ -180,7 +180,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
 
           stateHandler.clearDelayedUpdates
 
-          var bias = 0.0
+          /*var bias = 0.0
 
           val error = ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
             stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
@@ -196,10 +196,23 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
             batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
             bias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap)
 
+          */
+
+          var bias = 0.0
+
+          val error = ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
+            stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
+            batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
+            bias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap)
+
+          perBatchError = perBatchError :+ error
+
           println(s"Per batch error:\n$perBatchError")
           println(s"Accumulated Per batch error:\n${perBatchError.scanLeft(0.0)(_ + _).tail}")
 
-          /*stateHandler.delayedUpdates foreach { u =>
+          val debugDelayedUpdates = stateHandler.delayedUpdates.map(x => x.atom.atom).mkString("\n")
+
+          stateHandler.delayedUpdates foreach { u =>
 
             val newRuleFlag = ExpertAdviceFunctions.updateWeights(u.atom, u.prediction, u.inertiaExpertPrediction, u.initWeightSum,
               u.termWeightSum, u.predictedLabel, u.markedMap, u.feedback, stateHandler, u.learningRate, u.weightUpdateStrategy,
@@ -211,23 +224,20 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
           var newRulesFrom = stateHandler.delayedUpdates.filter(_.generateNewRuleFlag)
 
           /*newRulesFrom foreach { u =>
-
             val previousTime = u.orderedTimes( u.orderedTimes.indexOf(u.atom.time) -1 )
-
             ClassicSleepingExpertsHedge.updateStructure_NEW_HEDGE(u.atom, previousTime, u.markedMap, u.predictedLabel,
               u.feedback, nextBatch, u.atom.atom, inps, Logger(this.getClass).underlying, stateHandler,
               percentOfMistakesBeforeSpecialize, randomizedPrediction, "", false,
               conservativeRuleGeneration, u.generateNewRuleFlag)
-
           }*/
 
-          // Generating rules from each mistake breaks things down. Until we find a generic strategy for new rule
-          // generation (applicable to WOLED also), just generate say, 3 rules, randomly
+          // Generating rules from each mistake breaks things down. Until I find a generic strategy for new rule
+          // generation (applicable to WOLED also), just generate say, 3 rules, randomly.
 
           if (newRulesFrom.nonEmpty) {
 
             val random = new Random
-            for (i <- 1 to 3) {
+            for (_ <- 1 to 3) {
               val u = newRulesFrom(random.nextInt(newRulesFrom.length))
               newRulesFrom = newRulesFrom.filter(x => x != u)
 
@@ -255,7 +265,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
 
           val allRules = (stateHandler.ensemble.initiationRules ++ stateHandler.ensemble.terminationRules).flatMap(x => List(x) ++ x.refinements)
 
-          println(s"\n\n====================== Theory Size: ${allRules.size}=======================")*/
+          println(s"\n\n====================== Theory Size: ${allRules.size}=======================")
 
 
 
