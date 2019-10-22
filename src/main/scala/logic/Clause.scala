@@ -93,7 +93,7 @@ case class Clause(head: PosLiteral = PosLiteral(),
   // v is a Structures.Stats instance carrying the current counts from N.
   var countsPerNode = scala.collection.mutable.Map[String, Structures.ClauseStats]()
 
-  var mlnWeight: Double = 0.0
+  var mlnWeight: Double = 1.0
   var subGradient: Double = 0.0
 
   // This is a "general-purpose" weight variable, the intention is to use this
@@ -500,7 +500,7 @@ case class Clause(head: PosLiteral = PosLiteral(),
       //gainInt
     } else if (this.head.functor == "terminatedAt") {
       Globals.scoringFunction match {
-        case "default" => if (!recall.isNaN) recall else 0.0 //if (!precision.isNaN) precision else 0.0 //if (!recall.isNaN) recall else 0.0
+        case "default" => if (!precision.isNaN) precision else 0.0 //if (!recall.isNaN) recall else 0.0
 
         //case "default" => weighted_recall
 

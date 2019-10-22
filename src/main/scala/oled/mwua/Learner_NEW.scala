@@ -198,6 +198,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
 
           */
 
+          /*
           var bias = 0.0
 
           val error = ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
@@ -269,11 +270,13 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
 
 
 
+           */
+
           // ACTUAL EXECUTION FLOW
-          /*ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
+          ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
             stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
             batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
-            receiveFeedbackBias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap)*/
+            receiveFeedbackBias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap)
 
         } else {
 

@@ -4,6 +4,9 @@ import app.runutils.{Globals, RunningOptions}
 import logic.{Clause, Literal}
 import logic.Examples.Example
 import utils.ASP
+import xhail.Xhail
+
+import scala.util.Random
 
 /**
  * Created by nkatz on 11/10/19.
@@ -189,7 +192,7 @@ object Scoring {
       |coverage_counts(TPs, FPs, FNs) :-
       |       TPs = #count {F,T: annotation(holdsAt(F,T)), inferred(holdsAt(F,T), true)},
       |       FPs = #count {F,T: not annotation(holdsAt(F,T)), inferred(holdsAt(F,T), true)},
-      |       FNs = #count {F,T: annotation(holdsAt(F,T)), inferred(holdsAt(F,T), false)}.
+      |       FNs = #count {F,T: annotation(holdsAt(F,T)), not startTime(T), inferred(holdsAt(F,T), false)}.
       |
       |actual_initiated_true_grounding(F, T, RuleId) :-
       |          fluent(F), % This is necessary for correct scoring
@@ -197,11 +200,11 @@ object Scoring {
       |          annotation(holdsAt(F, Te)),
       |          next(T, Te).
       |
-      |actual_initiated_true_grounding(F, T, RuleId) :-
-      |          fluent(F), % This is necessary for correct scoring
-      |          fires(initiatedAt(F, T), RuleId),
-      |          annotation(holdsAt(F, T)),
-      |          endTime(T).
+      |%actual_initiated_true_grounding(F, T, RuleId) :-
+      |%          fluent(F), % This is necessary for correct scoring
+      |%          fires(initiatedAt(F, T), RuleId),
+      |%          annotation(holdsAt(F, T)),
+      |%          endTime(T).
       |
       |actual_initiated_false_grounding(F, T, RuleId) :-
       |          fluent(F), % This is necessary for correct scoring
@@ -268,7 +271,7 @@ object Scoring {
 
 
 
-  def score(data: Example, inferredState: Map[String, Boolean], rules: Vector[Clause], inps: RunningOptions, logger: org.slf4j.Logger) = {
+  def scoreAndUpdateWeights(data: Example, inferredState: Map[String, Boolean], rules: Vector[Clause], inps: RunningOptions, logger: org.slf4j.Logger) = {
 
     val bk = BK
 
@@ -333,6 +336,9 @@ object Scoring {
       }
     }
 
+    var prevTotalWeightVector = Vector.empty[Double] // used for the experts update
+    var _rules = Vector.empty[Clause]           // used for the experts update
+
     /* UPDATE WEIGHTS */
     rulesResults foreach { x =>
       val split = x.split(",")
@@ -346,7 +352,13 @@ object Scoring {
 
       val prevWeight = rule.mlnWeight
 
-      val lambda = inps.adaRegularization //0.001 // 0.01 default
+      println(s"Before: ${rule.mlnWeight}")
+
+      prevTotalWeightVector = prevTotalWeightVector :+ prevWeight // used for the experts update
+      _rules = rules :+ rule                           // used for the experts update
+
+      // Adagrad
+      /*val lambda = inps.adaRegularization //0.001 // 0.01 default
       val eta  = inps.adaLearnRate//1.0 // default
       val delta  = inps.adaGradDelta//1.0
       val currentSubgradient = mistakes
@@ -355,7 +367,15 @@ object Scoring {
       val value = rule.mlnWeight - coefficient * currentSubgradient
       val difference = math.abs(value) - (lambda * coefficient)
       if (difference > 0) rule.mlnWeight = if (value >= 0) difference else -difference
-      else rule.mlnWeight = 0.0
+      else rule.mlnWeight = 0.0*/
+
+      // Experts:
+      var newWeight = rule.mlnWeight * Math.pow(0.2, mistakes)
+      if (newWeight == 0.0) newWeight = 0.00000001
+      rule.mlnWeight = if(newWeight.isPosInfinity) rule.mlnWeight else newWeight
+
+      println(s"After: ${rule.mlnWeight}")
+
 
       /*if (prevWeight != rule.mlnWeight) {
         logger.info(s"\nPrevious weight: $prevWeight, current weight: ${rule.mlnWeight}, actualTPs: $actualTrueGroundings, actualFPs: $actualFalseGroundings, inferredTPs: $inferredTrueGroundings, mistakes: $mistakes\n${rule.tostring}")
@@ -365,9 +385,120 @@ object Scoring {
       rule.fps += actualFalseGroundings
     }
 
+    val prevTotalWeight = prevTotalWeightVector.sum
+    val _newTotalWeight = _rules.map(x => x.mlnWeight).sum
+    val newTotalWeight = _newTotalWeight
+    rules.foreach(x => x.mlnWeight = x.mlnWeight * (prevTotalWeight/newTotalWeight))
+
+    val newNewTotalWeight = _rules.map(x => x.mlnWeight).sum
+
+    if (newNewTotalWeight.isNaN) {
+      val stop = "stop"
+    }
+
+    println(s"Before | After: $prevTotalWeight | $newNewTotalWeight")
 
     (batchTPs, batchFPs, batchFNs, totalGroundings)
   }
+
+
+
+  def generateNewRules(fps: Map[Int, Set[Literal]], fns: Map[Int, Set[Literal]], batch: Example,
+                       inps: RunningOptions, logger: org.slf4j.Logger) = {
+
+    val (initTopRules, termTopRules) = (inps.globals.state.initiationRules, inps.globals.state.terminationRules)
+
+    val fpSeedAtoms = fps.map(x => x._1 -> x._2.map(x => Literal(functor = "terminatedAt", terms = x.terms)))
+    val fnSeedAtoms = fns.map(x => x._1 -> x._2.map(x => Literal(functor = "initiatedAt", terms = x.terms)))
+
+    // These should be done in parallel...
+    val initBCs = if(fnSeedAtoms.nonEmpty) pickSeedsAndGenerate(fnSeedAtoms, batch, inps, 3, initTopRules.toVector, logger) else Set.empty[Clause]
+    val termBCs = if(fpSeedAtoms.nonEmpty) pickSeedsAndGenerate(fpSeedAtoms, batch, inps, 3, termTopRules.toVector, logger) else Set.empty[Clause]
+
+    val newRules = (inp: Set[Clause]) => {
+      inp map { rule =>
+        val c = Clause(head=rule.head, body = List())
+        c.addToSupport(rule)
+        c
+      }
+    }
+
+    val initNewRules = newRules(initBCs)
+    val termNewRules = newRules(termBCs)
+
+    // These rules are generated to correct current mistakes, so set their weight to 1, sot they are applied immediately.
+    initNewRules foreach (x => x.mlnWeight = 1.0)
+    termNewRules foreach (x => x.mlnWeight = 1.0)
+
+    (initNewRules, termNewRules)
+  }
+
+
+
+  def pickSeedsAndGenerate(mistakeAtomsGroupedByTime: Map[Int, Set[Literal]], batch: Example, inps: RunningOptions,
+                           numOfTrials: Int, currentTopRules: Vector[Clause], logger: org.slf4j.Logger) = {
+
+
+    def generateBC(seedAtom: String, batch: Example, inps: RunningOptions) = {
+      val examples = batch.toMapASP
+      val f = (x: String) => if (x.endsWith(".")) x else s"$x."
+      val interpretation = examples("annotation").map(x => s"${f(x)}") ++ examples("narrative").map(x => s"${f(x)}")
+      val infile = woled.Utils.dumpToFile(interpretation)
+      val (_, kernel) = Xhail.generateKernel(List(seedAtom), "", examples, infile, inps.globals.BK_WHOLE, inps.globals)
+      infile.delete()
+      kernel
+    }
+
+    val random = new Random
+
+    val existingBCs = currentTopRules.flatMap(x => x.supportSet.clauses).toSet
+
+    val newBCs = (1 to numOfTrials).foldLeft(existingBCs, Set.empty[Clause]) { (x, _) =>
+      val _newBCs = x._2
+      val seed = random.shuffle(mistakeAtomsGroupedByTime).head
+      val seedAtoms = seed._2.map(_.tostring)
+
+      val _BCs = seedAtoms.flatMap(generateBC(_, batch, inps))
+      val BCs = _BCs.filter(newBC => !(existingBCs++_newBCs).exists(oldBC => newBC.thetaSubsumes(oldBC)))
+
+      if (BCs.nonEmpty) {
+        logger.info(s"\nStart growing new rules from BCs:\n${BCs.map(_.tostring).mkString("\n")}")
+        (x._1 ++ BCs, x._2 ++ BCs)
+      } else {
+        logger.info("Generated BCs already existed in the bottom theory.")
+        x
+      }
+    }
+    newBCs._2
+  }
+
+
+
+  def getMistakes(inferredState:  Map[String, Boolean], batch: Example) = {
+    val annotation = batch.annotation.toSet
+    val (tps, fps, fns) = inferredState.foldLeft(Set.empty[String], Set.empty[String], Set.empty[String]) { (accum, y) =>
+      val (atom, predictedTrue) = (y._1, y._2)
+      if (atom.startsWith("holds")) {
+        if (predictedTrue) {
+          if (!annotation.contains(atom)) (accum._1, accum._2 + atom, accum._3) // FP
+          else (accum._1 + atom, accum._2, accum._3) // TP, we don't care.
+        } else {
+          if (annotation.contains(atom)) (accum._1, accum._2, accum._3 + atom) // FN
+          else accum // TN, we don't care.
+        }
+      } else {
+        accum
+      }
+    }
+
+    val (tpCounts, fpCounts, fnCounts) = (tps.size, fps.size, fns.size)
+    val groupedByTime = (in: Set[String]) => in.map(x => Literal.parse(x)).groupBy(x => x.terms.tail.head.tostring.toInt)
+    (groupedByTime(fps), groupedByTime(fns), tpCounts, fpCounts, fnCounts)
+  }
+
+
+
+
 
 
 

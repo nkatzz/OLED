@@ -125,6 +125,7 @@ object LogicUtils {
     if (fromWeakExmpl) {
       varKernel = varKernel.map (x => Clause.updateField(x, fromWeakExample = true))
     }
+    infile.delete()
     (kernel,varKernel)
   }
 

@@ -50,6 +50,9 @@ object ExpertAdviceFunctions extends LazyLogging {
     //========================================
 
 
+    if(batch.annotation.nonEmpty) {
+      val stop = "stop"
+    }
 
     val streaming = true //true
     var batchError = 0

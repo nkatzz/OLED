@@ -93,6 +93,8 @@ object Runner extends LazyLogging {
           "caviar-video-24-meeting-moving", "caviar-video-8", "caviar-video-10", "caviar-video-2-meeting-moving",
            "caviar-video-15", "caviar-video-3", "caviar-video-17")
 
+      val train3 = Vector("caviar-streaming-meeting")
+
       val openSSH = Vector("openssh")
 
       //val trainShuffled = scala.util.Random.shuffle(train1)

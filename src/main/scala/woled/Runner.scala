@@ -48,7 +48,7 @@ object Runner extends LazyLogging {
           "caviar-video-15", "caviar-video-3", "caviar-video-17")
 
       val trainingDataOptions =
-        new MongoDataOptions(dbNames = train2, //trainShuffled ,//dataset._1,
+        new MongoDataOptions(dbNames = train1, //trainShuffled ,//dataset._1,
           chunkSize = runningOptions.chunkSize, targetConcept = runningOptions.targetHLE, sortDbByField = "time", what = "training")
 
       val testingDataOptions = trainingDataOptions
