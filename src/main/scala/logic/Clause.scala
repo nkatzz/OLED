@@ -96,6 +96,8 @@ case class Clause(head: PosLiteral = PosLiteral(),
   var mlnWeight: Double = 1.0
   var subGradient: Double = 0.0
 
+  var mistakes: Double = 0.0
+
   // This is a "general-purpose" weight variable, the intention is to use this
   // for all online convex optimization methods that we'll try (e.g. winnow, AdaGrad, Adam etc).
   // Currently, it's only used for the multiplicative weights update framework.

@@ -350,6 +350,8 @@ object Scoring {
 
       val rule = ruleIdsMap(ruleId)
 
+      rule.mistakes += mistakes
+
       val prevWeight = rule.mlnWeight
 
       println(s"Before: ${rule.mlnWeight}")
@@ -370,9 +372,18 @@ object Scoring {
       else rule.mlnWeight = 0.0*/
 
       // Experts:
-      var newWeight = rule.mlnWeight * Math.pow(0.2, mistakes)
-      if (newWeight == 0.0) newWeight = 0.00000001
+      var newWeight = if (totalGroundings!=0) rule.mlnWeight * Math.pow(0.8, rule.mistakes/totalGroundings) else rule.mlnWeight * Math.pow(0.8, rule.mistakes)
+
+      if (newWeight.isNaN) {
+        val stop = "stop"
+      }
+
+      if (newWeight == 0.0 | newWeight.isNaN) newWeight = 0.00000001
       rule.mlnWeight = if(newWeight.isPosInfinity) rule.mlnWeight else newWeight
+
+
+
+
 
       println(s"After: ${rule.mlnWeight}")
 

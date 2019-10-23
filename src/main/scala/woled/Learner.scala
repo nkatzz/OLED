@@ -41,7 +41,7 @@ class Learner[T <: app.runutils.IOHandling.Source](inps: RunningOptions, trainin
 
       logger.info(s"\n\n\n *** BATCH $batchCount *** ")
 
-      if (batchCount == 192) {
+      if (batchCount == 56) {
         val stop = "stop"
       }
 
