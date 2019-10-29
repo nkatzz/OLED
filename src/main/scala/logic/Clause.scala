@@ -93,7 +93,7 @@ case class Clause(head: PosLiteral = PosLiteral(),
   // v is a Structures.Stats instance carrying the current counts from N.
   var countsPerNode = scala.collection.mutable.Map[String, Structures.ClauseStats]()
 
-  var mlnWeight: Double = 1.0
+  var mlnWeight: Double = 0.0
   var subGradient: Double = 0.0
 
   var mistakes: Double = 0.0

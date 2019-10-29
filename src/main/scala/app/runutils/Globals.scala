@@ -356,7 +356,9 @@ class Globals(val entryPath: String) extends LazyLogging {
         |collect_all :- time(X), @collect_all(X) == 0.
         |sorted_pair(X,N) :- collect_all, (X,N) = @sorted().
         |next(X, Y) :- sorted_pair(A,X), sorted_pair(A+1,Y).
-        |endTime(X) :- X = @end_time().
+        |start_end :- collect_all.
+        |start_end(X,Y) :- start_end, X = @start_time(), Y = @end_time().
+        |%endTime(X) :- X = @end_time().
         |startTime(X) :- X = @start_time().
         |""".stripMargin
 

@@ -31,7 +31,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
   // If this is false, some non-determinism is introduced (number of mistakes may vary slightly from round to round)
   val specializeAllAwakeRulesOnFPMistake = false
 
-  val withInertia = false // true
+  val withInertia = true //true // false
 
   // This is either 'winnow' or 'hedge'
   val weightUpdateStrategy = "hedge" //"winnow" // "hedge"
@@ -47,8 +47,8 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
   val percentOfMistakesBeforeSpecialize = 0
 
   // have this set to "" for a regular run without an input theory
-  //val inputTheoryFile = "/home/nkatz/dev/BKExamples/BK-various-taks/WeightLearning/Caviar/fragment/meeting/ASP/asp-rules-test"
-  val inputTheoryFile = ""
+  val inputTheoryFile = "/home/nkatz/dev/BKExamples/BK-various-taks/WeightLearning/Caviar/fragment/meeting/ASP/asp-rules-test"
+  //val inputTheoryFile = ""
 
   val inputTheory: List[Clause] = {
     def matches(p: Regex, str: String) = p.pattern.matcher(str).matches

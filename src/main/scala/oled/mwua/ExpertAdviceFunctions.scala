@@ -49,10 +49,7 @@ object ExpertAdviceFunctions extends LazyLogging {
     //stateHandler.ensemble.removeZeroWeights
     //========================================
 
-
-    if(batch.annotation.nonEmpty) {
-      val stop = "stop"
-    }
+    stateHandler.inertiaExpert.clear() // forget everything at the begining of each batch for a fair comparison to WOLED.
 
     val streaming = true //true
     var batchError = 0
@@ -305,11 +302,11 @@ object ExpertAdviceFunctions extends LazyLogging {
                 /* This is all helper/test code for updating weights after mini-batch prediction from all mistakes cumulatively. */
                 /*============================================ Test-helper code start ===========================================*/
 
-                val delayedUpdate = new DelayedUpdate(atom, prediction, inertiaExpertPrediction,
+                /*val delayedUpdate = new DelayedUpdate(atom, prediction, inertiaExpertPrediction,
                   initWeightSum, termWeightSum, predictedLabel, markedMap, feedback, stateHandler,
                   learningRate, weightUpdateStrategy, withInertia, orderedTimes)
 
-                stateHandler.delayedUpdates = stateHandler.delayedUpdates :+ delayedUpdate
+                stateHandler.delayedUpdates = stateHandler.delayedUpdates :+ delayedUpdate*/
 
                 /* ============================================Test-helper code end =============================================*/
                 /*===============================================================================================================*/
@@ -681,6 +678,7 @@ object ExpertAdviceFunctions extends LazyLogging {
       val totalTermWeightAfterWeightsUpdate  = getTotalWeight(awakeTermRules) // the updates have already taken place
 
       val inertAfterWeightUpdate = stateHandler.inertiaExpert.getWeight(currentFluent)
+
       val totalWeightAfterUpdate =
         if (withInertia) {
           inertAfterWeightUpdate + totalInitWeightAfterWeightsUpdate + totalTermWeightAfterWeightsUpdate
@@ -706,18 +704,19 @@ object ExpertAdviceFunctions extends LazyLogging {
       val inertAfterNormalization = stateHandler.inertiaExpert.getWeight(currentFluent)
 
       val totalEnsembleWeightBefore = totalWeightBeforeUpdate
+
       val totalEnsembleWeightAfterUpdates =
         if (withInertia) {
           totalInitWeightAfterWeightsUpdate + totalTermWeightAfterWeightsUpdate + inertAfterWeightUpdate
         } else {
-          totalTermWeightAfterWeightsUpdate + inertAfterWeightUpdate
+          totalInitWeightAfterWeightsUpdate + totalTermWeightAfterWeightsUpdate
         }
 
       val totalEnsembleWeightAfterNormalization =
         if (withInertia) {
           totalInitWeightAfterNormalization + totalTermWeightAfterNormalization + inertAfterNormalization
         } else {
-          totalTermWeightAfterNormalization + inertAfterNormalization
+          totalInitWeightAfterWeightsUpdate + totalTermWeightAfterNormalization
         }
 
       // This is wrong. The total AWAKE weight of the ensemble is supposed to remain the same.

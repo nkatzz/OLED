@@ -22,6 +22,10 @@ class InertiaExpert {
     weightMemory += (fluent -> newWeight)
   }
 
+  def clear() = {
+    weightMemory = scala.collection.mutable.Map[String, Double]()
+  }
+
   def getMemory() = weightMemory
 
 

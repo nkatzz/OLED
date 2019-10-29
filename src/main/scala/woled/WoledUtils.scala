@@ -20,11 +20,11 @@ import scala.io.Source
 object WoledUtils {
 
 
-  def getInferredState(rules: List[Clause], e: Example, mode: String, inps: RunningOptions) = {
+  def getInferredState(rules: List[Clause], e: Example, inertiaAtoms: Vector[Literal], mode: String, inps: RunningOptions) = {
 
     // Other inference modes will be added here, e.g. WM (experts) and crisp (OLED)
     if (mode == "MAP") {
-      MAPInference(rules, e, inps)
+      MAPInference(rules, e, inertiaAtoms, inps)
     } else {
       Map[String, Boolean]()
     }
@@ -36,7 +36,7 @@ object WoledUtils {
     defaultNumFormat.format(x)
   }
 
-  def MAPInference(rules: List[Clause], e: Example, inps: RunningOptions) = {
+  def MAPInference(rules: List[Clause], e: Example, inertiaAtoms: Vector[Literal], inps: RunningOptions) = {
 
     val queryAtoms = Set(
       AtomSignature("HoldsAt", 2),
@@ -63,7 +63,9 @@ object WoledUtils {
     /* Read the definite clauses from the BK file. FOR DEBUGGING */
     //val definiteClauses = kb.definiteClauses
 
-    val (functionMappings, mlnEvidenceAtoms, mlmConstsToAspAtomsMap) = getFunctionMappings(e, inps.globals.BK_WHOLE_EC)
+    val ee = new Example(annot = e.annotation, nar = e.narrative ++ inertiaAtoms.map(x => x.tostring), _time = e.time)
+
+    val (functionMappings, mlnEvidenceAtoms, mlmConstsToAspAtomsMap) = getFunctionMappings(ee, inps.globals.BK_WHOLE_EC)
 
     // Adding constants
     val const = ConstantsDomainBuilder.from(constants)
@@ -82,6 +84,9 @@ object WoledUtils {
       val domains = kb.predicateSchema(AtomSignature(atom.functor, args.length))
       domains.zip(args).foreach { case (domain, value) => const += domain -> value.symbol }
     }
+
+
+
 
     /* For CAVIAR fragment */
     const += "dist" -> "34"
@@ -287,6 +292,15 @@ object WoledUtils {
     for (atom <- mlnEvidenceAtoms) {
       val predicate = atom.functor
       val args = atom.terms.map(x => lomrf.logic.Constant(x.tostring)).toVector
+      evidenceBuilder.evidence += EvidenceAtom.asTrue(predicate, args)
+    }
+
+    for (atom <- inertiaAtoms) {
+      val predicate = atom.functor.capitalize
+      val fluent = atom.terms.head.asInstanceOf[Literal]
+      val fluentConst = s"${fluent.functor.capitalize}_${fluent.terms.map(x => x.tostring.capitalize).mkString("_")}"
+      val timeConst = atom.terms.tail.head.tostring
+      val args = Vector(fluentConst, timeConst).map(x => lomrf.logic.Constant(x)).toVector
       evidenceBuilder.evidence += EvidenceAtom.asTrue(predicate, args)
     }
 

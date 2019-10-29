@@ -258,11 +258,15 @@ object Scoring {
       |             Mistakes = InferredTrueGroundings - ActualTrueGroundings.
       |
       |
+      |inertia(holdsAt(F,T)) :- inferred(holdsAt(F, T), true), endTime(T).
+      |
+      |
       |#show.
       |#show coverage_counts/3.
       |#show result_init/5.
       |#show result_term/5.
       |#show total_groundings/1.
+      |#show inertia/1.
       |
       |
       |""".stripMargin
@@ -302,7 +306,9 @@ object Scoring {
       s"$groundingsRule\n$groundingsCountRule"
     }
 
-    val observationAtoms = data.narrative.map(_+".")
+    val endTime = (data.narrative ++ data.annotation).map(x => Literal.parse(x)).map(x => x.terms.last.tostring.toInt).sorted.last
+
+    val observationAtoms = (data.narrative :+ s"endTime($endTime)") .map(_+".")
     val annotationAtoms = data.annotation.map(x => s"annotation($x).")
     val inferredAtoms = inferredState.map{ case (k, v) => s"inferred($k,$v)." }
     val include = s"""#include "${inps.globals.BK_WHOLE_EC}"."""
@@ -321,23 +327,27 @@ object Scoring {
     val answer = if (t.nonEmpty) t.head.atoms else Nil
 
     /* PARSE RESULTS */
-    val (batchTPs, batchFPs, batchFNs, totalGroundings, rulesResults) = answer.foldLeft(0,0,0,0,Vector.empty[String]) { (x, y) =>
+    val (batchTPs, batchFPs, batchFNs, totalGroundings, inertiaAtoms, rulesResults) = answer.foldLeft(0,0,0,0,Vector.empty[Literal],Vector.empty[String]) { (x, y) =>
       if (y.startsWith("total_groundings")) {
         val num = y.split("\\(")(1).split("\\)")(0).toInt
-        (x._1, x._2, x._3, num, x._5)
+        (x._1, x._2, x._3, num, x._5, x._6)
       } else if (y.startsWith("coverage_counts")) {
         val split = y.split(",")
         val tps = split(0).split("\\(")(1)
         val fps = split(1)
         val fns = split(2).split("\\)")(0)
-        (tps.toInt, fps.toInt, fns.toInt, x._4, x._5)
+        (tps.toInt, fps.toInt, fns.toInt, x._4, x._5, x._6)
+      } else if (y.startsWith("inertia")) {
+        val parsed = Literal.parse(y)
+        val atom = parsed.terms.head.asInstanceOf[Literal]
+        (x._1, x._2, x._3, x._4, x._5 :+ atom, x._6)
       } else {
-        (x._1, x._2, x._3, x._4, x._5 :+ y)
+        (x._1, x._2, x._3, x._4, x._5, x._6 :+ y)
       }
     }
 
-    var prevTotalWeightVector = Vector.empty[Double] // used for the experts update
-    var _rules = Vector.empty[Clause]           // used for the experts update
+    //var prevTotalWeightVector = Vector.empty[Double] // used for the experts update
+    //var _rules = Vector.empty[Clause]           // used for the experts update
 
     /* UPDATE WEIGHTS */
     rulesResults foreach { x =>
@@ -354,13 +364,13 @@ object Scoring {
 
       val prevWeight = rule.mlnWeight
 
-      println(s"Before: ${rule.mlnWeight}")
+      //println(s"Before: ${rule.mlnWeight}")
 
-      prevTotalWeightVector = prevTotalWeightVector :+ prevWeight // used for the experts update
-      _rules = rules :+ rule                           // used for the experts update
+      //prevTotalWeightVector = prevTotalWeightVector :+ prevWeight // used for the experts update
+      //_rules = rules :+ rule                           // used for the experts update
 
       // Adagrad
-      /*val lambda = inps.adaRegularization //0.001 // 0.01 default
+      val lambda = inps.adaRegularization //0.001 // 0.01 default
       val eta  = inps.adaLearnRate//1.0 // default
       val delta  = inps.adaGradDelta//1.0
       val currentSubgradient = mistakes
@@ -369,23 +379,16 @@ object Scoring {
       val value = rule.mlnWeight - coefficient * currentSubgradient
       val difference = math.abs(value) - (lambda * coefficient)
       if (difference > 0) rule.mlnWeight = if (value >= 0) difference else -difference
-      else rule.mlnWeight = 0.0*/
+      else rule.mlnWeight = 0.0
 
       // Experts:
-      var newWeight = if (totalGroundings!=0) rule.mlnWeight * Math.pow(0.8, rule.mistakes/totalGroundings) else rule.mlnWeight * Math.pow(0.8, rule.mistakes)
-
+      /*var newWeight = if (totalGroundings!=0) rule.mlnWeight * Math.pow(0.8, rule.mistakes/totalGroundings) else rule.mlnWeight * Math.pow(0.8, rule.mistakes)
       if (newWeight.isNaN) {
         val stop = "stop"
       }
-
       if (newWeight == 0.0 | newWeight.isNaN) newWeight = 0.00000001
       rule.mlnWeight = if(newWeight.isPosInfinity) rule.mlnWeight else newWeight
-
-
-
-
-
-      println(s"After: ${rule.mlnWeight}")
+      println(s"After: ${rule.mlnWeight}")*/
 
 
       /*if (prevWeight != rule.mlnWeight) {
@@ -396,7 +399,7 @@ object Scoring {
       rule.fps += actualFalseGroundings
     }
 
-    val prevTotalWeight = prevTotalWeightVector.sum
+    /*val prevTotalWeight = prevTotalWeightVector.sum
     val _newTotalWeight = _rules.map(x => x.mlnWeight).sum
     val newTotalWeight = _newTotalWeight
     rules.foreach(x => x.mlnWeight = x.mlnWeight * (prevTotalWeight/newTotalWeight))
@@ -407,9 +410,9 @@ object Scoring {
       val stop = "stop"
     }
 
-    println(s"Before | After: $prevTotalWeight | $newNewTotalWeight")
+    println(s"Before | After: $prevTotalWeight | $newNewTotalWeight")*/
 
-    (batchTPs, batchFPs, batchFNs, totalGroundings)
+    (batchTPs, batchFPs, batchFNs, totalGroundings, inertiaAtoms)
   }
 
 
