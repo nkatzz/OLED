@@ -180,7 +180,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
 
           stateHandler.clearDelayedUpdates
 
-          /*var bias = 0.0
+          var bias = 0.0
 
           val error = ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
             stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
@@ -196,7 +196,10 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
             batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
             bias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap)
 
-          */
+          println(s"Per batch error:\n$perBatchError")
+          println(s"Accumulated Per batch error:\n${perBatchError.scanLeft(0.0)(_ + _).tail}")
+
+
 
           /*
           var bias = 0.0
@@ -273,10 +276,10 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
            */
 
           // ACTUAL EXECUTION FLOW
-          ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
+          /*ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
             stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
             batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
-            receiveFeedbackBias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap)
+            receiveFeedbackBias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap)*/
 
         } else {
 
@@ -344,10 +347,6 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
           // Train on the first data point of the slice, test on the rest.
           val train = dataSlice.head
           val trueLabels = train.annotation.toSet
-
-          if (train.time == "193") {
-            val stop = "stop"
-          }
 
           if (inputTheory.isEmpty) {
             ExpertAdviceFunctions.process(train, train.annotation.toSet, inps,

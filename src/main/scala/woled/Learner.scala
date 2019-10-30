@@ -30,15 +30,16 @@ class Learner[T <: app.runutils.IOHandling.Source](inps: RunningOptions, trainin
 
   var batchCount = 0
 
+  var withHandCrafted = false
+
   // Use a hand-crafted theory for debugging
-  val withHandCrafted = true
   def matches(p: Regex, str: String) = p.pattern.matcher(str).matches
   val source = Source.fromFile("/home/nkatz/dev/BKExamples/BK-various-taks/WeightLearning/Caviar/fragment/meeting/ASP/asp-rules-test")
   val list = source.getLines.filter(line => !matches( """""".r, line) && !line.startsWith("%"))
   val rulesList = list.map(x => Clause.parse(x)).toList
   source.close
   inps.globals.state.updateRules(rulesList, "add", inps)
-
+  withHandCrafted = true
 
   def inferenceState: Receive = { ??? }
 
@@ -76,7 +77,7 @@ class Learner[T <: app.runutils.IOHandling.Source](inps: RunningOptions, trainin
       }
 
       // MAP inference and getting true groundings with Clingo (see below should be performed in parallel)
-      //this.inertiaAtoms = Vector.empty[Literal]
+      this.inertiaAtoms = Vector.empty[Literal]
       var inferredState = WoledUtils.getInferredState(Theory.compressTheory(rules), e, this.inertiaAtoms, "MAP", inps)
 
       // Parallelizing this is trivial (to speed things up in case of many rules/large batches).
