@@ -283,8 +283,11 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
 
         } else {
 
+          /*==============================*/
+          stateHandler.clearDelayedUpdates
+          /*==============================*/
 
-          var bias = 0.0
+          var bias = 1.0
 
           val error = ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
             stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
@@ -293,12 +296,23 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
 
           perBatchError = perBatchError :+ error
 
-          bias = 1.0
+          /*val debugDelayedUpdates = stateHandler.delayedUpdates.map(x => x.atom.atom).mkString("\n")
+
+          stateHandler.delayedUpdates foreach { u =>
+
+            val newRuleFlag = ExpertAdviceFunctions.updateWeights(u.atom, u.prediction, u.inertiaExpertPrediction, u.initWeightSum,
+              u.termWeightSum, u.predictedLabel, u.markedMap, u.feedback, stateHandler, u.learningRate, u.weightUpdateStrategy,
+              u.withInertia)
+
+            u.generateNewRuleFlag = newRuleFlag
+          }*/
+
+          /*bias = 1.0
 
           ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
             stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
             batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
-            bias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap, inputTheory = Some(inputTheory))
+            bias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap, inputTheory = Some(inputTheory))*/
 
           println(s"Per batch error:\n$perBatchError")
           println(s"Accumulated Per batch error:\n${perBatchError.scanLeft(0.0)(_ + _).tail}")

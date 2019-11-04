@@ -86,6 +86,10 @@ class Learner[T <: app.runutils.IOHandling.Source](inps: RunningOptions, trainin
 
       this.inertiaAtoms = inertiaAtoms
 
+      if (this.inertiaAtoms.nonEmpty) {
+        val stop = "stop"
+      }
+
       //val (fps, fns, tpCounts, fpCounts, fnCounts) = Scoring.getMistakes(inferredState, batch)
       state.perBatchError = state.perBatchError :+ (fpCounts + fnCounts)
 
