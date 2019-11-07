@@ -299,6 +299,7 @@ object WoledUtils {
       val predicate = atom.functor.capitalize
       val fluent = atom.terms.head.asInstanceOf[Literal]
       val fluentConst = s"${fluent.functor.capitalize}_${fluent.terms.map(x => x.tostring.capitalize).mkString("_")}"
+      if (!mlmConstsToAspAtomsMap.keySet.contains(fluentConst)) mlmConstsToAspAtomsMap(fluentConst) = fluent.tostring
       val timeConst = atom.terms.tail.head.tostring
       val args = Vector(fluentConst, timeConst).map(x => lomrf.logic.Constant(x)).toVector
       evidenceBuilder.evidence += EvidenceAtom.asTrue(predicate, args)

@@ -33,13 +33,13 @@ class Learner[T <: app.runutils.IOHandling.Source](inps: RunningOptions, trainin
   var withHandCrafted = false
 
   // Use a hand-crafted theory for debugging
-  def matches(p: Regex, str: String) = p.pattern.matcher(str).matches
+  /*def matches(p: Regex, str: String) = p.pattern.matcher(str).matches
   val source = Source.fromFile("/home/nkatz/dev/BKExamples/BK-various-taks/WeightLearning/Caviar/fragment/meeting/ASP/asp-rules-test")
   val list = source.getLines.filter(line => !matches( """""".r, line) && !line.startsWith("%"))
   val rulesList = list.map(x => Clause.parse(x)).toList
   source.close
   inps.globals.state.updateRules(rulesList, "add", inps)
-  withHandCrafted = true
+  withHandCrafted = true*/
 
   def inferenceState: Receive = { ??? }
 
@@ -49,7 +49,7 @@ class Learner[T <: app.runutils.IOHandling.Source](inps: RunningOptions, trainin
 
       logger.info(s"\n\n\n *** BATCH $batchCount *** ")
 
-      if (batchCount == 56) {
+      if (batchCount == 6) {
         val stop = "stop"
       }
 
