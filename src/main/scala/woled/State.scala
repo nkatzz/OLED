@@ -41,6 +41,16 @@ class State {
     }
   }
 
+  // Returns the best refinement currently available from each subsumption lattice
+  def getBestRules(gl: Globals) = {
+    val topRules  = getTopTheory()
+    topRules map { topRule =>
+      if (topRule.refinements.isEmpty) topRule.generateCandidateRefs(gl)
+      val sorted = (topRule.refinements :+ topRule).sortBy(x => -x.mlnWeight)
+      if (sorted.head.body.nonEmpty) sorted.head else sorted.tail.head
+    }
+  }
+
   def updateGroundingsCounts(newCount: Int) = {
     val rules = getTopTheory()
     rules foreach { rule =>

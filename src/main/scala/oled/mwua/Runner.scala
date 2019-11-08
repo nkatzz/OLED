@@ -183,7 +183,7 @@ object Runner extends LazyLogging {
         testingDataFunction)), name = "Learner") ! startMsg
       */
 
-      // Use this for evaluating OLED
+      // Use this to evaluate OLED
       /*
       system.actorOf(Props(new Learner(runningOptions, trainingDataOptions, testingDataOptions, trainingDataFunction,
         testingDataFunction)), name = "Learner") ! startMsg

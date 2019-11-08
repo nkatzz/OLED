@@ -317,6 +317,7 @@ object WoledUtils {
       }
     }*/
 
+    println("  Predicate completion...")
     val resultedFormulas = PredicateCompletion(formulas, definiteClauses.toSet, PredicateCompletionMode.Decomposed)(kb.predicateSchema, kb.functionSchema, constants)
     val cnf = ClauseConstructor.makeCNF(resultedFormulas)(constants).toVector
 
@@ -338,6 +339,7 @@ object WoledUtils {
     val solver = new ILP(mrf)
     //solver.infer()
 
+    println("    Calling the solver...")
     val s = solver.infer()
 
     var result = Map.empty[String, Boolean]

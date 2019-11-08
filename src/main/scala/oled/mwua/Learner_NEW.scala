@@ -196,9 +196,19 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
             batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
             bias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap)
 
-          println(s"Per batch error:\n$perBatchError")
-          println(s"Accumulated Per batch error:\n${perBatchError.scanLeft(0.0)(_ + _).tail}")
+          def avgLoss(in: Vector[Int]) = {
+            in.foldLeft(0, 0, Vector.empty[Double]){ (x, y) =>
+              val (count, prevSum, avgVector) = (x._1, x._2, x._3)
+              val (newCount, newSum) = (count + 1, prevSum + y)
+              (newCount, newSum, avgVector :+ newSum.toDouble/newCount )
+            }
+          }
 
+          //println(s"Per batch error:\n$perBatchError")
+          //println(s"Accumulated Per batch error:\n${perBatchError.scanLeft(0.0)(_ + _).tail}")
+
+          //logger.info(s"Average loss vector:\n${avgLoss(perBatchError)}")
+          woled.Utils.dumpToFile(avgLoss(perBatchError)._3.mkString(", "), "/home/nkatz/Desktop/kernel", "overwrite")
 
 
           /*

@@ -89,9 +89,19 @@ class WeightedTheoryLearner[T <: Source](inps: RunningOptions, trainingDataOptio
 
           val theory = if (topTheory.clauses.nonEmpty) topTheory.clauses else inps.globals.state.getAllRules(inps.globals, "top")
 
+          // used for printing out the avegare loss vector
+          def avgLoss(in: Vector[Int]) = {
+            in.foldLeft(0, 0, Vector.empty[Double]){ (x, y) =>
+              val (count, prevSum, avgVector) = (x._1, x._2, x._3)
+              val (newCount, newSum) = (count + 1, prevSum + y)
+              (newCount, newSum, avgVector :+ newSum.toDouble/newCount )
+            }
+          }
+
           logger.info(s"\nTheory:\n${Theory(theory).showWithStats}\nTraining time: $totalTime")
           logger.info(s"Mistakes per batch:\n${inps.globals.state.perBatchError}")
           logger.info(s"Accumulated mistakes per batch:\n${inps.globals.state.perBatchError.scanLeft(0.0)(_ + _).tail}")
+          logger.info(s"Average loss vector:\n${avgLoss(inps.globals.state.perBatchError)}")
           logger.info(s"Sending the theory to the parent actor")
           context.parent ! (topTheory, totalTime)
         } else {
