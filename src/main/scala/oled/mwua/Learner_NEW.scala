@@ -517,7 +517,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
     logger.info(s"Prequential error vector:\n${stateHandler.perBatchError.map(x => x.toDouble)}")
     logger.info(s"Prequential error vector (Accumulated Error):\n${stateHandler.perBatchError.scanLeft(0.0)(_ + _).tail}")
     logger.info(s"Prequential (running) F1-score:\n${stateHandler.runningF1Score}")
-    logger.info(s"Running rules nymber:\n${stateHandler.runningRulesNumber}")
+    logger.info(s"Running rules number:\n${stateHandler.runningRulesNumber}")
     logger.info(s"Total TPs: ${stateHandler.totalTPs}, Total FPs: ${stateHandler.totalFPs}, Total FNs: ${stateHandler.totalFNs}, Total TNs: ${stateHandler.totalTNs}")
     logger.info(s"Total time: ${(endTime - startTime)/1000000000.0}")
 

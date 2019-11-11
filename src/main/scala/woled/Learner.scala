@@ -49,10 +49,6 @@ class Learner[T <: app.runutils.IOHandling.Source](inps: RunningOptions, trainin
 
       logger.info(s"\n\n\n *** BATCH $batchCount *** ")
 
-      if (batchCount == 6) {
-        val stop = "stop"
-      }
-
       // Get the data in MLN format by doing numerical stuff thresholds etc. with clingo
       // and getting the atoms expected by the mode declarations
       val program = {
@@ -68,28 +64,53 @@ class Learner[T <: app.runutils.IOHandling.Source](inps: RunningOptions, trainin
       val answer = t.head.atoms
       val e = new Example(annot = batch.annotation, nar = answer, _time = batch.time)
 
-      // We perform inference with the top rules only. The main reason is that there is a problem with conversion to CNF
-      // when many clauses are involved. It hangs, often eats up all the memory etc.
-      //var rules = state.getAllRules(inps.globals, "top") // use only top rules until the compileCNF issue is resolved.
-      var rules = state.getBestRules(inps.globals)
+      var rules = List.empty[Clause]
+      var inferredState = Map.empty[String, Boolean]
+      var tpCounts = 0
+      var fpCounts = 0
+      var fnCounts = 0
+      var totalGroundings = 0
+      var inertiaAtoms =  Vector.empty[Literal]
 
       // MAP inference and getting true groundings with Clingo (see below should be performed in parallel)
-      //this.inertiaAtoms = Vector.empty[Literal]
-      println("MAP inference...")
-      var inferredState = WoledUtils.getInferredState(Theory.compressTheory(rules), e, this.inertiaAtoms, "MAP", inps)
+      //this.inertiaAtoms = Vector.empty[Literal]              // Use this to difuse inertia
 
-      // Parallelizing this is trivial (to speed things up in case of many rules/large batches).
-      // Simply split the rules to multiple workers, the grounding/counting tasks executed are completely rule-independent.
-      println("Scoring...")
-      val (tpCounts, fpCounts, fnCounts, totalGroundings, inertiaAtoms) = Scoring.scoreAndUpdateWeights(e, inferredState, state.getAllRules(inps.globals, "all").toVector, inps, logger)
+      /*=============== WOLED ================*/
+      if (inps.weightLean) { // set --weight-learning=true to run WOLED, =false to run OLED
+
+        // We perform inference with the top rules only. The main reason is that there is a problem with conversion to CNF
+        // when many clauses are involved. It hangs, often eats up all the memory etc.
+        rules = state.getAllRules(inps.globals, "top")
+        //rules = state.getBestRules(inps.globals)
+
+        println("MAP inference...")
+        inferredState = WoledUtils.getInferredState(Theory.compressTheory(rules), e, this.inertiaAtoms, "MAP", inps)
+
+        // Parallelizing this is trivial (to speed things up in case of many rules/large batches).
+        // Simply split the rules to multiple workers, the grounding/counting tasks executed are completely rule-independent.
+        println("Scoring...")
+        val (_tpCounts, _fpCounts, _fnCounts, _totalGroundings, _inertiaAtoms) = Scoring.scoreAndUpdateWeights(e, inferredState, state.getAllRules(inps.globals, "all").toVector, inps, logger)
+        tpCounts = _tpCounts
+        fpCounts = _fpCounts
+        fnCounts = _fnCounts
+        totalGroundings = _totalGroundings
+        inertiaAtoms =_inertiaAtoms
+
+      /*=============== OLED ================*/
+      } else {
+        rules = state.getBestRules(inps.globals, "score").filter(x => x.score >= 0.9)
+        val (_tpCounts, _fpCounts, _fnCounts, _, _, _) = oled.functions.SingleCoreOLEDFunctions.eval(Theory(rules), e, inps)
+        tpCounts = _tpCounts
+        fpCounts = _fpCounts
+        fnCounts = _fnCounts
+        val initTheory = Theory(state.initiationRules)
+        val termTheory = Theory(state.terminationRules)
+        if (initTheory.clauses.nonEmpty) initTheory.scoreRules(e, inps.globals)
+        if (termTheory.clauses.nonEmpty) termTheory.scoreRules(e, inps.globals)
+      }
 
       this.inertiaAtoms = inertiaAtoms
 
-      if (this.inertiaAtoms.nonEmpty) {
-        val stop = "stop"
-      }
-
-      //val (fps, fns, tpCounts, fpCounts, fnCounts) = Scoring.getMistakes(inferredState, batch)
       state.perBatchError = state.perBatchError :+ (fpCounts + fnCounts)
 
       logger.info(s"\n${state.perBatchError}")
@@ -130,10 +151,7 @@ class Learner[T <: app.runutils.IOHandling.Source](inps: RunningOptions, trainin
         // Simply split the rules to multiple workers, the grounding/counting tasks executed are completely rule-independent.
         //val (_, _, _, totalGroundings) = Scoring.scoreAndUpdateWeights(e, inferredState, state.getAllRules(inps.globals, "all").toVector, inps, logger)
 
-
-
         /* Rules' expansion. */
-
         // We only need the top rules for expansion here.
         val init = inps.globals.state.initiationRules
         val term = inps.globals.state.terminationRules

@@ -80,7 +80,7 @@ class Dispatcher[T <: Source](inps: RunningOptions,
 
     case "start" =>
 
-      if (!weightLearning) {
+      if (false) { // !weightLearning  // quick & dirty stuff to run this
         if (inps.withEventCalculs) {
           context.actorOf(Props(
             new TheoryLearner(inps, trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction, "initiated")),
