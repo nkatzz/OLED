@@ -98,7 +98,7 @@ class Learner[T <: app.runutils.IOHandling.Source](inps: RunningOptions, trainin
 
       /*=============== OLED ================*/
       } else {
-        rules = state.getBestRules(inps.globals, "score").filter(x => x.score >= 0.9)
+        rules = state.getBestRules(inps.globals, "score").filter(x => x.score >= 0.7)
         val (_tpCounts, _fpCounts, _fnCounts, _, _, _) = oled.functions.SingleCoreOLEDFunctions.eval(Theory(rules), e, inps)
         tpCounts = _tpCounts
         fpCounts = _fpCounts
@@ -123,13 +123,15 @@ class Learner[T <: app.runutils.IOHandling.Source](inps: RunningOptions, trainin
 
         // Generate new rules with abduction & everything. This should be removed...
         println("Generating new rules...")
+        var newInit = List.empty[Clause]
+        var newTerm = List.empty[Clause]
         if (fpCounts != 0 || fnCounts != 0) {
           val topInit = state.initiationRules
           val topTerm = state.terminationRules
           val growNewInit = Theory(topInit).growNewRuleTest(e, "initiatedAt", inps.globals)
           val growNewTerm = Theory(topTerm).growNewRuleTest(e, "terminatedAt", inps.globals)
-          val newInit = if (growNewInit) oled.functions.SingleCoreOLEDFunctions.generateNewRules(Theory(topInit), e, "initiatedAt", inps.globals) else Nil
-          val newTerm = if (growNewTerm) oled.functions.SingleCoreOLEDFunctions.generateNewRules(Theory(topTerm), e, "terminatedAt", inps.globals) else Nil
+          newInit = if (growNewInit) oled.functions.SingleCoreOLEDFunctions.generateNewRules(Theory(topInit), e, "initiatedAt", inps.globals) else Nil
+          newTerm = if (growNewTerm) oled.functions.SingleCoreOLEDFunctions.generateNewRules(Theory(topTerm), e, "terminatedAt", inps.globals) else Nil
           state.updateRules(newInit ++ newTerm, "add", inps)
         }
 
@@ -139,17 +141,9 @@ class Learner[T <: app.runutils.IOHandling.Source](inps: RunningOptions, trainin
           state.updateRules(a.toList ++ b.toList, "add", inps)
         }*/
 
-        /* Weights updates. */
-
-        // We need to fetch the theory again to factor in the new rules.
-        //rules = state.getAllRules(inps.globals, "top")
-
-        // MAP inference again to factor in the new rules.
-        //inferredState = WoledUtils.getInferredState(Theory.compressTheory(rules), e, "MAP", inps)
-
-        // Parallelizing this is trivial (to speed things up in case of many rules/large batches).
-        // Simply split the rules to multiple workers, the grounding/counting tasks executed are completely rule-independent.
-        //val (_, _, _, totalGroundings) = Scoring.scoreAndUpdateWeights(e, inferredState, state.getAllRules(inps.globals, "all").toVector, inps, logger)
+        val newRules = newInit ++ newTerm
+        // score the new rules and update their weights
+        Scoring.scoreAndUpdateWeights(e, inferredState, newRules.toVector, inps, logger)
 
         /* Rules' expansion. */
         // We only need the top rules for expansion here.

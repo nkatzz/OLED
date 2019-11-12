@@ -31,7 +31,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
   // If this is false, some non-determinism is introduced (number of mistakes may vary slightly from round to round)
   val specializeAllAwakeRulesOnFPMistake = false
 
-  val withInertia = true //true // false
+  val withInertia = false //true // false
 
   // This is either 'winnow' or 'hedge'
   val weightUpdateStrategy = "hedge" //"winnow" // "hedge"
@@ -76,7 +76,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
   }
 
 
-  // Just print-out all the data (vag wanted it).
+  // Just print-out all the data
   /*
   val test = {
     val pw = new PrintWriter(new File("/home/nkatz/Desktop/caviar-whole" ))

@@ -24,7 +24,7 @@ object Dependency {
 
     final val Akka = "2.5.6"
 
-    final val ScalaLogging = "3.9.0"
+    final val ScalaLogging = "3.9.2"
     final val Logback = "1.2.3"
     final val SLF4J = "1.7.15"
 
@@ -61,7 +61,8 @@ object Dependency {
     "org.scalaz" %% "scalaz-core" % v.ScalaZ,
     "com.madhukaraphatak" %% "java-sizeof" % v.SizeOf,
     "org.parboiled" %% "parboiled" % v.Parboiled,
-    "com.github.vagmcs" %% "scalatikz" % "0.3.5"
+    //"com.github.vagmcs" %% "scalatikz" % "0.4.3-SNAPSHOT"
+    "com.github.vagmcs" %% "scalatikz" % "0.4.3"
   )
 
   // Optimus library for linear and quadratic optimization

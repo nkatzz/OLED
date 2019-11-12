@@ -1,7 +1,10 @@
 package utils.plotting
 
-import scalatikz.graphics.pgf.Figure
-import scalatikz.graphics.pgf.enums.LegendPos
+/*import scalatikz.graphics.pgf.Figure
+import scalatikz.graphics.pgf.enums.LegendPos*/
+
+import scalatikz.pgf.plots.Figure
+import scalatikz.pgf.plots.enums.LegendPos
 
 import scala.io.Source
 import scala.math._

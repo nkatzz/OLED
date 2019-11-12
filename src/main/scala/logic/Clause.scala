@@ -502,7 +502,7 @@ case class Clause(head: PosLiteral = PosLiteral(),
       //gainInt
     } else if (this.head.functor == "terminatedAt") {
       Globals.scoringFunction match {
-        case "default" =>  if (!recall.isNaN) recall else 0.0 //if (!precision.isNaN) precision else 0.0 //
+        case "default" =>  if (!recall.isNaN) recall else 0.0//if (!precision.isNaN) precision else 0.0 //
 
         //case "default" => weighted_recall
 

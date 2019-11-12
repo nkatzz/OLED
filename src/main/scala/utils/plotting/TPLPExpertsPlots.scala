@@ -1,13 +1,19 @@
 package utils.plotting
 
+import scalatikz.pgf.enums.Color.{BLACK, BLUE, GREEN, ORANGE, RED, YELLOW}
+import scalatikz.pgf.plots.Figure
+import scalatikz.pgf.plots.enums.LegendPos
+import scalatikz.pgf.plots.enums.LegendPos.{NORTH_WEST, SOUTH_EAST}
+import scalatikz.pgf.plots.enums.Mark.{ASTERISK, CIRCLE, PLUS, TRIANGLE, X}
+
 import scala.io.Source
-import scalatikz.graphics.pgf.Figure
+/*import scalatikz.graphics.pgf.Figure
 import scalatikz.graphics.pgf.enums.Color.{BLACK, BLUE, GREEN, ORANGE, RED, YELLOW}
 import scalatikz.graphics.pgf.enums.LegendPos
 import scalatikz.graphics.pgf.enums.Mark._
 import scalatikz.graphics.pgf.enums.LegendPos.{NORTH_WEST, SOUTH_EAST, SOUTH_WEST}
 import scalatikz.graphics.pgf.enums.LineStyle.{DASHED, DENSELY_DOTTED, DOTTED, LOOSELY_DASHED, SOLID}
-import scalatikz.graphics.pgf.enums.Mark.DOT
+import scalatikz.graphics.pgf.enums.Mark.DOT*/
 
 object TPLPExpertsPlots extends App {
 
@@ -48,8 +54,8 @@ object TPLPExpertsPlots extends App {
   def plotCrossValBothCEs(savePath: String) = {
     val fscoresMeeting = Vector(0.762, 0.863, 0.861, 0.822, 0.843, 0.889, 0.906)
     val fscoresMoving = Vector(0.751, 0.890, 0.841, 0.802, 0.789, 0.857, 0.847)
-    Figure("cross-val-both-CEs").bar(color = BLUE!50!BLACK, barWidth = 0.2)(fscoresMoving).
-      bar(color = RED!50!BLACK, barWidth = 0.2)(fscoresMeeting)
+    Figure("cross-val-both-CEs").bar(barColor = BLUE!50!BLACK, barWidth = 0.2)(fscoresMoving).
+      bar(barColor = RED!50!BLACK, barWidth = 0.2)(fscoresMeeting)
       .havingYLabel("\\textbf{Average $F_1$-score (test set)}").havingYLimits(0.5, 1.0).
       havingAxisXLabels(Seq("\\textsf{\\scriptsize HC}",
         "\\textsf{\\scriptsize HC-MM}",
@@ -66,7 +72,7 @@ object TPLPExpertsPlots extends App {
     val fscores = Vector(0.762, 0.863, 0.861, 0.822, 0.843, 0.889, 0.906)
     Figure("meeting-cross-val")
       //.stem(color = BLUE!50!BLACK, marker = CIRCLE)(fscores)
-      .bar(color = BLUE!50!BLACK, barWidth = 0.2)(fscores)
+      .bar(barColor = BLUE!50!BLACK, barWidth = 0.2)(fscores)
       .havingYLabel("\\textbf{Average $F_1$-score (test set)}").havingYLimits(0.5, 1.0).
       havingAxisXLabels(Seq("\\textsf{\\scriptsize HC}",
         "\\textsf{\\scriptsize HC-MM}",
@@ -83,7 +89,7 @@ object TPLPExpertsPlots extends App {
     val fscores = Vector(0.751, 0.890, 0.841, 0.802, 0.789, 0.857, 0.847)
     Figure("moving-cross-val")
       //.stem(color = BLUE!50!BLACK, marker = CIRCLE)(fscores)
-    .bar(color = BLUE!50!BLACK, barWidth = 0.2)(fscores)
+    .bar(barColor = BLUE!50!BLACK, barWidth = 0.2)(fscores)
       .havingYLabel("\\textbf{Average $F_1$-score (test set)}").havingYLimits(0.5, 1.0).
       havingAxisXLabels(Seq("\\textsf{\\scriptsize HC}",
         "\\textsf{\\scriptsize HC-MM}",
@@ -100,7 +106,7 @@ object TPLPExpertsPlots extends App {
     val times = Vector(88.0, 118.0, 79.0)
     val _times = Vector(9.0, 19.0, 15.0)
     Figure("meeting-prequential-rules-num").
-      bar(color = BLUE!50!BLACK, barWidth = 0.2)(times).bar(color = RED!50!BLACK, barWidth = 0.2)(_times).
+      bar(barColor = BLUE!50!BLACK, barWidth = 0.2)(times).bar(barColor = RED!50!BLACK, barWidth = 0.2)(_times).
       havingYLabel("\\textbf{Number of Rules}").
       havingAxisXLabels(Seq("\\textsf{\\footnotesize OLED}", "\\textsf{\\footnotesize OLED-MLN}",
         "\\textsf{\\footnotesize OLED-EXP}")).
@@ -112,7 +118,7 @@ object TPLPExpertsPlots extends App {
     val times = Vector(75.0, 92.0, 65.0)
     val _times = Vector(10.0, 18.0, 14.0)
     Figure("moving-prequential-rules-num").
-      bar(color = BLUE!50!BLACK, barWidth = 0.2)(times).bar(color = RED!50!BLACK, barWidth = 0.2)(_times).
+      bar(barColor = BLUE!50!BLACK, barWidth = 0.2)(times).bar(barColor = RED!50!BLACK, barWidth = 0.2)(_times).
       havingYLabel("\\textbf{Number of Rules}").
       havingAxisXLabels(Seq("\\textsf{\\footnotesize OLED}", "\\textsf{\\footnotesize OLED-MLN}",
         "\\textsf{\\footnotesize OLED-EXP}")).
@@ -124,7 +130,7 @@ object TPLPExpertsPlots extends App {
     val timesMeeting = Vector(12.0, 43.0, 104.0, 58.0)
     val timesMoving = Vector(14.0, 48.0, 118.0, 62.0)
     Figure("prequential-times-both-CEs").
-      bar(color = YELLOW!50!BLACK, barWidth = 0.3)(timesMoving).bar(color = GREEN!50!BLACK, barWidth = 0.3)(timesMeeting).
+      bar(barColor = YELLOW!50!BLACK, barWidth = 0.3)(timesMoving).bar(barColor = GREEN!50!BLACK, barWidth = 0.3)(timesMeeting).
       havingYLabel("\\textbf{Time (sec)}").
       havingAxisXLabels(Seq("\\textsf{\\footnotesize HC-EXP}",
         "\\textsf{\\footnotesize OLED}", "\\textsf{\\footnotesize OLED-MLN}",
@@ -136,7 +142,7 @@ object TPLPExpertsPlots extends App {
   def plotPrequentialTimeMeeting(savePath: String) = {
     val times = Vector(12.0, 43.0, 118.0, 62.0)
     Figure("meeting-prequential-time").
-      bar(color = BLUE!50!BLACK, barWidth = 0.3)(times).
+      bar(barColor = BLUE!50!BLACK, barWidth = 0.3)(times).
       havingYLabel("\\textbf{Time (sec)}").
       havingAxisXLabels(Seq("\\textsf{\\footnotesize HandCrafted-EXP}",
         "\\textsf{\\footnotesize OLED}", "\\textsf{\\footnotesize OLED-MLN}",
@@ -148,7 +154,7 @@ object TPLPExpertsPlots extends App {
   def plotPrequentialTimeMoving(savePath: String) = {
     val times = Vector(14.0, 48.0, 104.0, 58.0)
     Figure("moving-prequential-time").
-      bar(color = BLUE!50!BLACK, barWidth = 0.3)(times).
+      bar(barColor = BLUE!50!BLACK, barWidth = 0.3)(times).
       havingYLabel("\\textbf{Time (sec)}").
       havingAxisXLabels(Seq("\\textsf{\\footnotesize HandCrafted-EXP}",
         "\\textsf{\\footnotesize OLED}", "\\textsf{\\footnotesize OLED-MLN}",
@@ -162,7 +168,7 @@ object TPLPExpertsPlots extends App {
     val fscores = Vector(0.834, 0.843, 0.896, 0.934, 0.948, 0.963, 0.966, 0.968, 0.968, 0.968)
     val t = feedbackProbs zip fscores
     Figure("moving-limited-feedback")
-      .stem(color = BLUE!50!BLACK, marker = CIRCLE)(t)
+      .stem(lineColor = BLUE!50!BLACK, marker = CIRCLE)(t)
       .havingXLabel("\\textbf{Feedback probability}").
       havingYLabel("\\textbf{Prequential $F_1$-score (final)}").havingYLimits(0.5, 1.0).
       havingAxisXLabels(Seq("0.1","0.2","0.3","0.4","0.5","0.6","0.7","0.8","0.9","1.0")).
@@ -175,7 +181,7 @@ object TPLPExpertsPlots extends App {
     val fscores = Vector(0.822, 0.845, 0.883, 0.905, 0.948, 0.963, 0.966, 0.968, 0.968, 0.968)
     val t = feedbackProbs zip fscores
     Figure("meeting-limited-feedback")
-      .stem(color = BLUE!50!BLACK, marker = CIRCLE)(t)
+      .stem(lineColor = BLUE!50!BLACK, marker = CIRCLE)(t)
       //.bar(t)
       .havingXLabel("\\textbf{Feedback probability}").
       havingYLabel("\\textbf{Prequential $F_1$-score (final)}").havingYLimits(0.5, 1.0).
@@ -227,7 +233,7 @@ object TPLPExpertsPlots extends App {
     //val k1 = k.grouped(10).toVector.map(x => x.sum.toDouble/x.length)
 
     Figure("meeting-streaming")
-      .plot(color = RED)(makeSparse(k1))
+      .plot(lineColor = RED)(makeSparse(k1))
       //havingLegends("\\footnotesize \\textsf{OLED-EXP-inertia}", "\\footnotesize \\textsf{OLED-EXP-no-inertia}")
       //.havingLegendPos(NORTH_WEST)
       .havingXLabel("\\textbf{Time} $\\mathbf{(\\times 50)}$")
@@ -251,7 +257,7 @@ object TPLPExpertsPlots extends App {
     //val k1 = k.grouped(10).toVector.map(x => x.sum.toDouble/x.length)
 
     Figure("moving-streaming")
-      .plot(color = RED)(makeSparse(k1))
+      .plot(lineColor = RED)(makeSparse(k1))
       //havingLegends("\\footnotesize \\textsf{OLED-EXP-inertia}", "\\footnotesize \\textsf{OLED-EXP-no-inertia}")
       //.havingLegendPos(NORTH_WEST)
       .havingXLabel("\\textbf{Time} $\\mathbf{(\\times 50)}$")
@@ -269,8 +275,8 @@ object TPLPExpertsPlots extends App {
     val noInertia = data.next().split(",").map(_.toDouble).toVector
 
     Figure("meeting-inertia-no-inertia-mistakes")
-      .plot(color = RED, marker = X, markStrokeColor = RED)(makeSparse(inertia)).
-      plot(color = BLUE, marker = TRIANGLE, markStrokeColor = BLUE)(makeSparse(noInertia))
+      .plot(lineColor = RED, marker = X, markStrokeColor = RED)(makeSparse(inertia)).
+      plot(lineColor = BLUE, marker = TRIANGLE, markStrokeColor = BLUE)(makeSparse(noInertia))
       .havingLegends("\\footnotesize \\textsf{OLED-EXP-inertia}", "\\footnotesize \\textsf{OLED-EXP-no-inertia}")
       .havingLegendPos(NORTH_WEST)
       .havingXLabel("\\textbf{Time} $\\mathbf{(\\times 50)}$")
@@ -288,8 +294,8 @@ object TPLPExpertsPlots extends App {
     val noInertia = data.next().split(",").map(_.toDouble).toVector
 
     Figure("moving-inertia-no-inertia-mistakes")
-      .plot(color = RED, marker = X, markStrokeColor = RED)(makeSparse(inertia)).
-      plot(color = BLUE, marker = TRIANGLE, markStrokeColor = BLUE)(makeSparse(noInertia))
+      .plot(lineColor = RED, marker = X, markStrokeColor = RED)(makeSparse(inertia)).
+      plot(lineColor = BLUE, marker = TRIANGLE, markStrokeColor = BLUE)(makeSparse(noInertia))
       .havingLegends("\\footnotesize \\textsf{OLED-EXP-inertia}", "\\footnotesize \\textsf{OLED-EXP-no-inertia}")
       .havingLegendPos(NORTH_WEST)
       .havingXLabel("\\textbf{Time} $\\mathbf{(\\times 50)}$")
@@ -310,11 +316,11 @@ object TPLPExpertsPlots extends App {
     val OLED_MLN = data.next().split(",").map(_.toDouble).toVector
     val OLED_Experts = data.next().split(",").map(_.toDouble).toVector
     Figure("meeting-prequential-mistakes")
-    .plot(color = BLACK, marker = X, markStrokeColor = BLACK)(makeSparse(handCrafted)).
-      plot(color = BLUE, marker = TRIANGLE, markStrokeColor = BLUE)(makeSparse(handCraftedExperts)).
-      plot(color = GREEN!70!BLACK, marker = CIRCLE, markStrokeColor = GREEN!70!BLACK)(makeSparse(OLED)).
-      plot(color = ORANGE, marker = PLUS, markStrokeColor = ORANGE)(makeSparse(OLED_MLN)).
-      plot(color = RED, marker = ASTERISK, markStrokeColor = RED)(makeSparse(OLED_Experts))
+    .plot(lineColor = BLACK, marker = X, markStrokeColor = BLACK)(makeSparse(handCrafted)).
+      plot(lineColor = BLUE, marker = TRIANGLE, markStrokeColor = BLUE)(makeSparse(handCraftedExperts)).
+      plot(lineColor = GREEN!70!BLACK, marker = CIRCLE, markStrokeColor = GREEN!70!BLACK)(makeSparse(OLED)).
+      plot(lineColor = ORANGE, marker = PLUS, markStrokeColor = ORANGE)(makeSparse(OLED_MLN)).
+      plot(lineColor = RED, marker = ASTERISK, markStrokeColor = RED)(makeSparse(OLED_Experts))
       .havingLegends("\\footnotesize \\textsf{HandCrafted}", "\\footnotesize \\textsf{HandCrafted-EXP}", "\\footnotesize \\textsf{OLED}",
         "\\footnotesize \\textsf{OLED-MLN}", "\\footnotesize \\textsf{OLED-EXP}")
       .havingLegendPos(NORTH_WEST)
@@ -335,11 +341,11 @@ object TPLPExpertsPlots extends App {
     val OLED_MLN = data.next().split(",").map(_.toDouble).toVector
     val OLED_Experts = data.next().split(",").map(_.toDouble).toVector
     Figure("meeting-prequential-fscore")
-      .plot(color = BLACK, marker = X, markStrokeColor = BLACK)(makeSparse(handCrafted)).
-      plot(color = BLUE, marker = TRIANGLE, markStrokeColor = BLUE)(makeSparse(handCraftedExperts)).
-      plot(color = GREEN!70!BLACK, marker = CIRCLE, markStrokeColor = GREEN!70!BLACK)(makeSparse(OLED)).
-      plot(color = ORANGE, marker = PLUS, markStrokeColor = ORANGE)(makeSparse(OLED_MLN)).
-      plot(color = RED, marker = ASTERISK, markStrokeColor = RED)(makeSparse(OLED_Experts))
+      .plot(lineColor = BLACK, marker = X, markStrokeColor = BLACK)(makeSparse(handCrafted)).
+      plot(lineColor = BLUE, marker = TRIANGLE, markStrokeColor = BLUE)(makeSparse(handCraftedExperts)).
+      plot(lineColor = GREEN!70!BLACK, marker = CIRCLE, markStrokeColor = GREEN!70!BLACK)(makeSparse(OLED)).
+      plot(lineColor = ORANGE, marker = PLUS, markStrokeColor = ORANGE)(makeSparse(OLED_MLN)).
+      plot(lineColor = RED, marker = ASTERISK, markStrokeColor = RED)(makeSparse(OLED_Experts))
       .havingLegends("\\footnotesize \\textsf{HandCrafted}", "\\footnotesize \\textsf{HandCrafted-EXP}", "\\footnotesize \\textsf{OLED}",
         "\\footnotesize \\textsf{OLED-MLN}", "\\footnotesize \\textsf{OLED-EXP}")
       .havingLegendPos(SOUTH_EAST)
@@ -359,11 +365,11 @@ object TPLPExpertsPlots extends App {
     val OLED_MLN = data.next().split(",").map(_.toDouble).toVector
     val OLED_Experts = data.next().split(",").map(_.toDouble).toVector
     Figure("moving-prequential-fscore")
-      .plot(color = BLACK, marker = X, markStrokeColor = BLACK)(makeSparse(handCrafted)).
-      plot(color = BLUE, marker = TRIANGLE, markStrokeColor = BLUE)(makeSparse(handCraftedExperts)).
-      plot(color = GREEN!70!BLACK, marker = CIRCLE, markStrokeColor = GREEN!70!BLACK)(makeSparse(OLED)).
-      plot(color = ORANGE, marker = PLUS, markStrokeColor = ORANGE)(makeSparse(OLED_MLN)).
-      plot(color = RED, marker = ASTERISK, markStrokeColor = RED)(makeSparse(OLED_Experts))
+      .plot(lineColor = BLACK, marker = X, markStrokeColor = BLACK)(makeSparse(handCrafted)).
+      plot(lineColor = BLUE, marker = TRIANGLE, markStrokeColor = BLUE)(makeSparse(handCraftedExperts)).
+      plot(lineColor = GREEN!70!BLACK, marker = CIRCLE, markStrokeColor = GREEN!70!BLACK)(makeSparse(OLED)).
+      plot(lineColor = ORANGE, marker = PLUS, markStrokeColor = ORANGE)(makeSparse(OLED_MLN)).
+      plot(lineColor = RED, marker = ASTERISK, markStrokeColor = RED)(makeSparse(OLED_Experts))
       .havingLegends("\\footnotesize \\textsf{HandCrafted}", "\\footnotesize \\textsf{HandCrafted-EXP}", "\\footnotesize \\textsf{OLED}",
       "\\footnotesize \\textsf{OLED-MLN}", "\\footnotesize \\textsf{OLED-EXP}")
       .havingLegendPos(SOUTH_EAST)
@@ -383,11 +389,11 @@ object TPLPExpertsPlots extends App {
     val OLED_MLN = data.next().split(",").map(_.toDouble).toVector
     val OLED_Experts = data.next().split(",").map(_.toDouble).toVector
     Figure("moving-prequential-mistakes")
-    .plot(color = BLACK, marker = X, markStrokeColor = BLACK)(makeSparse(handCrafted)).
-      plot(color = BLUE, marker = TRIANGLE, markStrokeColor = BLUE)(makeSparse(handCraftedExperts)).
-      plot(color = GREEN!70!BLACK, marker = CIRCLE, markStrokeColor = GREEN!70!BLACK)(makeSparse(OLED)).
-      plot(color = ORANGE, marker = PLUS, markStrokeColor = ORANGE)(makeSparse(OLED_MLN)).
-      plot(color = RED, marker = ASTERISK, markStrokeColor = RED)(makeSparse(OLED_Experts))
+    .plot(lineColor = BLACK, marker = X, markStrokeColor = BLACK)(makeSparse(handCrafted)).
+      plot(lineColor = BLUE, marker = TRIANGLE, markStrokeColor = BLUE)(makeSparse(handCraftedExperts)).
+      plot(lineColor = GREEN!70!BLACK, marker = CIRCLE, markStrokeColor = GREEN!70!BLACK)(makeSparse(OLED)).
+      plot(lineColor = ORANGE, marker = PLUS, markStrokeColor = ORANGE)(makeSparse(OLED_MLN)).
+      plot(lineColor = RED, marker = ASTERISK, markStrokeColor = RED)(makeSparse(OLED_Experts))
       .havingLegends("\\footnotesize \\textsf{HandCrafted}", "\\footnotesize \\textsf{HandCrafted-EXP}", "\\footnotesize \\textsf{OLED}",
         "\\footnotesize \\textsf{OLED-MLN}", "\\footnotesize \\textsf{OLED-EXP}")
       .havingLegendPos(NORTH_WEST)
