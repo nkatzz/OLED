@@ -20,6 +20,44 @@ import scala.io.Source
 object WoledUtils {
 
 
+  def evalOnTestSet(testData: Iterator[Example], rules: List[Clause], inps: RunningOptions) = {
+
+    println("Evaluating on the test set...")
+
+    var totalTPs = 0
+    var totalFPs = 0
+    var totalFNs = 0
+
+    testData foreach { batch =>
+      val program = {
+        val nar = batch.narrative.map(_+".").mkString("\n")
+        val include = s"""#include "${inps.globals.BK_WHOLE_EC}"."""
+        val show = inps.globals.bodyAtomSignatures.map(x => s"#show ${x.tostring}.").mkString("\n")
+        Vector(nar, include, show)
+      }
+      // This transforms the actual data into an MLN-compatible form.
+      val f = woled.Utils.dumpToFile(program)
+      val t = ASP.solve(task=Globals.INFERENCE, aspInputFile=f)
+      val answer = t.head.atoms
+      val e = new Example(annot = batch.annotation, nar = answer, _time = batch.time)
+
+      val inferredState = WoledUtils.getInferredState(Theory.compressTheory(rules), e, Vector.empty[Literal], "MAP", inps)
+      val inferredTrue = inferredState.filter(x => x._2 && x._1.startsWith("holdsAt")).keySet
+      val actuallyTrue = e.annotation.toSet
+      val tps = inferredTrue.intersect(actuallyTrue).size
+      val fps = inferredTrue.diff(actuallyTrue).size
+      val fns = actuallyTrue.diff(inferredTrue).size
+      totalTPs += tps
+      totalFPs += fps
+      totalFNs += fns
+    }
+
+    val precision = totalTPs.toDouble/(totalTPs+totalFPs)
+    val recall = totalTPs.toDouble/(totalTPs+totalFNs)
+    val f1 = 2*(precision*recall)/(precision+recall)
+    println(s"F1-score on test set: $f1")
+  }
+
   def getInferredState(rules: List[Clause], e: Example, inertiaAtoms: Vector[Literal], mode: String, inps: RunningOptions) = {
 
     // Other inference modes will be added here, e.g. WM (experts) and crisp (OLED)

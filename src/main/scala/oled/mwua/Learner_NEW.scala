@@ -204,10 +204,6 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
             }
           }
 
-          //println(s"Per batch error:\n$perBatchError")
-          //println(s"Accumulated Per batch error:\n${perBatchError.scanLeft(0.0)(_ + _).tail}")
-
-          //logger.info(s"Average loss vector:\n${avgLoss(perBatchError)}")
           woled.Utils.dumpToFile(avgLoss(perBatchError)._3.mkString(", "), "/home/nkatz/Desktop/kernel", "overwrite")
 
 
@@ -456,8 +452,8 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
 
         val getRules = (allRules: List[Clause]) => {
           val nonEmptyBodied = allRules.filter(x => x.body.nonEmpty) // Refs of empty-bodied rules would be too immature.
-          //nonEmptyBodied.map( x => (x.refinements :+ x).minBy(-_.w_pos) ) // use the ref with the best score so far
-          nonEmptyBodied.flatMap( x => (x.refinements :+ x)) // use all
+          nonEmptyBodied.map( x => (x.refinements :+ x).minBy(-_.w_pos) ) // use the ref with the best score so far
+          //nonEmptyBodied.flatMap( x => (x.refinements :+ x)) // use all
         }
 
         val init = getRules(ensemble.initiationRules)

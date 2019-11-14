@@ -30,6 +30,7 @@ import utils.Implicits._
 import oled.functions.WeightLearningFunctions._
 import oled.weightlearn.{Auxil, MAPInference}
 import oled.weightlearn.parallel.IO.{FinishedBatch, MLNClauseHandingMasterInput, MLNClauseHandlingOutput, NodeDoneMessage, TheoryRequestMessage}
+import woled.WoledUtils
 
 /* This class is used when learning weights while allowing for parallel clause evaluation.
  * The task requires collaboration with MLNClauseEvalMaster and uses blocking (we need to
@@ -103,6 +104,10 @@ class WeightedTheoryLearner[T <: Source](inps: RunningOptions, trainingDataOptio
           logger.info(s"Accumulated mistakes per batch:\n${inps.globals.state.perBatchError.scanLeft(0.0)(_ + _).tail}")
           logger.info(s"Average loss vector:\n${avgLoss(inps.globals.state.perBatchError)}")
           logger.info(s"Sending the theory to the parent actor")
+          if (trainingDataOptions != testingDataOptions) { // test set given, eval on that
+            val testData = testingDataFunction(testingDataOptions)
+            WoledUtils.evalOnTestSet(testData, theory, inps)
+          }
           context.parent ! (topTheory, totalTime)
         } else {
           throw new RuntimeException("This should never have happened (repeatFor is now negative?)")
