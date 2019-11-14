@@ -456,7 +456,8 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
 
         val getRules = (allRules: List[Clause]) => {
           val nonEmptyBodied = allRules.filter(x => x.body.nonEmpty) // Refs of empty-bodied rules would be too immature.
-          nonEmptyBodied.map( x => (x.refinements :+ x).minBy(-_.w_pos) ) // Get the ref with the best score so far
+          //nonEmptyBodied.map( x => (x.refinements :+ x).minBy(-_.w_pos) ) // use the ref with the best score so far
+          nonEmptyBodied.flatMap( x => (x.refinements :+ x)) // use all
         }
 
         val init = getRules(ensemble.initiationRules)
