@@ -32,8 +32,6 @@ import oled.weightlearn.{Auxil, MAPInference}
 import oled.weightlearn.parallel.IO.{FinishedBatch, MLNClauseHandingMasterInput, MLNClauseHandlingOutput, NodeDoneMessage, TheoryRequestMessage}
 import woled.WoledUtils
 
-import scala.util.Random
-
 /* This class is used when learning weights while allowing for parallel clause evaluation.
  * The task requires collaboration with MLNClauseEvalMaster and uses blocking (we need to
  * wait until the evaluator class finishes its job before moving on to the next mini-batch).
@@ -67,11 +65,7 @@ class WeightedTheoryLearner[T <: Source](inps: RunningOptions, trainingDataOptio
       start
   }
 
-  def getTrainData = {
-    // Shuffle the data if more than one repetitions are allowed.
-    if (repeatFor > 1) Random.shuffle(trainingDataFunction(trainingDataOptions)) else trainingDataFunction(trainingDataOptions)
-  }
-
+  def getTrainData = trainingDataFunction(trainingDataOptions)
 
   def getNextBatch = if (data.isEmpty) Example() else data.next()
 
