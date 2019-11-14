@@ -77,7 +77,7 @@ class State {
 
   }
 
-  def pruneRules() = {
+  def pruneRules(acceptableScore: Double) = {
 
     /* Remove rules by score */
     def removeBadRules(rules: List[Clause]) = {
