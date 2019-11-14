@@ -47,6 +47,7 @@ object WoledUtils {
       val tps = inferredTrue.intersect(actuallyTrue).size
       val fps = inferredTrue.diff(actuallyTrue).size
       val fns = actuallyTrue.diff(inferredTrue).size
+      println(s"TPs, FPs, FNs: $tps, $fps, $fns")
       totalTPs += tps
       totalFPs += fps
       totalFNs += fns
@@ -57,6 +58,9 @@ object WoledUtils {
     val f1 = 2*(precision*recall)/(precision+recall)
     println(s"F1-score on test set: $f1")
   }
+
+
+
 
   def getInferredState(rules: List[Clause], e: Example, inertiaAtoms: Vector[Literal], mode: String, inps: RunningOptions) = {
 

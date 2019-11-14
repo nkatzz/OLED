@@ -77,6 +77,22 @@ class State {
 
   }
 
+  def pruneRules() = {
+
+    /* Remove rules by score */
+    def removeBadRules(rules: List[Clause]) = {
+      rules.foldLeft(List.empty[Clause]) { (accum, rule) =>
+        if (rule.body.length >= 2 && rule.score <= 0.5) accum else accum :+ rule
+      }
+    }
+
+    initiationRules = removeBadRules(initiationRules)
+    terminationRules = removeBadRules(terminationRules)
+
+  }
+
+
+
 
 
 

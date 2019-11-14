@@ -17,8 +17,9 @@ import scala.io.Source
 
 object Draft extends App {
 
-  plot("/home/nkatz/Desktop/PEA-NEW-RESULTS/Batch-size-100", "/home/nkatz/Desktop/PEA-NEW-RESULTS")
+  //plot("/home/nkatz/Desktop/PEA-NEW-RESULTS/Batch-size-100", "/home/nkatz/Desktop/PEA-NEW-RESULTS")
 
+  plot("/home/nkatz/Desktop/PEA-NEW-RESULTS/holdout", "/home/nkatz/Desktop/PEA-NEW-RESULTS")
 
   /*Figure("secondary_axis")
     .plot(lineColor = RED)((-5 to 5) -> ((x: Double) => 3 * x))
@@ -36,15 +37,15 @@ object Draft extends App {
     val data = Source.fromFile(dataPath).getLines.filter(x => !x.isEmpty && !x.startsWith("%")) //.split(",")
 
     val OLED  = data.next().split(",").map(_.toDouble).toVector
-    val OLED_MLN = data.next().split(",").map(_.toDouble).toVector
-    val OLED_Experts = data.next().split(",").map(_.toDouble).toVector
-    //val OLED_no_inertia = data.next().split(",").map(_.toDouble).toVector
+    //val OLED_MLN = data.next().split(",").map(_.toDouble).toVector
+    //val OLED_Experts = data.next().split(",").map(_.toDouble).toVector
+
     Figure("meeting-prequential-mistakes")
       //.plot(color = BLACK, marker = X, markStrokeColor = BLACK)(makeSparse(handCrafted))
       .plot(lineColor = BLACK)(OLED)
-      .plot(lineColor = RED)(OLED_MLN)
-      .plot(lineColor = BLUE)(OLED_Experts)
-      //.plot(lineColor = GREEN)(OLED_no_inertia)
+      //.plot(lineColor = RED)(OLED_MLN)
+      //.plot(lineColor = BLUE)(OLED_Experts)
+
 
       .havingLegends("\\footnotesize \\textsf{OLED}", "\\footnotesize \\textsf{WOLED}", "\\footnotesize \\textsf{Experts}")
 

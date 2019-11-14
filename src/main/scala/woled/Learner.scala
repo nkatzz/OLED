@@ -152,6 +152,8 @@ class Learner[T <: app.runutils.IOHandling.Source](inps: RunningOptions, trainin
         val expandedTheory = SingleCoreOLEDFunctions.expandRules(Theory(init ++ term), inps, logger)
         inps.globals.state.updateRules(expandedTheory._1.clauses, "replace", inps)
 
+        inps.globals.state.pruneRules()
+
         // Do a MAP inference and scoring step again, to update weights for the newly generated rules.
         // This is necessary for large batch sizes. This should be fixed so as to perform this step only
         // for new BC-generated rules, by grounding those (only) and computing differences from current MAP state.
