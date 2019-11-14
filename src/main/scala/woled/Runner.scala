@@ -47,7 +47,6 @@ object Runner extends LazyLogging {
           "caviar-video-24-meeting-moving", "caviar-video-8", "caviar-video-10", "caviar-video-2-meeting-moving",
           "caviar-video-15", "caviar-video-3", "caviar-video-17")
 
-      /*
 
       // Single-pass run on the entire dataset
 
@@ -64,13 +63,12 @@ object Runner extends LazyLogging {
       val startMsg = "start"
 
       system.actorOf(Props(new Dispatcher(runningOptions, trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction) ), name = "Learner") ! startMsg
-      */
 
 
 
       // Eval on test set in the end:
 
-      val caviarNum = args.find(x => x.startsWith("caviar-num")).get.split("=")(1)
+      /*val caviarNum = args.find(x => x.startsWith("caviar-num")).get.split("=")(1)
 
       val trainSet = Map(1 -> MeetingTrainTestSets.meeting1, 2 -> MeetingTrainTestSets.meeting2, 3 -> MeetingTrainTestSets.meeting3,
         4 -> MeetingTrainTestSets.meeting4, 5 -> MeetingTrainTestSets.meeting5, 6 -> MeetingTrainTestSets.meeting6,
@@ -93,7 +91,8 @@ object Runner extends LazyLogging {
       val system = ActorSystem("HoeffdingLearningSystem")
       val startMsg = "start"
 
-      system.actorOf(Props(new Dispatcher(runningOptions, trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction) ), name = "Learner") ! startMsg
+      system.actorOf(Props(new Dispatcher(runningOptions, trainingDataOptions, testingDataOptions,
+        trainingDataFunction, testingDataFunction) ), name = "Learner") ! startMsg*/
 
 
 
