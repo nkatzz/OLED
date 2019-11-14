@@ -103,21 +103,25 @@ object Runner extends LazyLogging {
       //logger.info(s"\nData order:\n$trainShuffled")
 
       /* This is for running with the entire CAVIAR (no test set)*/
-      ///*
+      /*
       val trainingDataOptions =
         new MongoDataOptions(dbNames = train1, //trainShuffled ,//dataset._1,
           chunkSize = runningOptions.chunkSize, targetConcept = runningOptions.targetHLE, sortDbByField = "time", what = "training")
 
       val testingDataOptions = trainingDataOptions
-      //*/
+      */
 
       /* This is for running on the training set and then performing prequential evaluation on the test set. */
-      /*
-      val dataset = MeetingTrainTestSets.meeting1
-      //val dataset = MeetingTrainTestSets.meeting1
+      ///*
 
-      //val trainShuffled = scala.util.Random.shuffle(dataset._1)
-      //logger.info(s"\nData order:\n$trainShuffled")
+      val caviarNum = args.find(x => x.startsWith("caviar-num")).get.split("=")(1)
+      val trainSet = Map(1 -> MeetingTrainTestSets.meeting1, 2 -> MeetingTrainTestSets.meeting2, 3 -> MeetingTrainTestSets.meeting3,
+      4 -> MeetingTrainTestSets.meeting4, 5 -> MeetingTrainTestSets.meeting5, 6 -> MeetingTrainTestSets.meeting6,
+      7 -> MeetingTrainTestSets.meeting7, 8 -> MeetingTrainTestSets.meeting8, 9 -> MeetingTrainTestSets.meeting9,
+      10 -> MeetingTrainTestSets.meeting10)
+
+      //val dataset = MeetingTrainTestSets.meeting1
+      val dataset = trainSet(caviarNum.toInt)
 
       val trainingDataOptions =
         new MongoDataOptions(dbNames = dataset._1,//trainShuffled, //
@@ -126,7 +130,7 @@ object Runner extends LazyLogging {
       val testingDataOptions =
         new MongoDataOptions(dbNames = dataset._2,
           chunkSize = runningOptions.chunkSize, targetConcept = runningOptions.targetHLE, sortDbByField = "time", what = "testing")
-      */
+      //*/
       val trainingDataFunction: MongoDataOptions => Iterator[Example] = FullDatasetHoldOut.getMongoData
       val testingDataFunction: MongoDataOptions => Iterator[Example] = FullDatasetHoldOut.getMongoData
 

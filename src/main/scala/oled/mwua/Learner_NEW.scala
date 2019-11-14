@@ -454,23 +454,24 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
       _stateHandler.ensemble = {
         val ensemble = stateHandler.ensemble
 
-        val init = ensemble.initiationRules.filter(x => x.body.nonEmpty)
-        val term = ensemble.terminationRules.filter(x => x.body.nonEmpty)
+        val getRules = (allRules: List[Clause]) => {
+          val nonEmptyBodied = allRules.filter(x => x.body.nonEmpty) // Refs of empty-bodied rules would be too immature.
+          nonEmptyBodied.map( x => (x.refinements :+ x).minBy(-_.w_pos) ) // Get the ref with the best score so far
+        }
 
-        //val init = (ensemble.initiationRules ++ ensemble.initiationRules.flatMap(x => x.refinements :+ x.supportSet.clauses.head)).filter(x => x.body.nonEmpty)
-        //val term = (ensemble.terminationRules ++ ensemble.terminationRules.flatMap(x => x.refinements :+ x.supportSet.clauses.head)).filter(x => x.body.nonEmpty)
+        val init = getRules(ensemble.initiationRules)
+        val term = getRules(ensemble.terminationRules)
 
-        ensemble.initiationRules = Theory(init).compress.clauses
-        ensemble.terminationRules = Theory(term).compress.clauses
-
-        //ensemble.initiationRules = init
-        //ensemble.terminationRules = term
+        ensemble.initiationRules = init
+        ensemble.terminationRules = term
         ensemble
       }
 
       val testData = testingDataFunction(testingDataOptions)
+
       val _receiveFeedbackBias = 0.0 // Give no supervision for training, we're only testing
       testData foreach { batch =>
+        _stateHandler.inertiaExpert.clear()
         val trueLabels = batch.annotation.toSet
         ExpertAdviceFunctions.process(batch, batch.annotation.toSet, inps,
           _stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
@@ -484,9 +485,9 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
         logger.info(s"\nReceived feedback on ${_stateHandler.receivedFeedback} rounds")
       }
 
-      val tps = stateHandler.totalTPs
-      val fps = stateHandler.totalFPs
-      val fns = stateHandler.totalFNs
+      val tps = _stateHandler.totalTPs
+      val fps = _stateHandler.totalFPs
+      val fns = _stateHandler.totalFNs
 
       val microPrecision = tps.toDouble/(tps.toDouble + fps.toDouble)
       val microRecall = tps.toDouble/(tps.toDouble + fns.toDouble)

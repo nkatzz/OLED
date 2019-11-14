@@ -8,7 +8,7 @@ import scalatikz.graphics.pgf.enums.LegendPos.{NORTH_EAST, NORTH_WEST}
 import scalatikz.graphics.pgf.enums.Mark.{ASTERISK, CIRCLE, PLUS, TRIANGLE, X}
 import utils.plotting.TPLPExpertsPlots.makeSparse*/
 
-import scalatikz.pgf.enums.Color.{BLACK, BLUE, GREEN, RED}
+import scalatikz.pgf.enums.Color.{BLACK, BLUE, RED}
 import scalatikz.pgf.plots.Figure
 import scalatikz.pgf.plots.enums.LegendPos.NORTH_EAST
 import scalatikz.pgf.Compiler.LUA_LATEX
