@@ -91,6 +91,24 @@ class StateHandler {
     ensemble.terminationRules = goodTermRules
   }
 
+
+
+  def pruneRules(acceptableScore: Double) = {
+
+    /* Remove rules by score */
+    def removeBadRules(rules: List[Clause]) = {
+      rules.foldLeft(List.empty[Clause]) { (accum, rule) =>
+        if (rule.body.length >= 2 && rule.score <= 0.5) accum else accum :+ rule
+      }
+    }
+
+    ensemble.initiationRules = removeBadRules(ensemble.initiationRules)
+    ensemble.terminationRules = removeBadRules(ensemble.terminationRules)
+
+  }
+
+
+
   /*-----------------------------*/
   /* Grounding-related variables */
   /*-----------------------------*/

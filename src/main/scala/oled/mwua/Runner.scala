@@ -143,57 +143,39 @@ object Runner extends LazyLogging {
 
       val system = ActorSystem("HoeffdingLearningSystem")
 
-      // use also start to evaluate a hand-crafted theory, the whole thing is hard-coded in Learner_NEW
-      val startMsg = "start"//if (runningOptions.evalth != "None") "eval" else "start"
+      val startMsg = "start"
 
-      // use a hand-crafted theory for sequential prediction (updates the weights but not the structure of the rules).
-      //--evalth=/home/nkatz/Desktop/theory
-      //val startMsg = "predict"
-
-      /*
-      // This is used to generate the "streaming" version of CAVIAR, where each entry in the database
-      // consists of the observations at time t plus the labels at time t+1.
-      val data = trainingDataFunction(trainingDataOptions)
-      val dataPairs = data.sliding(2)
-      val mc = MongoClient()
-
-      val newDBName = s"caviar-streaming-${runningOptions.targetHLE}"
-      val newDB = mc(newDBName)("examples")
-      mc.dropDatabase(newDBName)
-
-      var count = 0
-
-      dataPairs foreach { pair =>
-        val (first, second) = (pair.head, pair.tail.head)
-        // The predictionTime atom is used by Aux.computeRuleGroundings to generate query atoms at the appropriate time point
-        //val observations = first.narrative :+ List(s"time(${first.time.toInt+40})", s"predictionTime(${first.time.toInt+40})")
-        val observations = first.narrative :+ s"time(${first.time.toInt+40})"
-        val labels = second.annotation
-        //val entry = MongoDBObject("time" -> first.time) ++ ("annotation" -> labels ) ++ ("narrative" -> observations)
-        val entry = MongoDBObject("time" -> count) ++ ("annotation" -> labels ) ++ ("narrative" -> observations)
-        count += 1
-        if (labels.nonEmpty) println(entry)
-        newDB.insert(entry)
-      }
-      */
-
-      // This is the regular experts runner
-      ///*
       system.actorOf(Props(new Learner_NEW(runningOptions, trainingDataOptions, testingDataOptions, trainingDataFunction,
         testingDataFunction)), name = "Learner") ! startMsg
-      //*/
 
-      // Use this to evaluate a hand-crafted theory
+
       /*
-      system.actorOf(Props(new Learner_OLD_DEBUG(runningOptions, trainingDataOptions, testingDataOptions, trainingDataFunction,
-        testingDataFunction)), name = "Learner") ! startMsg
+        // This is used to generate the "streaming" version of CAVIAR, where each entry in the database
+        // consists of the observations at time t plus the labels at time t+1.
+        val data = trainingDataFunction(trainingDataOptions)
+        val dataPairs = data.sliding(2)
+        val mc = MongoClient()
+
+        val newDBName = s"caviar-streaming-${runningOptions.targetHLE}"
+        val newDB = mc(newDBName)("examples")
+        mc.dropDatabase(newDBName)
+
+        var count = 0
+
+        dataPairs foreach { pair =>
+          val (first, second) = (pair.head, pair.tail.head)
+          // The predictionTime atom is used by Aux.computeRuleGroundings to generate query atoms at the appropriate time point
+          //val observations = first.narrative :+ List(s"time(${first.time.toInt+40})", s"predictionTime(${first.time.toInt+40})")
+          val observations = first.narrative :+ s"time(${first.time.toInt+40})"
+          val labels = second.annotation
+          //val entry = MongoDBObject("time" -> first.time) ++ ("annotation" -> labels ) ++ ("narrative" -> observations)
+          val entry = MongoDBObject("time" -> count) ++ ("annotation" -> labels ) ++ ("narrative" -> observations)
+          count += 1
+          if (labels.nonEmpty) println(entry)
+           newDB.insert(entry)
+         }
       */
 
-      // Use this to evaluate OLED
-      /*
-      system.actorOf(Props(new Learner(runningOptions, trainingDataOptions, testingDataOptions, trainingDataFunction,
-        testingDataFunction)), name = "Learner") ! startMsg
-      */
     }
   }
 

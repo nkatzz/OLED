@@ -167,7 +167,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
         //workers foreach(w => w ! PoisonPill)
         wrapUp()
         done = true
-        context.system.terminate()
+        //context.system.terminate()
       } else {
         val trueLabels = nextBatch.annotation.toSet
 
@@ -178,7 +178,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
 
           /*  ======================= Dirty hack ===============================*/
 
-          stateHandler.clearDelayedUpdates
+          /*stateHandler.clearDelayedUpdates
 
           var bias = 0.0
 
@@ -204,7 +204,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
             }
           }
 
-          woled.Utils.dumpToFile(avgLoss(perBatchError)._3.mkString(", "), "/home/nkatz/Desktop/kernel", "overwrite")
+          woled.Utils.dumpToFile(avgLoss(perBatchError)._3.mkString(", "), "/home/nkatz/Desktop/kernel", "overwrite")*/
 
 
           /*
@@ -282,10 +282,12 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
            */
 
           // ACTUAL EXECUTION FLOW
-          /*ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
+          ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
             stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
             batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
-            receiveFeedbackBias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap)*/
+            receiveFeedbackBias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap)
+
+          stateHandler.pruneRules(inps.pruneThreshold)
 
         } else {
 
@@ -339,7 +341,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
 
     case "start" => {
 
-      for( i <- (1 to 1) ) {
+      for( i <- (1 to 5) ) {
         processData()
       }
 
