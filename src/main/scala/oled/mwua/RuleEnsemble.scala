@@ -12,6 +12,21 @@ class RuleEnsemble {
   var initiationRules: List[Clause] = List[Clause]()
   var terminationRules: List[Clause] = List[Clause]()
 
+  /* The "action" variable here is either "add" or "replace" */
+  def updateRules(newRules: List[Clause], action: String, inps: RunningOptions) = {
+    newRules foreach { rule => if (rule.refinements.isEmpty) rule.generateCandidateRefs(inps.globals) }
+    val (init, term) = newRules.partition(x => x.head.functor == "initiatedAt")
+    action match {
+      case "add" =>
+        initiationRules = initiationRules ++ init
+        terminationRules = terminationRules ++ term
+      case "replace" =>
+        initiationRules = init
+        terminationRules = term
+    }
+
+  }
+
   /* Currently not used anywhere. */
   def removeZeroWeights = {
     // Maybe I should remove rules with zero weight only when they have at least one literal at their body...

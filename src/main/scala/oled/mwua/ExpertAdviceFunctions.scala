@@ -176,7 +176,6 @@ object ExpertAdviceFunctions extends LazyLogging {
                   if (prediction >= hedgePredictionThreshold) "true" else "false"
                 }
 
-
               // this is required in the randomized prediction case because the inertiaExpertPrediction variable
               // is passed to weight update function and the inertia prediction is necessary for calculating the mistake probability.
               if (selected == "inertia") inertiaExpertPrediction = prediction
@@ -269,38 +268,26 @@ object ExpertAdviceFunctions extends LazyLogging {
                   */
 
                 } else {
-                  updateWeightsRandomized(atom, prediction, inertiaExpertPrediction,
-                    predictedLabel, feedback, stateHandler, epsilon, markedMap, totalWeight)
+                  updateWeightsRandomized(atom, prediction, inertiaExpertPrediction, predictedLabel, feedback, stateHandler, epsilon, markedMap, totalWeight)
                 }
 
-                if (predictedLabel != feedback) {
-                  if (!withInputTheory) { // we only update structure when an input theory is given
+                /*if (predictedLabel != feedback) {
+                  if (!withInputTheory) {
                     // Shouldn't we update the weights on newly generated rules here?
                     // Of course it's just 1 example, no big deal, but still...
 
-                    /*
-                    val structureUpdate_? = updateStructure_NEW(atom, markedMap, predictedLabel, feedback, batch,
-                      currentAtom, inps, Logger(this.getClass).underlying, stateHandler, percentOfMistakesBeforeSpecialize,
-                      randomizedPrediction, selected, specializeAllAwakeOnMistake, conservativeRuleGeneration)
-                    */
-
-                    ///*
                     val previousTime = if (streaming) orderedTimes( orderedTimes.indexOf(atom.time) -1 ) else 0
+
                     val structureUpdate_? =
                       ClassicSleepingExpertsHedge.updateStructure_NEW_HEDGE(atom, previousTime, markedMap, predictedLabel,
                         feedback, batch, currentAtom, inps, Logger(this.getClass).underlying, stateHandler,
                         percentOfMistakesBeforeSpecialize, randomizedPrediction, selected, specializeAllAwakeOnMistake,
                         conservativeRuleGeneration, generateNewRuleFlag)
-                    //*/
 
                     if (structureUpdate_?) break
                   }
-                }
+                }*/
               } else {
-
-                /*===============================================================================================================*/
-                /* This is all helper/test code for updating weights after mini-batch prediction from all mistakes cumulatively. */
-                /*============================================ Test-helper code start ===========================================*/
 
                 val delayedUpdate = new DelayedUpdate(atom, prediction, inertiaExpertPrediction,
                   initWeightSum, termWeightSum, predictedLabel, markedMap, feedback, stateHandler,
@@ -308,60 +295,14 @@ object ExpertAdviceFunctions extends LazyLogging {
 
                 stateHandler.delayedUpdates = stateHandler.delayedUpdates :+ delayedUpdate
 
-                /* ============================================Test-helper code end =============================================*/
-                /*===============================================================================================================*/
-
-                // Here we do not receive feedback. We need to handle inertia here.
-                // Note that if feedback is received inertia is handled at the updateWeights method.
-                // If the prediction is TP (TN) the fluent is added (removed) from the inertia memory.
-                // If the prediction is incorrect, then in the FP case the fluent is added to the inertia
-                // memory (although it's mistake) so things are fair and then we try to correct the mistake
-                // in subsequent rounds if it persists. In the FN case we reduce the inertia weight (if non-zero)
-                // for the erroneously predicted fluent. Here we are in the case where no feedback is received
-                // (so its purely testing and/or providing an inference service), so we need to handle inertia.
-                /*
-                if (predictedLabel == "true") {
-                  if (!stateHandler.inertiaExpert.knowsAbout(atom.fluent))
-                    stateHandler.inertiaExpert.updateWeight(atom.fluent, prediction)
-                } else {
-                  if (!stateHandler.inertiaExpert.knowsAbout(atom.fluent))
-                    stateHandler.inertiaExpert.forget(atom.fluent)
-                }
-                */
               }
-
-              // Not a very good idea to do this here (comment, last line). The reason to do it here is to
-              // force the system to correct this particular mistake (it will be added
-              // to the alreadySeenAtoms only if the prediction on this atom is correct).
-              // But Why insisting on correcting a particular mistake?
-              // After all, the provided feedback/label may be wrong!
-              //alreadyProcessedAtoms = alreadyProcessedAtoms + currentAtom
             }
           }
           finishedBatch = true
           stateHandler.perBatchError = stateHandler.perBatchError :+ batchError
           stateHandler.updateRunningF1Score
 
-
-          //=======================================================
-          //=======================================================
-          //=======================================================
-          //*******************************************************
-
-          // I need to get this to work
-          //stateHandler.pruneUnderPerformingRules(0.0000000000001)
-
-          //*******************************************************
-          //=======================================================
-          //=======================================================
-          //=======================================================
-
-          // Try to specialize all rules currently in the ensemble
-          // Just to be on the safe side filter out rules with no refinements
-          // (i.e. rules that have "reached" their bottom rule).
-
-          if (!withInputTheory) { // Update structure only when we are learning from scratch
-            ///*
+          /*if (!withInputTheory) { // Update structure only when we are learning from scratch
             val expandedInit =
               SingleCoreOLEDFunctions.expandRules(Theory(stateHandler.ensemble.initiationRules.filter(x => x.refinements.nonEmpty)),
                 inps, Logger(this.getClass).underlying)
@@ -372,20 +313,12 @@ object ExpertAdviceFunctions extends LazyLogging {
 
             stateHandler.ensemble.initiationRules = expandedInit._1.clauses
             stateHandler.ensemble.terminationRules = expandedTerm._1.clauses
-            //*/
-          }
+          }*/
         }
       }
     }
 
-    //println(s"Batch processing time: ${predictAndUpdateTimed._2}")
-
-    //logger.info(s"Batch processing time: ${predictAndUpdateTimed._2}")
-    if (batchError > 0) {
-      logger.info(s"*** Batch #$batchCounter Total mistakes: ${batchFPs+batchFNs} " +
-        s"(FPs: $batchFPs | FNs: $batchFNs). Total batch atoms: $batchAtoms ***")
-    }
-    // This is only needed for a dirty hack at Learner_NEW...
+    if (batchError > 0) logger.info(s"*** Batch #$batchCounter Total mistakes: ${batchFPs+batchFNs} (FPs: $batchFPs | FNs: $batchFNs). Total batch atoms: $batchAtoms ***")
     batchError
   }
 
