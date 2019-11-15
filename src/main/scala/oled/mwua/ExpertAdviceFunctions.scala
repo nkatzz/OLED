@@ -49,8 +49,6 @@ object ExpertAdviceFunctions extends LazyLogging {
     //stateHandler.ensemble.removeZeroWeights
     //========================================
 
-    stateHandler.inertiaExpert.clear() // forget everything at the begining of each batch for a fair comparison to WOLED.
-
     val streaming = true //true
     var batchError = 0
     var batchFPs = 0
