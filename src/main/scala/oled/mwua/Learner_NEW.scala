@@ -189,7 +189,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
 
           perBatchError = perBatchError :+ error
 
-          println("Generating new rules...")
+          /*println("Generating new rules...")
           var newInit = List.empty[Clause]
           var newTerm = List.empty[Clause]
           if (error > 0) {
@@ -200,7 +200,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
             newInit = if (growNewInit) oled.functions.SingleCoreOLEDFunctions.generateNewRules(Theory(topInit), batch, "initiatedAt", inps.globals) else Nil
             newTerm = if (growNewTerm) oled.functions.SingleCoreOLEDFunctions.generateNewRules(Theory(topTerm), batch, "terminatedAt", inps.globals) else Nil
             stateHandler.ensemble.updateRules(newInit ++ newTerm, "add", inps)
-          }
+          }*/
 
           /* Update weights */
 
@@ -219,14 +219,14 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
             }
           }
 
-          val expandedInit =
+          /*val expandedInit =
             SingleCoreOLEDFunctions.expandRules(Theory(stateHandler.ensemble.initiationRules.filter(x => x.refinements.nonEmpty)), inps, logger)
 
           val expandedTerm =
             SingleCoreOLEDFunctions.expandRules(Theory(stateHandler.ensemble.terminationRules.filter(x => x.refinements.nonEmpty)), inps, logger)
 
           stateHandler.ensemble.initiationRules = expandedInit._1.clauses
-          stateHandler.ensemble.terminationRules = expandedTerm._1.clauses
+          stateHandler.ensemble.terminationRules = expandedTerm._1.clauses*/
 
           woled.Utils.dumpToFile(avgLoss(perBatchError)._3.mkString(", "), "/home/nkatz/Desktop/kernel", "overwrite")
 

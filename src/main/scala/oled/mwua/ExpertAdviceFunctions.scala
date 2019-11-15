@@ -271,7 +271,7 @@ object ExpertAdviceFunctions extends LazyLogging {
                   updateWeightsRandomized(atom, prediction, inertiaExpertPrediction, predictedLabel, feedback, stateHandler, epsilon, markedMap, totalWeight)
                 }
 
-                /*if (predictedLabel != feedback) {
+                if (predictedLabel != feedback) {
                   if (!withInputTheory) {
                     // Shouldn't we update the weights on newly generated rules here?
                     // Of course it's just 1 example, no big deal, but still...
@@ -286,7 +286,7 @@ object ExpertAdviceFunctions extends LazyLogging {
 
                     if (structureUpdate_?) break
                   }
-                }*/
+                }
               } else {
 
                 val delayedUpdate = new DelayedUpdate(atom, prediction, inertiaExpertPrediction,
@@ -302,7 +302,7 @@ object ExpertAdviceFunctions extends LazyLogging {
           stateHandler.perBatchError = stateHandler.perBatchError :+ batchError
           stateHandler.updateRunningF1Score
 
-          /*if (!withInputTheory) { // Update structure only when we are learning from scratch
+          if (!withInputTheory) { // Update structure only when we are learning from scratch
             val expandedInit =
               SingleCoreOLEDFunctions.expandRules(Theory(stateHandler.ensemble.initiationRules.filter(x => x.refinements.nonEmpty)),
                 inps, Logger(this.getClass).underlying)
@@ -313,7 +313,7 @@ object ExpertAdviceFunctions extends LazyLogging {
 
             stateHandler.ensemble.initiationRules = expandedInit._1.clauses
             stateHandler.ensemble.terminationRules = expandedTerm._1.clauses
-          }*/
+          }
         }
       }
     }
