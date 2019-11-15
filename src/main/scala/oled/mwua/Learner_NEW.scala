@@ -20,7 +20,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
                                val trainingDataFunction: T => Iterator[Example],
                                val testingDataFunction: T => Iterator[Example],
                                val writeExprmtResultsTo: String = "") extends Actor {
-  val learningRate = 0.2 //1.0 //0.05 //0.2 // 1.0 usually works for winnow
+  val learningRate = 0.9 //1.0 //0.05 //0.2 // 1.0 usually works for winnow
 
   val epsilon = 0.9 //0.9 // used in the randomized version
 
@@ -31,7 +31,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
   // If this is false, some non-determinism is introduced (number of mistakes may vary slightly from round to round)
   val specializeAllAwakeRulesOnFPMistake = false
 
-  val withInertia = true // false
+  val withInertia = true //false
 
   // This is either 'winnow' or 'hedge'
   val weightUpdateStrategy = "hedge" //"winnow" // "hedge"
@@ -179,9 +179,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
           /*  ======================= Dirty hack ===============================*/
 
           stateHandler.clearDelayedUpdates
-
           var bias = 0.0
-
           val error = ExpertAdviceFunctions.process(batch, batch.annotation.toSet, inps,
             stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
             batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
@@ -189,49 +187,19 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
 
           perBatchError = perBatchError :+ error
 
-          /*println("Generating new rules...")
-          var newInit = List.empty[Clause]
-          var newTerm = List.empty[Clause]
-          if (error > 0) {
-            val topInit = stateHandler.ensemble.initiationRules
-            val topTerm = stateHandler.ensemble.terminationRules
-            val growNewInit = Theory(topInit).growNewRuleTest(batch, "initiatedAt", inps.globals)
-            val growNewTerm = Theory(topTerm).growNewRuleTest(batch, "terminatedAt", inps.globals)
-            newInit = if (growNewInit) oled.functions.SingleCoreOLEDFunctions.generateNewRules(Theory(topInit), batch, "initiatedAt", inps.globals) else Nil
-            newTerm = if (growNewTerm) oled.functions.SingleCoreOLEDFunctions.generateNewRules(Theory(topTerm), batch, "terminatedAt", inps.globals) else Nil
-            stateHandler.ensemble.updateRules(newInit ++ newTerm, "add", inps)
-          }*/
-
-          /* Update weights */
+          //generateNewRules(error, batch)
 
           bias = 1.0
-
           ExpertAdviceFunctions.process(batch, batch.annotation.toSet, inps,
             stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
             batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
             bias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap)
 
-          def avgLoss(in: Vector[Int]) = {
-            in.foldLeft(0, 0, Vector.empty[Double]){ (x, y) =>
-              val (count, prevSum, avgVector) = (x._1, x._2, x._3)
-              val (newCount, newSum) = (count + 1, prevSum + y)
-              (newCount, newSum, avgVector :+ newSum.toDouble/newCount )
-            }
-          }
-
-          /*val expandedInit =
-            SingleCoreOLEDFunctions.expandRules(Theory(stateHandler.ensemble.initiationRules.filter(x => x.refinements.nonEmpty)), inps, logger)
-
-          val expandedTerm =
-            SingleCoreOLEDFunctions.expandRules(Theory(stateHandler.ensemble.terminationRules.filter(x => x.refinements.nonEmpty)), inps, logger)
-
-          stateHandler.ensemble.initiationRules = expandedInit._1.clauses
-          stateHandler.ensemble.terminationRules = expandedTerm._1.clauses*/
-
+          //expandRules()
           woled.Utils.dumpToFile(avgLoss(perBatchError)._3.mkString(", "), "/home/nkatz/Desktop/kernel", "overwrite")
 
-          //stateHandler.pruneRules(inps.pruneThreshold)
-
+          stateHandler.pruneRules("weight", 0.0005, Logger(this.getClass).underlying)
+          //stateHandler.pruneRules("score", inps.pruneThreshold)
 
 
 
@@ -239,8 +207,8 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
 
 
           /*
+          stateHandler.clearDelayedUpdates
           var bias = 0.0
-
           val error = ExpertAdviceFunctions.process(batch, batch.annotation.toSet, inps,
             stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
             batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
@@ -251,14 +219,12 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
           println(s"Per batch error:\n$perBatchError")
           println(s"Accumulated Per batch error:\n${perBatchError.scanLeft(0.0)(_ + _).tail}")
 
-          val debugDelayedUpdates = stateHandler.delayedUpdates.map(x => x.atom.atom).mkString("\n")
+          //val debugDelayedUpdates = stateHandler.delayedUpdates.map(x => x.atom.atom).mkString("\n")
 
           stateHandler.delayedUpdates foreach { u =>
-
             val newRuleFlag = ExpertAdviceFunctions.updateWeights(u.atom, u.prediction, u.inertiaExpertPrediction, u.initWeightSum,
               u.termWeightSum, u.predictedLabel, u.markedMap, u.feedback, stateHandler, u.learningRate, u.weightUpdateStrategy,
               u.withInertia)
-
             u.generateNewRuleFlag = newRuleFlag
           }
 
@@ -278,7 +244,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
           if (newRulesFrom.nonEmpty) {
 
             val random = new Random
-            for (_ <- 1 to 3) {
+            for (_ <- 1 to 5) {
               val u = newRulesFrom(random.nextInt(newRulesFrom.length))
               newRulesFrom = newRulesFrom.filter(x => x != u)
 
@@ -288,29 +254,16 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
                 u.feedback, batch, u.atom.atom, inps, Logger(this.getClass).underlying, stateHandler,
                 percentOfMistakesBeforeSpecialize, randomizedPrediction, "", false,
                 conservativeRuleGeneration, u.generateNewRuleFlag)
-
             }
-
           }
 
-          val expandedInit =
-            SingleCoreOLEDFunctions.expandRules(Theory(stateHandler.ensemble.initiationRules.filter(x => x.refinements.nonEmpty)),
-              inps, Logger(this.getClass).underlying)
-
-          val expandedTerm =
-            SingleCoreOLEDFunctions.expandRules(Theory(stateHandler.ensemble.terminationRules.filter(x => x.refinements.nonEmpty)),
-              inps, Logger(this.getClass).underlying)
-
-          stateHandler.ensemble.initiationRules = expandedInit._1.clauses
-          stateHandler.ensemble.terminationRules = expandedTerm._1.clauses
-
+          expandRules()
           val allRules = (stateHandler.ensemble.initiationRules ++ stateHandler.ensemble.terminationRules).flatMap(x => List(x) ++ x.refinements)
-
           println(s"\n\n====================== Theory Size: ${allRules.size}=======================")
 
-
-
-           */
+          woled.Utils.dumpToFile(avgLoss(perBatchError)._3.mkString(", "), "/home/nkatz/Desktop/kernel", "overwrite")
+          stateHandler.pruneRules(inps.pruneThreshold)
+          */
 
           // ACTUAL EXECUTION FLOW
           /*ExpertAdviceFunctions.process(batch, batch.annotation.toSet, inps,
@@ -364,6 +317,39 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
             receiveFeedbackBias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap, inputTheory = Some(inputTheory))*/
         }
       }
+    }
+  }
+
+
+  def expandRules() = {
+    val expandedInit =
+      SingleCoreOLEDFunctions.expandRules(Theory(stateHandler.ensemble.initiationRules.filter(x => x.refinements.nonEmpty)), inps, logger)
+
+    val expandedTerm =
+      SingleCoreOLEDFunctions.expandRules(Theory(stateHandler.ensemble.terminationRules.filter(x => x.refinements.nonEmpty)), inps, logger)
+
+    stateHandler.ensemble.initiationRules = expandedInit._1.clauses
+    stateHandler.ensemble.terminationRules = expandedTerm._1.clauses
+  }
+
+  def avgLoss(in: Vector[Int]) = {
+    in.foldLeft(0, 0, Vector.empty[Double]){ (x, y) =>
+      val (count, prevSum, avgVector) = (x._1, x._2, x._3)
+      val (newCount, newSum) = (count + 1, prevSum + y)
+      (newCount, newSum, avgVector :+ newSum.toDouble/newCount )
+    }
+  }
+
+  def generateNewRules(error: Double, batch: Example) = {
+    if (error > 0) {
+      println("Generating new rules...")
+      val topInit = stateHandler.ensemble.initiationRules
+      val topTerm = stateHandler.ensemble.terminationRules
+      val growNewInit = Theory(topInit).growNewRuleTest(batch, "initiatedAt", inps.globals)
+      val growNewTerm = Theory(topTerm).growNewRuleTest(batch, "terminatedAt", inps.globals)
+      val newInit = if (growNewInit) oled.functions.SingleCoreOLEDFunctions.generateNewRules(Theory(topInit), batch, "initiatedAt", inps.globals) else Nil
+      val newTerm = if (growNewTerm) oled.functions.SingleCoreOLEDFunctions.generateNewRules(Theory(topTerm), batch, "terminatedAt", inps.globals) else Nil
+      stateHandler.ensemble.updateRules(newInit ++ newTerm, "add", inps)
     }
   }
 

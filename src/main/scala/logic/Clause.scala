@@ -502,7 +502,7 @@ case class Clause(head: PosLiteral = PosLiteral(),
       //gainInt
     } else if (this.head.functor == "terminatedAt") {
       Globals.scoringFunction match {
-        case "default" =>  if (!precision.isNaN) precision else 0.0 //if (!recall.isNaN) recall else 0.0
+        case "default" => if (!recall.isNaN) recall else 0.0 //if (!precision.isNaN) precision else 0.0
 
         //case "default" => weighted_recall
 
@@ -510,7 +510,7 @@ case class Clause(head: PosLiteral = PosLiteral(),
 
         //case "default" => if (!recall.isNaN) (1.0 - 1.0/(1.0+tps.toDouble)) * recall else 0.0
 
-        case "foilgain" => foilGain("precision") //foilGain("recall")
+        case "foilgain" => foilGain("recall") //foilGain("precision")
         case "fscore" => fscore
         case _ => throw new RuntimeException("Error: No scoring function given.")
       }

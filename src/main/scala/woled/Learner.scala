@@ -110,6 +110,7 @@ class Learner[T <: app.runutils.IOHandling.Source](inps: RunningOptions, trainin
       }
 
       this.inertiaAtoms = inertiaAtoms
+      this.inertiaAtoms = Vector.empty[Literal]              // Use this to difuse inertia
 
       state.perBatchError = state.perBatchError :+ (fpCounts + fnCounts)
 

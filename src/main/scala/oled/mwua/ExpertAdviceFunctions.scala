@@ -49,6 +49,8 @@ object ExpertAdviceFunctions extends LazyLogging {
     //stateHandler.ensemble.removeZeroWeights
     //========================================
 
+    stateHandler.inertiaExpert.clear() // THIS IS NECESSARY (removing it breaks results)
+
     val streaming = true //true
     var batchError = 0
     var batchFPs = 0
@@ -668,7 +670,7 @@ object ExpertAdviceFunctions extends LazyLogging {
         }
       }
 
-      if (outcome == "FP") { //|| outcome == "FN"
+      /*if (outcome == "FP") { //|| outcome == "FN"
         println("======================================================================")
         println(s"prediction: $prediction, actual: $outcome, fluent: $currentFluent")
         if (withInertia) {
@@ -676,13 +678,9 @@ object ExpertAdviceFunctions extends LazyLogging {
         }
         println(s"Total init before|after weights update & normalization: $totalInitWeightPrevious|$totalInitWeightAfterWeightsUpdate|$totalInitWeightAfterNormalization")
         println(s"Total term before|after weights update & normalization: $totalTermWeightPrevious|$totalTermWeightAfterWeightsUpdate|$totalTermWeightAfterNormalization")
-        //println("AWAKE INIT:")
-        //debuggingInfo(awakeInitRules, "initiated")
-        //println("AWAKE TERM:")
-        //debuggingInfo(awakeTermRules, "terminated")
         println(s"total weight before/after updates/normalization: $totalEnsembleWeightBefore/$totalEnsembleWeightAfterUpdates/$totalEnsembleWeightAfterNormalization equal: ${totalEnsembleWeightBefore == totalEnsembleWeightAfterNormalization}")
         println("======================================================================")
-      }
+      }*/
 
 
 

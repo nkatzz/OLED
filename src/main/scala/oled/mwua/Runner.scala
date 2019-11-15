@@ -105,7 +105,7 @@ object Runner extends LazyLogging {
       /* This is for running with the entire CAVIAR (no test set)*/
       ///*
       val trainingDataOptions =
-        new MongoDataOptions(dbNames = train1, //trainShuffled ,//dataset._1,
+        new MongoDataOptions(dbNames = train2, //trainShuffled ,//dataset._1,
           chunkSize = runningOptions.chunkSize, targetConcept = runningOptions.targetHLE, sortDbByField = "time", what = "training")
 
       val testingDataOptions = trainingDataOptions

@@ -10,16 +10,15 @@ import utils.plotting.TPLPExpertsPlots.makeSparse*/
 
 import scalatikz.pgf.enums.Color.{BLACK, BLUE, RED}
 import scalatikz.pgf.plots.Figure
-import scalatikz.pgf.plots.enums.LegendPos.NORTH_EAST
+import scalatikz.pgf.plots.enums.LegendPos.{NORTH_EAST, NORTH_WEST}
 import scalatikz.pgf.Compiler.LUA_LATEX
 
 import scala.io.Source
 
 object Draft extends App {
 
-  //plot("/home/nkatz/Desktop/PEA-NEW-RESULTS/Batch-size-100", "/home/nkatz/Desktop/PEA-NEW-RESULTS")
+  plot("/home/nkatz/Desktop/PEA-NEW-RESULTS/Moving-Batch-size-500", "/home/nkatz/Desktop/PEA-NEW-RESULTS")
 
-  plot("/home/nkatz/Desktop/PEA-NEW-RESULTS/holdout", "/home/nkatz/Desktop/PEA-NEW-RESULTS")
 
   /*Figure("secondary_axis")
     .plot(lineColor = RED)((-5 to 5) -> ((x: Double) => 3 * x))
@@ -37,14 +36,14 @@ object Draft extends App {
     val data = Source.fromFile(dataPath).getLines.filter(x => !x.isEmpty && !x.startsWith("%")) //.split(",")
 
     val OLED  = data.next().split(",").map(_.toDouble).toVector
-    //val OLED_MLN = data.next().split(",").map(_.toDouble).toVector
-    //val OLED_Experts = data.next().split(",").map(_.toDouble).toVector
+    val OLED_MLN = data.next().split(",").map(_.toDouble).toVector
+    val OLED_Experts = data.next().split(",").map(_.toDouble).toVector
 
     Figure("meeting-prequential-mistakes")
       //.plot(color = BLACK, marker = X, markStrokeColor = BLACK)(makeSparse(handCrafted))
       .plot(lineColor = BLACK)(OLED)
-      //.plot(lineColor = RED)(OLED_MLN)
-      //.plot(lineColor = BLUE)(OLED_Experts)
+      .plot(lineColor = RED)(OLED_MLN)
+      .plot(lineColor = BLUE)(OLED_Experts)
 
 
       .havingLegends("\\footnotesize \\textsf{OLED}", "\\footnotesize \\textsf{WOLED}", "\\footnotesize \\textsf{Experts}")
@@ -57,8 +56,8 @@ object Draft extends App {
       plot(color = RED, marker = ASTERISK, markStrokeColor = RED)(makeSparse(OLED_Experts))
       .havingLegends("\\footnotesize \\textsf{HandCrafted}", "\\footnotesize \\textsf{HandCrafted-EXP}", "\\footnotesize \\textsf{OLED}",
         "\\footnotesize \\textsf{OLED-MLN}", "\\footnotesize \\textsf{OLED-EXP}")*/
-      .havingLegendPos(NORTH_EAST)
-      .havingXLabel("\\footnotesize Mini-batches (size 500)")
+      .havingLegendPos(NORTH_WEST)
+      .havingXLabel("\\footnotesize Mini-batches (size 100)")
       .havingYLabel("\\footnotesize \\textbf{Average Loss}").
       //havingTitle("\\emph{Meeting}").
       havingTitle("\\emph{Meeting},ybar").

@@ -93,18 +93,30 @@ class StateHandler {
 
 
 
-  def pruneRules(acceptableScore: Double) = {
+  // "what" here is either "weight" of "score". If what=weight then acceptableScore
+  // should be a weight threshold, e.g. 0.005. what=score then acceptableScore is a
+  // threshold on the rule's precision set via the --prune parameter. Pruning with score
+  // does not work, a large number of redundant rules have very good score but very low coverage.
+  def pruneRules(what: String, acceptableScore: Double, logger: org.slf4j.Logger) = {
 
     /* Remove rules by score */
     def removeBadRules(rules: List[Clause]) = {
       rules.foldLeft(List.empty[Clause]) { (accum, rule) =>
-        if (rule.body.length >= 2 && rule.score <= 0.5) accum else accum :+ rule
+        if (what == "score") {
+          if (rule.body.length >= 2 && rule.score <= 0.5) accum else accum :+ rule
+        } else {
+          if (rule.body.length >= 3 && rule.w_pos < acceptableScore) {
+            logger.info(s"\nRemoved rule (weight threshold is $acceptableScore)\n${rule.showWithStats}")
+            accum
+          } else {
+            accum :+ rule
+          }
+        }
+
       }
     }
-
     ensemble.initiationRules = removeBadRules(ensemble.initiationRules)
     ensemble.terminationRules = removeBadRules(ensemble.terminationRules)
-
   }
 
 
