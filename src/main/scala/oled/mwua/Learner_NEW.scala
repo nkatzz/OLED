@@ -230,7 +230,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
 
           woled.Utils.dumpToFile(avgLoss(perBatchError)._3.mkString(", "), "/home/nkatz/Desktop/kernel", "overwrite")
 
-          stateHandler.pruneRules(inps.pruneThreshold)
+          //stateHandler.pruneRules(inps.pruneThreshold)
 
 
 
