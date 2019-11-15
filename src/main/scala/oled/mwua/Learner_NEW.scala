@@ -372,7 +372,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
 
     case "start" => {
 
-      for( i <- (1 to 2) ) {
+      for( i <- (1 to 1) ) {
         processData()
       }
 
