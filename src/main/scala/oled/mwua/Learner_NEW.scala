@@ -230,6 +230,8 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
 
           woled.Utils.dumpToFile(avgLoss(perBatchError)._3.mkString(", "), "/home/nkatz/Desktop/kernel", "overwrite")
 
+          stateHandler.pruneRules(inps.pruneThreshold)
+
 
 
 
@@ -316,7 +318,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
             batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
             receiveFeedbackBias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap)*/
 
-          stateHandler.pruneRules(inps.pruneThreshold)
+
 
         } else {
 
@@ -370,7 +372,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
 
     case "start" => {
 
-      for( i <- (1 to 1) ) {
+      for( i <- (1 to 2) ) {
         processData()
       }
 
