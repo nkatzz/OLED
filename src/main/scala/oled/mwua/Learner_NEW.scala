@@ -20,7 +20,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
                                val trainingDataFunction: T => Iterator[Example],
                                val testingDataFunction: T => Iterator[Example],
                                val writeExprmtResultsTo: String = "") extends Actor {
-  val learningRate = 0.9 //1.0 //0.05 //0.2 // 1.0 usually works for winnow
+  val learningRate = 0.2 //1.0 //0.05 //0.2 // 1.0 usually works for winnow
 
   val epsilon = 0.9 //0.9 // used in the randomized version
 
@@ -187,7 +187,7 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
 
           perBatchError = perBatchError :+ error
 
-          //generateNewRules(error, batch)
+          generateNewRules(error, batch)
 
           bias = 1.0
           ExpertAdviceFunctions.process(batch, batch.annotation.toSet, inps,
@@ -195,10 +195,10 @@ class Learner_NEW[T <: Source](val inps: RunningOptions,
             batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
             bias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap)
 
-          //expandRules()
+          expandRules()
           woled.Utils.dumpToFile(avgLoss(perBatchError)._3.mkString(", "), "/home/nkatz/Desktop/kernel", "overwrite")
 
-          stateHandler.pruneRules("weight", 0.0005, Logger(this.getClass).underlying)
+          //stateHandler.pruneRules("weight", 0.0005, Logger(this.getClass).underlying)
           //stateHandler.pruneRules("score", inps.pruneThreshold)
 
 

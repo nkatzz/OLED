@@ -72,8 +72,9 @@ object IntervalHandler extends App {
 
   ///home/nkatz/dev/Brest-data-5-5-2018/brest-no_duration_constraints/results_critical
 
-  readDataIntoMiniBatches("/home/nkatz/dev/Brest-data-5-5-2018/Datasets/dataset_RTEC_critical__vagms_preprocess_prox.db", 10, "rendezVous", "asp")
+  //readDataIntoMiniBatches("/home/nkatz/dev/Brest-data-5-5-2018/Datasets/dataset_RTEC_critical__vagms_preprocess_prox.db", 10, "rendezVous", "asp")
 
+  readDataIntoMiniBatches("/home/nkatz/dev/Brest-data-5-5-2018/Brest-data/Datasets/dataset_RTEC_critical.csv", 10, "rendezVous", "asp")
 
 
 
@@ -83,7 +84,7 @@ object IntervalHandler extends App {
     val f = new File("/home/nkatz/dev/Brest-data-5-5-2018/rendezVous-batchsize-10")
     val writeToFile = new BufferedWriter(new FileWriter(f))
 
-    val data = Source.fromFile(dataPath).getLines
+    val data = Source.fromFile(dataPath).getLines.filter(x => !x.startsWith("coord") && !x.startsWith("velocity"))
     val currentBatch = new ListBuffer[String]
     var timesAccum = scala.collection.mutable.SortedSet[Long]()
     var llesAccum = scala.collection.mutable.SortedSet[String]()
@@ -91,6 +92,7 @@ object IntervalHandler extends App {
     while(data.hasNext) {
       val newLine = data.next()
       val split = newLine.split("\\|")
+      println(split.mkString(" "))
       val time = split.last
       val lle = split.head
       if (!timesAccum.contains(time)) timesAccum += time.toLong

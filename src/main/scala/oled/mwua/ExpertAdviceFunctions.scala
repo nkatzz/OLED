@@ -51,6 +51,10 @@ object ExpertAdviceFunctions extends LazyLogging {
 
     stateHandler.inertiaExpert.clear() // THIS IS NECESSARY (removing it breaks results)
 
+    // quick & dirty...
+    stateHandler.ensemble.initiationRules.foreach(x => x.isTopRule = true)
+    stateHandler.ensemble.terminationRules.foreach(x => x.isTopRule = true)
+
     val streaming = true //true
     var batchError = 0
     var batchFPs = 0
@@ -114,8 +118,10 @@ object ExpertAdviceFunctions extends LazyLogging {
               if (!randomizedPrediction) {
 
                 val (_prediction, _inertiaExpertPrediction, _initWeightSum, _termWeightSum) =
+
                   if (weightUpdateStrategy == "winnow") predict(atom, stateHandler, markedMap)
-                  else predictHedge(atom, stateHandler, markedMap, withInertia)
+
+                  else predictHedge(atom, stateHandler, markedMap, withInertia, topRulesOnly = false)
                   //else ClassicSleepingExpertsHedge.predictHedge_NO_INERTIA(atom, stateHandler, markedMap)
 
                 prediction = _prediction
@@ -271,7 +277,7 @@ object ExpertAdviceFunctions extends LazyLogging {
                   updateWeightsRandomized(atom, prediction, inertiaExpertPrediction, predictedLabel, feedback, stateHandler, epsilon, markedMap, totalWeight)
                 }
 
-                if (predictedLabel != feedback) {
+                /*if (predictedLabel != feedback) {
                   if (!withInputTheory) {
                     // Shouldn't we update the weights on newly generated rules here?
                     // Of course it's just 1 example, no big deal, but still...
@@ -286,7 +292,7 @@ object ExpertAdviceFunctions extends LazyLogging {
 
                     if (structureUpdate_?) break
                   }
-                }
+                }*/
               } else {
 
                 val delayedUpdate = new DelayedUpdate(atom, prediction, inertiaExpertPrediction,
@@ -302,7 +308,7 @@ object ExpertAdviceFunctions extends LazyLogging {
           stateHandler.perBatchError = stateHandler.perBatchError :+ batchError
           stateHandler.updateRunningF1Score
 
-          if (!withInputTheory) { // Update structure only when we are learning from scratch
+          /*if (!withInputTheory) { // Update structure only when we are learning from scratch
             val expandedInit =
               SingleCoreOLEDFunctions.expandRules(Theory(stateHandler.ensemble.initiationRules.filter(x => x.refinements.nonEmpty)),
                 inps, Logger(this.getClass).underlying)
@@ -313,7 +319,7 @@ object ExpertAdviceFunctions extends LazyLogging {
 
             stateHandler.ensemble.initiationRules = expandedInit._1.clauses
             stateHandler.ensemble.terminationRules = expandedTerm._1.clauses
-          }
+          }*/
         }
       }
     }
@@ -1359,10 +1365,11 @@ object ExpertAdviceFunctions extends LazyLogging {
     */
   }
 
-  def predictHedge(a: AtomTobePredicted, stateHanlder: StateHandler, markedMap: Map[String, Clause], withInertia: Boolean = true) = {
+  def predictHedge(a: AtomTobePredicted, stateHanlder: StateHandler,
+                   markedMap: Map[String, Clause], withInertia: Boolean = true, topRulesOnly: Boolean = false) = {
 
     // Here we assume that initiation rules predict '1' and termination rules predict '0'.
-    // The prediction is a number in [0,1] resulting from the weighted avegage of the experts predictions:
+    // The prediction is a number in [0,1] resulting from the weighted average of the experts predictions:
     // prediction = (Sum_{weight of awake init rules} + inertia_weight) / (Sum_{weight of awake term rules} + Sum_{weight of awake init rules} + inertia_weight)
     // if prediction > threshold (e.g. 0.5) then we predict holds, else false
 
@@ -1377,11 +1384,23 @@ object ExpertAdviceFunctions extends LazyLogging {
     val termWeightSum = if (awakeTerm.nonEmpty) awakeTerm.map(x => markedMap(x)).filter(x => x.body.nonEmpty).map(x => x.w_pos).sum else 0.0
 
     val _prediction =
-      if (withInertia) {
-        (inertiaExpertPrediction + initWeightSum) / (inertiaExpertPrediction + initWeightSum + termWeightSum)
+      if (! topRulesOnly) {
+        if (withInertia) {
+          (inertiaExpertPrediction + initWeightSum) / (inertiaExpertPrediction + initWeightSum + termWeightSum)
+        } else {
+          initWeightSum / (initWeightSum + termWeightSum)
+        }
       } else {
-        initWeightSum / (initWeightSum + termWeightSum)
+        // Quick and dirty hack to get predictions without the specializations (only the top rules)
+        val initWeightSumTop = if (awakeInit.nonEmpty) awakeInit.map(x => markedMap(x)).filter(x => x.body.nonEmpty && x.isTopRule).map(x => x.w_pos).sum else 0.0
+        val termWeightSumTop = if (awakeTerm.nonEmpty) awakeTerm.map(x => markedMap(x)).filter(x => x.body.nonEmpty && x.isTopRule).map(x => x.w_pos).sum else 0.0
+        if (withInertia) {
+          (inertiaExpertPrediction + initWeightSumTop) / (inertiaExpertPrediction + initWeightSumTop + termWeightSumTop)
+        } else {
+          initWeightSum / (initWeightSumTop + termWeightSumTop)
+        }
       }
+
 
     //val _prediction = initWeightSum / (initWeightSum + termWeightSum)
 
