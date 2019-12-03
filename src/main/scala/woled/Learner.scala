@@ -47,6 +47,10 @@ class Learner[T <: app.runutils.IOHandling.Source](inps: RunningOptions, trainin
 
     case batch: Example =>
 
+      if (batch.annotation.nonEmpty) {
+        val stop = "stop"
+      }
+
       logger.info(s"\n\n\n *** BATCH $batchCount *** ")
 
       // Get the data in MLN format by doing numerical stuff thresholds etc. with clingo

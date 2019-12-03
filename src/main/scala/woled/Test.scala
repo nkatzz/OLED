@@ -9,9 +9,27 @@ import akka.pattern._
 import akka.util.Timeout
 import logic.Clause
 
+import scala.io.Source
+
 /**
  * Created by nkatz at 17/10/19
  */
+
+
+object NewTest extends App {
+
+  val inputPath = "/home/nkatz/dev/MarineTraffic-Infore/events_infore.csv"
+
+  val events = Source.fromFile(inputPath).getLines().foldLeft(Set.empty[String]) { (x, y) =>
+    val split = y.split(",")
+    val event = split(1)
+    if (!x.contains(event)) x + event else x
+  }
+
+  println(events)
+
+}
+
 
 object Test {
 
