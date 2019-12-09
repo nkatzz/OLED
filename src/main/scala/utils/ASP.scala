@@ -490,11 +490,9 @@ object ASP extends ASPResultsParser with LazyLogging {
 
     val status = {
       val statusLine = results.filter(x => x.contains("SATISFIABLE") || x.contains("UNSATISFIABLE") || x.contains("OPTIMUM FOUND"))
-      if (statusLine.length > 1) throw new RuntimeException(s"Not sure how to get the result from Clingo. The output is\n\n${results.mkString("\n")}")
-      if (statusLine.isEmpty) throw new RuntimeException(s"No STATUS returned." +
-        s" Input program:\n\n${Source.fromFile(aspFile).getLines.toList.mkString("\n")}\n\nASP Result: ${results.mkString("\n")}")
-
-      statusLine.head.replaceAll("\\s", "") // extract the actual string literal (SATISFIABLE, UNSATISFIABLE or OPTIMUM FOUND)
+      if (statusLine.isEmpty) throw new RuntimeException(s"No STATUS returned from Clingo.")
+      // extract the actual string literal (SATISFIABLE, UNSATISFIABLE or OPTIMUM FOUND)
+      statusLine.head.replaceAll("\\s", "")
     }
 
     if(status == Globals.UNSAT) {
@@ -652,7 +650,7 @@ object ASP extends ASPResultsParser with LazyLogging {
        (for( (c,i) <- theory.clauses zip List.range(0,theory.clauses.length);
              (cs,j) <- c.supportSet.clauses zip List.range(0,c.supportSet.clauses.length);
              y = cs.withTypePreds(globals);
-             marked = Clause(Literal(functor="marked", terms=List(Constant(i.toString), Constant(j.toString),y.head)),body = y.body))
+             marked = Clause(Literal(predSymbol="marked", terms=List(Constant(i.toString), Constant(j.toString),y.head)),body = y.body))
           yield marked.tostring).mkString("\n")
 
      val ruleGen = s"rule(0..${theory.clauses.length}).\n"

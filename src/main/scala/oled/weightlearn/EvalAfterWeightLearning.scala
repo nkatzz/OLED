@@ -66,7 +66,7 @@ class EvalAfterWeightLearning(val mlnClauses: List[String], val testData: Iterat
           val innerSignatureAtom = parsed.terms.head.asInstanceOf[Literal]
           // All inner terms of the signature atom should be constants,
           // otherwise something's wrong...
-          Literal(functor = innerSignatureAtom.functor,
+          Literal(predSymbol = innerSignatureAtom.predSymbol,
             terms = innerSignatureAtom.terms.map(x => Constant(x.name.capitalize))).tostring
         }
 
@@ -116,7 +116,7 @@ class EvalAfterWeightLearning(val mlnClauses: List[String], val testData: Iterat
 
   def toMLNFormat(x: String) = {
     val parsed = Literal.parseWPB2(x)
-    Literal.toMLNFlat(parsed).tostring_mln
+    Literal.toMLNFlat(parsed).tostringMLN
   }
 
   def getEventFluentSignatures(e: Example) = {

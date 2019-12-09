@@ -58,7 +58,7 @@ object LogicUtils {
     // Just to be on the safe side...
     cc.parentClause = c.parentClause
     cc.countsPerNode = c.countsPerNode
-    cc.mlnWeight = c.mlnWeight
+    cc.weight = c.weight
     cc.subGradient = c.subGradient
     cc.w_pos = c.w_pos
     cc.totalTPs = c.totalTPs

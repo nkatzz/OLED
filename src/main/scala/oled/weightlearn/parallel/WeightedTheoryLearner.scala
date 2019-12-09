@@ -140,8 +140,8 @@ class WeightedTheoryLearner[T <: Source](inps: RunningOptions, trainingDataOptio
             (rule => if (rule.refinements.isEmpty) rule.generateCandidateRefs(inps.globals))
 
           newTopTheory.clauses.map { topClause =>
-            val bestRef = topClause.refinements.sortBy(x => - x.mlnWeight).head
-            if (topClause.mlnWeight > bestRef.mlnWeight) topClause else bestRef
+            val bestRef = topClause.refinements.sortBy(x => - x.weight).head
+            if (topClause.weight > bestRef.weight) topClause else bestRef
 
           }
         } else newTopTheory.clauses
@@ -284,8 +284,8 @@ class WeightedTheoryLearner[T <: Source](inps: RunningOptions, trainingDataOptio
     val inferredTrue = inferredGroundNetwork.filter(x => x.mlnTruthValue)
     val actuallyTrue = annotationMLN
 
-    val _inferredTrue = inferredTrue.map(x => x.tostring_mln).toSet
-    val _actuallyTrue = actuallyTrue.map(x => x.tostring_mln).toSet
+    val _inferredTrue = inferredTrue.map(x => x.tostringMLN).toSet
+    val _actuallyTrue = actuallyTrue.map(x => x.tostringMLN).toSet
 
     val tps = _inferredTrue.intersect(_actuallyTrue).size
     val fps = _inferredTrue.diff(_actuallyTrue).size

@@ -86,11 +86,11 @@ object LookAheadImplementations {
   }
 
   def hasLookAhead(lit: Literal, lookaheadSpecs: List[LookAheadSpecification]) = {
-    lookaheadSpecs.exists(p => p.litToBeAdded.functor == lit.functor && p.litToBeAdded.arity == lit.arity)
+    lookaheadSpecs.exists(p => p.litToBeAdded.predSymbol == lit.predSymbol && p.litToBeAdded.arity == lit.arity)
   }
 
   def matches(x: Literal, y:Literal) = {
-    x.functor == y.functor && x.arity == y.arity
+    x.predSymbol == y.predSymbol && x.arity == y.arity
   }
 
   def selectLookaheadSpec(litToAdd: Literal, c: Clause, bottomClause: Clause, lookaheadSpecs: List[LookAheadSpecification]): LookAheadSpecification = {

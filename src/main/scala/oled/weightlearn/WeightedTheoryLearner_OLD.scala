@@ -227,7 +227,7 @@ class WeightedTheoryLearner_OLD[T <: Source](inps: RunningOptions, trainingDataO
                             statsperClause: Map[Int, (Double, Double, Int, Int, Int)]) = {
         val id = uuidsToRuleIdsMap(clause.uuid)
         val stats = statsperClause(id)
-        clause.mlnWeight = stats._1
+        clause.weight = stats._1
         clause.subGradient = stats._2
         clause.tps = clause.tps + stats._3
         clause.fps = clause.fps + stats._4
@@ -273,7 +273,7 @@ class WeightedTheoryLearner_OLD[T <: Source](inps: RunningOptions, trainingDataO
 
     val allClauses = topTheory.clauses
 
-    println(s"MLN WEIGHT: ${allClauses.head.mlnWeight}")
+    println(s"MLN WEIGHT: ${allClauses.head.weight}")
 
     val enumClauses = (1 to allClauses.length).toList
 
@@ -309,7 +309,7 @@ class WeightedTheoryLearner_OLD[T <: Source](inps: RunningOptions, trainingDataO
 
       val id = uuidsToRuleIdsMap(clause.uuid)
       val stats = statsperClause(id)
-      clause.mlnWeight = stats._1
+      clause.weight = stats._1
       clause.subGradient = stats._2
       clause.tps = clause.tps + stats._3
       clause.fps = clause.fps + stats._4

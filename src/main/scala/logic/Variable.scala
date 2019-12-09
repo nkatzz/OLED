@@ -23,5 +23,5 @@ case class Variable(override val name: String, inOrOutVar: String = "", override
    require(name.toCharArray()(0).isUpper) // else throws an IllegalArgumentException
    override def tostring = name
    override def tostringQuote = if (inOrOutVar == "-" || inOrOutVar == "#") "\"" + name + "\"" else name
-   def asLiteral = Literal(functor = name)
+   def asLiteral = Literal(predSymbol = name)
 }

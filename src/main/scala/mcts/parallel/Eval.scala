@@ -51,7 +51,7 @@ object Eval {
       atoms.foreach { a=>
         val lit = Literal.parse(a)
         val inner = lit.terms.head
-        lit.functor match {
+        lit.predSymbol match {
           case "tps" => theory.tps += inner.tostring
           case "fps" => theory.fps += inner.tostring
           case "fns" => theory.fns += inner.tostring

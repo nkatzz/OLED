@@ -60,7 +60,7 @@ class MAPInference extends LazyLogging {
     groundNetwork.zipWithIndex.foreach { case (lit, idx) =>
 
       // Literal weight:
-      val weight = idsToRuleIdsMap(lit.derivedFrom).mlnWeight
+      val weight = idsToRuleIdsMap(lit.derivedFrom).weight
       val floatVar = literalLPVars(idx)
 
       if (!lit.isNAF && weight != 0) expressions ::= weight * floatVar
@@ -109,7 +109,7 @@ class MAPInference extends LazyLogging {
       for (i <- fractionalSolutions.indices) {
         val id = fractionalSolutions(i)
         val currentAtom = groundNetwork(id)
-        val weight = idsToRuleIdsMap(currentAtom.derivedFrom).mlnWeight
+        val weight = idsToRuleIdsMap(currentAtom.derivedFrom).weight
 
         if (currentAtom.mlnTruthValue && !currentAtom.isNAF && weight >= 0)
           currentAtom.mlnTruthValue = true

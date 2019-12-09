@@ -617,14 +617,14 @@ object AuxFuncs extends LazyLogging {
 
   // The head of a weighted rule is of the form: marked(ruleId, "weight", actualHead)
   def marked(c: Clause, globals: Globals) = {
-    val cc = Clause(head=Literal(functor = "marked", terms=List(c.##.toString, s""""${c.w_pos}"""", c.head)), body=c.withTypePreds(globals).body)
+    val cc = Clause(head=Literal(predSymbol = "marked", terms=List(c.##.toString, s""""${c.w_pos}"""", c.head)), body=c.withTypePreds(globals).body)
     cc.w_pos = c.w_pos
     cc
   }
 
   // The head of a weighted rule is of the form: marked(ruleId, actualHead)
   def markedQuickAndDirty(c: Clause, globals: Globals) = {
-    val cc = Clause(head=Literal(functor = "marked", terms=List(c.##.toString, c.head)), body=c.withTypePreds(globals).body)
+    val cc = Clause(head=Literal(predSymbol = "marked", terms=List(c.##.toString, c.head)), body=c.withTypePreds(globals).body)
     cc.w_pos = c.w_pos
     cc
   }

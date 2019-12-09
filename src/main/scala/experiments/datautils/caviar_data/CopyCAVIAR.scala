@@ -70,9 +70,9 @@ object CopyCAVIAR extends App {
     val first = replaceWith.head._2
     val second = replaceWith.tail.head._2
     val newLit =
-      Literal(functor = toLit.functor,
+      Literal(predSymbol = toLit.predSymbol,
         terms = List(Literal(
-          functor = toLit.terms.head.asInstanceOf[Literal].functor,
+          predSymbol = toLit.terms.head.asInstanceOf[Literal].predSymbol,
           terms = List(Constant(first), Constant(second)) ), toLit.terms.tail.head)).tostring
     newLit
   }

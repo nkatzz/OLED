@@ -362,7 +362,7 @@ object Scoring {
 
       rule.mistakes += mistakes
 
-      val prevWeight = rule.mlnWeight
+      val prevWeight = rule.weight
 
       //println(s"Before: ${rule.mlnWeight}")
 
@@ -376,10 +376,10 @@ object Scoring {
       val currentSubgradient = mistakes
       rule.subGradient += currentSubgradient * currentSubgradient
       val coefficient = eta / (delta + math.sqrt(rule.subGradient))
-      val value = rule.mlnWeight - coefficient * currentSubgradient
+      val value = rule.weight - coefficient * currentSubgradient
       val difference = math.abs(value) - (lambda * coefficient)
-      if (difference > 0) rule.mlnWeight = if (value >= 0) difference else -difference
-      else rule.mlnWeight = 0.0
+      if (difference > 0) rule.weight = if (value >= 0) difference else -difference
+      else rule.weight = 0.0
 
       // Experts:
       /*var newWeight = if (totalGroundings!=0) rule.mlnWeight * Math.pow(0.8, rule.mistakes/totalGroundings) else rule.mlnWeight * Math.pow(0.8, rule.mistakes)
@@ -422,8 +422,8 @@ object Scoring {
 
     val (initTopRules, termTopRules) = (inps.globals.state.initiationRules, inps.globals.state.terminationRules)
 
-    val fpSeedAtoms = fps.map(x => x._1 -> x._2.map(x => Literal(functor = "terminatedAt", terms = x.terms)))
-    val fnSeedAtoms = fns.map(x => x._1 -> x._2.map(x => Literal(functor = "initiatedAt", terms = x.terms)))
+    val fpSeedAtoms = fps.map(x => x._1 -> x._2.map(x => Literal(predSymbol = "terminatedAt", terms = x.terms)))
+    val fnSeedAtoms = fns.map(x => x._1 -> x._2.map(x => Literal(predSymbol = "initiatedAt", terms = x.terms)))
 
     // These should be done in parallel...
     val initBCs = if(fnSeedAtoms.nonEmpty) pickSeedsAndGenerate(fnSeedAtoms, batch, inps, 3, initTopRules.toVector, logger) else Set.empty[Clause]
@@ -441,8 +441,8 @@ object Scoring {
     val termNewRules = newRules(termBCs)
 
     // These rules are generated to correct current mistakes, so set their weight to 1, sot they are applied immediately.
-    initNewRules foreach (x => x.mlnWeight = 1.0)
-    termNewRules foreach (x => x.mlnWeight = 1.0)
+    initNewRules foreach (x => x.weight = 1.0)
+    termNewRules foreach (x => x.weight = 1.0)
 
     (initNewRules, termNewRules)
   }

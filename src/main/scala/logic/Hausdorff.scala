@@ -94,7 +94,7 @@ object Hausdorff extends ClausalLogicParser {
   def hausdrfDist1[T <: Expression](x: T, y: T): Double = (x, y) match {
     case (x: Literal, y: Literal) =>
       val d = haussdorffOuter(x, y)
-      if (x.functor == y.functor && x.arity == y.arity) {
+      if (x.predSymbol == y.predSymbol && x.arity == y.arity) {
         d / (2 * x.arity)
       } else {
         d
@@ -114,7 +114,7 @@ object Hausdorff extends ClausalLogicParser {
     case (x: Constant, y: Constant, List()) =>
       if (x.name == y.name) accum + 0.0 else accum + 1.0
     case (x: Literal, y: Literal, hd :: tail) =>
-      if (x.functor != y.functor | x.arity != y.arity) {
+      if (x.predSymbol != y.predSymbol | x.arity != y.arity) {
         haussdorff(hd._1, hd._2, accum + 1.0, tail)
       } else {
         val currentDist = haussdorffOuter(x, y)
@@ -131,7 +131,7 @@ object Hausdorff extends ClausalLogicParser {
 
   def haussdorffOuter(x: Expression, y: Expression): Double = (x, y) match {
     case (x: Literal, y: Literal) =>
-      if (x.functor != y.functor | x.arity != y.arity) {
+      if (x.predSymbol != y.predSymbol | x.arity != y.arity) {
         1.0
       } else {
         val hd :: tail = x.terms zip y.terms

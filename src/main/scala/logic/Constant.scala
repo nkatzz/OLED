@@ -31,5 +31,5 @@ case class Constant(override val name: String, plmrk: String = "", override val 
 
   override def tostringQuote = if (plmrk == "-" || plmrk == "#") "\"" + name + "\"" else name
 
-  def asLiteral = Literal(functor = name)
+  def asLiteral = Literal(predSymbol = name)
 }

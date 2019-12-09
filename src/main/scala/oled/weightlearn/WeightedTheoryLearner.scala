@@ -123,7 +123,7 @@ class WeightedTheoryLearner[T <: Source](inps: RunningOptions, trainingDataOptio
 
         //val pruned = finalTheory.clauses.filter(x => x.mlnWeight > inps.mlnWeightThreshold && x.seenExmplsNum > inps.minEvalOn )
 
-        val pruned = finalTheory.clauses.filter( x => x.mlnWeight > 0.0 && x.seenExmplsNum > 2000 )
+        val pruned = finalTheory.clauses.filter( x => x.weight > 0.0 && x.seenExmplsNum > 2000 )
 
         logger.info(s"\nTheory (non-pruned)\n${finalTheory.showWithStats}")
 
@@ -300,8 +300,8 @@ class WeightedTheoryLearner[T <: Source](inps: RunningOptions, trainingDataOptio
   def predictSate(topTheory: Theory, e: Example, inps: RunningOptions, targetClass: String) = {
 
     val clauses = topTheory.clauses.map { topClause =>
-      val bestRef = topClause.refinements.sortBy(x => - x.mlnWeight).head
-      if (topClause.mlnWeight > bestRef.mlnWeight) topClause else bestRef
+      val bestRef = topClause.refinements.sortBy(x => - x.weight).head
+      if (topClause.weight > bestRef.weight) topClause else bestRef
     }
 
     val ((groundNetwork, trueGroundingsMap, totalExmplCount, annotationMLN, incorrectlyTerminated, correctlyNotTerminated), groundingTime) = {
@@ -317,10 +317,10 @@ class WeightedTheoryLearner[T <: Source](inps: RunningOptions, trainingDataOptio
     }
 
     val inferredTrue = inferredGroundNetwork.filter(x => x.mlnTruthValue).
-      map(x => Literal(functor = x.functor, terms = x.terms.take(x.terms.length-1))).map(x => x.tostring_mln).toSet
+      map(x => Literal(predSymbol = x.predSymbol, terms = x.terms.take(x.terms.length-1))).map(x => x.tostringMLN).toSet
 
     val actuallyTrue = annotationMLN.
-      map(x => Literal(functor = x.functor, terms = x.terms.take(x.terms.length-1))).map(x => x.tostring_mln).toSet
+      map(x => Literal(predSymbol = x.predSymbol, terms = x.terms.take(x.terms.length-1))).map(x => x.tostringMLN).toSet
 
     if (actuallyTrue.diff(inferredTrue).nonEmpty) {
       val stop = "stop"
@@ -388,7 +388,7 @@ class WeightedTheoryLearner[T <: Source](inps: RunningOptions, trainingDataOptio
 
 
     ///*
-    println(s"MLN WEIGHT: ${allClauses.head.mlnWeight}")
+    println(s"MLN WEIGHT: ${allClauses.head.weight}")
 
 
     val enumClauses = (1 to allClauses.length).toList

@@ -119,7 +119,7 @@ object CERSiteDisplayVideos {
     data foreach { x =>
       val parsed = Literal.parse(x._1)
       val ids = parsed.terms.map(_.tostring.split("id")(1)).mkString(",")
-      val first = s"${parsed.functor.tostring}($ids)"
+      val first = s"${parsed.predSymbol.tostring}($ids)"
       val second = x._2.map(y => s"(${(y.head/40.0).toInt}, ${(y.last/40.0).toInt})" ).mkString(",")
       val msg = s"$first:[$second]"
       file.write(msg+"\n")

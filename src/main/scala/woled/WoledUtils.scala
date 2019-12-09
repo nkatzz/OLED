@@ -97,9 +97,9 @@ object WoledUtils {
 
     /* Input definitive clauses, whose structure is learnt over time */
     val definiteClauses = rules.map { rule =>
-      val head = Literal.toMLNClauseLiteral(rule.head.asLiteral).tostring_mln
-      val body = rule.body.map(Literal.toMLNClauseLiteral(_).tostring_mln).mkString(" ^ ")
-      parser.parseDefiniteClause(s"${format(rule.mlnWeight)} $head :- $body")
+      val head = Literal.toMLNClauseLiteral(rule.head.asLiteral).tostringMLN
+      val body = rule.body.map(Literal.toMLNClauseLiteral(_).tostringMLN).mkString(" ^ ")
+      parser.parseDefiniteClause(s"${format(rule.weight)} $head :- $body")
     }
 
     /* Read the definite clauses from the BK file. FOR DEBUGGING */
@@ -123,7 +123,7 @@ object WoledUtils {
 
     for (atom <- mlnEvidenceAtoms) {
       val args = atom.terms.map(x => lomrf.logic.Constant(x.tostring)).toVector
-      val domains = kb.predicateSchema(AtomSignature(atom.functor, args.length))
+      val domains = kb.predicateSchema(AtomSignature(atom.predSymbol, args.length))
       domains.zip(args).foreach { case (domain, value) => const += domain -> value.symbol }
     }
 
@@ -332,15 +332,15 @@ object WoledUtils {
 
 
     for (atom <- mlnEvidenceAtoms) {
-      val predicate = atom.functor
+      val predicate = atom.predSymbol
       val args = atom.terms.map(x => lomrf.logic.Constant(x.tostring)).toVector
       evidenceBuilder.evidence += EvidenceAtom.asTrue(predicate, args)
     }
 
     for (atom <- inertiaAtoms) {
-      val predicate = atom.functor.capitalize
+      val predicate = atom.predSymbol.capitalize
       val fluent = atom.terms.head.asInstanceOf[Literal]
-      val fluentConst = s"${fluent.functor.capitalize}_${fluent.terms.map(x => x.tostring.capitalize).mkString("_")}"
+      val fluentConst = s"${fluent.predSymbol.capitalize}_${fluent.terms.map(x => x.tostring.capitalize).mkString("_")}"
       if (!mlmConstsToAspAtomsMap.keySet.contains(fluentConst)) mlmConstsToAspAtomsMap(fluentConst) = fluent.tostring
       val timeConst = atom.terms.tail.head.tostring
       val args = Vector(fluentConst, timeConst).map(x => lomrf.logic.Constant(x)).toVector
@@ -450,7 +450,7 @@ object WoledUtils {
       val parsed = Literal.parse(x)
       val atom = parsed.terms.head
       val atomStr = atom.tostring
-      val functor = atom.asInstanceOf[Literal].functor
+      val functor = atom.asInstanceOf[Literal].predSymbol
       val args =  atom.asInstanceOf[Literal].terms
 
       // This is the term that represents the MLN constant (function value) that is generated from this atom.
@@ -514,7 +514,7 @@ object WoledUtils {
     /* DEBUGGING INFO */
     val rules = ruleIdsMap.map(x => x._2).toVector
     println(s"Batch TPs: ${batchTPs.size}, batch FPs: ${batchFPs.size}, batch FNs: ${batchFNs.size}")
-    println(s"weights before: ${rules.map(x => x.mlnWeight).mkString(" ")}")
+    println(s"weights before: ${rules.map(x => x.weight).mkString(" ")}")
 
     val parentRules = scala.collection.mutable.Set[Clause]()
 
@@ -550,10 +550,10 @@ object WoledUtils {
         val currentSubgradient = actuallyTrueGroundingsInMapInferredState.size + actuallyFalseGroundingsInMapInferredState.size - correct.size
         rule.subGradient += currentSubgradient * currentSubgradient
         val coefficient = eta / (delta + math.sqrt(rule.subGradient))
-        val value = rule.mlnWeight - coefficient * currentSubgradient
+        val value = rule.weight - coefficient * currentSubgradient
         val difference = math.abs(value) - (lambda * coefficient)
-        if (difference > 0) rule.mlnWeight = if (value >= 0) difference else -difference
-        else rule.mlnWeight = 0.0
+        if (difference > 0) rule.weight = if (value >= 0) difference else -difference
+        else rule.weight = 0.0
 
         // This is used to score empty-bodied parent rules, which are not used for inference and thus they are not scored.
         if (rule.parentClause.body.isEmpty) {
@@ -593,7 +593,7 @@ object WoledUtils {
     }
 
     /* DEBUGGING INFO */
-    println(s"weights after:  ${rules.map(x => x.mlnWeight).mkString(" ")}")
+    println(s"weights after:  ${rules.map(x => x.weight).mkString(" ")}")
 
     (batchTPs, batchFPs, batchFNs)
 
@@ -656,7 +656,7 @@ object WoledUtils {
 
     rest foreach { atom =>
       val parsed = Literal.parse(atom)
-      val funcSymbol = parsed.functor
+      val funcSymbol = parsed.predSymbol
       val fluentInstance = parsed.terms.head.tostring
       val ruleId = parsed.terms.tail.head.tostring.split("_")(1).toInt
       if (!predictionsPerRuleMap.keySet.contains(ruleId)) predictionsPerRuleMap(ruleId) = (mutable.SortedSet[String](), mutable.SortedSet[String](), 0)
@@ -714,28 +714,28 @@ object WoledUtils {
       val nextTimeVar = logic.Variable("Te")
       if (rule.head.functor == "initiatedAt") {
 
-        val head1 = Literal(functor = "correctly_init", terms = List(rule.head, logic.Constant(s"ruleId_$ruleId")))
-        val body11 = (rule.body ++ typeAtoms) ++ List(Literal(functor = "true", terms = List(Literal(functor = "holdsAt", terms = List(ruleFluent, nextTimeVar)))), Literal(functor = "next", terms = List(timeVar, nextTimeVar)))
-        val body12 = (rule.body ++ typeAtoms) ++ List(Literal(functor = "true", terms = List(Literal(functor = "holdsAt", terms = List(ruleFluent, timeVar)))))
+        val head1 = Literal(predSymbol = "correctly_init", terms = List(rule.head, logic.Constant(s"ruleId_$ruleId")))
+        val body11 = (rule.body ++ typeAtoms) ++ List(Literal(predSymbol = "true", terms = List(Literal(predSymbol = "holdsAt", terms = List(ruleFluent, nextTimeVar)))), Literal(predSymbol = "next", terms = List(timeVar, nextTimeVar)))
+        val body12 = (rule.body ++ typeAtoms) ++ List(Literal(predSymbol = "true", terms = List(Literal(predSymbol = "holdsAt", terms = List(ruleFluent, timeVar)))))
         val correctly_init1 = Clause(head1, body11)
         val correctly_init2 = Clause(head1, body12)
 
-        val head2 = Literal(functor = "incorrectly_init", terms = List(rule.head, logic.Constant(s"ruleId_$ruleId")))
-        val body2 = (rule.body ++ typeAtoms) ++ List(Literal(functor = "true", terms = List(Literal(functor = "holdsAt", terms = List(ruleFluent, nextTimeVar))), isNAF = true), Literal(functor = "next", terms = List(timeVar, nextTimeVar)))
+        val head2 = Literal(predSymbol = "incorrectly_init", terms = List(rule.head, logic.Constant(s"ruleId_$ruleId")))
+        val body2 = (rule.body ++ typeAtoms) ++ List(Literal(predSymbol = "true", terms = List(Literal(predSymbol = "holdsAt", terms = List(ruleFluent, nextTimeVar))), isNAF = true), Literal(predSymbol = "next", terms = List(timeVar, nextTimeVar)))
         val incorrectly_init = Clause(head2, body2)
         accum ++ Vector(correctly_init1.tostring, correctly_init2.tostring, incorrectly_init.tostring)
 
       } else if (rule.head.functor == "terminatedAt") {
 
-        val head1 = Literal(functor = "correctly_term", terms = List(rule.head, logic.Constant(s"ruleId_$ruleId")))
-        val body11 = (rule.body ++ typeAtoms) ++ List(Literal(functor = "true", terms = List(Literal(functor = "holdsAt", terms = List(ruleFluent, nextTimeVar))), isNAF = true), Literal(functor = "next", terms = List(timeVar, nextTimeVar)))
-        val body12 = (rule.body ++ typeAtoms) ++ List(Literal(functor = "true", terms = List(Literal(functor = "holdsAt", terms = List(ruleFluent, timeVar))), isNAF = true))
+        val head1 = Literal(predSymbol = "correctly_term", terms = List(rule.head, logic.Constant(s"ruleId_$ruleId")))
+        val body11 = (rule.body ++ typeAtoms) ++ List(Literal(predSymbol = "true", terms = List(Literal(predSymbol = "holdsAt", terms = List(ruleFluent, nextTimeVar))), isNAF = true), Literal(predSymbol = "next", terms = List(timeVar, nextTimeVar)))
+        val body12 = (rule.body ++ typeAtoms) ++ List(Literal(predSymbol = "true", terms = List(Literal(predSymbol = "holdsAt", terms = List(ruleFluent, timeVar))), isNAF = true))
         val correctly_term1 = Clause(head1, body11)
         val correctly_term2 = Clause(head1, body12)
 
-        val head2 = Literal(functor = "incorrectly_term", terms = List(rule.head, logic.Constant(s"ruleId_$ruleId")))
-        val body21 = (rule.body ++ typeAtoms) ++ List(Literal(functor = "true", terms = List(Literal(functor = "holdsAt", terms = List(ruleFluent, nextTimeVar)))), Literal(functor = "next", terms = List(timeVar, nextTimeVar)))
-        val body22 = (rule.body ++ typeAtoms) ++ List(Literal(functor = "true", terms = List(Literal(functor = "holdsAt", terms = List(ruleFluent, timeVar)))))
+        val head2 = Literal(predSymbol = "incorrectly_term", terms = List(rule.head, logic.Constant(s"ruleId_$ruleId")))
+        val body21 = (rule.body ++ typeAtoms) ++ List(Literal(predSymbol = "true", terms = List(Literal(predSymbol = "holdsAt", terms = List(ruleFluent, nextTimeVar)))), Literal(predSymbol = "next", terms = List(timeVar, nextTimeVar)))
+        val body22 = (rule.body ++ typeAtoms) ++ List(Literal(predSymbol = "true", terms = List(Literal(predSymbol = "holdsAt", terms = List(ruleFluent, timeVar)))))
 
         val incorrectly_term1 = Clause(head2, body21)
         val incorrectly_term2 = Clause(head2, body22)

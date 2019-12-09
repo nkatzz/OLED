@@ -195,7 +195,7 @@ object MCTS_FOL_Online extends LazyLogging{
       atoms.foreach { a=>
         val lit = Literal.parse(a)
         //val inner = lit.terms.head
-        lit.functor match {
+        lit.predSymbol match {
           case "tps" => theory._tps += 1
           case "fps" => theory._fps += 1
           case "fns" => theory._fns += 1

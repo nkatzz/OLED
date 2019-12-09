@@ -168,7 +168,7 @@ class Dispatcher[T <: Source](inps: RunningOptions,
           val merged_ = Theory(LogicUtils.compressTheory(merged.clauses))
           //val merged_ = Theory(LogicUtils.compressTheory_RemoveSubsumers(merged.clauses))
 
-          val _mlnClauses = merged_.clauses.filter(x => x.mlnWeight > 0.0 && x.seenExmplsNum >= inps.minEvalOn && x.score >= inps.pruneThreshold)
+          val _mlnClauses = merged_.clauses.filter(x => x.weight > 0.0 && x.seenExmplsNum >= inps.minEvalOn && x.score >= inps.pruneThreshold)
 
           val theorySize = _mlnClauses.clauses.foldLeft(0)((x,y) => x + y.body.length + 1)
 

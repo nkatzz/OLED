@@ -77,7 +77,7 @@ object ASP2MLN {
 
     //split type predicates from simple domain atoms:
     val (typeAtoms, domainAtoms) = parsedDomainAtoms.foldLeft(Vector[Literal](), Vector[Literal]()) { (accum, lit) =>
-      if (types.contains(lit.functor)) (accum._1 :+ lit, accum._2) else (accum._1, accum._2 :+ lit)
+      if (types.contains(lit.predSymbol)) (accum._1 :+ lit, accum._2) else (accum._1, accum._2 :+ lit)
     }
 
     val constantsDomain = getConstantsDomain(typeAtoms, fluentsMap, eventsMap)
@@ -299,7 +299,7 @@ object ASP2MLN {
 
   def getAnnotationSchema(annotationTemplate: String): Map[AtomSignature, Vector[String]] = {
     val p = Literal.parse(annotationTemplate.toCharArray.take(1)(0).toString.toLowerCase() + annotationTemplate.drop(1))
-    Map(AtomSignature(p.functor.capitalize, p.arity) -> p.terms.map(x => x.name).toVector)
+    Map(AtomSignature(p.predSymbol.capitalize, p.arity) -> p.terms.map(x => x.name).toVector)
   }
 
   def parseRules(kb: KB, evidence: Evidence, clauses: Iterable[String]): Set[Clause] = {
@@ -416,7 +416,7 @@ object ASP2MLN {
       val (eventSignatureAtom, eventMLNConstant) = (x._1, x._2)
       val eventSignatureAtomParsed = Literal.parse(eventSignatureAtom)
       val eventAtomConstants = eventSignatureAtomParsed.terms.map(x => lomrf.logic.Constant(x.name.capitalize)).toVector
-      val actualFunctionSymbol = eventSignatureAtomParsed.functor
+      val actualFunctionSymbol = eventSignatureAtomParsed.predSymbol
       val correspondingMLNConstant = eventMLNConstant
       builder.functions += FunctionMapping(correspondingMLNConstant, actualFunctionSymbol, eventAtomConstants)
     }
@@ -430,7 +430,7 @@ object ASP2MLN {
       val fluentSignatureAtomParsed = Literal.parse(fluentSignatureAtom)
 
       val fluentAtomConstants = fluentSignatureAtomParsed.terms.map(x => lomrf.logic.Constant(x.name.capitalize)).toVector
-      val actualFunctionSymbol = fluentSignatureAtomParsed.functor
+      val actualFunctionSymbol = fluentSignatureAtomParsed.predSymbol
       val correspondingMLNConstant = fluentsMap(fluentSignatureAtom)
       if (isNegated(atom)) {
         builder.functions += FunctionMapping(correspondingMLNConstant, actualFunctionSymbol, fluentAtomConstants)
@@ -444,7 +444,7 @@ object ASP2MLN {
     // so we simply capitalize the functor and each of the constants.
     domainAtoms foreach { atom =>
       val constants = atom.terms.map(x => lomrf.logic.Constant(x.name.capitalize))
-      builder.evidence += EvidenceAtom.asTrue(atom.functor.capitalize, constants.toVector)
+      builder.evidence += EvidenceAtom.asTrue(atom.predSymbol.capitalize, constants.toVector)
     }
 
     builder.result()
@@ -465,9 +465,9 @@ object ASP2MLN {
       val timeConstant = lomrf.logic.Constant(parsed.terms(1).tostring)
       val ruleIdConstant = lomrf.logic.Constant(parsed.terms(2).tostring.capitalize)
       if (isNegated(atom)) {
-        builder.evidence += EvidenceAtom.asFalse(parsed.functor.split("_")(1).capitalize, Vector(mlnfluentConstant, timeConstant, ruleIdConstant))
+        builder.evidence += EvidenceAtom.asFalse(parsed.predSymbol.split("_")(1).capitalize, Vector(mlnfluentConstant, timeConstant, ruleIdConstant))
       } else {
-        builder.evidence += EvidenceAtom.asTrue(parsed.functor.capitalize, Vector(mlnfluentConstant, timeConstant, ruleIdConstant))
+        builder.evidence += EvidenceAtom.asTrue(parsed.predSymbol.capitalize, Vector(mlnfluentConstant, timeConstant, ruleIdConstant))
       }
     }
     builder.result().db
@@ -478,8 +478,8 @@ object ASP2MLN {
                          fluentsMap: Map[String, String],
                          eventsMap: Map[String, String]): Map[String, ConstantsSet] = {
     val grouped =
-      typeAtoms.filter(k => k.functor !="event" && k.functor != "fluent" ).
-        groupBy(a => a.functor).
+      typeAtoms.filter(k => k.predSymbol !="event" && k.predSymbol != "fluent" ).
+        groupBy(a => a.predSymbol).
         map{ case (k,v) => (k, ConstantsSetBuilder(v.map(z => z.terms.head.tostring.capitalize)).result()) }
     val constantsDomain =
       (scala.collection.mutable.Map[String, ConstantsSet]() ++= grouped) +=
@@ -501,7 +501,7 @@ object ASP2MLN {
 
     def atomToMLNConstant(s: String) = {
       val atom = Literal.toLiteral1(s).terms.head.asInstanceOf[Literal]
-      val constant = (List(s"${atom.functor.capitalize}") ++ atom.terms.map(x => x.tostring.capitalize)).mkString("_")
+      val constant = (List(s"${atom.predSymbol.capitalize}") ++ atom.terms.map(x => x.tostring.capitalize)).mkString("_")
       (atom.tostring, constant)
     }
 
@@ -557,7 +557,7 @@ object ASP2MLN {
 
   def atomToMLNConstant(s: String) = {
     val atom = Literal.toLiteral1(s).terms.head.asInstanceOf[Literal]
-    val constant = (List(s"${atom.functor.capitalize}") ++ atom.terms.map(x => x.tostring.capitalize)).mkString("_")
+    val constant = (List(s"${atom.predSymbol.capitalize}") ++ atom.terms.map(x => x.tostring.capitalize)).mkString("_")
     (atom.tostring, constant)
   }
 

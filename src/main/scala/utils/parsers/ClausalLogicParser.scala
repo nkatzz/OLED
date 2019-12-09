@@ -45,8 +45,8 @@ class ClausalLogicParser extends JavaTokenParsers {
    def term: Parser[Expression] = literal | variable | constant
    def innerTerms: Parser[List[Expression]] = "(" ~> repsep(term, ",") <~ ")"
    def literal: Parser[Literal] = (
-      naf ~ lowerCaseIdent ~ innerTerms ^^ { case naf ~ functor ~ inner => Literal(functor = functor, terms = inner, isNAF = true) }
-      | lowerCaseIdent ~ innerTerms ^^ { case functor ~ inner => Literal(functor = functor, terms = inner) })
+      naf ~ lowerCaseIdent ~ innerTerms ^^ { case naf ~ functor ~ inner => Literal(predSymbol = functor, terms = inner, isNAF = true) }
+      | lowerCaseIdent ~ innerTerms ^^ { case functor ~ inner => Literal(predSymbol = functor, terms = inner) })
    def atom: Parser[PosLiteral] = lowerCaseIdent ~ innerTerms ^^ { case functor ~ inner => PosLiteral(functor = functor, terms = inner) }
    def clauseHead: Parser[PosLiteral] = atom
    def clauseBody: Parser[List[Literal]] = repsep(literal, ",")

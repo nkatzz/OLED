@@ -18,7 +18,6 @@
 package experiments.datautils.opportunity
 
 import java.io.File
-
 import scala.io.Source
 
 object DataHandler extends App {

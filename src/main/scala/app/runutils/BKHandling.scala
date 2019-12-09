@@ -88,7 +88,7 @@ object BKHandling extends LazyLogging {
         // The 'if' is for cases where the target pred is of the form initiatedAt(#fluent, +time), as in
         // initiatedAt(#fluent, +time) where fluent(leisure) is in the BK.
         // The 'else' is for compound fluents.
-        if (t.isVariabe) Literal(functor = t._type) else modehs.head.varbed.terms.head.asInstanceOf[Literal]
+        if (t.isVariabe) Literal(predSymbol = t._type) else modehs.head.varbed.terms.head.asInstanceOf[Literal]
         //modehs.head.varbed.terms.head.asInstanceOf[Literal]
       }
 

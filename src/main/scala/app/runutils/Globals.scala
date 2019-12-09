@@ -214,7 +214,7 @@ class Globals(val entryPath: String) extends LazyLogging {
   /* The input to this method is a Literal representation of mode atoms and example pattern atoms (variabilized). */
 
   def getTypeAxioms(m: Literal): Set[String] = {
-    val plmrkTerms = m.getPlmrkTerms
+    val plmrkTerms = m.placeMarkers
     val (posPlmrkTerms, negPlrmTerms, grndPlmrkTerms) = (plmrkTerms._1, plmrkTerms._2, plmrkTerms._3)
     val allPlmrks = (posPlmrkTerms ++ negPlrmTerms ++ grndPlmrkTerms).map(x => x.asInstanceOf[Variable]).toSet
 

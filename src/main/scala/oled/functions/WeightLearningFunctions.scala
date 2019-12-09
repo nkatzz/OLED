@@ -52,8 +52,8 @@ object WeightLearningFunctions {
     val mlnBKPath = s"${inps.entryPath}/MLN/move_HI.mln"
 
     val parsedTargetPred = Literal.parse(annotationTemplate.toCharArray.take(1)(0).toString.toLowerCase() + annotationTemplate.drop(1))
-    val targetPredASP = parsedTargetPred.functor
-    val targetPredMLN = parsedTargetPred.functor.capitalize
+    val targetPredASP = parsedTargetPred.predSymbol
+    val targetPredMLN = parsedTargetPred.predSymbol.capitalize
 
     def getDomain() = {
       val rulsIdPreds = clauseIds map (i => s"ruleId(ruleId_$i).")
@@ -82,7 +82,7 @@ object WeightLearningFunctions {
 
     //split type predicates from simple domain atoms:
     val (typeAtoms, domainAtoms) = parsedDomainAtoms.foldLeft(Vector[Literal](), Vector[Literal]()) { (accum, lit) =>
-      if (types.contains(lit.functor)) (accum._1 :+ lit, accum._2) else (accum._1, accum._2 :+ lit)
+      if (types.contains(lit.predSymbol)) (accum._1 :+ lit, accum._2) else (accum._1, accum._2 :+ lit)
     }
 
     val constantsDomain = ASP2MLN.getConstantsDomain(typeAtoms, fluentsMap, eventsMap)
@@ -128,7 +128,7 @@ object WeightLearningFunctions {
     val p = enum map { x =>
       val (clause, index) = (x._1, x._2)
       val typeAtoms = clause.toLiteralList.flatMap(x => x.getTypePredicates(inps.globals)).distinct.map(x => Literal.parse(x))
-      val markedHead = Literal(functor = clause.head.functor, terms = clause.head.terms :+ Constant(s"ruleId_$index"))
+      val markedHead = Literal(predSymbol = clause.head.functor, terms = clause.head.terms :+ Constant(s"ruleId_$index"))
       val markedClause = Clause(head = markedHead, body = clause.body ++ typeAtoms)
 
       /*
@@ -146,15 +146,15 @@ object WeightLearningFunctions {
       */
 
       // We don't need the body terms
-      val unsatClauseHead = Literal(functor = "false_clause", terms = List(Constant(s"ruleId_$index"), clause.head) )
+      val unsatClauseHead = Literal(predSymbol = "false_clause", terms = List(Constant(s"ruleId_$index"), clause.head) )
       // the body is the negation of the head
-      val unsatClauseBody = Literal(functor = clause.head.functor, terms = clause.head.terms :+ Constant(s"ruleId_$index"), isNAF = true)
+      val unsatClauseBody = Literal(predSymbol = clause.head.functor, terms = clause.head.terms :+ Constant(s"ruleId_$index"), isNAF = true)
       val unsatClause = Clause(head = unsatClauseHead.asPosLiteral, body = List(unsatClauseBody)++ typeAtoms)
 
       // We also need the satisfied clauses
-      val satClauseHead = Literal(functor = "true_clause", terms = List(Constant(s"ruleId_$index"), clause.head) )
+      val satClauseHead = Literal(predSymbol = "true_clause", terms = List(Constant(s"ruleId_$index"), clause.head) )
       // the body is the negation of the head
-      val satClauseBody = Literal(functor = clause.head.functor, terms = clause.head.terms :+ Constant(s"ruleId_$index"))
+      val satClauseBody = Literal(predSymbol = clause.head.functor, terms = clause.head.terms :+ Constant(s"ruleId_$index"))
       val satClause = Clause(head = satClauseHead.asPosLiteral, body = List(satClauseBody)++ typeAtoms)
 
 
@@ -199,7 +199,7 @@ object WeightLearningFunctions {
     val annotation = annotation_.map{ x =>
       val a = Literal.parseWPB2(x).terms.head.asInstanceOf[Literal]
       val derivedFromClause = a.terms.last.name.split("_")(1).toInt
-      val b = Literal(functor = a.functor, terms = a.terms, derivedFrom = derivedFromClause)
+      val b = Literal(predSymbol = a.predSymbol, terms = a.terms, derivedFrom = derivedFromClause)
       Literal.toMLNFlat(b)
     }
 
@@ -207,14 +207,14 @@ object WeightLearningFunctions {
     val incorrectlyTerminated = fnsTerminated_.map { x =>
       val a = Literal.parseWPB2(x).terms.head.asInstanceOf[Literal]
       val derivedFromClause = a.terms.last.name.split("_")(1).toInt
-      val b = Literal(functor = a.functor, terms = a.terms, derivedFrom = derivedFromClause)
+      val b = Literal(predSymbol = a.predSymbol, terms = a.terms, derivedFrom = derivedFromClause)
       Literal.toMLNFlat(b)
     }
 
     val correctlyNotTerminated = tpsTerminated_.map { x =>
       val a = Literal.parseWPB2(x).terms.head.asInstanceOf[Literal]
       val derivedFromClause = a.terms.last.name.split("_")(1).toInt
-      val b = Literal(functor = a.functor, terms = a.terms, derivedFrom = derivedFromClause)
+      val b = Literal(predSymbol = a.predSymbol, terms = a.terms, derivedFrom = derivedFromClause)
       Literal.toMLNFlat(b)
     }
 
@@ -233,16 +233,16 @@ object WeightLearningFunctions {
       //val p = Literal.parse(x)
       val p = Literal.parseWPB2(x) // much faster than parser combinators.
 
-      if (p.functor != "false_clause" && p.functor != "true_clause") throw new RuntimeException(s"Don't know what to do with this atom: $x")
+      if (p.predSymbol != "false_clause" && p.predSymbol != "true_clause") throw new RuntimeException(s"Don't know what to do with this atom: $x")
       val clauseId = p.terms.head.name.split("_")(1).toInt
       val clauseHead = p.terms(1).asInstanceOf[Literal]
 
-      if (p.functor == "true_clause") {
-        val l = Literal(functor = clauseHead.functor, terms = clauseHead.terms :+ p.terms.head, derivedFrom = clauseId)
+      if (p.predSymbol == "true_clause") {
+        val l = Literal(predSymbol = clauseHead.predSymbol, terms = clauseHead.terms :+ p.terms.head, derivedFrom = clauseId)
         Literal.toMLNFlat(l)
       }
       else {
-        val l = Literal(functor = clauseHead.functor, terms = clauseHead.terms :+ p.terms.head, isNAF = true, derivedFrom = clauseId)
+        val l = Literal(predSymbol = clauseHead.predSymbol, terms = clauseHead.terms :+ p.terms.head, isNAF = true, derivedFrom = clauseId)
         Literal.toMLNFlat(l)
       }
 
@@ -293,7 +293,7 @@ object WeightLearningFunctions {
       val fluentSignatureAtom = fluentsMap.keySet.find(x => atom.contains(x)).getOrElse(
         throw new RuntimeException(s"Cannot find mapping for atom $atom in events map: $fluentsMap"))
       val mlnFluentConstant = fluentsMap(fluentSignatureAtom)
-      s"${parsed.functor.capitalize}($mlnFluentConstant,${parsed.terms(1).name.capitalize},${parsed.terms(2).name.capitalize})"
+      s"${parsed.predSymbol.capitalize}($mlnFluentConstant,${parsed.terms(1).name.capitalize},${parsed.terms(2).name.capitalize})"
     }
 
     val stats = getClauseStatistics(clauseIds, mln, inferredAtoms, labelAtoms)

@@ -76,8 +76,8 @@ final class PB2LogicParser(val input: ParserInput) extends Parser {
   }
 
   def Atom = rule {
-    Funct ~ InnerTerms ~ optional(".") ~> ((x, y) => Literal(functor = x, terms = y.elems)) |
-      "not " ~ Funct ~ InnerTerms ~ optional(".") ~> ((x, y) => Literal(functor = x, terms = y.elems, isNAF = true))
+    Funct ~ InnerTerms ~ optional(".") ~> ((x, y) => Literal(predSymbol = x, terms = y.elems)) |
+      "not " ~ Funct ~ InnerTerms ~ optional(".") ~> ((x, y) => Literal(predSymbol = x, terms = y.elems, isNAF = true))
   }
 
   private def Term: Rule1[Expression] = rule { Atom | Const | Var }

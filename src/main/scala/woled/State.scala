@@ -46,7 +46,7 @@ class State {
     val topRules  = getTopTheory()
     topRules map { topRule =>
       if (topRule.refinements.isEmpty) topRule.generateCandidateRefs(gl)
-      val sorted = (topRule.refinements :+ topRule).sortBy(x => if (quality == "weight") -x.mlnWeight else -x.score)
+      val sorted = (topRule.refinements :+ topRule).sortBy(x => if (quality == "weight") -x.weight else -x.score)
       if (sorted.head.body.nonEmpty) sorted.head else sorted.tail.head
     }
   }

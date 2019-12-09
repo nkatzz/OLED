@@ -141,7 +141,7 @@ object ExpertAdviceFunctions extends LazyLogging {
               if(splice.isDefined) {
                 val time = atom.atomParsed.terms.tail.head.name
                 val eventAtom = atom.atomParsed.terms.head.asInstanceOf[Literal]
-                val eventPred = eventAtom.functor.capitalize
+                val eventPred = eventAtom.predSymbol.capitalize
                 val eventArgs = eventAtom.terms.map(x => x.name.capitalize).mkString(",")
                 val out = s"$eventPred($eventArgs,$time)"
 

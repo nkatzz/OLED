@@ -22,15 +22,15 @@ import logic.Exceptions._
 
 object Modes {
   
-   case class PosPlmrk(override val _type: String) extends Expression {
+   case class PlmrkPos(override val _type: String) extends Expression {
       override val tostring = "+" + _type
       override def tostringQuote = this.tostring
    }
-   case class NegPlmrk(override val _type: String) extends Expression {
+   case class PlmrkNeg(override val _type: String) extends Expression {
       override val tostring = "-" + _type
       override def tostringQuote = this.tostring
    }
-   case class ConstPlmrk(override val _type: String) extends Expression {
+   case class PlmrkConst(override val _type: String) extends Expression {
       override val tostring = "#" + _type
       override def tostringQuote = this.tostring
    }
@@ -79,9 +79,7 @@ object Modes {
          case _      => if (isNAF) s"not $functor" else functor + "(" + (for (a <- args) yield a.tostring).mkString(",") + ")"
       }
 
-      lazy val negated = ModeAtom(functor = this.functor, args = this.args, isNAF = true)
 
-      lazy val notNnegated = ModeAtom(functor = this.functor, args = this.args, isNAF = false)
 
       /**
        * @return a string representation of the mode declaration. This method is supposed to be called on a
@@ -121,9 +119,8 @@ object Modes {
        */
 
       def varbed: Literal = {
-         //val lit = Literal(functor = this.functor)
-         val (varbed, ttypes, _) = variabilize(List(Literal(functor = this.functor)), this.args, List(), 0)
-         Literal(functor = varbed.head.functor, terms = varbed.head.terms, isNAF = this.isNAF, typePreds = ttypes, modeAtom = this)
+         val (varbed, ttypes, _) = variabilize(List(Literal(predSymbol = this.functor)), this.args, List(), 0)
+         Literal(predSymbol = varbed.head.predSymbol, terms = varbed.head.terms, isNAF = this.isNAF, typePreds = ttypes, modeAtom = this)
       }
 
       /**
@@ -141,28 +138,28 @@ object Modes {
                               ttypes: List[String], counter: Int): (List[Literal], List[String], Int) = {
          def f(x: Expression, sign: String, tail: List[Expression]) = {
             val cur = accum match {
-               case Nil => Literal(functor = this.functor)
+               case Nil => Literal(predSymbol = this.functor)
                case _   => accum.last
             }
             // We are variabilizing everything (it's modes variabilization) so replace all with a new Var.
-            val update = Literal(functor = cur.functor, terms = cur.terms :+ Variable("X" + counter, sign, x._type))
+            val update = Literal(predSymbol = cur.predSymbol, terms = cur.terms :+ Variable("X" + counter, sign, x._type))
             this.variabilize(accum.tail :+ update, tail, ttypes :+ x._type + "(X" + counter + ")", counter + 1)
          }
          remaining match {
             case head :: tail => head match {
-               case x: PosPlmrk   => f(x, "+", tail)
-               case x: NegPlmrk   => f(x, "-", tail)
-               case x: ConstPlmrk => f(x, "#", tail)
+               case x: PlmrkPos   => f(x, "+", tail)
+               case x: PlmrkNeg   => f(x, "-", tail)
+               case x: PlmrkConst => f(x, "#", tail)
                case x: ModeAtom =>
-                  val (varbed, newTypes, newCount) = this.variabilize(List(Literal(functor = x.functor)), x.args, List(), counter)
+                  val (varbed, newTypes, newCount) = this.variabilize(List(Literal(predSymbol = x.functor)), x.args, List(), counter)
                   val pop = accum.last
-                  this.variabilize(List(Literal(functor = pop.functor, terms = pop.terms ::: varbed)), tail, ttypes ::: newTypes, newCount)
+                  this.variabilize(List(Literal(predSymbol = pop.predSymbol, terms = pop.terms ::: varbed)), tail, ttypes ::: newTypes, newCount)
                case _ =>
                   throw new LogicException("Variabilizing Mode Declaration " + this.tostring + ": Found unexpected type")
             }
             case Nil =>
                val pop = accum.last
-               (accum.tail :+ Literal(functor = pop.functor, terms = pop.terms), ttypes, counter)
+               (accum.tail :+ Literal(predSymbol = pop.predSymbol, terms = pop.terms), ttypes, counter)
          }
       }
 

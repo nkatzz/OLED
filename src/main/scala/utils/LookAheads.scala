@@ -86,7 +86,7 @@ object LookAheads {
     // index of linking variable in a lookahead atom
     val linkingVar_in_LookAheadAtom = policySignature.terms.head.name.toInt - 1
 
-    def policy = policyMap(policySignature.functor)
+    def policy = policyMap(policySignature.predSymbol)
   }
 
   object LookAheadImplementations {
@@ -118,7 +118,7 @@ object LookAheads {
     val appearsEarlier_<- = (lit: Literal, specification: LookAheadSpecification, clause: Clause, bottomClause: Clause) => {
 
       val currentAtomSignature = specification.currentLiteralSignature
-      if (lit.functor == currentAtomSignature.functor && lit.arity == currentAtomSignature.arity) {
+      if (lit.predSymbol == currentAtomSignature.predSymbol && lit.arity == currentAtomSignature.arity) {
 
         val sharedVarIndex_in_CurrentAtom = specification.sharedVarIndex_in_CurrentAtom
         val sharedVarIndex_in_LookAheadAtom = specification.sharedVarIndex_in_LookAheadAtom
@@ -129,15 +129,15 @@ object LookAheads {
         // signature and contain the shared variable in the proper position
         val candidateLookAheads =
           bottomClause.body.filter { p =>
-            p.functor == specification.lookAheadLiteralSignature.functor &&
+            p.predSymbol == specification.lookAheadLiteralSignature.predSymbol &&
             p.arity == specification.lookAheadLiteralSignature.arity &&
             p.getVars(sharedVarIndex_in_LookAheadAtom).name == sharedVar.name &&
-              clause.toLiteralList.filter(l => List("fraud","transaction").contains(l.functor)).exists(s => s.getVars.map(_.name).contains(p.getVars(specification.linkingVar_in_LookAheadAtom).name))
+              clause.toLiteralList.filter(l => List("fraud","transaction").contains(l.predSymbol)).exists(s => s.getVars.map(_.name).contains(p.getVars(specification.linkingVar_in_LookAheadAtom).name))
           }
 
         val f = (x: logic.Variable) => {
           // get max to get the literal closest to the end of the clause
-          clause.toLiteralList.filter(l => List("fraud","transaction").contains(l.functor)).map(y => if (y.getVars.map(_.name).contains(x.name)) clause.toLiteralList.indexOf(y) + 1 else 0).max
+          clause.toLiteralList.filter(l => List("fraud","transaction").contains(l.predSymbol)).map(y => if (y.getVars.map(_.name).contains(x.name)) clause.toLiteralList.indexOf(y) + 1 else 0).max
 
         }
         if (candidateLookAheads.nonEmpty) {

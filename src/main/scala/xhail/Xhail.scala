@@ -337,7 +337,7 @@ object Xhail extends ASPResultsParser with LazyLogging {
     if (Globals.glvalues("iter-deepening").toBoolean) logger.info(abducedAtoms.map(_.tostring).mkString(" "))
     for (x <- abducedAtoms) {
       var body = new ListBuffer[Literal]()
-      val (_interms, _, _) = x.getPlmrkTerms
+      val (_interms, _, _) = x.placeMarkers
       val interms = _interms.to[ListBuffer]
       var solution = List[AnswerSet]()
       for (i <- 0 to Globals.glvalues("variableDepth").toInt) {
@@ -387,7 +387,7 @@ object Xhail extends ASPResultsParser with LazyLogging {
           // (such redundant atoms can be automatically pruned with clingo, but you cannot do this with lomrf).
           // I need to fix this
           val b = _b.filter{x =>
-           x.functor!="close" || (x.functor == "close" && x.terms(0).name != x.terms(1).name)
+           x.predSymbol!="close" || (x.predSymbol == "close" && x.terms(0).name != x.terms(1).name)
           }
           //*/
 
@@ -396,7 +396,7 @@ object Xhail extends ASPResultsParser with LazyLogging {
           for (k <- b) {
             //if (!body.contains(k)) body ++= b
             if (!body.exists(x => x.tostring == k.tostring)) body += k
-            val (_, outTerms, _) = k.getPlmrkTerms
+            val (_, outTerms, _) = k.placeMarkers
             interms ++= outTerms
           }
 

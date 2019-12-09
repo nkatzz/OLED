@@ -233,7 +233,7 @@ case class Theory(clauses: List[Clause] = List()) extends Expression with LazyLo
 
         val parse = (atom: String) => {
           val tolit = Literal.parse(atom)
-          val (what, hashCode, count) = (tolit.functor, tolit.terms.head.tostring, tolit.terms.tail.head.tostring)
+          val (what, hashCode, count) = (tolit.predSymbol, tolit.terms.head.tostring, tolit.terms.tail.head.tostring)
           (what, hashCode, count)
         }
 
@@ -329,7 +329,7 @@ case class Theory(clauses: List[Clause] = List()) extends Expression with LazyLo
 
         val parse = (atom: String) => {
           val tolit = Literal.parse(atom)
-          val (what, hashCode, count) = (tolit.functor, tolit.terms.head.tostring, tolit.terms.tail.head.tostring)
+          val (what, hashCode, count) = (tolit.predSymbol, tolit.terms.head.tostring, tolit.terms.tail.head.tostring)
           (what, hashCode, count)
         }
 

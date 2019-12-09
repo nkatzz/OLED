@@ -36,9 +36,9 @@ final class ModesParser extends JavaTokenParsers with LazyLogging {
    def ep: Parser[String] = "examplePattern" ^^ { x => x }
    def ip: Parser[String] = "inputPredicate" ^^ { x => x }
    def cp: Parser[String] = "comparisonPredicate" ^^ { x => x }
-   def posplmrk: Parser[PosPlmrk] = "+" ~ lowerCaseIdent ^^ { case "+" ~ x => PosPlmrk(x) }
-   def negplmrk: Parser[NegPlmrk] = "-" ~ lowerCaseIdent ^^ { case "-" ~ x => NegPlmrk(x) }
-   def constplmrk: Parser[ConstPlmrk] = "#" ~ lowerCaseIdent ^^ { case "#" ~ x => ConstPlmrk(x) }
+   def posplmrk: Parser[PlmrkPos] = "+" ~ lowerCaseIdent ^^ { case "+" ~ x => PlmrkPos(x) }
+   def negplmrk: Parser[PlmrkNeg] = "-" ~ lowerCaseIdent ^^ { case "-" ~ x => PlmrkNeg(x) }
+   def constplmrk: Parser[PlmrkConst] = "#" ~ lowerCaseIdent ^^ { case "#" ~ x => PlmrkConst(x) }
    def placemarker: Parser[Expression] = (posplmrk | negplmrk | constplmrk) ^^ { x => x }
    def inner: Parser[List[Expression]] = "(" ~> repsep(modeAtom | placemarker, ",") <~ ")"
    //def modeAtom: Parser[ModeAtom] = lowerCaseIdent ~ inner ^^ { case x ~ y => new ModeAtom(x.toString, y) }

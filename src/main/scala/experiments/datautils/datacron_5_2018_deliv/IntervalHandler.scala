@@ -18,16 +18,11 @@
 package experiments.datautils.datacron_5_2018_deliv
 
 import java.io.{BufferedWriter, File, FileWriter}
-
 import intervalTree.IntervalTree
-
 import scala.collection.JavaConversions._
 import data._
-import logic.Modes.ModeAtom
-
 import scala.collection.mutable.ListBuffer
 import scala.io.Source
-
 
 /*
 change_in_heading|1443694493|1443694493|245257000
@@ -44,47 +39,59 @@ slow_motion_start|1444262324|1444262324|228167900
 slow_motion_end|1444281397|1444281397|258088080
 stop_start|1444031990|1444031990|227705102
 stop_end|1444187303|1444187303|259019000
- */
+*/
 
-// lle = split(0)
-// time = split(1)
-// vessel = split(3)
+object Haversine {
 
+  import math._
 
+  val R = 6372.8  //radius in km
 
+  def haversine(lat1:Double, lon1:Double, lat2:Double, lon2:Double)={
+    val dLat=(lat2 - lat1).toRadians
+    val dLon=(lon2 - lon1).toRadians
+
+    val a = pow(sin(dLat/2),2) + pow(sin(dLon/2),2) * cos(lat1.toRadians) * cos(lat2.toRadians)
+    val c = 2 * asin(sqrt(a))
+    R * c
+  }
+
+  def main(args: Array[String]): Unit = {
+    println(haversine(36.12, -86.67, 33.94, -118.40))
+  }
+}
 
 object IntervalHandler extends App {
 
-  /*
-  val it = new IntervalTree[Int]()
-  it.addInterval(0L,10L,1)
-  it.addInterval(20L,30L,2)
-  it.addInterval(15L,17L,3)
-  it.addInterval(25L,35L,4)
-  it += (0L, 29L, 4)
-  println(it.range(9L, 30L))
-  */
+  val pathToHLEIntervals = "/home/nkatz/dev/Brest-data-5-5-2018/Brest-data/results_critical"
+  val pathToLLEs = "/home/nkatz/dev/Brest-data-5-5-2018/Brest-data/Datasets/dataset_RTEC_critical.csv"
 
-  //val intervalTree = generateIntervalTree("/home/nkatz/dev/Brest-data-5-5-2018/results_critical", List("rendezVous","stopped", "lowSpeed"))
+  println("Generating intervals tree...")
 
-  val intervalTree = generateIntervalTree("/home/nkatz/dev/Brest-data-5-5-2018/brest-no_duration_constraints/results_critical",
-    List("rendezVous","stopped", "lowSpeed"))
+  val intervalTree =
+    generateIntervalTree(
+      pathToHLEIntervals,
+      List("rendezVous","stopped", "lowSpeed")
+    )
 
-  ///home/nkatz/dev/Brest-data-5-5-2018/brest-no_duration_constraints/results_critical
-
-  //readDataIntoMiniBatches("/home/nkatz/dev/Brest-data-5-5-2018/Datasets/dataset_RTEC_critical__vagms_preprocess_prox.db", 10, "rendezVous", "asp")
-
-  readDataIntoMiniBatches("/home/nkatz/dev/Brest-data-5-5-2018/Brest-data/Datasets/dataset_RTEC_critical.csv", 10, "rendezVous", "asp")
-
-
+  readDataIntoMiniBatches(pathToLLEs, 10, "rendezVous", "asp")
 
   // mode is either "asp" or "mln"
+  /**
+   * Parses the input data into logical syntax and generates data mini-batches for training.
+   *
+   * A data batch is a chunk of input data of given size. Size is measured by temporal duration,
+   * so given batchSize = n, a mini-batch consists of input data with time stamps t to t+n.
+   *
+   * */
   def readDataIntoMiniBatches(dataPath: String, batchSize: Int, targetEvent: String, mode: String) = {
 
     val f = new File("/home/nkatz/dev/Brest-data-5-5-2018/rendezVous-batchsize-10")
     val writeToFile = new BufferedWriter(new FileWriter(f))
 
-    val data = Source.fromFile(dataPath).getLines.filter(x => !x.startsWith("coord") && !x.startsWith("velocity"))
+    val data = Source.fromFile(dataPath).getLines.filter(x =>
+      !x.startsWith("coord") && !x.startsWith("velocity") && !x.startsWith("entersArea") && !x.startsWith("leavesArea")
+    )
     val currentBatch = new ListBuffer[String]
     var timesAccum = scala.collection.mutable.SortedSet[Long]()
     var llesAccum = scala.collection.mutable.SortedSet[String]()
@@ -98,7 +105,6 @@ object IntervalHandler extends App {
       if (!timesAccum.contains(time)) timesAccum += time.toLong
       if (!llesAccum.contains(lle)) llesAccum += lle
       if (timesAccum.size <= batchSize) {
-        //currentBatch += newLine
         currentBatch += generateLLEInstances(newLine, mode)
       } else {
 
@@ -106,25 +112,19 @@ object IntervalHandler extends App {
         val nexts = timesAccum.sliding(2).map(x => if (mode == "asp") s"next(${x.last},${x.head})" else s"next(${x.last},${x.head})")
         val intervals = intervalTree.range(timesAccum.head, timesAccum.last)
 
-        //val extras = intervals.map(x => HLEIntervalToAtom(x._3, time, targetEvent))
-
         val extras = timesAccum.flatMap{ timeStamp =>
           val containedIn = intervals.filter(interval => interval._1 <= timeStamp && timeStamp <= interval._2 )
           containedIn.map(x => HLEIntervalToAtom(x._3, timeStamp.toString, targetEvent))
         }
 
+        if (extras.nonEmpty) {
+          val stop = "stop"
+        }
+
         for (x <- extras) currentBatch += x
         for (x <- nexts) currentBatch += x
 
-
-        /*
-        val (annotation, narrative) = currentBatch.foldLeft(List[String](), List[String]()) { (x, y) =>
-          val (anot, nar) = (x._1, x._2)
-          if (y.startsWith("holdsAt")) (anot :+ y, nar) else (anot, nar :+ y)
-        }
-        */
-
-        writeToFile.write(currentBatch.filter(x => x != "None").mkString(" ")+"\n")
+        //writeToFile.write(currentBatch.filter(x => x != "None").mkString(" ")+"\n")
 
         println(batchCount)
         currentBatch.clear()

@@ -29,12 +29,12 @@ object Auxil {
 
     if (targetClass == "initiatedAt" || targetClass == "terminatedAt") {
       val clauseId = uuidsToRuleIdsMap(clause.uuid)
-      val inferredTrueByThisClause = inferredTrue.filter(p => p.derivedFrom == clauseId).map(x => x.tostring_mln).toSet
-      val actuallyTrue = _actuallyTrue.filter(p => p.derivedFrom == clauseId).map(x => x.tostring_mln).toSet
+      val inferredTrueByThisClause = inferredTrue.filter(p => p.derivedFrom == clauseId).map(x => x.tostringMLN).toSet
+      val actuallyTrue = _actuallyTrue.filter(p => p.derivedFrom == clauseId).map(x => x.tostringMLN).toSet
 
       val tps =
         if (targetClass == "terminatedAt") {
-          val tpsCrisp = correctlyNotTerminated.filter(p => p.derivedFrom == clauseId).map(x => x.tostring_mln).toSet
+          val tpsCrisp = correctlyNotTerminated.filter(p => p.derivedFrom == clauseId).map(x => x.tostringMLN).toSet
           tpsCrisp.diff(inferredTrueByThisClause).size
         } else {
           inferredTrueByThisClause.intersect(actuallyTrue).size
@@ -44,7 +44,7 @@ object Auxil {
 
       val fns =
         if (targetClass == "terminatedAt") {
-          val fnsCrisp = incorrectlyTerminated.filter(p => p.derivedFrom == clauseId).map(x => x.tostring_mln).toSet
+          val fnsCrisp = incorrectlyTerminated.filter(p => p.derivedFrom == clauseId).map(x => x.tostringMLN).toSet
           inferredTrueByThisClause.intersect(fnsCrisp).size
         } else {
           actuallyTrue.diff(inferredTrueByThisClause).size
@@ -57,7 +57,7 @@ object Auxil {
       val updtWeightCl = clausesWithUpdatedWeights.find(c => c.uuid == clause.uuid).
         getOrElse(throw new RuntimeException(s"Cannot find clause ${clause.uuid} in the updated weights clause vector returned from AdaGrad."))
 
-      clause.mlnWeight = updtWeightCl.mlnWeight
+      clause.weight = updtWeightCl.weight
       clause.subGradient = updtWeightCl.subGradient
 
       /*
@@ -75,7 +75,7 @@ object Auxil {
   def debug(groundNetwork: Array[Literal]) = {
     groundNetwork.sortBy(x => (x.terms(2).name.split("_")(1).toInt,
       x.terms(1).name.toInt, x.terms.head.name.split("_")(1), x.terms.head.name.split("_")(1)) )
-      .map(z => z.tostring_mln).mkString("\n")
+      .map(z => z.tostringMLN).mkString("\n")
   }
 
   def getAnnotation(e: Example, enumClauses: List[Int]) = {
@@ -88,7 +88,7 @@ object Auxil {
 
 
       val p1 = enumClauses map { clauseId =>
-        val a = Literal(functor = functor, terms = terms ++ List(Constant(time.toString), Constant(s"ruleId_$clauseId")) )
+        val a = Literal(predSymbol = functor, terms = terms ++ List(Constant(time.toString), Constant(s"ruleId_$clauseId")) )
         Literal.toMLNFlat(a)
       }
 

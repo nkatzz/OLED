@@ -32,8 +32,8 @@ object Test extends App {
   def predictSate(topTheory: Theory, e: Example, inps: RunningOptions, targetClass: String) = {
 
     val clauses = topTheory.clauses.map { topClause =>
-      val bestRef = topClause.refinements.sortBy(x => - x.mlnWeight).head
-      if (topClause.mlnWeight > bestRef.mlnWeight) topClause else bestRef
+      val bestRef = topClause.refinements.sortBy(x => - x.weight).head
+      if (topClause.weight > bestRef.weight) topClause else bestRef
     }
 
     val ((groundNetwork, trueGroundingsMap, totalExmplCount, annotationMLN, incorrectlyTerminated, correctlyNotTerminated), groundingTime) = {

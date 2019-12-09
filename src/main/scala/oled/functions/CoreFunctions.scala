@@ -180,17 +180,17 @@ trait CoreFunctions {
           s"\n===========================================================\n"
       } else {
         s"\n===========================================================\n" +
-          s"\nClause (score: ${c.score} | tps: ${c.tps} fps: ${c.fps} fns: ${c.fns} | MLN-weight: ${format(c.mlnWeight)})\n\n${c.tostring}\n\nwas refined to" +
-          s" (new score: ${c1.score} | tps: ${c1.tps} fps: ${c1.fps} fns: ${c1.fns} | MLN-weight: ${format(c1.mlnWeight)})\n\n${c1.tostring}\n\nε: $hoeffding, ΔG: $observedDiff, examples used: $n" +
+          s"\nClause (score: ${c.score} | tps: ${c.tps} fps: ${c.fps} fns: ${c.fns} | MLN-weight: ${format(c.weight)})\n\n${c.tostring}\n\nwas refined to" +
+          s" (new score: ${c1.score} | tps: ${c1.tps} fps: ${c1.fps} fns: ${c1.fns} | MLN-weight: ${format(c1.weight)})\n\n${c1.tostring}\n\nε: $hoeffding, ΔG: $observedDiff, examples used: $n" +
           //s"\nall refs: \n\n ${c.refinements.sortBy(z => -z.score).map(x => x.tostring+" "+" | score "+x.score+" | similarity "+similarity(x)).mkString("\n")}" +
-          s"\nall refs: \n\n ${c.refinements.sortBy(z => (-z.score,z.body.length+1)).map(x => x.tostring+" | score "+x.score+" (tps|fps|fns): "+(x.tps,x.fps,x.fns) + "| MLN-weight: "+format(x.mlnWeight)).mkString("\n")}" +
+          s"\nall refs: \n\n ${c.refinements.sortBy(z => (-z.score,z.body.length+1)).map(x => x.tostring+" | score "+x.score+" (tps|fps|fns): "+(x.tps,x.fps,x.fns) + "| MLN-weight: "+format(x.weight)).mkString("\n")}" +
           s"\n===========================================================\n"
       }
 
     } else {
       s"\n===========================================================\n" +
-        s"\nClause (score: ${c.score} | tps: ${c.tps} fps: ${c.fps} fns: ${c.fns} | MLN-weight: ${format(c.mlnWeight)} | WM weight: ${format(c.w_pos)})\n\n${c.tostring}\n\nwas refined to" +
-        s" (new score: ${c1.score} | tps: ${c1.tps} fps: ${c1.fps} fns: ${c1.fns} | MLN-weight: ${format(c1.mlnWeight)} | WM weight: ${format(c1.w_pos)})\n\n${c1.tostring}\n\nε: $hoeffding, ΔG: $observedDiff, examples used: $n" +
+        s"\nClause (score: ${c.score} | tps: ${c.tps} fps: ${c.fps} fns: ${c.fns} | MLN-weight: ${format(c.weight)} | WM weight: ${format(c.w_pos)})\n\n${c.tostring}\n\nwas refined to" +
+        s" (new score: ${c1.score} | tps: ${c1.tps} fps: ${c1.fps} fns: ${c1.fns} | MLN-weight: ${format(c1.weight)} | WM weight: ${format(c1.w_pos)})\n\n${c1.tostring}\n\nε: $hoeffding, ΔG: $observedDiff, examples used: $n" +
         //s"\nall refs: \n\n ${c.refinements.sortBy(z => -z.score).map(x => x.tostring+" "+" | score "+x.score+" | similarity "+similarity(x)).mkString("\n")}" +
         //s"\nall refs: \n\n ${c.refinements.sortBy(z => (-z.score,z.body.length+1)).map(x => x.tostring+" | score "+x.score+" (tps|fps|fns): "+(x.tps,x.fps,x.fns)).mkString("\n")}" +
         s"\n===========================================================\n"
@@ -246,7 +246,7 @@ trait CoreFunctions {
       atoms.foreach { a=>
         val lit = Literal.parse(a)
         val inner = lit.terms.head
-        lit.functor match {
+        lit.predSymbol match {
           case "tps" => theory.tps += inner.tostring
           case "fps" => theory.fps += inner.tostring
           case "fns" => theory.fns += inner.tostring

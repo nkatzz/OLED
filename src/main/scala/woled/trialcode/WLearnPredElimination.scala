@@ -37,9 +37,9 @@ object WLearnPredElimination {
     source.close
 
     val definiteClauses = rules.map { rule =>
-      val head = Literal.toMLNClauseLiteral(rule.head.asLiteral).tostring_mln
-      val body = rule.body.map(Literal.toMLNClauseLiteral(_).tostring_mln).mkString(" ^ ")
-      parser.parseDefiniteClause(s"${format(rule.mlnWeight)} $head :- $body")
+      val head = Literal.toMLNClauseLiteral(rule.head.asLiteral).tostringMLN
+      val body = rule.body.map(Literal.toMLNClauseLiteral(_).tostringMLN).mkString(" ^ ")
+      parser.parseDefiniteClause(s"${format(rule.weight)} $head :- $body")
     }
 
     val (functionMappings, mlnEvidenceAtoms, mlmConstsToAspAtomsMap) = getFunctionMappings(e, inps.globals.BK_WHOLE_EC)
@@ -58,7 +58,7 @@ object WLearnPredElimination {
 
     for (atom <- mlnEvidenceAtoms) {
       val args = atom.terms.map(x => lomrf.logic.Constant(x.tostring)).toVector
-      val domains = kb.predicateSchema(AtomSignature(atom.functor, args.length))
+      val domains = kb.predicateSchema(AtomSignature(atom.predSymbol, args.length))
       domains.zip(args).foreach { case (domain, value) => const += domain -> value.symbol }
     }
 
@@ -218,7 +218,7 @@ object WLearnPredElimination {
     evidenceBuilder.functions += new FunctionMapping("Disappear_Id2", "disappear", Vector("Id2"))
 
     for (atom <- mlnEvidenceAtoms) {
-      val predicate = atom.functor
+      val predicate = atom.predSymbol
       val args = atom.terms.map(x => lomrf.logic.Constant(x.tostring)).toVector
       evidenceBuilder.evidence += EvidenceAtom.asTrue(predicate, args)
     }
@@ -251,9 +251,9 @@ object WLearnPredElimination {
     answer foreach { atom =>
       val parsed = Literal.parse(atom)
       val (annotAtom, truthValue) = (parsed.terms.head.asInstanceOf[Literal], parsed.terms.tail.head.tostring.toBoolean)
-      val predSymbol = annotAtom.functor.capitalize // this is the HoldAt
+      val predSymbol = annotAtom.predSymbol.capitalize // this is the HoldAt
       val (fluentTerm, timeTerm) = (annotAtom.terms.head.asInstanceOf[Literal], annotAtom.terms.tail.head.tostring)
-      val fluentConstant = s"${fluentTerm.functor.capitalize}_${fluentTerm.terms.head.tostring.capitalize}_${fluentTerm.terms.tail.head.tostring.capitalize}"
+      val fluentConstant = s"${fluentTerm.predSymbol.capitalize}_${fluentTerm.terms.head.tostring.capitalize}_${fluentTerm.terms.tail.head.tostring.capitalize}"
       val timeConstant = timeTerm
 
       if (truthValue) {

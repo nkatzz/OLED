@@ -95,7 +95,7 @@ case class Clause(head: PosLiteral = PosLiteral(),
   // v is a Structures.Stats instance carrying the current counts from N.
   var countsPerNode = scala.collection.mutable.Map[String, Structures.ClauseStats]()
 
-  var mlnWeight: Double = 0.0
+  var weight: Double = 0.0
   var subGradient: Double = 0.0
 
   var mistakes: Double = 0.0
@@ -239,7 +239,7 @@ case class Clause(head: PosLiteral = PosLiteral(),
 
 
 
-  def   foilGain(funct: String) = {
+  def foilGain(funct: String) = {
 
     val thisCoverage = if (funct == "precision") this.precision else this.recall
     val parentCoverage = if (funct == "precision") parentClause.precision else parentClause.recall
@@ -271,17 +271,9 @@ case class Clause(head: PosLiteral = PosLiteral(),
         val max = parentClause.tps.toDouble * (- Math.log(parentCoverage) )
         val normalizedGain =  gain/max
 
-        if (normalizedGain.isNaN) {
-          if (this.body.nonEmpty) {
-            val stop = "stop"
-          }
-
-        }
-
         normalizedGain
       }
     }
-
   }
 
 
@@ -368,9 +360,9 @@ case class Clause(head: PosLiteral = PosLiteral(),
     val allSorted =
       if (scoringFunction == "foilgain")
         // The parent rule should not be included here (otherwise it will always win, see the foil gain formula)
-        this.refinements.sortBy { x => (- x.score, - x.mlnWeight, x.body.length+1) }
+        this.refinements.sortBy { x => (- x.score, - x.weight, x.body.length+1) }
       else
-        (List(this) ++ this.refinements).sortBy { x => (- x.score, - x.mlnWeight, x.body.length+1) }
+        (List(this) ++ this.refinements).sortBy { x => (- x.score, - x.weight, x.body.length+1) }
 
     val bestTwo = allSorted.take(2)
 
@@ -422,14 +414,7 @@ case class Clause(head: PosLiteral = PosLiteral(),
   }
 
 
-  def meanScorePruning(pruningThreshold: Double) = {
-    val newScore = pruningThreshold - this.score
-    //val newScore = this.score
-    val newMeanScore = ( (previousScore*previousMeanScoreCount) + newScore)/(previousMeanScoreCount+1)
-    previousMeanScoreCount += 1
-    previousScore = newScore
-    newMeanScore
-  }
+
 
   def clearStatistics = {
     tps = 0
@@ -444,27 +429,6 @@ case class Clause(head: PosLiteral = PosLiteral(),
 
   def length = this.body.length + 1
 
-  def presision_length = {
-    val p = if (!precision.isNaN) precision else 0.0
-    val l = length.toFloat/Globals.MAX_CLAUSE_LENGTH.toFloat
-    val pl = if (p - l > 0.0) p-l else p
-    pl
-  }
-
-  def recall_length = {
-    val r = if (!recall.isNaN) recall else 0.0
-    val l = length.toFloat/Globals.MAX_CLAUSE_LENGTH.toFloat
-    val rl = if (r - l > 0.0) r-l else r
-    rl
-  }
-
-  def weighted_precision = {
-    if (!precision.isNaN) tps * precision else 0.0
-  }
-
-  def weighted_recall = {
-    if (!recall.isNaN) tps * recall else 0.0
-  }
 
 
 
@@ -568,12 +532,6 @@ case class Clause(head: PosLiteral = PosLiteral(),
   }
 
 
-  /* Maybe this must be moved to the Theory class and try to score
-   * all clauses in a theory simultaneousely. */
-  def score(currentTheory: Theory, currentTheoryScore: Double): Double = {
-    0.0
-  }
-
   def format(x: Double) = {
     val defaultNumFormat = new DecimalFormat("0.############")
     defaultNumFormat.format(x)
@@ -585,7 +543,7 @@ case class Clause(head: PosLiteral = PosLiteral(),
       if(! Globals.glvalues("distributed").toBoolean) (tps*tpw, fps*fpw, fns*fnw)
       else (this.getTotalTPs, this.getTotalFPs, this.getTotalFNs)
     s"score:" + s" $scoreFunction, tps: $tps_, fps: $fps_, fns: $fns_ | " +
-      s"MLN-weight: ${format(this.mlnWeight)} | Expert Weight (pos/neg/avgPos/avgNeg): $w_pos/$w_neg/$avgWeight/$avgNegWeight " +
+      s"MLN-weight: ${format(this.weight)} | Expert Weight (pos/neg/avgPos/avgNeg): $w_pos/$w_neg/$avgWeight/$avgNegWeight " +
       s"Evaluated on: ${this.getTotalSeenExmpls} examples\n$tostring"
   }
 
@@ -607,15 +565,7 @@ case class Clause(head: PosLiteral = PosLiteral(),
   }
 
 
-  def updateStatistics(tps: Int, fps: Int, fns: Int, meanScoreDiff: Double, meanScoreDiff2: Double, exmplsCount: Int) = {
-    this.tps = tps
-    this.fps = fps
-    this.fns = fns
-    this.seenExmplsNum = exmplsCount
-  }
 
-
-  def condition = true
 
   /* generates candidate refinements for the Hoeffding test. otherAwakeRules is used by
   * Hedge (sleeping experts) to avoid generating refinements that already exist. */
@@ -636,12 +586,9 @@ case class Clause(head: PosLiteral = PosLiteral(),
 
       val test: Set[ModeAtom] = all.map(x => x.modeAtom).toSet
 
-      // if the test variable is a singleton then all predicates are comparison predicates of the same type
-      if (all.size == 1) {
-        false
-      } else {
-        test.size == 1 && gl.comparisonPredicates.contains(test.head)
-      }
+      // if the test variable is a singleton then all
+      // predicates are comparison predicates of the same type
+      if (all.size == 1) false else test.size == 1 && gl.comparisonPredicates.contains(test.head)
     }
 
     val specializationDepth = Globals.glvalues("specializationDepth").toInt
@@ -678,7 +625,7 @@ case class Clause(head: PosLiteral = PosLiteral(),
     flattend.foreach { refinement =>
       refinement.parentClause = this
       //------------------------------------
-      refinement.mlnWeight = this.mlnWeight
+      refinement.weight = this.weight
       //------------------------------------
       //refinement.w_pos = this.w_pos
       //------------------------------------
@@ -700,7 +647,7 @@ case class Clause(head: PosLiteral = PosLiteral(),
   }
 
   def marked(globals: Globals) = {
-    Clause(head=Literal(functor = "marked", terms=List(this.##.toString, this.head)), body=this.withTypePreds(globals).body)
+    Clause(head=Literal(predSymbol = "marked", terms=List(this.##.toString, this.head)), body=this.withTypePreds(globals).body)
   }
 
   //val isEmpty = this == Clause.empty
@@ -736,25 +683,10 @@ case class Clause(head: PosLiteral = PosLiteral(),
     this.supportSet = Theory(this.supportSet.clauses filter (p => !redundants.contains(p)))
   }
 
-  // When a rule is consistent w.r.t.
-  // a set of examples w, but there is no rule in its
-  // support that entails precisely the examples that
-  // this rule entails in w. Then its support needs
-  // to be updated by 'encoding' the uncovered examples
-  // with a set of new lifted bottom clauses.
-  def supportNeedsUpdate(e: Example, globals: Globals): Boolean = {
-    val coversThis = ASP.inference(this,e, globals=globals).atoms.toSet // what this covers
-    val noUpdate = this.supportSet.clauses.exists(
-        p => ASP.inference(p, e, globals=globals).atoms.toSet == coversThis // then no update is needed
-      )
-    ! noUpdate
-  }
 
-  def isConsistent(e: Example, globals: Globals): Boolean = {
-    LogicUtils.isSAT(Theory(List(this)), e, globals, ASP.isConsistent_program)
-  }
 
-  override def tostringQuote = this.tostring
+
+
 
   override lazy val tostring = this.toStrList match {
     case List() => throw new LogicException("Cannot generate a Clause object for the empty clause")
@@ -796,36 +728,16 @@ case class Clause(head: PosLiteral = PosLiteral(),
       case List() => throw new LogicException("Cannot generate a Clause object for the empty clause")
       case h :: ts =>
         ts.length match {
-          case 0 => format(this.mlnWeight) + " " + h
-          case 1 => (format(this.mlnWeight) + " " + h + " :- " + ts.head).replaceAll("not ", "!")
+          case 0 => format(this.weight) + " " + h
+          case 1 => (format(this.weight) + " " + h + " :- " + ts.head).replaceAll("not ", "!")
           case _ =>
-            format(this.mlnWeight) + " " + h + " :- " + (for (x <- ts) yield
+            format(this.weight) + " " + h + " :- " + (for (x <- ts) yield
               if (ts.indexOf(x) == ts.length - 1) s"$x" else s"$x ^ ").mkString("").replaceAll("not ", "!")
         }
     }
   }
 
-  /* The id term is already given. */
-  def tostring_MLN_1() = {
 
-    def format(x: Double) = {
-      val defaultNumFormat = new DecimalFormat("0.############")
-      defaultNumFormat.format(x)
-    }
-    //val markedHead = PosLiteral(this.head.functor, terms = this.head.terms)
-
-    this.toLiteralList.map(x => x.toMLN).map(x => x.tostring) match {
-      case List() => throw new LogicException("Cannot generate a Clause object for the empty clause")
-      case h :: ts =>
-        ts.length match {
-          case 0 => format(this.mlnWeight) + " " + h
-          case 1 => (format(this.mlnWeight) + " " + h + " :- " + ts.head).replaceAll("not ", "!")
-          case _ =>
-            format(this.mlnWeight) + " " + h + " :- " + (for (x <- ts) yield
-              if (ts.indexOf(x) == ts.length - 1) s"$x" else s"$x ^ ").mkString("").replaceAll("not ", "!")
-        }
-    }
-  }
 
   def to_MLNClause() = {
     val litsToMLN = this.toLiteralList.map(x => Literal.toMLNClauseLiteral(x).tostring)
@@ -833,10 +745,10 @@ case class Clause(head: PosLiteral = PosLiteral(),
       case List() => throw new LogicException("Cannot generate a Clause object for the empty clause")
       case h :: ts =>
         ts.length match {
-          case 0 => format(this.mlnWeight) + " " + h
-          case 1 => (format(this.mlnWeight) + " " + h + " :- " + ts.head).replaceAll("not ", "!")
+          case 0 => format(this.weight) + " " + h
+          case 1 => (format(this.weight) + " " + h + " :- " + ts.head).replaceAll("not ", "!")
           case _ =>
-            format(this.mlnWeight) + " " + h + " :- " + (for (x <- ts) yield
+            format(this.weight) + " " + h + " :- " + (for (x <- ts) yield
               if (ts.indexOf(x) == ts.length - 1) s"$x" else s"$x ^ ").mkString("").replaceAll("not ", "!")
         }
     }
@@ -847,9 +759,9 @@ case class Clause(head: PosLiteral = PosLiteral(),
     var map = scala.collection.mutable.Map[Expression, Expression]()
     var counter = 0
     for (x <- this.toLiteralList) {
-      val (a, _, c, d) = x.variabilize(List(Literal(functor = x.functor, isNAF = x.isNAF)),
+      val (a, _, c, d) = x.variabilize(List(Literal(predSymbol = x.predSymbol, isNAF = x.isNAF)),
         x.terms zip x.modeAtom.args, map, List(), counter)
-      val aa = Literal(a.head.functor, a.head.terms, a.head.isNAF, x.modeAtom, a.head.typePreds)
+      val aa = Literal(a.head.predSymbol, a.head.terms, a.head.isNAF, x.modeAtom, a.head.typePreds)
       accum ++= List(aa)
       map ++ c
       counter = d
@@ -903,8 +815,6 @@ case class Clause(head: PosLiteral = PosLiteral(),
 
   def toStrList: List[String] = List(head.tostring) ++ (for (x <- body) yield x.tostring)
 
-  def toStrList_no_NAF: List[String] = List(head.tostring) ++ (for (x <- body) yield x.tostring_no_NAF)
-
   def literals: List[Literal] = List(this.head.asLiteral) ++ this.body
 
   /**
@@ -941,7 +851,7 @@ case class Clause(head: PosLiteral = PosLiteral(),
     var temp = new ListBuffer[Literal]
     for (x <- l) {
       val m = x.skolemize(skmap).toList
-      val toLit = Literal(functor = x.functor, terms = m, isNAF = x.isNAF)
+      val toLit = Literal(predSymbol = x.predSymbol, terms = m, isNAF = x.isNAF)
       temp += toLit
     }
     val fl = temp.toList
@@ -971,28 +881,28 @@ case class Clause(head: PosLiteral = PosLiteral(),
     val temp = for (
       (lit, j) <- this.toLiteralList zip List.range(0, this.toLiteralList.length);
       vars = lit.variables(globals);
-      _try = Literal(functor = "try",
+      _try = Literal(predSymbol = "try",
         terms = List(Constant(s"$i"), Constant(s"$j"),
-        Literal(functor = "vars",
+        Literal(predSymbol = "vars",
                 terms = for (x <- vars) yield Variable(x.name, _type = x._type))),
                 typePreds = for (x <- vars) yield s"${x._type}(${x.name})");
       tryLit = j match {
-        case 0 => Literal(functor = "use2", terms = List(Constant(s"$i"), Constant("0")))
+        case 0 => Literal(predSymbol = "use2", terms = List(Constant(s"$i"), Constant("0")))
         case _ => _try
       };
       useMap = j match {
         case 0 => s"use2($i,0)" -> this.head.asLiteral
-        case _ => s"use2($i,$j)" -> Literal(functor = lit.functor, terms = lit.terms,
+        case _ => s"use2($i,$j)" -> Literal(predSymbol = lit.predSymbol, terms = lit.terms,
           isNAF = lit.isNAF, typePreds = _try.typePreds, modeAtom = lit.modeAtom)
       };
 
       tryClause1 = if (j > 0)
         Clause(head = _try,
-          body = List(Literal(functor = "use2",
+          body = List(Literal(predSymbol = "use2",
             terms = List(Constant(s"$i"), Constant(s"$j")) ), lit))
       else None;
       tryClause2 = if (j > 0)
-        Clause(head = _try, body = List(Literal(functor = "use2",
+        Clause(head = _try, body = List(Literal(predSymbol = "use2",
           terms = List(Constant(s"$i"), Constant(s"$j")), isNAF = true)) :::
           (for (x <- _try.typePreds) yield Literal(x) ))
       else None
@@ -1058,13 +968,13 @@ case class Clause(head: PosLiteral = PosLiteral(),
     val usedPart = c2.body filter (x => !this.body.contains(x))
     val (iconst, jconst) = (Constant(s"$i"), Constant(s"$j"))
     val vars = this.head.asLiteral.variables(globals)
-    val varlit = Literal(functor = "vars", terms = vars map (x => Variable(x.name, _type = x._type)))
-    val exceptionLit = Literal(functor = "exception",
+    val varlit = Literal(predSymbol = "vars", terms = vars map (x => Variable(x.name, _type = x._type)))
+    val exceptionLit = Literal(predSymbol = "exception",
       terms = List(iconst, jconst, varlit), isNAF = true)
     val res = (
       for (
         (x, k) <- usedPart zip List.range(1, usedPart.length + 1);
-        use3lit = Literal(functor = "use3", terms = List(Constant(s"$i"), Constant(s"$j"), Constant(s"$k")))
+        use3lit = Literal(predSymbol = "use3", terms = List(Constant(s"$i"), Constant(s"$j"), Constant(s"$k")))
       ) yield (Clause(head = exceptionLit.nonNegated, body = List(use3lit, x.negateThis)),
         use3lit.tostring -> x)).map { z => List(z._1, z._2) }.transpose
     val defeasible =

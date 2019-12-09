@@ -75,11 +75,11 @@ object AdaGrad extends LazyLogging {
         c.subGradient += currentSubgradient * currentSubgradient
 
         val coefficient = eta / (delta + math.sqrt(c.subGradient))
-        val value = c.mlnWeight - coefficient * currentSubgradient
+        val value = c.weight - coefficient * currentSubgradient
         val difference = math.abs(value) - (lambda * coefficient)
 
-        if (difference > 0) c.mlnWeight = if (value >= 0) difference else -difference
-        else c.mlnWeight = 0.0
+        if (difference > 0) c.weight = if (value >= 0) difference else -difference
+        else c.weight = 0.0
       }
 
     } else { // custom loss function
@@ -100,11 +100,11 @@ object AdaGrad extends LazyLogging {
         c.subGradient += currentSubgradient * currentSubgradient
 
         val coefficient = eta / (delta + math.sqrt(c.subGradient))
-        val value = c.mlnWeight - coefficient * currentSubgradient
+        val value = c.weight - coefficient * currentSubgradient
         val difference = math.abs(value) - (lambda * coefficient)
 
-        if (difference > 0) c.mlnWeight = if (value >= 0) difference else -difference
-        else c.mlnWeight = 0.0
+        if (difference > 0) c.weight = if (value >= 0) difference else -difference
+        else c.weight = 0.0
       }
 
     }
@@ -200,20 +200,20 @@ object AdaGrad extends LazyLogging {
     def isTrue(inferredAtom: Literal) = { inferredAtom.mlnTruthValue && !inferredAtom.isNAF }
 
     def isTPAtom(annotation: Set[String], inferredAtom: Literal) = {
-      isTrue(inferredAtom) && annotation.contains(inferredAtom.tostring_mln)
+      isTrue(inferredAtom) && annotation.contains(inferredAtom.tostringMLN)
     }
 
     def isFPAtom(annotation: Set[String], inferredAtom: Literal) = {
-      isTrue(inferredAtom) && !annotation.contains(inferredAtom.tostring_mln)
+      isTrue(inferredAtom) && !annotation.contains(inferredAtom.tostringMLN)
     }
 
     def isFNAtom(annotation: Set[String], inferredAtom: Literal) = {
-      !isTrue(inferredAtom) && annotation.contains(inferredAtom.tostring_mln)
+      !isTrue(inferredAtom) && annotation.contains(inferredAtom.tostringMLN)
     }
 
     val tps_fps_fns_per_clause = enumClauses map { clauseId =>
 
-      val relevantAnnotationAtoms = annotation.filter(p => p.derivedFrom == clauseId).map(x => x.tostring_mln).toSet
+      val relevantAnnotationAtoms = annotation.filter(p => p.derivedFrom == clauseId).map(x => x.tostringMLN).toSet
 
       inferredGroundNetwork.filter(p => p.derivedFrom == clauseId).foldLeft(0,0,0){ (counts, inferredAtom) =>
 
