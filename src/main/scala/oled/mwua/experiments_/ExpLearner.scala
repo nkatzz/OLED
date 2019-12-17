@@ -1,6 +1,6 @@
 package oled.mwua.experiments_
 
-import app.runutils.IOHandling.Source
+import app.runutils.IOHandling.InputSource
 import app.runutils.{Globals, RunningOptions}
 import com.typesafe.scalalogging.LazyLogging
 import logic.{Clause, Theory}
@@ -13,12 +13,12 @@ import scala.util.matching.Regex
 /**
   * Created by nkatz at 31/3/2019
   */
-class ExpLearner[T <: Source](val inps: RunningOptions,
-                              val trainingDataOptions: T,
-                              val testingDataOptions: T,
-                              val trainingDataFunction: T => Iterator[Example],
-                              val testingDataFunction: T => Iterator[Example],
-                              val writeExprmtResultsTo: String = "") extends LazyLogging {
+class ExpLearner[T <: InputSource](val inps: RunningOptions,
+                                   val trainingDataOptions: T,
+                                   val testingDataOptions: T,
+                                   val trainingDataFunction: T => Iterator[Example],
+                                   val testingDataFunction: T => Iterator[Example],
+                                   val writeExprmtResultsTo: String = "") extends LazyLogging {
 
 
   val learningRate: Double = Globals.sleepingExpertsLearningRate

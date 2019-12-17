@@ -18,7 +18,7 @@
 package oled.non_blocking
 
 import akka.actor.{Actor, Props}
-import app.runutils.IOHandling.Source
+import app.runutils.IOHandling.InputSource
 import app.runutils.{Globals, RunningOptions}
 import com.typesafe.scalalogging.LazyLogging
 import logic.Examples.Example
@@ -37,11 +37,11 @@ import oled.functions.DistributedOLEDFunctions.crossVal
   *
   */
 
-class Dispatcher[T <: Source](val dataOptions: List[(T, T => Iterator[Example])],
-                              val inputParams: RunningOptions,
-                              val tasksNumber: Int,
-                              testingDataOptions: T,
-                              testingDataFunction: T => Iterator[Example]) extends Actor with LazyLogging {
+class Dispatcher[T <: InputSource](val dataOptions: List[(T, T => Iterator[Example])],
+                                   val inputParams: RunningOptions,
+                                   val tasksNumber: Int,
+                                   testingDataOptions: T,
+                                   testingDataFunction: T => Iterator[Example]) extends Actor with LazyLogging {
 
   private var counter = tasksNumber
   private var initTheory = List[Clause]()

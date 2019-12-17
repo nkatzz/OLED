@@ -18,7 +18,7 @@
 package oled.single_core
 
 import akka.actor.{Actor, PoisonPill, Props}
-import app.runutils.IOHandling.{MongoSource, Source}
+import app.runutils.IOHandling.{MongoSource, InputSource}
 import app.runutils.RunningOptions
 import com.typesafe.scalalogging.LazyLogging
 import logic.Examples.Example
@@ -31,11 +31,11 @@ import logic.Examples.Example
 
 
 
-class Master[T <: Source](inps: RunningOptions,
-                          trainingDataOptions: T,
-                          testingDataOptions: T,
-                          trainingDataFunction: T => Iterator[Example],
-                          testingDataFunction: T => Iterator[Example]) extends Actor with LazyLogging{
+class Master[T <: InputSource](inps: RunningOptions,
+                               trainingDataOptions: T,
+                               testingDataOptions: T,
+                               trainingDataFunction: T => Iterator[Example],
+                               testingDataFunction: T => Iterator[Example]) extends Actor with LazyLogging{
 
   def receive = {
 

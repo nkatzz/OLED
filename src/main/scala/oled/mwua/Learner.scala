@@ -3,7 +3,7 @@ package oled.mwua
 import java.io.File
 
 import akka.actor.{Actor, ActorRef, PoisonPill, Props}
-import app.runutils.IOHandling.Source
+import app.runutils.IOHandling.InputSource
 import app.runutils.{Globals, RunningOptions}
 import logic.Examples.Example
 import logic._
@@ -35,12 +35,12 @@ import scala.util.matching.Regex
 *
 * */
 
-class Learner[T <: Source](val inps: RunningOptions,
-                           val trainingDataOptions: T,
-                           val testingDataOptions: T,
-                           val trainingDataFunction: T => Iterator[Example],
-                           val testingDataFunction: T => Iterator[Example],
-                           val writeExprmtResultsTo: String = "") extends Actor {
+class Learner[T <: InputSource](val inps: RunningOptions,
+                                val trainingDataOptions: T,
+                                val testingDataOptions: T,
+                                val trainingDataFunction: T => Iterator[Example],
+                                val testingDataFunction: T => Iterator[Example],
+                                val writeExprmtResultsTo: String = "") extends Actor {
 
   startTime = System.nanoTime()
 

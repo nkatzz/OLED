@@ -37,7 +37,7 @@ class MaritimeDataOptions(val llePath: String = "",
                           val chunkSize: Int = 1,
                           val limit: Double = Double.PositiveInfinity.toInt,
                           val targetConcept: String = "None",
-                          val trainingMode: Boolean = true) extends app.runutils.IOHandling.Source
+                          val trainingMode: Boolean = true) extends app.runutils.IOHandling.InputSource
 
 
 case class VesselAnnotationAtom (atom: String, startTime: Int, endTime: Int, var hasBeenChecked: Boolean = false) {

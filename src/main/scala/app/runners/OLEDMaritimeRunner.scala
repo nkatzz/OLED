@@ -197,7 +197,7 @@ object OLEDMaritimeRunner {
                             val trainingMode: Boolean = true,
                             val hlesMap: scala.collection.mutable.Map[String, AnnotationPerVessel],
                             val proxMap: scala.collection.mutable.Map[String, AnnotationPerVessel],
-                            val portsMap: scala.collection.mutable.Map[String, scala.collection.mutable.Set[String]]) extends app.runutils.IOHandling.Source
+                            val portsMap: scala.collection.mutable.Map[String, scala.collection.mutable.Set[String]]) extends app.runutils.IOHandling.InputSource
 
 
 

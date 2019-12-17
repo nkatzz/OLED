@@ -21,7 +21,7 @@ import java.io.{BufferedWriter, File, FileWriter, PrintWriter}
 
 import akka.actor.{ActorRef, Props}
 import akka.event.Logging.Debug
-import app.runutils.IOHandling.Source
+import app.runutils.IOHandling.InputSource
 import app.runutils.RunningOptions
 import logic.Examples.Example
 import logic.{Clause, Constant, Literal, Theory}
@@ -43,10 +43,10 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration._
 
 
-class WeightedTheoryLearner[T <: Source](inps: RunningOptions, trainingDataOptions: T,
-                                         testingDataOptions: T, trainingDataFunction: T => Iterator[Example],
-                                         testingDataFunction: T => Iterator[Example],
-                                         targetClass: String) extends TheoryLearner(inps,
+class WeightedTheoryLearner[T <: InputSource](inps: RunningOptions, trainingDataOptions: T,
+                                              testingDataOptions: T, trainingDataFunction: T => Iterator[Example],
+                                              testingDataFunction: T => Iterator[Example],
+                                              targetClass: String) extends TheoryLearner(inps,
   trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction, targetClass) {
 
   import context.become

@@ -21,7 +21,7 @@ import java.io.File
 import java.util.UUID
 import akka.actor.Actor
 import app.runutils.{Globals, RunningOptions}
-import app.runutils.IOHandling.Source
+import app.runutils.IOHandling.InputSource
 import com.typesafe.scalalogging.LazyLogging
 import iled.ILED
 import logic.Examples.Example
@@ -31,11 +31,11 @@ import utils.{ASP, Utils}
 import xhail.Xhail
 
 
-class LoMCTS[T <: Source](inps: RunningOptions,
-                          trainingDataOptions: T,
-                          testingDataOptions: T,
-                          trainingDataFunction: T => Iterator[Example],
-                          testingDataFunction: T => Iterator[Example]) extends Actor with LazyLogging {
+class LoMCTS[T <: InputSource](inps: RunningOptions,
+                               trainingDataOptions: T,
+                               testingDataOptions: T,
+                               trainingDataFunction: T => Iterator[Example],
+                               testingDataFunction: T => Iterator[Example]) extends Actor with LazyLogging {
 
   private var trainingData = trainingDataFunction(trainingDataOptions)
 

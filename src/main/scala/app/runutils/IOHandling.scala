@@ -30,9 +30,9 @@ object IOHandling {
 
   // TODO
   // Currently used by the maritime runner
-  trait Source
+  trait InputSource
 
-  trait MongoSource extends Source {
+  trait MongoSource extends InputSource {
 
     def createIndex(collection: MongoCollection, sort: String = "ascending", sortKey: String = "None"): Unit = {
       sortKey match {
@@ -53,18 +53,8 @@ object IOHandling {
     }
   }
 
-
-
   // TODO
   trait FileSource
-
-
-
-
-
-
-
-
 
   /*
   def getData[T <: Source](opts: T, dataFunc: (T) => Iterator[Example]) = {

@@ -19,7 +19,7 @@ package mcts.parallel
 
 import akka.actor.{Actor, PoisonPill}
 import app.runutils.Globals
-import app.runutils.IOHandling.Source
+import app.runutils.IOHandling.InputSource
 import com.typesafe.scalalogging.LazyLogging
 import logic.Examples.Example
 import logic.Theory
@@ -29,8 +29,8 @@ import logic.Theory
   * Created by nkatz on 9/22/17.
   */
 
-class ScorerWorker[T <: Source](globals: Globals, options: T,
-                                dataFunction: T => Iterator[Example]) extends Actor with LazyLogging {
+class ScorerWorker[T <: InputSource](globals: Globals, options: T,
+                                     dataFunction: T => Iterator[Example]) extends Actor with LazyLogging {
 
   def receive = {
     case theory: Theory =>

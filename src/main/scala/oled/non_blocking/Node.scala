@@ -18,7 +18,7 @@
 package oled.non_blocking
 
 import akka.actor.{Actor, PoisonPill}
-import app.runutils.IOHandling.Source
+import app.runutils.IOHandling.InputSource
 import app.runutils.RunningOptions
 import com.madhukaraphatak.sizeof.SizeEstimator
 import logic.Examples.Example
@@ -33,11 +33,11 @@ import org.slf4j.LoggerFactory
 
 /* Represents a processing node in OLED's distributed setting. */
 
-class Node[T <: Source](val otherNodesNames: List[String],
-                        val targetConcept: TargetConcept,
-                        val inputParameters: RunningOptions,
-                        val trainingDataOptions: T,
-                        val trainingDataFunction: T => Iterator[Example]) extends Actor {
+class Node[T <: InputSource](val otherNodesNames: List[String],
+                             val targetConcept: TargetConcept,
+                             val inputParameters: RunningOptions,
+                             val trainingDataOptions: T,
+                             val trainingDataFunction: T => Iterator[Example]) extends Actor {
 
   private val initorterm = targetConcept match {
     case x: Initiated => "initiatedAt"

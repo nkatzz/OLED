@@ -78,7 +78,7 @@ object DataCRONDelivRunner {
 
   }
 
-  private class DataOptions(val dataFilePath: String, val take: Int = 0, val drop: Int = 0) extends app.runutils.IOHandling.Source
+  private class DataOptions(val dataFilePath: String, val take: Int = 0, val drop: Int = 0) extends app.runutils.IOHandling.InputSource
 
   def getData(opts: DataOptions) = {
     val dataPath = opts.dataFilePath

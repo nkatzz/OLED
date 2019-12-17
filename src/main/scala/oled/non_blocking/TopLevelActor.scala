@@ -18,7 +18,7 @@
 package oled.non_blocking
 
 import akka.actor._
-import app.runutils.IOHandling.Source
+import app.runutils.IOHandling.InputSource
 import app.runutils.RunningOptions
 import com.madhukaraphatak.sizeof.SizeEstimator
 import logic.Examples.Example
@@ -32,9 +32,9 @@ import org.slf4j.LoggerFactory
   */
 
 
-class TopLevelActor[T <: Source](val dataOptions: List[(T, T => Iterator[Example])],
-                                 val inputParams: RunningOptions,
-                                 val targetConcept: TargetConcept) extends Actor {
+class TopLevelActor[T <: InputSource](val dataOptions: List[(T, T => Iterator[Example])],
+                                      val inputParams: RunningOptions,
+                                      val targetConcept: TargetConcept) extends Actor {
 
   import context._
 

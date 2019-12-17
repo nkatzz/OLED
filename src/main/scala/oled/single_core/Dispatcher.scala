@@ -20,7 +20,7 @@ package oled.single_core
 import java.io.File
 
 import akka.actor.{Actor, PoisonPill, Props}
-import app.runutils.IOHandling.Source
+import app.runutils.IOHandling.InputSource
 import app.runutils.{Debug, Globals, RunningOptions}
 import com.typesafe.scalalogging.LazyLogging
 import logic.Examples.Example
@@ -34,11 +34,11 @@ import utils.Utils
   * Created by nkatz on 28/2/2016.
   */
 
-class Dispatcher[T <: Source](inps: RunningOptions,
-                              trainingDataOptions: T,
-                              testingDataOptions: T,
-                              trainingDataFunction: T => Iterator[Example],
-                              testingDataFunction: T => Iterator[Example]) extends Actor with LazyLogging {
+class Dispatcher[T <: InputSource](inps: RunningOptions,
+                                   trainingDataOptions: T,
+                                   testingDataOptions: T,
+                                   trainingDataFunction: T => Iterator[Example],
+                                   testingDataFunction: T => Iterator[Example]) extends Actor with LazyLogging {
 
   private var size = inps.globals.MODEHS.size // One process for each target concept.
   private var theories = List[(Theory,Double)]()

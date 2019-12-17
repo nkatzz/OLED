@@ -1,7 +1,7 @@
 package woled
 
 import akka.actor.{Actor, ActorRef, Props}
-import app.runutils.IOHandling.Source
+import app.runutils.IOHandling.InputSource
 import app.runutils.{Globals, RunningOptions}
 import logic.Examples.Example
 import logic.{Clause, Literal, Theory}
@@ -14,10 +14,10 @@ import utils.ASP
 import scala.io.Source
 import scala.util.matching.Regex
 
-class Learner[T <: app.runutils.IOHandling.Source](inps: RunningOptions, trainingDataOptions: T,
-                           testingDataOptions: T, trainingDataFunction: T => Iterator[Example],
-                           testingDataFunction: T => Iterator[Example],
-                           targetClass: String) extends
+class Learner[T <: app.runutils.IOHandling.InputSource](inps: RunningOptions, trainingDataOptions: T,
+                                                        testingDataOptions: T, trainingDataFunction: T => Iterator[Example],
+                                                        testingDataFunction: T => Iterator[Example],
+                                                        targetClass: String) extends
   WeightedTheoryLearner(inps, trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction, targetClass) {
 
   import context.become
@@ -47,11 +47,11 @@ class Learner[T <: app.runutils.IOHandling.Source](inps: RunningOptions, trainin
 
     case batch: Example =>
 
-      if (batch.annotation.nonEmpty) {
+      logger.info(s"\n\n\n *** BATCH $batchCount *** ")
+
+      if (batchCount == 2) {
         val stop = "stop"
       }
-
-      logger.info(s"\n\n\n *** BATCH $batchCount *** ")
 
       // Get the data in MLN format by doing numerical stuff thresholds etc. with clingo
       // and getting the atoms expected by the mode declarations

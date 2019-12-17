@@ -275,7 +275,11 @@ object Scoring {
 
 
 
-  def scoreAndUpdateWeights(data: Example, inferredState: Map[String, Boolean], rules: Vector[Clause], inps: RunningOptions, logger: org.slf4j.Logger) = {
+  def scoreAndUpdateWeights(data: Example,
+                            inferredState: Map[String, Boolean],
+                            rules: Vector[Clause],
+                            inps: RunningOptions,
+                            logger: org.slf4j.Logger) = {
 
     val bk = BK
 
@@ -440,7 +444,7 @@ object Scoring {
     val initNewRules = newRules(initBCs)
     val termNewRules = newRules(termBCs)
 
-    // These rules are generated to correct current mistakes, so set their weight to 1, sot they are applied immediately.
+    // These rules are generated to correct current mistakes, so set their weight to 1, so they are applied immediately.
     initNewRules foreach (x => x.weight = 1.0)
     termNewRules foreach (x => x.weight = 1.0)
 

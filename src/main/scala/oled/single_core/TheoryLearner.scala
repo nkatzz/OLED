@@ -18,7 +18,7 @@
 package oled.single_core
 
 import akka.actor.Actor
-import app.runutils.IOHandling.Source
+import app.runutils.IOHandling.InputSource
 import app.runutils.{Globals, RunningOptions}
 import logic.Examples.Example
 import logic.Theory
@@ -42,12 +42,12 @@ import oled.functions.SingleCoreOLEDFunctions._
 * */
 
 
-class TheoryLearner[T <: Source](val inps: RunningOptions,
-                                 val trainingDataOptions: T,
-                                 val testingDataOptions: T,
-                                 val trainingDataFunction: T => Iterator[Example],
-                                 val testingDataFunction: T => Iterator[Example],
-                                 val targetClass: String) extends Actor {
+class TheoryLearner[T <: InputSource](val inps: RunningOptions,
+                                      val trainingDataOptions: T,
+                                      val testingDataOptions: T,
+                                      val trainingDataFunction: T => Iterator[Example],
+                                      val testingDataFunction: T => Iterator[Example],
+                                      val targetClass: String) extends Actor {
 
   private val logger = LoggerFactory.getLogger(self.path.name)
   private var totalBatchProcessingTime = 0.0

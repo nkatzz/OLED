@@ -464,8 +464,6 @@ object ASP extends ASPResultsParser with LazyLogging {
     atoms.split(" ")
   }
 
-
-
   def solveASPNoJep(task: String, aspFile: String, fromWeakExmpl: Boolean = false): List[AnswerSet] = {
 
     val solveMode =
@@ -547,8 +545,6 @@ object ASP extends ASPResultsParser with LazyLogging {
 
     val _models = results.map(x => processLine(x)).filter(z => z != None).filter(p => p.asInstanceOf[List[String]].nonEmpty).reverse
     //val models = _models filter (x => x.replaceAll("\\s", "") != "")
-
-
 
     //=========================================================================
     // This is a quick fix to get the result for abduction when

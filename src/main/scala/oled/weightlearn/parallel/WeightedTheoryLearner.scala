@@ -18,7 +18,7 @@
 package oled.weightlearn.parallel
 
 import akka.actor.{Actor, ActorRef, Props}
-import app.runutils.IOHandling.Source
+import app.runutils.IOHandling.InputSource
 import app.runutils.{Globals, RunningOptions}
 import logic.Examples.Example
 import logic.{Clause, Constant, Literal, Theory}
@@ -40,10 +40,10 @@ import woled.WoledUtils
  *
  * */
 
-class WeightedTheoryLearner[T <: Source](inps: RunningOptions, trainingDataOptions: T,
-                                         testingDataOptions: T, trainingDataFunction: T => Iterator[Example],
-                                         testingDataFunction: T => Iterator[Example],
-                                         targetClass: String) extends TheoryLearner(inps,
+class WeightedTheoryLearner[T <: InputSource](inps: RunningOptions, trainingDataOptions: T,
+                                              testingDataOptions: T, trainingDataFunction: T => Iterator[Example],
+                                              testingDataFunction: T => Iterator[Example],
+                                              targetClass: String) extends TheoryLearner(inps,
   trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction, targetClass) {
 
   import context.become
@@ -56,8 +56,7 @@ class WeightedTheoryLearner[T <: Source](inps: RunningOptions, trainingDataOptio
 
   private var workers: Vector[ActorRef] = Vector.empty[ActorRef]
 
-  private val master: ActorRef = context.actorOf(
-    Props( new MLNClauseEvalMaster(inps, initorterm) ), name = s"${this.initorterm}-master")
+  private val master: ActorRef = context.actorOf(Props( new MLNClauseEvalMaster(inps, initorterm) ), name = s"${this.initorterm}-master")
 
   override def receive = {
     case "go" =>

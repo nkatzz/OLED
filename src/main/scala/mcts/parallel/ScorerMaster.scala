@@ -19,7 +19,7 @@ package mcts.parallel
 
 import akka.actor.{Actor, Props}
 import app.runutils.Globals
-import app.runutils.IOHandling.Source
+import app.runutils.IOHandling.InputSource
 import logic.Examples.Example
 import logic.Theory
 
@@ -27,9 +27,9 @@ import logic.Theory
   * Created by nkatz on 9/22/17.
   */
 
-class ScorerMaster[T <: Source](globals: Globals,
-                                options: T,
-                                dataFunction: T => Iterator[Example]) extends Actor {
+class ScorerMaster[T <: InputSource](globals: Globals,
+                                     options: T,
+                                     dataFunction: T => Iterator[Example]) extends Actor {
 
   private var theoriesCount = 0
 

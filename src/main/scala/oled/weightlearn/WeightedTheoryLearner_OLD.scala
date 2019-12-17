@@ -17,7 +17,7 @@
 
 package oled.weightlearn
 
-import app.runutils.IOHandling.Source
+import app.runutils.IOHandling.InputSource
 import app.runutils.RunningOptions
 import logic.Examples.Example
 import logic.{Clause, Literal, Theory}
@@ -30,10 +30,10 @@ import utils.Implicits._
 import oled.functions.WeightLearningFunctions._
 
 
-class WeightedTheoryLearner_OLD[T <: Source](inps: RunningOptions, trainingDataOptions: T, testingDataOptions: T,
-                                         trainingDataFunction: T => Iterator[Example],
-                                         testingDataFunction: T => Iterator[Example],
-                                         targetClass: String) extends
+class WeightedTheoryLearner_OLD[T <: InputSource](inps: RunningOptions, trainingDataOptions: T, testingDataOptions: T,
+                                                  trainingDataFunction: T => Iterator[Example],
+                                                  testingDataFunction: T => Iterator[Example],
+                                                  targetClass: String) extends
   TheoryLearner(inps, trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction, targetClass) {
 
   private val logger = LoggerFactory.getLogger(self.path.name)

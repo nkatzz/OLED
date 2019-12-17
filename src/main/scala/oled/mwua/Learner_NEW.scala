@@ -3,7 +3,7 @@ package oled.mwua
 import java.io.{BufferedWriter, File, FileWriter, PrintWriter}
 
 import akka.actor.Actor
-import app.runutils.IOHandling.Source
+import app.runutils.IOHandling.InputSource
 import app.runutils.RunningOptions
 import com.typesafe.scalalogging.Logger
 import logic.Examples.Example
@@ -14,12 +14,12 @@ import org.slf4j.LoggerFactory
 import scala.util.Random
 import scala.util.matching.Regex
 
-class Learner_NEW[T <: Source](val inps: RunningOptions,
-                               val trainingDataOptions: T,
-                               val testingDataOptions: T,
-                               val trainingDataFunction: T => Iterator[Example],
-                               val testingDataFunction: T => Iterator[Example],
-                               val writeExprmtResultsTo: String = "") extends Actor {
+class Learner_NEW[T <: InputSource](val inps: RunningOptions,
+                                    val trainingDataOptions: T,
+                                    val testingDataOptions: T,
+                                    val trainingDataFunction: T => Iterator[Example],
+                                    val testingDataFunction: T => Iterator[Example],
+                                    val writeExprmtResultsTo: String = "") extends Actor {
   val learningRate = 0.2 //1.0 //0.05 //0.2 // 1.0 usually works for winnow
 
   val epsilon = 0.9 //0.9 // used in the randomized version
