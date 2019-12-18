@@ -3,8 +3,9 @@ package woled
 import java.io.File
 
 import logic.{Clause, Literal}
+import lomrf.logic.compile.{PredicateCompletion, PredicateCompletionMode}
 import lomrf.logic.parser.KBParser
-import lomrf.logic.{AtomSignature, Constant, EvidenceAtom, FunctionMapping, NormalForm, PredicateCompletion, PredicateCompletionMode}
+import lomrf.logic.{AtomSignature, Constant, EvidenceAtom, FunctionMapping}
 import lomrf.mln.grounding.MRFBuilder
 import lomrf.mln.inference.ILP
 import lomrf.mln.learning.structure.ClauseConstructor
@@ -85,8 +86,8 @@ object MAPCorrect extends App {
     val builder = new MRFBuilder(mln, createDependencyMap = true)
     val mrf = builder.buildNetwork
 
-    val solver = new ILP(mrf)
-    solver.infer()
+    val solver = ILP(mrf)
+    solver.infer
 
     var result = Map.empty[String, Boolean]
     val queryStartID = mln.space.queryStartID

@@ -38,21 +38,15 @@ if [ ! -d ../external_dependencies ]; then
 
     # Installing LoMRF
     log_info "Installing LoMRF."
-    wget http://users.iit.demokritos.gr/~nkatz/oled/LoMRF.tar.xz
+    wget https://github.com/anskarl/LoMRF/archive/v0.7.1.tar.gz
     wget http://users.iit.demokritos.gr/~nkatz/oled/lpsolve55.tar.xz
-    wget http://users.iit.demokritos.gr/~nkatz/oled/auxlib.tar.xz
-    tar xf LoMRF.tar.xz
+    tar xf v0.7.1.tar.gz
     tar xf lpsolve55.tar.xz
-    tar xf auxlib.tar.xz
-    cd auxlib
+    cd LoMRF-0.7.1
     sbt +publishLocal
     cd ..
-    cd LoMRF
-    sbt +publishLocal
-    cd ..
-    rm LoMRF.tar.xz
+    rm v0.7.1.tar.gz
     rm lpsolve55.tar.xz
-    rm auxlib.tar.xz
     cd ..
 
     # Installing Interval Tree

@@ -20,12 +20,15 @@ package oled.weightlearn
 import app.runutils.Debug
 import com.typesafe.scalalogging.LazyLogging
 import logic.{Clause, Literal}
-import optimus.algebra._
+import optimus.algebra.AlgebraOps._
+import optimus.algebra.Expression
 import optimus.optimization._
+import optimus.optimization.enums.{PreSolve, SolverLib}
+import optimus.optimization.model.MPFloatVar
 
 class MAPInference extends LazyLogging {
 
-  implicit val problem: LQProblem = LQProblem(SolverLib.lp_solve)
+  implicit val problem = MPModel(SolverLib.LpSolve)
 
   /* Non-empty clauseIds are passed when rules are evaluated in parallel.
    * See also MLNClauseHandlingWorker:

@@ -5,7 +5,8 @@ import java.text.DecimalFormat
 import app.runutils.{Globals, RunningOptions}
 import logic.Examples.Example
 import logic.{Clause, Constant, Literal, LogicUtils, Theory, Variable}
-import lomrf.logic.{AtomSignature, Constant, EvidenceAtom, FunctionMapping, NormalForm, PredicateCompletion, PredicateCompletionMode}
+import lomrf.logic.compile.{PredicateCompletion, PredicateCompletionMode}
+import lomrf.logic.{AtomSignature, Constant, EvidenceAtom, FunctionMapping}
 import lomrf.logic.parser.KBParser
 import lomrf.mln.grounding.MRFBuilder
 import lomrf.mln.inference.ILP
@@ -386,11 +387,11 @@ object WoledUtils {
       println(constraint.decodeFeature(10000)(mln))
     }*/
 
-    val solver = new ILP(mrf)
+    val solver = ILP(mrf)
     //solver.infer()
 
     println("    Calling the solver...")
-    val s = solver.infer()
+    val s = solver.infer
 
     var result = Map.empty[String, Boolean]
 

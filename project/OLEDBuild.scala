@@ -53,7 +53,7 @@ object OLEDBuild extends AutoPlugin {
 
     headerLicense := Some(GPLv3("2016", "Nikos Katzouris")),
 
-    scalaVersion := "2.11.12",
+    scalaVersion := "2.12.9",
 
     autoScalaLibrary := false,
 
