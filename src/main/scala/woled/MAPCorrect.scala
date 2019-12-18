@@ -20,14 +20,14 @@ package woled
 import java.io.File
 
 import logic.{Clause, Literal}
-import lomrf.logic.compile.{PredicateCompletion, PredicateCompletionMode}
+import lomrf.logic.compile.{NormalForm, PredicateCompletion, PredicateCompletionMode}
 import lomrf.logic.parser.KBParser
 import lomrf.logic.{AtomSignature, Constant, EvidenceAtom, FunctionMapping}
 import lomrf.mln.grounding.MRFBuilder
 import lomrf.mln.inference.ILP
 import lomrf.mln.learning.structure.ClauseConstructor
 import lomrf.mln.model.AtomIdentityFunctionOps._
-import lomrf.mln.model.{Evidence, EvidenceBuilder, KB, MLN}
+import lomrf.mln.model.{Evidence, KB, MLN}
 
 import scala.io.Source
 
@@ -95,7 +95,7 @@ object MAPCorrect extends App {
 
     println("Coverting to CNF...")
 
-    val cnf = ClauseConstructor.makeCNF(resultedFormulas)(constants).toVector
+    val cnf = NormalForm.compileFastCNF(resultedFormulas)(constants).toVector
 
     cnf.filter(x => !x.isHard).map(x => x.toText()).foreach(println)
 

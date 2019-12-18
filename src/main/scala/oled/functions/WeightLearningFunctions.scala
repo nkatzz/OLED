@@ -22,7 +22,7 @@ import logic.Examples.Example
 import logic._
 import lomrf.logic.AtomSignature
 import lomrf.mln.model.mrf.MRF
-import lomrf.mln.model.{AtomIdentityFunctionOps, EvidenceBuilder, EvidenceDB, KB, MLN}
+import lomrf.mln.model.{AtomIdentityFunctionOps, EvidenceDB, KB, MLN}
 import utils.{ASP, Utils}
 
 object WeightLearningFunctions {

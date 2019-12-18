@@ -38,14 +38,14 @@ if [ ! -d ../external_dependencies ]; then
 
     # Installing LoMRF
     log_info "Installing LoMRF."
-    wget https://github.com/anskarl/LoMRF/archive/v0.7.1.tar.gz
+    wget https://github.com/anskarl/LoMRF/archive/develop.zip
     wget http://users.iit.demokritos.gr/~nkatz/oled/lpsolve55.tar.xz
-    tar xf v0.7.1.tar.gz
+    unzip develop
     tar xf lpsolve55.tar.xz
-    cd LoMRF-0.7.1
+    cd LoMRF-develop
     sbt +publishLocal
     cd ..
-    rm v0.7.1.tar.gz
+    rm develop.zip
     rm lpsolve55.tar.xz
     cd ..
 

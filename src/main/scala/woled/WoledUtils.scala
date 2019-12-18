@@ -22,15 +22,16 @@ import java.text.DecimalFormat
 import app.runutils.{Globals, RunningOptions}
 import logic.Examples.Example
 import logic.{Clause, Constant, Literal, LogicUtils, Theory, Variable}
-import lomrf.logic.compile.{PredicateCompletion, PredicateCompletionMode}
+import lomrf.logic.compile.{NormalForm, PredicateCompletion, PredicateCompletionMode}
 import lomrf.logic.{AtomSignature, Constant, EvidenceAtom, FunctionMapping}
 import lomrf.logic.parser.KBParser
 import lomrf.mln.grounding.MRFBuilder
 import lomrf.mln.inference.ILP
 import lomrf.mln.learning.structure.ClauseConstructor
-import lomrf.mln.model.{AtomIdentityFunction, ConstantsDomainBuilder, EvidenceBuilder, KB, MLN}
+import lomrf.mln.model.{AtomIdentityFunction, KB, MLN}
 import utils.{ASP, Utils}
 import lomrf.mln.model.AtomIdentityFunctionOps._
+import lomrf.mln.model.builders.{ConstantsDomainBuilder, EvidenceBuilder}
 
 import scala.collection.mutable
 import scala.io.Source
@@ -378,7 +379,7 @@ object WoledUtils {
 
     println("  Predicate completion...")
     val resultedFormulas = PredicateCompletion(formulas, definiteClauses.toSet, PredicateCompletionMode.Decomposed)(kb.predicateSchema, kb.functionSchema, constants)
-    val cnf = ClauseConstructor.makeCNF(resultedFormulas)(constants).toVector
+    val cnf = NormalForm.compileFastCNF(resultedFormulas)(constants).toVector
 
     // This prints out the lifted rules in CNF form.
     //println(cnf.map(_.toText()).mkString("\n"))

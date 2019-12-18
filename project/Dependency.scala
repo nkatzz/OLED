@@ -36,7 +36,7 @@ object Dependency {
     final val Parboiled = "2.1.8"
 
     final val Optimus = "3.2.0"
-    final val LoMRF = "0.7.1"
+    final val LoMRF = "1.0.0-SNAPSHOT"
   }
 
   // Akka.io
