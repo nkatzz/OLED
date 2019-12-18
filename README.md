@@ -13,7 +13,7 @@ This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you a
 
 ## Installation
 
-You'll need to have Scala (> 2.11) with SBT (Scala Build Tool), Java 8, and Python 2.7 installed on your machine.
+You'll need to have Scala 2.12 with SBT (Scala Build Tool), JDK 8, and Python 2.7 installed on your machine.
 
 * Clone or download the source code:
   * `git clone https://github.com/nkatzz/OLED.git`

@@ -26,15 +26,14 @@ object Dependency {
 
     final val ScalaLogging = "3.9.2"
     final val Logback = "1.2.3"
-    final val SLF4J = "1.7.15"
 
     final val MongoDB = "3.1.1"
 
     final val ScalaTest = "3.0.5"
 
-    final val ScalaZ = "7.2.26"
+    final val ScalaZ = "7.2.29"
     final val SizeOf = "0.1"
-    final val Parboiled = "2.1.5"
+    final val Parboiled = "2.1.8"
 
     final val Optimus = "3.2.0"
     final val LoMRF = "0.7.1"
@@ -46,8 +45,7 @@ object Dependency {
   // Logging using SLF4J and logback
   lazy val Logging = Seq(
     "com.typesafe.scala-logging" %% "scala-logging" % v.ScalaLogging,
-    "ch.qos.logback" % "logback-classic" % v.Logback,
-    "org.slf4j" % "slf4j-api" % v.SLF4J
+    "ch.qos.logback" % "logback-classic" % v.Logback
   )
 
   // MongoDB (update to "org.mongodb.scala" %% "mongo-scala-driver" % "2.1.0")

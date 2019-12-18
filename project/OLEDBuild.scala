@@ -60,6 +60,7 @@ object OLEDBuild extends AutoPlugin {
     managedScalaInstance := true,
 
     resolvers ++= Seq(
+      Resolver.mavenLocal,
       Resolver.typesafeRepo("releases"),
       Resolver.sonatypeRepo("releases"),
       Resolver.sonatypeRepo("snapshots")
@@ -68,15 +69,15 @@ object OLEDBuild extends AutoPlugin {
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-library" % scalaVersion.value,
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-      "org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.1"
+      "org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.2"
     ),
 
     dependencyOverrides ++= Seq(
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       "org.scala-lang" % "scala-library" % scalaVersion.value,
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-      "org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.1",
-      "org.scala-lang.modules" %% "scala-xml" % "1.1.1"
+      "org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.2",
+      "org.scala-lang.modules" %% "scala-xml" % "1.2.0"
     )
   )
 
