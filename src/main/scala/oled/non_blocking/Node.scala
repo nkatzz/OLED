@@ -33,11 +33,12 @@ import org.slf4j.LoggerFactory
 
 /* Represents a processing node in OLED's distributed setting. */
 
-class Node[T <: InputSource](val otherNodesNames: List[String],
-                             val targetConcept: TargetConcept,
-                             val inputParameters: RunningOptions,
-                             val trainingDataOptions: T,
-                             val trainingDataFunction: T => Iterator[Example]) extends Actor {
+class Node[T <: InputSource](
+    val otherNodesNames: List[String],
+    val targetConcept: TargetConcept,
+    val inputParameters: RunningOptions,
+    val trainingDataOptions: T,
+    val trainingDataFunction: T => Iterator[Example]) extends Actor {
 
   private val initorterm = targetConcept match {
     case x: Initiated => "initiatedAt"
@@ -71,7 +72,7 @@ class Node[T <: InputSource](val otherNodesNames: List[String],
     if (showDebugMsgInLogs) {
       s"\nCurrent theory contains:" +
         s" $showCurrentClauseUUIDs\nExpansion candidates: $showCurrentExpansionCandidatesUUIDS\nAlready specialized: $showAlreadySpecialized\n"
-    } else {""}
+    } else { "" }
   }
 
   def getCurrentExpansionCandidates = {
@@ -94,7 +95,6 @@ class Node[T <: InputSource](val otherNodesNames: List[String],
   val EXPANSION_NODE_NON_PRIORITY_STATE = "expansion node non-priority"
   // for logging
   def logNormalState = this.state = NORMAL_STATE
-
 
   // This variable stores the uuid's of clauses that have been already specialized.
   // When the node finds an expansion candidate, it only proceeds to the necessary actions
@@ -156,7 +156,7 @@ class Node[T <: InputSource](val otherNodesNames: List[String],
 
     case request: StatsRequest => handleStatsRequest(request)
 
-    case _ : TheoryRequestMessage =>
+    case _: TheoryRequestMessage =>
       val msgNum = this.messages.length
       val msgSize = this.messages.sum
       sender ! new NodeTheoryMessage(Theory(this.currentTheory), msgNum, msgSize, self.path.name)
@@ -181,10 +181,8 @@ class Node[T <: InputSource](val otherNodesNames: List[String],
     self ! getNextBatch
   }
 
-
-
   def processNewChunck(chunk: Iterator[Example]) = {
-    if (! this.finishedAndSentTheory) {
+    if (!this.finishedAndSentTheory) {
       if (chunk.isEmpty) {
         logger_info(s"Finished the data")
         if (this.repeatFor > 0) {
@@ -231,15 +229,13 @@ class Node[T <: InputSource](val otherNodesNames: List[String],
           x ! request
         }
         this.statsRepliesCount = otherNodes.length // clear the reply counter
-        this.statsReplies = List[StatsReply]()     // clear the reply storage
+        this.statsReplies = List[StatsReply]() // clear the reply storage
       }
     }
 
     // When everything is done, send a request to self to process next batch.
     if (!this.finishedAndSentTheory) self ! getNextBatch
   }
-
-
 
   def handleStatsReply(reply: StatsReply) = {
     logger_info(s"Received a StatsReply from node ${reply.sender}: $reply")
@@ -248,13 +244,13 @@ class Node[T <: InputSource](val otherNodesNames: List[String],
     if (this.statsRepliesCount == 0) {
       // all replies have been received from all nodes.
       // Time to decide which candidates will eventually be expanded.
-      val (delta, ties, minseen) = (inputParameters.delta,inputParameters.breakTiesThreshold,inputParameters.minSeenExmpls)
+      val (delta, ties, minseen) = (inputParameters.delta, inputParameters.breakTiesThreshold, inputParameters.minSeenExmpls)
       val checked = getCurrentExpansionCandidates map (clause =>
         Utils.expand_?(clause, this.statsReplies, delta, ties, minseen, showState, self.path.name, inputParameters, slf4jLogger, blocking = false))
 
       val (expanded, notExpanded) = checked.foldLeft(List[Clause](), List[Clause]()){ (x, y) =>
         val (expandAccum, notExpandAccum) = (x._1, x._2)
-        val (expandedFlag, clause)  = (y._1, y._2)
+        val (expandedFlag, clause) = (y._1, y._2)
         if (expandedFlag) (expandAccum :+ clause, notExpandAccum) else (expandAccum, notExpandAccum :+ clause)
       }
       // replace the expanded in the current theory
@@ -286,18 +282,13 @@ class Node[T <: InputSource](val otherNodesNames: List[String],
     }
   }
 
-
-
-
-
   /* Handle a stats request */
   def handleStatsRequest(request: StatsRequest) = {
     logger_info(s"Received a StatsRequest from node ${request.senderName}")
     val statsObject =
-      (for (uuid <- request.candidatesIds) yield
-        this.currentTheory.find(c => c.uuid == uuid).getOrElse(Clause())
-        ).map(a => a.uuid -> Stats( ClauseStats(a.tps, a.fps, a.fns, a.seenExmplsNum),
-        a.refinements.map(r => r.uuid -> ClauseStats(r.tps, r.fps, r.fns, r.seenExmplsNum)).toMap )).toMap
+      (for (uuid <- request.candidatesIds) yield this.currentTheory.find(c => c.uuid == uuid).getOrElse(Clause())
+      ).map(a => a.uuid -> Stats(ClauseStats(a.tps, a.fps, a.fns, a.seenExmplsNum),
+                                 a.refinements.map(r => r.uuid -> ClauseStats(r.tps, r.fps, r.fns, r.seenExmplsNum)).toMap)).toMap
     val reply = new StatsReply(statsObject, self.path.name)
     updateMessages(reply)
     Utils.getActorByName(context, request.senderName) ! reply
@@ -334,15 +325,15 @@ class Node[T <: InputSource](val otherNodesNames: List[String],
   * */
   def processBatch(exmpls: Iterator[Example], logger: org.slf4j.Logger): BatchProcessResult = {
 
-    def filterTriedRules(newRules: List[Clause]) = {
-      val out = newRules.filter{ newRule =>
-        val bottomClauses = this.currentTheory.map(x => x.supportSet.clauses.head)
-        val bottom = newRule.supportSet.clauses.head
-        !bottomClauses.exists(x => x.thetaSubsumes(bottom) && bottom.thetaSubsumes(x))
+      def filterTriedRules(newRules: List[Clause]) = {
+        val out = newRules.filter{ newRule =>
+          val bottomClauses = this.currentTheory.map(x => x.supportSet.clauses.head)
+          val bottom = newRule.supportSet.clauses.head
+          !bottomClauses.exists(x => x.thetaSubsumes(bottom) && bottom.thetaSubsumes(x))
+        }
+        if (out.length != newRules.length) logger.info("Dropped new clause (repeated bottom clause)")
+        out
       }
-      if (out.length != newRules.length) logger.info("Dropped new clause (repeated bottom clause)")
-      out
-    }
 
     val out = utils.Utils.time {
       var newTopTheory = Theory(this.currentTheory)
@@ -360,7 +351,7 @@ class Node[T <: InputSource](val otherNodesNames: List[String],
         if (newTopTheory.clauses.nonEmpty) {
           newTopTheory.scoreRules(e, this.inputParameters.globals)
         }
-        for (rule <- newTopTheory.clauses){
+        for (rule <- newTopTheory.clauses) {
 
           //.filter(p => !this.getCurrentExpansionCandidates.contains(p))) {
 
@@ -381,8 +372,5 @@ class Node[T <: InputSource](val otherNodesNames: List[String],
       new BatchProcessResult(newRules, expansionCandidateRules)
     }
   }
-
-
-
 
 }

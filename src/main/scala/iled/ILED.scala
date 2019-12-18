@@ -36,13 +36,11 @@ import utils.parsers.{ASPResultsParser, ClausalLogicParser}
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-
 /**
   * Created by nkatz on 6/20/17.
   */
 
-object ILED extends ClausalLogicParser with LazyLogging with MongoUtils{
-
+object ILED extends ClausalLogicParser with LazyLogging with MongoUtils {
 
   def main(args: Array[String]) {
     val db = new Database("caviar_meeting_clean", "examples")
@@ -60,18 +58,16 @@ object ILED extends ClausalLogicParser with LazyLogging with MongoUtils{
     Globals.glvalues("withWeaks") = withWeaks.toString
     Globals.glvalues("withBacktr") = withBacktr.toString
 
-    run(db, batchSize = 100, trainingSetSize = 100000000 , //100000 //15000
-      withBacktr = withBacktr, withWeaks = withWeaks,
-      weaksSelectionStrategy = weaksSelectionStrategy, startTime = 0, globals = globals, bkFile = globals.BK_WHOLE_EC)
+    run(db, batchSize = 100, trainingSetSize = 100000000, //100000 //15000
+        withBacktr             = withBacktr, withWeaks = withWeaks,
+        weaksSelectionStrategy = weaksSelectionStrategy, startTime = 0, globals = globals, bkFile = globals.BK_WHOLE_EC)
 
   }
 
-
-
   def run(DB: Database, batchSize: Int = 1, trainingSetSize: Int = 0,
-          withWeaks: Boolean = false, withBacktr: Boolean = true,
-          weaksSelectionStrategy: Either[String, Int] = Left("all-weaks"),
-          startTime: Int = 0, globals: Globals, bkFile: String) = {
+      withWeaks: Boolean = false, withBacktr: Boolean = true,
+      weaksSelectionStrategy: Either[String, Int] = Left("all-weaks"),
+      startTime: Int = 0, globals: Globals, bkFile: String) = {
 
     logger.info(s"${lined("Running configuration:")} \n" + (for ((k, v) <- Globals.glvalues) yield s"$k: $v").mkString("\n"))
 
@@ -83,7 +79,7 @@ object ILED extends ClausalLogicParser with LazyLogging with MongoUtils{
     batchSize match {
       case 1 =>
         DB.collection.find().sort(MongoDBObject("time" -> 1)).foldLeft(List[Example](), new PriorTheory(), 0.0) {
-          (x, y) => iledTop(x._1, Example(y), x._2, globals=globals, bkFile=bkFile)
+          (x, y) => iledTop(x._1, Example(y), x._2, globals = globals, bkFile = bkFile)
         }
       case _ =>
         DB.nonEmpty match {
@@ -102,9 +98,9 @@ object ILED extends ClausalLogicParser with LazyLogging with MongoUtils{
                   val (_seenExs, _theory, _time) = withWeaks match {
                     case true =>
                       iledTop(pastExs, Example.merge(batch.examples),
-                        theory, weakBatch = batch, withBacktr = withBacktr,
-                        weaksSelectionStrategy = weaksSelectionStrategy, globals=globals, bkFile=bkFile)
-                    case _ => iledTop(pastExs, batch.asSingleExmpl, theory, withBacktr = withBacktr, globals=globals, bkFile=bkFile)
+                              theory, weakBatch = batch, withBacktr = withBacktr,
+                              weaksSelectionStrategy = weaksSelectionStrategy, globals = globals, bkFile = bkFile)
+                    case _ => iledTop(pastExs, batch.asSingleExmpl, theory, withBacktr = withBacktr, globals = globals, bkFile = bkFile)
                   }
                   endTimeVar = endTime
                   (endTime, _seenExs, _theory)
@@ -138,8 +134,8 @@ object ILED extends ClausalLogicParser with LazyLogging with MongoUtils{
    */
 
   def collectKernels(DB: Database, batchSize: Int = 1,
-                     trainingSetSize: Int = 0, startTime: Int = 0,
-                     globals: Globals, bkFile: String) = {
+      trainingSetSize: Int = 0, startTime: Int = 0,
+      globals: Globals, bkFile: String) = {
     val upto = if (trainingSetSize > DB.size) DB.size / batchSize else trainingSetSize / batchSize
     val repeat = List.range(0, upto)
     val run = repeat.foldLeft(startTime, new Theory()) {
@@ -161,14 +157,14 @@ object ILED extends ClausalLogicParser with LazyLogging with MongoUtils{
     wrapUp(DB, new PriorTheory(retainedRules = compressed), batchTimes = List[Double](), totalTime = 0.0, globals = globals)
   }
 
-
-  def iledTop(seenExs: List[Example],
-              e: Example,
-              pt: PriorTheory,
-              weakBatch: ExampleBatch = ExampleBatch(),
-              withBacktr: Boolean = false,
-              weaksSelectionStrategy: Either[String, Int] = Left("all-weaks"),
-              globals: Globals, bkFile: String): (List[Example], PriorTheory, Double) = {
+  def iledTop(
+      seenExs: List[Example],
+      e: Example,
+      pt: PriorTheory,
+      weakBatch: ExampleBatch = ExampleBatch(),
+      withBacktr: Boolean = false,
+      weaksSelectionStrategy: Either[String, Int] = Left("all-weaks"),
+      globals: Globals, bkFile: String): (List[Example], PriorTheory, Double) = {
 
     var totalTime = 0.0
     var forwardTime = 0.0
@@ -210,8 +206,8 @@ object ILED extends ClausalLogicParser with LazyLogging with MongoUtils{
       //don't time this it reduces the average revision time
       val sUpdate = time {
         val kernel =
-        // It takes too long to do this. Of course it's not correct. It's only for playing around with Arindam's data
-          if (!Globals.glvalues("iter-deepening").toBoolean) thisGenerateKernel(e.toMapASP, bkFile=bkFile, globals=globals)
+          // It takes too long to do this. Of course it's not correct. It's only for playing around with Arindam's data
+          if (!Globals.glvalues("iter-deepening").toBoolean) thisGenerateKernel(e.toMapASP, bkFile = bkFile, globals = globals)
           else List[Clause]()
         if (kernel.nonEmpty) {
           logger.info(s"Example ${e.time}: correct/updating support")
@@ -242,15 +238,14 @@ object ILED extends ClausalLogicParser with LazyLogging with MongoUtils{
     (newSeen, priorTheory, totalTime)
   }
 
-
-  def thisGenerateKernel(examples: Map[String,List[String]], fromWeakExmpl: Boolean = false, bkFile: String, globals: Globals) = {
+  def thisGenerateKernel(examples: Map[String, List[String]], fromWeakExmpl: Boolean = false, bkFile: String, globals: Globals) = {
     val infile = utils.Utils.getTempFile("example", ".lp", deleteOnExit = true)
-    val f = (x: String) => if(x.endsWith(".")) x.split("\\.")(0) else x
+    val f = (x: String) => if (x.endsWith(".")) x.split("\\.")(0) else x
     //val g = (x: String) => if(x.contains("example(")) x else s"example($x)"
     val interpretation = examples("annotation").map(x => s"${f(x)}.") ++ examples("narrative").map(x => s"${f(x)}.")
     utils.Utils.writeToFile(infile, "overwrite") { p => interpretation.foreach(p.println) }
 
-    var (_, varKernel) = Xhail.runXhail(fromFile=infile.getAbsolutePath, kernelSetOnly=true, fromWeakExmpl=fromWeakExmpl, bkFile=bkFile, globals=globals)
+    var (_, varKernel) = Xhail.runXhail(fromFile      = infile.getAbsolutePath, kernelSetOnly = true, fromWeakExmpl = fromWeakExmpl, bkFile = bkFile, globals = globals)
     if (fromWeakExmpl) {
       varKernel = varKernel.map (x => Clause.updateField(x, fromWeakExample = true))
     }
@@ -261,11 +256,11 @@ object ILED extends ClausalLogicParser with LazyLogging with MongoUtils{
     //val kernel = IledStreaming.generateKernel(e.toMapASP, jep=jep)
     val kernel =
       if (Globals.glvalues("specializeOnly").toBoolean && !priorTheory.isEmpty) List[Clause]()
-      else thisGenerateKernel(e.toMapASP, bkFile = bkFile, globals=globals)
+      else thisGenerateKernel(e.toMapASP, bkFile = bkFile, globals = globals)
 
     var theory = new PriorTheory(retainedRules = priorTheory.merge.compress)
     if (!withWeaks) {
-      theory = revise(kernelSet = Theory(kernel), priorTheory = theory, example = e, globals = globals)
+      theory = revise(kernelSet   = Theory(kernel), priorTheory = theory, example = e, globals = globals)
     } else {
       theory = reviseWithWeaks(Theory(kernel), theory, e, globals = globals)
     }
@@ -274,25 +269,24 @@ object ILED extends ClausalLogicParser with LazyLogging with MongoUtils{
     theory
   }
 
-
   def learnFromWeaks(pt: PriorTheory, weakBatch: ExampleBatch,
-                     weaksSelectionStrategy: Either[String, Int], globals: Globals, bkFile: String): PriorTheory = {
+      weaksSelectionStrategy: Either[String, Int], globals: Globals, bkFile: String): PriorTheory = {
 
-    def showWeaks(WeakRules: Theory) = {
-      if (WeakRules != Theory()) logger.info(s"\nNew weak rule: \n ${WeakRules.tostring}")
-    }
-
-    def weaksSelection = (how: Either[String, Int], weakBatch: ExampleBatch) => {
-      how match {
-        case Left(x) => x match {
-          case "all-weaks" => weakBatch.weakExmpls
-          case "hausdorff" => List[Example]() // Not implemented yet
-        }
-        case Right(x) =>
-          val howMany = (x.toFloat / 100.0 * weakBatch.weakExmpls.length).toInt
-          utils.Utils.sampleN(howMany, weakBatch.weakExmpls)
+      def showWeaks(WeakRules: Theory) = {
+        if (WeakRules != Theory()) logger.info(s"\nNew weak rule: \n ${WeakRules.tostring}")
       }
-    }
+
+      def weaksSelection = (how: Either[String, Int], weakBatch: ExampleBatch) => {
+        how match {
+          case Left(x) => x match {
+            case "all-weaks" => weakBatch.weakExmpls
+            case "hausdorff" => List[Example]() // Not implemented yet
+          }
+          case Right(x) =>
+            val howMany = (x.toFloat / 100.0 * weakBatch.weakExmpls.length).toInt
+            utils.Utils.sampleN(howMany, weakBatch.weakExmpls)
+        }
+      }
     var theory = pt.clearSupports(Example.merge(weakBatch.examples), globals = globals)
     val weaksToLearnFrom = weaksSelection(weaksSelectionStrategy, weakBatch)
     for (weak <- weaksToLearnFrom) {
@@ -303,8 +297,9 @@ object ILED extends ClausalLogicParser with LazyLogging with MongoUtils{
 
       val extraRules =
         if (!isSAT(theory.merge, newWeakBatch, ASP.check_SAT_Program, globals = globals)) {
-          val weakRules = revise(kernelSet = Theory(kernel), priorTheory = new PriorTheory(),
-            example = newWeakBatch, fromWeakExmpl = true, globals = globals).newRules /** Check if they are marked as weak (during debugging) */
+          val weakRules = revise(kernelSet     = Theory(kernel), priorTheory = new PriorTheory(),
+                                 example       = newWeakBatch, fromWeakExmpl = true, globals = globals).newRules
+          /** Check if they are marked as weak (during debugging) */
           val extras = weakRules.clauses.filter(x => !theory.merge.containsRule(x) && x.head.functor != "terminatedAt")
           //val extras = weakRules.clauses.filter(x => !theory.merge.containsRule(x) )
           showWeaks(Theory(extras))
@@ -325,13 +320,12 @@ object ILED extends ClausalLogicParser with LazyLogging with MongoUtils{
         theory =
           new PriorTheory(
             retainedRules = theory.retainedRules,
-            newRules = theory.newRules.extendUnique(Theory(extraRules)),
-            refinedRules = theory.refinedRules)
+            newRules      = theory.newRules.extendUnique(Theory(extraRules)),
+            refinedRules  = theory.refinedRules)
       }
     }
     theory
   }
-
 
   def goBack(priorTheory: PriorTheory, seenExamples: List[Example], withWeaks: Boolean = false, globals: Globals): PriorTheory = {
     logger.info("Re-checking the historical memory")
@@ -358,7 +352,6 @@ object ILED extends ClausalLogicParser with LazyLogging with MongoUtils{
     theory
   }
 
-
   def reviseWithWeaks(kernel: Theory = Theory(), priorTheory: PriorTheory, e: Example, globals: Globals) = {
     var theory = priorTheory
     val (strongs, weaks) = theory.merge.strongWeakSplit
@@ -367,8 +360,8 @@ object ILED extends ClausalLogicParser with LazyLogging with MongoUtils{
     // refine the weak ones. If strong and weak rules are treated together,
     // then it is likely to miss a "strong" revision, resulting later on to a dead-end.
 
-    val strongRevision = revise(kernelSet = kernel, priorTheory = new PriorTheory(retainedRules = Theory(strongs)),
-      example = e, withSupport = "strongOnly", globals = globals)
+    val strongRevision = revise(kernelSet   = kernel, priorTheory = new PriorTheory(retainedRules = Theory(strongs)),
+                                example     = e, withSupport = "strongOnly", globals = globals)
 
     val filtered = strongs.filter(p => p.supportSet.clauses.exists(q => q.fromWeakExample))
     val weakRevision = filtered match {
@@ -382,46 +375,45 @@ object ILED extends ClausalLogicParser with LazyLogging with MongoUtils{
     //val weakRevision = new PriorTheory()
 
     theory = new PriorTheory(retainedRules = strongRevision.retainedRules.extendUnique(weakRevision.retainedRules),
-      refinedRules = strongRevision.refinedRules.extendUnique(weakRevision.refinedRules),
-      newRules = strongRevision.newRules.extendUnique(weakRevision.newRules))
-
+                             refinedRules  = strongRevision.refinedRules.extendUnique(weakRevision.refinedRules),
+                             newRules      = strongRevision.newRules.extendUnique(weakRevision.newRules))
 
     if (weaks != Nil) {
       //val reviseWeaks = revise(keepIntact=theory,priorTheory = new PriorTheory(theory.retainedRules.extendUnique(Theory(weaks)), theory.newRules, theory.refinedRules), example = e)
-      val reviseWeaks = revise(keepIntact = theory, priorTheory = new PriorTheory(retainedRules = Theory(weaks)), example = e, globals = globals)
+      val reviseWeaks = revise(keepIntact  = theory, priorTheory = new PriorTheory(retainedRules = Theory(weaks)), example = e, globals = globals)
       val newWeaks = reviseWeaks.newRules
       val refinedWeaks = reviseWeaks.refinedRules
       val retainedWeaks = reviseWeaks.retainedRules
       theory =
         new PriorTheory(
           retainedRules = theory.retainedRules.extendUnique(retainedWeaks),
-          newRules = theory.newRules.extendUnique(newWeaks),
-          refinedRules = theory.refinedRules.extendUnique(refinedWeaks))
+          newRules      = theory.newRules.extendUnique(newWeaks),
+          refinedRules  = theory.refinedRules.extendUnique(refinedWeaks))
     }
 
     theory
   }
 
-
-  def revise(kernelSet: Theory = Theory(),
-             priorTheory: PriorTheory,
-             keepIntact: PriorTheory = new PriorTheory(),
-             example: Example,
-             withSupport: String = "fullSupport",
-             fromWeakExmpl: Boolean = false,
-             noiseTolerant: Boolean = false,
-             globals: Globals): PriorTheory = {
+  def revise(
+      kernelSet: Theory = Theory(),
+      priorTheory: PriorTheory,
+      keepIntact: PriorTheory = new PriorTheory(),
+      example: Example,
+      withSupport: String = "fullSupport",
+      fromWeakExmpl: Boolean = false,
+      noiseTolerant: Boolean = false,
+      globals: Globals): PriorTheory = {
 
     val aspFile: File = utils.Utils.getTempFile("aspInduction", ".lp", "", deleteOnExit = true)
     val (_, use2AtomsMap, defeasiblePrior, use3AtomsMap, _, _) =
       ASP.inductionASPProgram(
-        kernelSet = kernelSet,
-        priorTheory = priorTheory.merge,
-        examples = example.toMapASP,
+        kernelSet    = kernelSet,
+        priorTheory  = priorTheory.merge,
+        examples     = example.toMapASP,
         aspInputFile = aspFile,
-        withSupport = withSupport,
-        retained = keepIntact.merge,
-        globals = globals)
+        withSupport  = withSupport,
+        retained     = keepIntact.merge,
+        globals      = globals)
     val answerSet = ASP.solve("iled", use2AtomsMap ++ use3AtomsMap, aspFile, example.toMapASP, fromWeakExmpl = fromWeakExmpl)
     if (answerSet != Nil) {
       val newRules = Rules.getNewRules(
@@ -454,14 +446,13 @@ object ILED extends ClausalLogicParser with LazyLogging with MongoUtils{
 
       val refinedRules =
         if (!noiseTolerant) Rules.getRefined(icRules, retainedRules.extendUnique(keepIntact.merge), newRules, example,
-          withSupport = withSupport, globals = globals)
+                                             withSupport = withSupport, globals = globals)
         else thisRefine(icRules)
       new PriorTheory(retainedRules, newRules, Theory.mergeTheories(refinedRules))
     } else {
       priorTheory
     }
   }
-
 
   /* This is something forgotten from ILEDNoiseTollerant. It's here so that its reference above compiles.
   * If we go into a noise-tollerant version of ILED we could look at this. */
@@ -498,8 +489,6 @@ object ILED extends ClausalLogicParser with LazyLogging with MongoUtils{
     List[Theory]()
   }
 
-
-
   def updateSupport(theory: Theory, kernelSet: Theory, fromWeakExample: Boolean = false) = {
 
     // This is used to avoid adding redundant rules in the
@@ -508,9 +497,10 @@ object ILED extends ClausalLogicParser with LazyLogging with MongoUtils{
     val isRedundant = (ss: Clause, c: Clause) =>
       c.supportSet.clauses exists (x => ss.thetaSubsumes(x))
 
-    for (c <- theory.clauses;
-         ks <- kernelSet.clauses
-         if !isRedundant(ks, c) && c.thetaSubsumes(ks)) {
+    for (
+      c <- theory.clauses;
+      ks <- kernelSet.clauses if !isRedundant(ks, c) && c.thetaSubsumes(ks)
+    ) {
       val markedKS = Clause.updateField(ks, fromWeakExample = fromWeakExample)
       c.supportSet = Theory(c.supportSet.clauses :+ markedKS)
     }
@@ -528,59 +518,58 @@ object ILED extends ClausalLogicParser with LazyLogging with MongoUtils{
     theory.clauses foreach (x => x.compressSupport)
   }
 
-
   def wrapUp(DB: Database, theory: PriorTheory, batchTimes: List[Double] = List(),
-             totalTime: Double, testingSet: List[(Int, Int)] = Nil, globals: Globals) = {
+      totalTime: Double, testingSet: List[(Int, Int)] = Nil, globals: Globals) = {
 
-    def crossValidation(theory: Theory) = {
-      var done = false
-      var (tps, fps, fns) = (0.0, 0.0, 0.0)
-      //var start = DB.startTime
-      var start = 597240
-      while (!done) {
-        /** @todo factor out the bacth calls it is repeated throughout the code **/
-        //println("crossval")
-        val getbatch = DB.getBatch1(start, 5000) // get batches at 5000 to go faster
-        val (batch, endTime) = (getbatch._1, getbatch._2)
-        if (endTime == start) done = true
-        val res = new Crossvalidation(batch.toMapASP, theory.clauses.map(x => x.withTypePreds(globals = globals)), globals = globals)
-        tps = tps + res.tps
-        fps = fps + res.fps
-        fns = fns + res.fns
-        start = endTime
-      }
-      val precision = tps.toFloat / (tps + fps)
-      val recall = tps.toFloat / (tps + fns)
-      val f_score = 2 * (precision * recall) / (precision + recall)
-      (tps, fps, fns, precision, recall, f_score)
-    }
-
-    def crossValidation2(theory: Theory, testingSet: List[(Int, Int)], globals: Globals): (Double, Double, Double, Double, Double, Double) = {
-      def cv(currentInterval: (Int, Int)) = {
-        val batches = DB.getBatches(currentInterval._1, currentInterval._2, step = 40,
-          howMany = List.range(currentInterval._1, currentInterval._2+40, 40).length, usingWeakExmpls = false)
-        val examples = batches map (x => x.asSingleExmpl)
-        examples.foldLeft((0.0, 0.0, 0.0)) {
-          (x, y) =>
-            val (tps, fps, fns) = (x._1, x._2, x._3)
-            val res = new Crossvalidation(y.toMapASP, theory.clauses.map(x => x.withTypePreds(globals = globals)), globals = globals)
-            (tps + res.tps, fps + res.fps, fns + res.fns)
+      def crossValidation(theory: Theory) = {
+        var done = false
+        var (tps, fps, fns) = (0.0, 0.0, 0.0)
+        //var start = DB.startTime
+        var start = 597240
+        while (!done) {
+          /** @todo factor out the bacth calls it is repeated throughout the code **/
+          //println("crossval")
+          val getbatch = DB.getBatch1(start, 5000) // get batches at 5000 to go faster
+          val (batch, endTime) = (getbatch._1, getbatch._2)
+          if (endTime == start) done = true
+          val res = new Crossvalidation(batch.toMapASP, theory.clauses.map(x => x.withTypePreds(globals = globals)), globals = globals)
+          tps = tps + res.tps
+          fps = fps + res.fps
+          fns = fns + res.fns
+          start = endTime
         }
+        val precision = tps.toFloat / (tps + fps)
+        val recall = tps.toFloat / (tps + fns)
+        val f_score = 2 * (precision * recall) / (precision + recall)
+        (tps, fps, fns, precision, recall, f_score)
       }
-      val stats = testingSet.foldLeft((0.0, 0.0, 0.0)) {
-        (x, y) =>
-          val (_tps, _fps, _fns) = (x._1, x._2, x._3)
-          val m = cv(y)
-          val (tps, fps, fns) = (m._1, m._2, m._3)
-          (_tps + tps, _fps + fps, _fns + fns)
+
+      def crossValidation2(theory: Theory, testingSet: List[(Int, Int)], globals: Globals): (Double, Double, Double, Double, Double, Double) = {
+          def cv(currentInterval: (Int, Int)) = {
+            val batches = DB.getBatches(currentInterval._1, currentInterval._2, step = 40,
+                                        howMany         = List.range(currentInterval._1, currentInterval._2 + 40, 40).length, usingWeakExmpls = false)
+            val examples = batches map (x => x.asSingleExmpl)
+            examples.foldLeft((0.0, 0.0, 0.0)) {
+              (x, y) =>
+                val (tps, fps, fns) = (x._1, x._2, x._3)
+                val res = new Crossvalidation(y.toMapASP, theory.clauses.map(x => x.withTypePreds(globals = globals)), globals = globals)
+                (tps + res.tps, fps + res.fps, fns + res.fns)
+            }
+          }
+        val stats = testingSet.foldLeft((0.0, 0.0, 0.0)) {
+          (x, y) =>
+            val (_tps, _fps, _fns) = (x._1, x._2, x._3)
+            val m = cv(y)
+            val (tps, fps, fns) = (m._1, m._2, m._3)
+            (_tps + tps, _fps + fps, _fns + fns)
+        }
+        val (tps, fps, fns) = (stats._1, stats._2, stats._3)
+        val precision = tps.toFloat / (tps + fps)
+        val recall = tps.toFloat / (tps + fns)
+        val f_score = 2 * (precision * recall) / (precision + recall)
+        //val out = (tps, fps, fns, precision, recall, f_score)
+        (tps, fps, fns, precision, recall, f_score)
       }
-      val (tps, fps, fns) = (stats._1, stats._2, stats._3)
-      val precision = tps.toFloat / (tps + fps)
-      val recall = tps.toFloat / (tps + fns)
-      val f_score = 2 * (precision * recall) / (precision + recall)
-      //val out = (tps, fps, fns, precision, recall, f_score)
-      (tps, fps, fns, precision, recall, f_score)
-    }
 
     //List.range()
 
@@ -626,8 +615,8 @@ object ILED extends ClausalLogicParser with LazyLogging with MongoUtils{
   // the pruning threshold is percent% of the total positives count for hle, found in
   // the training set.
   def pruneBadWeaks(seen: List[Example], theory: Theory, DB: Database,
-                    totalTime: Double, pruningThreshold: Either[(String, Int), Int] = Right(2000),
-                    testingSet: List[(Int, Int)] = Nil, globals: Globals) = {
+      totalTime: Double, pruningThreshold: Either[(String, Int), Int] = Right(2000),
+      testingSet: List[(Int, Int)] = Nil, globals: Globals) = {
 
     class RuleEvaluator(seen: List[Example], c: Clause) extends Actor {
       def receive = {
@@ -724,24 +713,22 @@ object ILED extends ClausalLogicParser with LazyLogging with MongoUtils{
     out
   }
 
-
   class ResultsBean(val hypothesisSize: Double, val tps: Double, val fps: Double,
-                    val fns: Double, val precision: Double, val recall: Double,
-                    val f_score: Double, val totalTime: Double)
-
+      val fns: Double, val precision: Double, val recall: Double,
+      val f_score: Double, val totalTime: Double)
 
   def show(retained: Theory, news: Theory, refined: Theory, e: Example, how: String): Unit = {
-    def showTheory(flag: String, t: Theory) = t match {
-      case Theory.empty => ""
-      case _ =>
-        val header = s"\n$flag rules:\n"
-        val line = "-" * header.length + "\n"
-        header + line + t.tostring + "\n"
-    }
-    def header = how match {
-      case "forward" => s" Example: ${e.time} "
-      case "backwards" => s" Example: ${e.time} (re-seeing) "
-    }
+      def showTheory(flag: String, t: Theory) = t match {
+        case Theory.empty => ""
+        case _ =>
+          val header = s"\n$flag rules:\n"
+          val line = "-" * header.length + "\n"
+          header + line + t.tostring + "\n"
+      }
+      def header = how match {
+        case "forward" => s" Example: ${e.time} "
+        case "backwards" => s" Example: ${e.time} (re-seeing) "
+      }
 
     val theoryEmpty = retained.isEmpty && news.isEmpty && refined.isEmpty
 
@@ -752,7 +739,6 @@ object ILED extends ClausalLogicParser with LazyLogging with MongoUtils{
     }
 
   }
-
 
   def isSAT(theory: Theory, example: Example, F: (Theory, Example, Globals) => String, globals: Globals): Boolean = {
     val f = F(theory, example, globals)
@@ -766,18 +752,15 @@ object ILED extends ClausalLogicParser with LazyLogging with MongoUtils{
     if (out != Nil && out.head == AnswerSet.UNSAT) out.head.atoms else List[String]()
   }
 
-
-
 }
 
-
 class Crossvalidation(val examples: Map[String, List[String]], val theory: List[Clause],
-                      val withInertia: Boolean = true, val globals: Globals) extends ASPResultsParser {
+    val withInertia: Boolean = true, val globals: Globals) extends ASPResultsParser {
 
   val FNS_PRED = "posNotCovered"
   val FPS_PRED = "negsCovered"
   val TPS_PRED = "posCovered"
-  val aspInputFile = utils.Utils.getTempFile(prefix = "crossVal", suffix = ".lp", deleteOnExit = true)
+  val aspInputFile = utils.Utils.getTempFile(prefix       = "crossVal", suffix = ".lp", deleteOnExit = true)
   //val bk = if (withInertia) List(s"\n#include " + "\"" + Core.bkFile + "\".\n") else List(s"\n#include " + "\"" + Core.bkFileNoInertia + "\".\n")
 
   val bk = if (withInertia) List(s"\n#include " + "\"" + globals.BK_CROSSVAL + "\".\n") else List(s"\n#include " + "\"" + globals.ILED_NO_INERTIA + "\".\n")
@@ -788,12 +771,12 @@ class Crossvalidation(val examples: Map[String, List[String]], val theory: List[
     varbedExmplPatterns flatMap (x => List(s"\nposNotCovered($x) :- example($x), not $x.", s"\nnegsCovered($x):- $x, not example($x).", s"\nposCovered($x):- $x, example($x).\n"))
 
   utils.Utils.toASPprogram(
-    program = bk ++ examples("annotation") ++ examples("narrative") ++
+    program     = bk ++ examples("annotation") ++ examples("narrative") ++
       theory.map(x => x.tostring) ++ coverageConstr,
-    show = List("posNotCovered/1","negsCovered/1","posCovered/1"), writeToFile = aspInputFile.getCanonicalPath
+    show        = List("posNotCovered/1", "negsCovered/1", "posCovered/1"), writeToFile = aspInputFile.getCanonicalPath
   )
 
-  val res = ASP.solveASPNoJep("crossvalidation", aspFile=aspInputFile.getCanonicalPath)
+  val res = ASP.solveASPNoJep("crossvalidation", aspFile = aspInputFile.getCanonicalPath)
   val model = if (res.isEmpty) List[String]() else res.head.atoms
 
   def get(what: String) = {

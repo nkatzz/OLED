@@ -29,18 +29,18 @@ import logic.Examples.Example
   * Created by nkatz on 7/9/17.
   */
 
-class MaritimeDataOptions(val llePath: String = "",
-                          val db: String = "",
-                          val hlePath: String,
-                          val speedLimitsPath: String = "/home/nkatz/dev/maritime/brest-data/areas_speed_limits.csv",
-                          val closeToPortsPath: String,
-                          val chunkSize: Int = 1,
-                          val limit: Double = Double.PositiveInfinity.toInt,
-                          val targetConcept: String = "None",
-                          val trainingMode: Boolean = true) extends app.runutils.IOHandling.InputSource
+class MaritimeDataOptions(
+    val llePath: String = "",
+    val db: String = "",
+    val hlePath: String,
+    val speedLimitsPath: String = "/home/nkatz/dev/maritime/brest-data/areas_speed_limits.csv",
+    val closeToPortsPath: String,
+    val chunkSize: Int = 1,
+    val limit: Double = Double.PositiveInfinity.toInt,
+    val targetConcept: String = "None",
+    val trainingMode: Boolean = true) extends app.runutils.IOHandling.InputSource
 
-
-case class VesselAnnotationAtom (atom: String, startTime: Int, endTime: Int, var hasBeenChecked: Boolean = false) {
+case class VesselAnnotationAtom(atom: String, startTime: Int, endTime: Int, var hasBeenChecked: Boolean = false) {
   def getActualAtom(time: Int) = this.atom.replaceAll("ReplaceThisByActualTime", time.toString)
 }
 
@@ -51,14 +51,12 @@ class AnnotationPerVessel(val vessel: String = "", var atoms: Vector[VesselAnnot
   lazy val sortAtoms: Vector[VesselAnnotationAtom] = this.atoms.sortBy(atom => atom.endTime)
 }
 
-
-
-
-class NodeData(val hlePath: String,
-               val llePath: String,
-               val closeToPortsPath: String,
-               val targetConcept: String,
-               val speedLimitsMap: scala.collection.mutable.Map[String, scala.collection.mutable.Set[String]]) {
+class NodeData(
+    val hlePath: String,
+    val llePath: String,
+    val closeToPortsPath: String,
+    val targetConcept: String,
+    val speedLimitsMap: scala.collection.mutable.Map[String, scala.collection.mutable.Set[String]]) {
 
   // The key is a vessel and the value is the set of all its annotation atoms wrapped in an AnnotationPerVessel instance
   var HLEsMap = scala.collection.mutable.Map[String, AnnotationPerVessel]()
@@ -72,11 +70,9 @@ class NodeData(val hlePath: String,
     else map(vessel) = new AnnotationPerVessel(vessel, Vector(a))
   }
 
-
   populateHLEsMap(hlePath, targetConcept)
   populatePortsMap(closeToPortsPath)
   populateProximityMap(llePath)
-
 
   def getTrainingData(opts: MaritimeDataOptions): Iterator[Example] = {
     val mongoClient = MongoClient()
@@ -85,7 +81,6 @@ class NodeData(val hlePath: String,
     times map { timeSlice => getDataSlice(timeSlice) }
   }
 
-
   def getTestingData(opts: MaritimeDataOptions): Iterator[Example] = {
     val mongoClient = MongoClient()
     val collection = mongoClient(opts.db)("examples")
@@ -93,19 +88,18 @@ class NodeData(val hlePath: String,
     times map { timeSlice => getDataSlice(timeSlice) }
   }
 
-
   def getDataSlice(objects: Seq[DBObject]) = {
 
-    def convert(o: DBObject) = {
-      val obj = o.asInstanceOf[BasicDBObject]
-      //val time = obj.get("time").toString
-      val atoms = obj.get("lles").asInstanceOf[BasicDBList].toList.map(_.toString).toSet
-      val vessels = obj.get("vessels").asInstanceOf[BasicDBList].toList.map(_.toString).toSet
-      val areas = obj.get("areas").asInstanceOf[BasicDBList].toList.map(_.toString).toSet
-      (atoms, vessels, areas)
-    }
+      def convert(o: DBObject) = {
+        val obj = o.asInstanceOf[BasicDBObject]
+        //val time = obj.get("time").toString
+        val atoms = obj.get("lles").asInstanceOf[BasicDBList].toList.map(_.toString).toSet
+        val vessels = obj.get("vessels").asInstanceOf[BasicDBList].toList.map(_.toString).toSet
+        val areas = obj.get("areas").asInstanceOf[BasicDBList].toList.map(_.toString).toSet
+        (atoms, vessels, areas)
+      }
 
-    def getTimes = objects.map(o => o.asInstanceOf[BasicDBObject].get("time").toString.toInt)
+      def getTimes = objects.map(o => o.asInstanceOf[BasicDBObject].get("time").toString.toInt)
     val times = getTimes
     val finalExampleStartTime = times.min
 
@@ -120,7 +114,7 @@ class NodeData(val hlePath: String,
     val (closeToPortsAtoms, speedLimitAtoms) = times.foldLeft(Set[String](), Set[String]()){ (accum, time) =>
 
       val closeToPortsAtoms_ = {
-        if(this.portsMap.contains(time.toString)) this.portsMap(time.toString)
+        if (this.portsMap.contains(time.toString)) this.portsMap(time.toString)
         else scala.collection.mutable.Set[String]()
       }
 
@@ -141,7 +135,7 @@ class NodeData(val hlePath: String,
   }
 
   def checkInterval(time: Int, interval: VesselAnnotationAtom): String = {
-    if ( isWithinInterval(time.toInt, (interval.startTime, interval.endTime)) ) {
+    if (isWithinInterval(time.toInt, (interval.startTime, interval.endTime))) {
       interval.getActualAtom(time.toInt)
     } else {
       "None"
@@ -183,7 +177,7 @@ class NodeData(val hlePath: String,
       case "rendezVous" =>
         data foreach { x =>
           val s = x.split("\\|")
-          val (startTime, endTime, vessel1, vessel2)  = (s(4).toInt, s(5).toInt - 1, s(1), s(0))
+          val (startTime, endTime, vessel1, vessel2) = (s(4).toInt, s(5).toInt - 1, s(1), s(0))
           val atom = s"""holdsAt($hle("$vessel1","$vessel2"),"ReplaceThisByActualTime")"""
           val a = VesselAnnotationAtom(atom, startTime, endTime)
           updateMap(vessel1, a, this.HLEsMap)
@@ -229,8 +223,4 @@ class NodeData(val hlePath: String,
   }
 
 }
-
-
-
-
 

@@ -23,5 +23,4 @@ package oled.selftraining
 
 class DataBatch(val pos: Set[String], val neg: Set[String], val unknown: Set[String], unkown: Set[String]) {
 
-
 }

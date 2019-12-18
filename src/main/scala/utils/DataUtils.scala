@@ -35,8 +35,6 @@ import logic.Theory
 *
 * */
 
-
-
 object DataUtils {
 
   trait Data
@@ -54,7 +52,7 @@ object DataUtils {
   */
   object Interval {
     def apply(HLE: String, start: Int) = {
-      new Interval(HLE,start,0)
+      new Interval(HLE, start, 0)
     }
   }
   /*
@@ -66,13 +64,13 @@ object DataUtils {
   case class Interval(HLE: String, startPoint: Int, var endPoint: Int) extends Data {
     val step = 40
     //var endPoint = 0
-    def length = List.range(startPoint,endPoint+step, step).length
+    def length = List.range(startPoint, endPoint + step, step).length
   }
 
   /* Companion object for the DataAsIntervals class */
   object DataAsIntervals {
     def apply() = {
-      new DataAsIntervals(Nil,Nil)
+      new DataAsIntervals(Nil, Nil)
     }
   }
 
@@ -88,9 +86,8 @@ object DataUtils {
   class DataFunction(val function: (String, String, Int, DataAsIntervals) => Iterator[Example]) extends TrainingSet
 
   class ResultsContainer(val tps: Double, val fps: Double, val fns: Double,
-                         val precision: Double, val recall: Double,
-                         val fscore: Double, val theorySize: Double, val time: Double, val theory: Theory)
-
+      val precision: Double, val recall: Double,
+      val fscore: Double, val theorySize: Double, val time: Double, val theory: Theory)
 
   /* Contains utilities for collecting statistics */
 
@@ -98,9 +95,9 @@ object DataUtils {
 
     def getExampleStats(exmpls: List[Example]) = {
 
-      def append(x: List[String], y: List[String]) = {
-        x ++ y.filter(p => !x.contains(p))
-      }
+        def append(x: List[String], y: List[String]) = {
+          x ++ y.filter(p => !x.contains(p))
+        }
 
       val (ratios, annotSizes, narSizes, totalSize, wholeAnnotation, wholeNarrative) =
         exmpls.foldLeft(List[Double](), List[Double](), List[Double](), List[Double](), List[String](), List[String]()) { (s, e) =>
@@ -126,10 +123,5 @@ object DataUtils {
       (meanRatio, meanAnnotSize, meanNarrativeSize, totalAnnotSize, totalNarSize)
     }
   }
-
-
-
-
-
 
 }

@@ -37,14 +37,14 @@ object BKHandling extends LazyLogging {
     val fnsMarked = (x: String) => s"\nfns(I,$x):- not marked(I,$x), example($x), rule(I).\n"
     val coverAllPositivesConstraint = (x: String) => s"\n:- example($x), not $x.\n"
     val excludeAllNegativesConstraint = (x: String) => s"\n:- $x, not example($x).\n"
-    val (tp,fp,fn,tpm,fpm,fnm,allpos,allnegs) =
+    val (tp, fp, fn, tpm, fpm, fnm, allpos, allnegs) =
       varbedExmplPatterns.
-        foldLeft(List[String](),List[String](),List[String](),List[String](),
-          List[String](),List[String](),List[String](),List[String]()){ (x,y) =>
-          (x._1 :+ tps(y) ,x._2 :+ fps(y), x._3 :+ fns(y),
-            x._4 :+ tpsMarked(y), x._5 :+ fpsMarked(y) ,
-            x._6 :+ fnsMarked(y), x._7 :+ coverAllPositivesConstraint(y), x._8 :+ excludeAllNegativesConstraint(y))
-        }
+        foldLeft(List[String](), List[String](), List[String](), List[String](),
+                 List[String](), List[String](), List[String](), List[String]()){ (x, y) =>
+            (x._1 :+ tps(y), x._2 :+ fps(y), x._3 :+ fns(y),
+              x._4 :+ tpsMarked(y), x._5 :+ fpsMarked(y),
+              x._6 :+ fnsMarked(y), x._7 :+ coverAllPositivesConstraint(y), x._8 :+ excludeAllNegativesConstraint(y))
+          }
     val mkString = (x: List[String]) => x.mkString("\n")
     (mkString(tp), mkString(fp), mkString(fn), mkString(tpm), mkString(fpm), mkString(fnm), mkString(allpos), mkString(allnegs))
   }
@@ -70,12 +70,11 @@ object BKHandling extends LazyLogging {
     }.mkString("\n")
   }
 
-
   /* This method is used to generate the ASP code that scores initiation and termination rules  */
 
   def generateScoringBK(modehs: List[ModeAtom]) = {
 
-    if (modehs.isEmpty) { logger.error("No head mode declarations found.") ; System.exit(-1)}
+    if (modehs.isEmpty) { logger.error("No head mode declarations found."); System.exit(-1) }
 
     if (Globals.glvalues("with-ec").toBoolean) { // We're learning with the Event Calculus in the BK.
       // We can get the fluent from the head modes.
@@ -138,8 +137,5 @@ object BKHandling extends LazyLogging {
       (scoringRules, scoringRules)
     }
   }
-
-
-
 
 }

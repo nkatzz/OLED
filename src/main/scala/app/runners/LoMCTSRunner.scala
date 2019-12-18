@@ -49,7 +49,6 @@ object LoMCTSRunner {
       Globals.glvalues("smallest-nonempty") = "true"
       /*-----------------------------------------------*/
 
-
       //val msg = "eval"
       val msg = "start"
 
@@ -59,7 +58,7 @@ object LoMCTSRunner {
 
       val system = ActorSystem("LoMCTSLearningSystem")
       system.actorOf(Props(new LoMCTS(inps, trainingDataOptions, testingDataOptions,
-        trainingDataFunction, testingDataFunction) ), name = "lomcts") ! msg
+                                      trainingDataFunction, testingDataFunction)), name = "lomcts") ! msg
 
     }
 

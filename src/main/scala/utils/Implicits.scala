@@ -68,8 +68,6 @@ object ClauseImplicits {
   implicit def asConstant(x: Int): Constant = Constant(x.toString)
 }
 
-
-
 object TrainingSetImplicits {
 
   // Until I fix this, I'll use this implicit conversion to convert a TrainingSet
@@ -80,7 +78,7 @@ object TrainingSetImplicits {
   //class DataAsIntervals(val trainingSet: List[Interval], val testingSet: List[Interval])
 
   implicit def toDataset(t: DataAsIntervals): DataSet = {
-    val f = (x: List[Interval]) => x map (z => (z.startPoint,z.endPoint))
+    val f = (x: List[Interval]) => x map (z => (z.startPoint, z.endPoint))
     new DataSet(trainingSet = f(t.trainingSet), testingSet = f(t.testingSet))
   }
 
@@ -96,4 +94,4 @@ object ExmplImplicits {
     e map (x => new Example(annot = x.exmplWithInertia.annotation, nar = x.exmplWithInertia.narrative, _time = x.exmplWithInertia.time))
   }
 }
-*/
+*/ 

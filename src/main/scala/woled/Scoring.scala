@@ -26,8 +26,8 @@ import xhail.Xhail
 import scala.util.Random
 
 /**
- * Created by nkatz on 11/10/19.
- */
+  * Created by nkatz on 11/10/19.
+  */
 object Scoring {
 
   /*val BK =
@@ -93,10 +93,6 @@ object Scoring {
       |#show total_groundings/1.
       |
       |""".stripMargin*/
-
-
-
-
 
   /*val BK =
     """
@@ -195,11 +191,6 @@ object Scoring {
       |
       |""".stripMargin*/
 
-
-
-
-
-
   val BK =
     """
       |%tps(X) :- X = #count {F,T: annotation(holdsAt(F,T)), inferred(holdsAt(F,T), true)}.
@@ -288,15 +279,12 @@ object Scoring {
       |
       |""".stripMargin
 
-
-
-
-
-  def scoreAndUpdateWeights(data: Example,
-                            inferredState: Map[String, Boolean],
-                            rules: Vector[Clause],
-                            inps: RunningOptions,
-                            logger: org.slf4j.Logger) = {
+  def scoreAndUpdateWeights(
+      data: Example,
+      inferredState: Map[String, Boolean],
+      rules: Vector[Clause],
+      inps: RunningOptions,
+      logger: org.slf4j.Logger) = {
 
     val bk = BK
 
@@ -304,8 +292,8 @@ object Scoring {
     val ruleIdsMap = zipped.map(x => x._2 -> x._1).toMap
 
     val ruleIdPreds = {
-      ruleIdsMap.map{ case (id, rule) => if(rule.head.functor == "initiatedAt") s"initiated_rule_id($id)." else s"terminated_rule_id($id)." }
-    } mkString(" ")
+      ruleIdsMap.map{ case (id, rule) => if (rule.head.functor == "initiatedAt") s"initiated_rule_id($id)." else s"terminated_rule_id($id)." }
+    } mkString (" ")
 
     val metaRules = ruleIdsMap.foldLeft(Vector[String]()) { (accum, r) =>
       val (ruleId, rule) = (r._1, r._2)
@@ -329,7 +317,7 @@ object Scoring {
 
     val endTime = (data.narrative ++ data.annotation).map(x => Literal.parse(x)).map(x => x.terms.last.tostring.toInt).sorted.last
 
-    val observationAtoms = (data.narrative :+ s"endTime($endTime)") .map(_+".")
+    val observationAtoms = (data.narrative :+ s"endTime($endTime)").map(_ + ".")
     val annotationAtoms = data.annotation.map(x => s"annotation($x).")
     val inferredAtoms = inferredState.map{ case (k, v) => s"inferred($k,$v)." }
     val include = s"""#include "${inps.globals.BK_WHOLE_EC}"."""
@@ -338,17 +326,17 @@ object Scoring {
       Vector("% Annotation Atoms:\n", annotationAtoms.mkString(" "),
         "\n% Inferred Atoms:\n", inferredAtoms.mkString(" "),
         "\n% Observation Atoms:\n", observationAtoms.mkString(" "),
-        "\n% Marked Rules:\n", metaRules.mkString("\n")+ruleIdPreds,
+        "\n% Marked Rules:\n", metaRules.mkString("\n") + ruleIdPreds,
         "\n% Meta-rules for Scoring:\n", s"$include\n", totalExmplsCount, bk)
     }
 
     /* SOLVE */
     val f = woled.Utils.dumpToFile(metaProgram)
-    val t = ASP.solve(Globals.INFERENCE, aspInputFile=f)
+    val t = ASP.solve(Globals.INFERENCE, aspInputFile = f)
     val answer = if (t.nonEmpty) t.head.atoms else Nil
 
     /* PARSE RESULTS */
-    val (batchTPs, batchFPs, batchFNs, totalGroundings, inertiaAtoms, rulesResults) = answer.foldLeft(0,0,0,0,Vector.empty[Literal],Vector.empty[String]) { (x, y) =>
+    val (batchTPs, batchFPs, batchFNs, totalGroundings, inertiaAtoms, rulesResults) = answer.foldLeft(0, 0, 0, 0, Vector.empty[Literal], Vector.empty[String]) { (x, y) =>
       if (y.startsWith("total_groundings")) {
         val num = y.split("\\(")(1).split("\\)")(0).toInt
         (x._1, x._2, x._3, num, x._5, x._6)
@@ -392,8 +380,8 @@ object Scoring {
 
       // Adagrad
       val lambda = inps.adaRegularization //0.001 // 0.01 default
-      val eta  = inps.adaLearnRate//1.0 // default
-      val delta  = inps.adaGradDelta//1.0
+      val eta = inps.adaLearnRate //1.0 // default
+      val delta = inps.adaGradDelta //1.0
       val currentSubgradient = mistakes
       rule.subGradient += currentSubgradient * currentSubgradient
       val coefficient = eta / (delta + math.sqrt(rule.subGradient))
@@ -410,7 +398,6 @@ object Scoring {
       if (newWeight == 0.0 | newWeight.isNaN) newWeight = 0.00000001
       rule.mlnWeight = if(newWeight.isPosInfinity) rule.mlnWeight else newWeight
       println(s"After: ${rule.mlnWeight}")*/
-
 
       /*if (prevWeight != rule.mlnWeight) {
         logger.info(s"\nPrevious weight: $prevWeight, current weight: ${rule.mlnWeight}, actualTPs: $actualTrueGroundings, actualFPs: $actualFalseGroundings, inferredTPs: $inferredTrueGroundings, mistakes: $mistakes\n${rule.tostring}")
@@ -436,10 +423,8 @@ object Scoring {
     (batchTPs, batchFPs, batchFNs, totalGroundings, inertiaAtoms)
   }
 
-
-
   def generateNewRules(fps: Map[Int, Set[Literal]], fns: Map[Int, Set[Literal]], batch: Example,
-                       inps: RunningOptions, logger: org.slf4j.Logger) = {
+      inps: RunningOptions, logger: org.slf4j.Logger) = {
 
     val (initTopRules, termTopRules) = (inps.globals.state.initiationRules, inps.globals.state.terminationRules)
 
@@ -447,12 +432,12 @@ object Scoring {
     val fnSeedAtoms = fns.map(x => x._1 -> x._2.map(x => Literal(predSymbol = "initiatedAt", terms = x.terms)))
 
     // These should be done in parallel...
-    val initBCs = if(fnSeedAtoms.nonEmpty) pickSeedsAndGenerate(fnSeedAtoms, batch, inps, 3, initTopRules.toVector, logger) else Set.empty[Clause]
-    val termBCs = if(fpSeedAtoms.nonEmpty) pickSeedsAndGenerate(fpSeedAtoms, batch, inps, 3, termTopRules.toVector, logger) else Set.empty[Clause]
+    val initBCs = if (fnSeedAtoms.nonEmpty) pickSeedsAndGenerate(fnSeedAtoms, batch, inps, 3, initTopRules.toVector, logger) else Set.empty[Clause]
+    val termBCs = if (fpSeedAtoms.nonEmpty) pickSeedsAndGenerate(fpSeedAtoms, batch, inps, 3, termTopRules.toVector, logger) else Set.empty[Clause]
 
     val newRules = (inp: Set[Clause]) => {
       inp map { rule =>
-        val c = Clause(head=rule.head, body = List())
+        val c = Clause(head = rule.head, body = List())
         c.addToSupport(rule)
         c
       }
@@ -468,21 +453,18 @@ object Scoring {
     (initNewRules, termNewRules)
   }
 
-
-
   def pickSeedsAndGenerate(mistakeAtomsGroupedByTime: Map[Int, Set[Literal]], batch: Example, inps: RunningOptions,
-                           numOfTrials: Int, currentTopRules: Vector[Clause], logger: org.slf4j.Logger) = {
+      numOfTrials: Int, currentTopRules: Vector[Clause], logger: org.slf4j.Logger) = {
 
-
-    def generateBC(seedAtom: String, batch: Example, inps: RunningOptions) = {
-      val examples = batch.toMapASP
-      val f = (x: String) => if (x.endsWith(".")) x else s"$x."
-      val interpretation = examples("annotation").map(x => s"${f(x)}") ++ examples("narrative").map(x => s"${f(x)}")
-      val infile = woled.Utils.dumpToFile(interpretation)
-      val (_, kernel) = Xhail.generateKernel(List(seedAtom), "", examples, infile, inps.globals.BK_WHOLE, inps.globals)
-      infile.delete()
-      kernel
-    }
+      def generateBC(seedAtom: String, batch: Example, inps: RunningOptions) = {
+        val examples = batch.toMapASP
+        val f = (x: String) => if (x.endsWith(".")) x else s"$x."
+        val interpretation = examples("annotation").map(x => s"${f(x)}") ++ examples("narrative").map(x => s"${f(x)}")
+        val infile = woled.Utils.dumpToFile(interpretation)
+        val (_, kernel) = Xhail.generateKernel(List(seedAtom), "", examples, infile, inps.globals.BK_WHOLE, inps.globals)
+        infile.delete()
+        kernel
+      }
 
     val random = new Random
 
@@ -494,7 +476,7 @@ object Scoring {
       val seedAtoms = seed._2.map(_.tostring)
 
       val _BCs = seedAtoms.flatMap(generateBC(_, batch, inps))
-      val BCs = _BCs.filter(newBC => !(existingBCs++_newBCs).exists(oldBC => newBC.thetaSubsumes(oldBC)))
+      val BCs = _BCs.filter(newBC => !(existingBCs ++ _newBCs).exists(oldBC => newBC.thetaSubsumes(oldBC)))
 
       if (BCs.nonEmpty) {
         logger.info(s"\nStart growing new rules from BCs:\n${BCs.map(_.tostring).mkString("\n")}")
@@ -507,9 +489,7 @@ object Scoring {
     newBCs._2
   }
 
-
-
-  def getMistakes(inferredState:  Map[String, Boolean], batch: Example) = {
+  def getMistakes(inferredState: Map[String, Boolean], batch: Example) = {
     val annotation = batch.annotation.toSet
     val (tps, fps, fns) = inferredState.foldLeft(Set.empty[String], Set.empty[String], Set.empty[String]) { (accum, y) =>
       val (atom, predictedTrue) = (y._1, y._2)
@@ -530,11 +510,5 @@ object Scoring {
     val groupedByTime = (in: Set[String]) => in.map(x => Literal.parse(x)).groupBy(x => x.terms.tail.head.tostring.toInt)
     (groupedByTime(fps), groupedByTime(fns), tpCounts, fpCounts, fnCounts)
   }
-
-
-
-
-
-
 
 }

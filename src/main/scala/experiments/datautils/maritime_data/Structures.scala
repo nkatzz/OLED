@@ -26,8 +26,6 @@ import com.mongodb.casbah.Imports._
 
 object Structures {
 
-
-
   trait Entry
 
   /* An interpretation containing all info for a single time point. */
@@ -50,6 +48,5 @@ object Structures {
       new MaritimeExample(time, lle, hle, vessels, areas)
     }
   }
-
 
 }

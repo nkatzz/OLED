@@ -55,7 +55,7 @@ object DataCRONDelivRunner {
       val startMsg = if (runningOptions.evalth != "None") "eval" else "start"
 
       system.actorOf(Props(new Master(runningOptions, trainingDataOptions, testingDataOptions,
-        trainingDataFunction, testingDataFunction)), name = "Master-Actor") !  startMsg
+                                      trainingDataFunction, testingDataFunction)), name = "Master-Actor") ! startMsg
     }
     //*/
 
@@ -97,7 +97,7 @@ object DataCRONDelivRunner {
     }
     if (opts.take != 0) {
       iter.take(opts.take)
-    } else if (opts.drop != 0){
+    } else if (opts.drop != 0) {
       iter.drop(opts.drop)
     } else {
       iter

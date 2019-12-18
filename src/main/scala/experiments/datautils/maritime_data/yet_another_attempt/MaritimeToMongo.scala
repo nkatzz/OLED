@@ -29,16 +29,16 @@ import scala.io.Source
 object MaritimeToMongo {
 
   val path = "/home/nkatz/dev/maritime/nkatz_brest/1-core"
-  private val datasetFile = path+"/dataset.txt" // The LLEs file
-  private val speedLimitsFile = path+"/static_data/all_areas/areas_speed_limits.csv"
-  private val closeToPortsFile = path+"/recognition/close_to_ports.csv" // this has a different schema than the other hles
-  private val highSpeedFile = path+"/recognition/highSpeedIn-no-infs.csv"
-  private val loiteringFile = path+"/recognition/loitering-no-infs.csv"
-  private val lowSpeedFile = path+"/recognition/lowSpeed-no-infs.csv"
-  private val sailingFile = path+"/recognition/sailing-no-infs.csv"
-  private val stoppedFile = path+"/recognition/stopped-no-infs.csv"
-  private val withinAreaFile = path+"/recognition/withinArea-no-infs.csv"
-  private val rendezVousFile = path+"/recognition/rendezVouz-no-infs.csv"
+  private val datasetFile = path + "/dataset.txt" // The LLEs file
+  private val speedLimitsFile = path + "/static_data/all_areas/areas_speed_limits.csv"
+  private val closeToPortsFile = path + "/recognition/close_to_ports.csv" // this has a different schema than the other hles
+  private val highSpeedFile = path + "/recognition/highSpeedIn-no-infs.csv"
+  private val loiteringFile = path + "/recognition/loitering-no-infs.csv"
+  private val lowSpeedFile = path + "/recognition/lowSpeed-no-infs.csv"
+  private val sailingFile = path + "/recognition/sailing-no-infs.csv"
+  private val stoppedFile = path + "/recognition/stopped-no-infs.csv"
+  private val withinAreaFile = path + "/recognition/withinArea-no-infs.csv"
+  private val rendezVousFile = path + "/recognition/rendezVouz-no-infs.csv"
 
   // The key is vessel
   var HLEMap = scala.collection.mutable.Map[String, scala.collection.mutable.Set[String]]()
@@ -51,10 +51,6 @@ object MaritimeToMongo {
   // The key is time
   var LLEMap = scala.collection.mutable.Map[Int, (scala.collection.mutable.Set[String], scala.collection.mutable.Set[String], scala.collection.mutable.Set[String])]()
 
-
-
-
-
   def main(args: Array[String]) = {
 
     val dbName = "maritime-brest"
@@ -63,7 +59,7 @@ object MaritimeToMongo {
 
     val newCollection = mongoClient(dbName)("examples")
     newCollection.dropCollection()
-    newCollection.createIndex(MongoDBObject("time"-> 1))
+    newCollection.createIndex(MongoDBObject("time" -> 1))
 
     populateHLEMap(highSpeedFile, "highSpeedIn")
     populatePortsMap(closeToPortsFile)
@@ -84,7 +80,7 @@ object MaritimeToMongo {
       val (lleAtoms, vessels, areas) = (record._1, record._2, record._3)
 
       val hleAtoms = vessels.flatMap { v =>
-        if(HLEMap.contains(v)) HLEMap(v)
+        if (HLEMap.contains(v)) HLEMap(v)
         else scala.collection.mutable.Set[String]()
       }
       val proximityAtoms = vessels.flatMap { v =>
@@ -93,7 +89,7 @@ object MaritimeToMongo {
       }
 
       val closeToPortsAtoms = {
-        if(portsMap.contains(time.toString)) portsMap(time.toString)
+        if (portsMap.contains(time.toString)) portsMap(time.toString)
         else scala.collection.mutable.Set[String]()
       }
 
@@ -110,15 +106,14 @@ object MaritimeToMongo {
     }
   }
 
-
   def LLEsToMongo(dataPath: String, collection: MongoCollection) = {
 
     println("Inserting LLEs to mongo")
 
     collection.createIndex(MongoDBObject("time" -> 1))
 
-    val data = Source.fromFile(dataPath).getLines//.filter(x => !x.contains("HoldsFor") && !x.contains("coord"))
-    while(data.hasNext) {
+    val data = Source.fromFile(dataPath).getLines //.filter(x => !x.contains("HoldsFor") && !x.contains("coord"))
+    while (data.hasNext) {
       val x = data.next()
       if (!x.contains("HoldsFor") && !x.contains("coord")) {
         var area = "None"
@@ -177,9 +172,6 @@ object MaritimeToMongo {
     }
   }
 
-
-
-
   def populateHLEMap(dataPath: String, hle: String) = {
     println(s"Getting $hle map")
     handleHLEs(dataPath, hle)
@@ -193,7 +185,7 @@ object MaritimeToMongo {
     var counter = 0
 
     val data = Source.fromFile(dataPath).getLines
-    while(data.hasNext) {
+    while (data.hasNext) {
       val x = data.next()
       if (!x.contains("HoldsFor") && !x.contains("coord")) {
         var area = "None"
@@ -329,17 +321,14 @@ object MaritimeToMongo {
       case "rendezVous" =>
         data foreach { x =>
           val s = x.split("\\|")
-          val (startTime, endTime, vessel1, vessel2)  = (s(4).toInt, s(5).toInt - 1, s(1), s(0))
+          val (startTime, endTime, vessel1, vessel2) = (s(4).toInt, s(5).toInt - 1, s(1), s(0))
           val atom = s"""holdsAt($hle("$vessel1","$vessel2"),interval("$startTime","$endTime"))"""
           if (HLEMap.contains(vessel1)) HLEMap(vessel1) = HLEMap(vessel1) += atom
           else HLEMap(vessel1) = scala.collection.mutable.Set(atom)
           if (HLEMap.contains(vessel2)) HLEMap(vessel2) = HLEMap(vessel2) += atom
           else HLEMap(vessel2) = scala.collection.mutable.Set(atom)
         }
-      }
     }
-
-
-
+  }
 
 }

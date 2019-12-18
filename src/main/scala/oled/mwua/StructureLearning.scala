@@ -26,7 +26,6 @@ import oled.mwua.HelperClasses.AtomTobePredicted
 
 object StructureLearning {
 
-
   def splitAwakeAsleep(rulesToSplit: List[Clause], awakeIds: Set[String]) = {
     val rulesToSplitIds = rulesToSplit.map(_##).toSet
     val (topLevelAwakeRules, topLevelAsleepRules) = rulesToSplit.foldLeft(Vector.empty[Clause], Vector.empty[Clause]) { (x, rule) =>
@@ -38,27 +37,27 @@ object StructureLearning {
     (topLevelAwakeRules, topLevelAsleepRules)
   }
 
+  def updateStructure_NEW_HEDGE(
+      atom: AtomTobePredicted,
+      markedMap: Map[String, Clause],
+      predictedLabel: String,
+      feedback: String,
+      batch: Example,
+      currentAtom: String,
+      inps: RunningOptions,
+      logger: org.slf4j.Logger,
+      stateHandler: StateHandler,
+      percentOfMistakesBeforeSpecialize: Int,
+      randomizedPrediction: Boolean,
+      selected: String,
+      specializeAllAwakeOnMistake: Boolean,
+      conservativeRuleGeneration: Boolean,
+      generateNewRuleFlag: Boolean) = {
 
-  def updateStructure_NEW_HEDGE(atom: AtomTobePredicted,
-                                markedMap: Map[String, Clause],
-                                predictedLabel: String,
-                                feedback: String,
-                                batch: Example,
-                                currentAtom: String,
-                                inps: RunningOptions,
-                                logger: org.slf4j.Logger,
-                                stateHandler: StateHandler,
-                                percentOfMistakesBeforeSpecialize: Int,
-                                randomizedPrediction: Boolean,
-                                selected: String,
-                                specializeAllAwakeOnMistake: Boolean,
-                                conservativeRuleGeneration: Boolean,
-                                generateNewRuleFlag: Boolean) = {
-
-    def getAwakeBottomRules(what: String) = {
-      if (what == "initiatedAt") atom.initiatedBy.filter(x => markedMap(x).isBottomRule)
-      else atom.terminatedBy.filter(x => markedMap(x).isBottomRule)
-    }
+      def getAwakeBottomRules(what: String) = {
+        if (what == "initiatedAt") atom.initiatedBy.filter(x => markedMap(x).isBottomRule)
+        else atom.terminatedBy.filter(x => markedMap(x).isBottomRule)
+      }
 
     var updatedStructure = false
 
@@ -128,7 +127,5 @@ object StructureLearning {
     }
     updatedStructure
   }
-
-
 
 }

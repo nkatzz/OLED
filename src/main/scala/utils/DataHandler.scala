@@ -29,12 +29,13 @@ object DataHandler {
 
   trait InputOptions
 
-  class BasicInputOptionsWrapper(val dbName: String,
-                                 val collectionName: String = "examples",
-                                 val chunkSize: Int = 1,
-                                 val targetConcept: String = "None",
-                                 val sortDbByField: String = "None",
-                                 val sort: String = "ascending") extends InputOptions
+  class BasicInputOptionsWrapper(
+      val dbName: String,
+      val collectionName: String = "examples",
+      val chunkSize: Int = 1,
+      val targetConcept: String = "None",
+      val sortDbByField: String = "None",
+      val sort: String = "ascending") extends InputOptions
 
   def basicDataFunction(options: BasicInputOptionsWrapper): Iterator[Example] = {
     val mc = MongoClient()
@@ -51,7 +52,7 @@ object DataHandler {
     }
     val dataChunked = data.grouped(options.chunkSize)
     val dataIterator = dataChunked.map { x =>
-      x.foldLeft(Example()) { (z,y) =>
+      x.foldLeft(Example()) { (z, y) =>
         new Example(annot = z.annotation ++ y.annotation, nar = z.narrative ++ y.narrative, _time = x.head.time)
       }
     }

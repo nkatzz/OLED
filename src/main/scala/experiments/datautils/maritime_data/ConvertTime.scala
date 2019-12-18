@@ -30,14 +30,12 @@ import scala.collection.mutable.ListBuffer
   * Created by nkatz on 6/22/17.
   */
 
-
 /**
   *
   * This is a (half-finished) version that tries to pre-process the data with in-memory maps
   * THIS DOESN'T WORK (GOT AN OUT OF HEAP ERROR AFTER A LOOOONG TIME OF PROCESSING LLES)
   *
-  * */
-
+  */
 
 object ConvertTime {
 
@@ -46,16 +44,16 @@ object ConvertTime {
 
   val path = "/home/nkatz/dev/maritime/nkatz_brest_0.6/1-core"
 
-  val datasetFile = path+"/dataset.txt"
-  val speedLimitsFile = path+"/static_data/all_areas/areas_speed_limits.csv"
+  val datasetFile = path + "/dataset.txt"
+  val speedLimitsFile = path + "/static_data/all_areas/areas_speed_limits.csv"
 
-  val closeToPortsFile = new File(path+"/recognition/close_to_ports.csv") // this has a different schema than the other hles
-  val highSpeedFile = new File(path+"/recognition/highSpeedIn.csv")
-  val loiteringFile = new File(path+"/recognition/loitering.csv")
-  val lowSpeedFile = new File(path+"/recognition/lowSpeed.csv")
-  val sailingFile = new File(path+"/recognition/sailing.csv")
-  val stoppedFile = new File(path+"/recognition/stopped.csv")
-  val withinAreaFile = new File(path+"/recognition/withinArea.csv")
+  val closeToPortsFile = new File(path + "/recognition/close_to_ports.csv") // this has a different schema than the other hles
+  val highSpeedFile = new File(path + "/recognition/highSpeedIn.csv")
+  val loiteringFile = new File(path + "/recognition/loitering.csv")
+  val lowSpeedFile = new File(path + "/recognition/lowSpeed.csv")
+  val sailingFile = new File(path + "/recognition/sailing.csv")
+  val stoppedFile = new File(path + "/recognition/stopped.csv")
+  val withinAreaFile = new File(path + "/recognition/withinArea.csv")
 
   //val hleFiles = Vector(closeToPortsFile, highSpeedFile, loiteringFile, lowSpeedFile, sailingFile, stoppedFile, withinAreaFile)
 
@@ -76,7 +74,6 @@ object ConvertTime {
 
       println("Grouping lles")
       val llesGrouped = lles.toList.groupBy(x => x.time)
-
 
       llesGrouped.foreach(x => println(x))
 
@@ -136,7 +133,7 @@ object ConvertTime {
     try {
       if (dataLine.contains("not_near")) { // this is for close_to_ports that has a different schema
         Vector(dataLine.split("\\|")(0))
-      } else if (dataLine.contains("highSpeedIn")){
+      } else if (dataLine.contains("highSpeedIn")) {
         val split = dataLine.split("\\|")
         Vector(split(4), split(5))
       } else {
@@ -150,14 +147,12 @@ object ConvertTime {
     }
   }
 
-
-
   /*
  * Handles: highSpeedIn withinArea that have the same schema
  *
  * */
   def areaHLEsToPredicateForm(path: String, timesMap: Map[Int, Int]) = {
-    val reversedMap = timesMap.map{ case (k, v) => (v, k)  }
+    val reversedMap = timesMap.map{ case (k, v) => (v, k) }
     val data = Source.fromFile(path).getLines
     data.foldLeft(List[HLE]()) { (accum, x) =>
       //println()
@@ -170,18 +165,17 @@ object ConvertTime {
 
       var count = startTime
       var accum_ = ListBuffer[Int]()
-      while(count <= endTime) {
+      while (count <= endTime) {
         if (reversedMap.contains(count)) {
           accum_ += count
         }
-        count +=1
+        count += 1
       }
       val intermediateTimes = accum_
       val intermediateHles = intermediateTimes.map(time => HLE(hle, s"""holdsAt($hle("$vessel","$area"),"$time")""", time, List(vessel), area))
       accum ++ intermediateHles.toList
     }
   }
-
 
   /*
   *
@@ -190,7 +184,7 @@ object ConvertTime {
   *
   * */
   def similarHLEstoPredicateForm(path: String, timesMap: Map[Int, Int]) = {
-    val reversedMap = timesMap.map{ case (k, v) => (v, k)  }
+    val reversedMap = timesMap.map{ case (k, v) => (v, k) }
     val data = Source.fromFile(path).getLines
     data.foreach{ x =>
       val s = x.split("\\|")
@@ -201,19 +195,17 @@ object ConvertTime {
 
       var count = startTime
       var accum_ = ListBuffer[Int]()
-      while(count <= endTime) {
+      while (count <= endTime) {
         if (reversedMap.contains(count)) {
           accum_ += count
         }
-        count +=1
+        count += 1
       }
       val intermediateTimes = accum_
       val intermediateHles = intermediateTimes.map(time => HLE(hle, s"""holdsAt($hle("$vessel"),"$time")""", time, List(vessel), "None"))
       intermediateHles.foreach(x => updateDBEntriesMap(x))
     }
   }
-
-
 
   /* Convert a data point to predicate form. This does not work with proximity for now.
    * This returns the predicate itself, the vessel and the area (if an area is involved).
@@ -274,10 +266,5 @@ object ConvertTime {
     //updateDBEntriesMap(entry)
     entry
   }
-
-
-
-
-
 
 }

@@ -40,7 +40,7 @@ object OLEDBuild extends AutoPlugin {
   private lazy val settings: Seq[Setting[_]] = {
     logger.info(s"Loading settings for Java $javaVersion or higher.")
     if (javaVersion < 1.8) sys.error("Java 8 or higher is required for building Optimus.")
-    else commonSettings ++ assemblySettings ++ javaSettings
+    else commonSettings ++ assemblySettings ++ javaSettings ++ CodeStyle.formatSettings
   }
 
   private val commonSettings: Seq[Setting[_]] = Seq(

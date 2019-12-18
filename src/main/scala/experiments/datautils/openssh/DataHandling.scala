@@ -23,7 +23,6 @@ import com.mongodb.casbah.Imports._
 
 import scala.io.Source
 
-
 object DataHandling extends App {
 
   val lines = Source.fromFile("/home/nkatz/dev/ADL-datasets/openshs-classification/d1_1m_10tm.csv").getLines
@@ -32,11 +31,10 @@ object DataHandling extends App {
   //val lines = Source.fromFile("/home/nkatz/dev/ADL-datasets/openshs-classification/d3_2m_10tm.csv").getLines
 
   val format = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-  def time(t: String) = format.parse(t).getTime/1000
+  def time(t: String) = format.parse(t).getTime / 1000
 
   //Set(eat, sleep, personal, leisure, other)
   //Set(bathroomLight, hallwayLight, kitchenLight, bedroomCarp, oven, tv, kitchenDoor, bedroomLight, livingCarp, bed, kitchenCarp, couch, mainDoorLock, wardrobe, mainDoor, bathroomCarp, fridge, bedTableLamp, bathroomDoor, bedroomDoor)
-
 
   val header = lines.take(1).next().split(",")
 
@@ -74,12 +72,8 @@ object DataHandling extends App {
     */
     //println(timeStamp, activity, lles)
 
-
   }
   //println(activities)
   //println(events)
-
-
-
 
 }

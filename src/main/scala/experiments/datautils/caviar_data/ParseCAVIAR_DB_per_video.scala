@@ -53,12 +53,12 @@ object ParseCAVIAR_DB_per_video {
       val contents =
         (for (f <- files)
           yield scala.io.Source.fromFile(f).getLines().filter(p => !p.startsWith("%"))).
-          toList.flatten.mkString.replaceAll("\\s","").split("\\."
-        ).toList
+          toList.flatten.mkString.replaceAll("\\s", "").split("\\."
+          ).toList
 
       val parsed = contents.flatMap(x =>
         //parseAll(caviarParser(lastTime),x).getOrElse(List(""))).filter(_!="").asInstanceOf[List[Atom]]
-        parseAll(caviarParser(0),x).getOrElse(List(""))).filter(_!="").asInstanceOf[List[Atom]]
+        parseAll(caviarParser(0), x).getOrElse(List(""))).filter(_ != "").asInstanceOf[List[Atom]]
 
       val atoms = SortedMap[Int, List[Atom]]() ++ parsed.groupBy(_.time.toInt)
 
@@ -97,7 +97,7 @@ object ParseCAVIAR_DB_per_video {
 
       println(s"Inserting data in $dbName")
 
-      dbEntries foreach ( entry => collection.insert(entry) )
+      dbEntries foreach (entry => collection.insert(entry))
 
       //lastTime = atoms.keySet.toList.reverse.head+40 // the last time point
     }

@@ -32,7 +32,6 @@ object LookAheads {
   * */
   val policyMap = Map("appearsEarlier" -> LookAheadImplementations.appearsEarlier_<-)
 
-
   class LookAheadSpecification(val lookAheadDefinition: String) {
     /*
      * A lookahead specification is a declaration of the form:
@@ -95,7 +94,6 @@ object LookAheads {
      * All lookahead implementations should be declared here.
      */
 
-
     /*
      * This is an implementation of the "appearsEarlier_<-" lookahead policy. This policy is declared in the
      * mode declarations file as follows (predicate and variable names, arities etc are random, just for demonstration):
@@ -130,18 +128,18 @@ object LookAheads {
         val candidateLookAheads =
           bottomClause.body.filter { p =>
             p.predSymbol == specification.lookAheadLiteralSignature.predSymbol &&
-            p.arity == specification.lookAheadLiteralSignature.arity &&
-            p.getVars(sharedVarIndex_in_LookAheadAtom).name == sharedVar.name &&
-              clause.toLiteralList.filter(l => List("fraud","transaction").contains(l.predSymbol)).exists(s => s.getVars.map(_.name).contains(p.getVars(specification.linkingVar_in_LookAheadAtom).name))
+              p.arity == specification.lookAheadLiteralSignature.arity &&
+              p.getVars(sharedVarIndex_in_LookAheadAtom).name == sharedVar.name &&
+              clause.toLiteralList.filter(l => List("fraud", "transaction").contains(l.predSymbol)).exists(s => s.getVars.map(_.name).contains(p.getVars(specification.linkingVar_in_LookAheadAtom).name))
           }
 
         val f = (x: logic.Variable) => {
           // get max to get the literal closest to the end of the clause
-          clause.toLiteralList.filter(l => List("fraud","transaction").contains(l.predSymbol)).map(y => if (y.getVars.map(_.name).contains(x.name)) clause.toLiteralList.indexOf(y) + 1 else 0).max
+          clause.toLiteralList.filter(l => List("fraud", "transaction").contains(l.predSymbol)).map(y => if (y.getVars.map(_.name).contains(x.name)) clause.toLiteralList.indexOf(y) + 1 else 0).max
 
         }
         if (candidateLookAheads.nonEmpty) {
-          candidateLookAheads.map{q =>
+          candidateLookAheads.map{ q =>
             (q, f(q.getVars(specification.linkingVar_in_LookAheadAtom)))
           }.sortBy(z => z._2).last._1
         } else {
@@ -151,7 +149,6 @@ object LookAheads {
         Literal()
       }
     }
-
 
     def appearsEarlier_<-(lit: Literal, specification: String, clause: Clause, bottomClause: Clause) = {
 
@@ -180,16 +177,9 @@ object LookAheads {
        *   simply add α to r
        */
 
-
-
-
       var foundLookAheadAtom = Literal()
 
     }
-
-
-
-
 
     /*
      * This policy is similar to "appearsEarlier_<-" but the search for a literal that contains a linking variable is done
@@ -206,9 +196,6 @@ object LookAheads {
 
     }
 
-
-
   }
-
 
 }

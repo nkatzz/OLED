@@ -30,7 +30,7 @@ import oled.distributed.Structures.ClauseStats
   *
   * This object contains functionality used by the distributed version of OLED only.
   *
-  * */
+  */
 
 object DistributedOLEDFunctions extends CoreFunctions {
 
@@ -38,7 +38,7 @@ object DistributedOLEDFunctions extends CoreFunctions {
     val bcs_ = generateNewBottomClauses(topTheory, e, initorterm, globals)
     val bcs = bcs_.filter(p => p.head.functor.contains(initorterm))
     bcs map { x =>
-      val c = Clause(head=x.head, body = List())
+      val c = Clause(head = x.head, body = List())
       c.addToSupport(x)
       otherNodeNames.foreach{ node =>
         c.countsPerNode(node) = new ClauseStats(0, 0, 0, 0)
@@ -58,8 +58,10 @@ object DistributedOLEDFunctions extends CoreFunctions {
       s"\n===========================================================\n" +
         s"\nClause (score: ${score(c)} | ${c.showCountsPerNode(onNode)}\n\n${c.tostring}\n\nwas refined to" +
         s" (new score: ${score(c1)} | ${c1.showCountsPerNode(onNode)}\n\n${c1.tostring}\n\nε: $hoeffding, ΔG: $observedDiff, examples used: $n" +
-        s"\nall refs (total tp/fp/fn counts):\n\n${c.refinements.sortBy(z => (-score(z), z.body.length+1)).map(x => x.tostring+" | " +
-          "score "+score(x)+x.showCountsPerNode(onNode)).mkString("\n")}" +
+        s"\nall refs (total tp/fp/fn counts):\n\n${
+          c.refinements.sortBy(z => (-score(z), z.body.length + 1)).map(x => x.tostring + " | " +
+            "score " + score(x) + x.showCountsPerNode(onNode)).mkString("\n")
+        }" +
         s"\n===========================================================\n"
     } else {
       s"\n===========================================================\n" +
@@ -71,10 +73,6 @@ object DistributedOLEDFunctions extends CoreFunctions {
     }
   }
 
-
-
-
-
   /*
   * The rest is for clause expansion in the distributed setting. This should be refactored,
   * its almost the same with functions used in the monolithic setting.
@@ -83,23 +81,23 @@ object DistributedOLEDFunctions extends CoreFunctions {
   private def score(clause: Clause) = clause.distScore
 
   def rightWay(parentRule: Clause, delta: Double, breakTiesThreshold: Double, minSeenExmpls: Int, minTpsRequired: Int = 0) = {
-    val (observedDiff,best,secondBest) = parentRule.distributedMeanDiff
+    val (observedDiff, best, secondBest) = parentRule.distributedMeanDiff
     val epsilon = utils.Utils.hoeffding(delta, parentRule.getTotalSeenExmpls)
     val passesTest = if (epsilon < observedDiff) true else false
-    val tie = if (observedDiff < epsilon  && epsilon < breakTiesThreshold && parentRule.getTotalSeenExmpls >= minSeenExmpls) true else false
+    val tie = if (observedDiff < epsilon && epsilon < breakTiesThreshold && parentRule.getTotalSeenExmpls >= minSeenExmpls) true else false
     val couldExpand = if (minTpsRequired != 0) (passesTest || tie) && best.getTotalTPs > minTpsRequired else passesTest || tie
-    (couldExpand,epsilon,observedDiff,best,secondBest)
+    (couldExpand, epsilon, observedDiff, best, secondBest)
   }
 
   def expandRule(parentRule: Clause, delta: Double, breakTiesThreshold: Double,
-                 minSeenExmpls: Int, nodeName: String, params: RunningOptions, logger: org.slf4j.Logger) = {
+      minSeenExmpls: Int, nodeName: String, params: RunningOptions, logger: org.slf4j.Logger) = {
 
     val minTpsRequired = params.minTpsRequired
-    val (couldExpand,epsilon,observedDiff,best,secondBest) = rightWay(parentRule, delta, breakTiesThreshold, minSeenExmpls, minTpsRequired)
+    val (couldExpand, epsilon, observedDiff, best, secondBest) = rightWay(parentRule, delta, breakTiesThreshold, minSeenExmpls, minTpsRequired)
     if (couldExpand) {
       // This is the extra test that I added at Feedzai
       val extraTest =
-        if(secondBest != parentRule) (score(best) > score(parentRule)) && (score(best) - score(parentRule) > epsilon)
+        if (secondBest != parentRule) (score(best) > score(parentRule)) && (score(best) - score(parentRule) > epsilon)
         else score(best) > score(parentRule)
       if (extraTest) {
         val refinedRule = best
@@ -122,10 +120,10 @@ object DistributedOLEDFunctions extends CoreFunctions {
   }
 
   def shouldExpand(parentRule: Clause, delta: Double, breakTiesThreshold: Double, minSeenExmpls: Int) = {
-    val (couldExpand,epsilon,observedDiff,best,secondBest) = rightWay(parentRule, delta, breakTiesThreshold, minSeenExmpls)
+    val (couldExpand, epsilon, observedDiff, best, secondBest) = rightWay(parentRule, delta, breakTiesThreshold, minSeenExmpls)
     if (couldExpand) {
       val extraTest =
-        if(secondBest != parentRule) (score(best) > score(parentRule)) && (score(best) - score(parentRule) > epsilon)
+        if (secondBest != parentRule) (score(best) > score(parentRule)) && (score(best) - score(parentRule) > epsilon)
         else score(best) > score(parentRule)
       if (extraTest) {
         true
@@ -136,16 +134,5 @@ object DistributedOLEDFunctions extends CoreFunctions {
       false
     }
   }
-
-
-
-
-
-
-
-
-
-
-
 
 }

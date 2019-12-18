@@ -26,10 +26,9 @@ import logic.Examples._
 import scala.io.Source
 import scala.sys.process._
 
-
 object ASP extends ASPResultsParser with LazyLogging {
 
-   /**
+  /**
     * Transforms input to an ASP program. The program is written in an output file that is passed to the ASP solver.
     * the writeTo file is the only non-optional parameter of the method.
     *
@@ -44,7 +43,7 @@ object ASP extends ASPResultsParser with LazyLogging {
     * Such a list is transformed into the "generate" part of the program:
     *
     * {father(X,Y):person(X):person(Y), grandfather(X,Y):person(X):person(Y)}.
-     * @param generateAtLeast @tparam Int an (optional) lower bound for the number of generated atoms to be included in an answer set.
+    * @param generateAtLeast @tparam Int an (optional) lower bound for the number of generated atoms to be included in an answer set.
     * @param generateAtMost @tparam Int an (optional) upper bound for the number of generated atoms to be included in an answer set.
     * @param minimizeStatements @tparam List[String] an (optional) list of atoms whose instances in an anser set should be minimized.
     * @example of such input:
@@ -54,7 +53,7 @@ object ASP extends ASPResultsParser with LazyLogging {
     * Such a list is transformed into a minimize statement:
     *
     * #minimize{father(X,Y),grandfather(X,Y)}.
-     * @param maximizeStatements @tparam List[String] similar as above for maximize directives.
+    * @param maximizeStatements @tparam List[String] similar as above for maximize directives.
     * @param constraints @tparam List[List[String]] a set of integrity constraints. Example:
     *
     * List(List("father(X,Y)","mother(X,Y)"), List("father(X,Y)","not male(X)"))
@@ -63,9 +62,9 @@ object ASP extends ASPResultsParser with LazyLogging {
     *
     * :- father(X,Y), mother(X,Y).
     * :- father(X,Y), not male(X).
-     * @param show @tparam List[String] an (optional) list of atoms that are to be displayed. All other atoms in an answer set are hidden.
+    * @param show @tparam List[String] an (optional) list of atoms that are to be displayed. All other atoms in an answer set are hidden.
     * A #hide directive is generated is this list is not empty.
-     * @example of such input:
+    * @example of such input:
     *
     * List("father(X,Y)","mother(X,Y)") or
     *
@@ -77,10 +76,10 @@ object ASP extends ASPResultsParser with LazyLogging {
     * #hide.
     * #show father(X,Y).
     * #show mother(X,Y)
-     * @param extra @tparam List[String] any extra knowledge, that is simply written in the ASP file
+    * @param extra @tparam List[String] any extra knowledge, that is simply written in the ASP file
     */
 
-   /*
+  /*
    def toASPprogram(program: List[String] = Nil,
                     generateDirectives: List[String] = Nil,
                     generateAtLeast: Int = 1000000000,
@@ -93,9 +92,9 @@ object ASP extends ASPResultsParser with LazyLogging {
                     writeToFile: String): Any = {
 
       // Create generate-and-test statements
-      val generates = 
+      val generates =
          genAndTestDirectives(generateDirectives,generateAtLeast,generateAtMost,writeToFile).mkString("\n")
-      
+
       // Create the minimize statements
       val minStatement = minimizeStatements match { // This is a single string
          case Nil => ""
@@ -121,15 +120,15 @@ object ASP extends ASPResultsParser with LazyLogging {
       }
 
 
-      
-      val all = 
+
+      val all =
          List(program.mkString("\n"),generates,minStatement,
             maxStatement,constrs,hideDir,showDirs,extra.mkString("\n")).mkString("\n")
-      
-            val debug = 
+
+            val debug =
          List(generates,minStatement,
-            maxStatement,constrs,hideDir,showDirs,extra.mkString("\n")).mkString("\n")      
-            
+            maxStatement,constrs,hideDir,showDirs,extra.mkString("\n")).mkString("\n")
+
       Utils.writeLine(all, writeToFile, "append")
       logger.debug("\nAbduction program:\n" + all + "\n")
 
@@ -149,55 +148,56 @@ object ASP extends ASPResultsParser with LazyLogging {
    }
 */
 
-   def toASPprogram(program: List[String] = Nil,
-                    generateDirectives: List[String] = Nil,
-                    generateAtLeast: Int = 1000000000,
-                    generateAtMost: Int = 1000000000,
-                    minimizeStatements: List[String] = Nil,
-                    maximizeStatements: List[String] = Nil,
-                    constraints: List[List[String]] = Nil,
-                    show: List[String] = Nil,
-                    extra: List[String] = Nil,
-                    writeToFile: String): Any = {
+  def toASPprogram(
+      program: List[String] = Nil,
+      generateDirectives: List[String] = Nil,
+      generateAtLeast: Int = 1000000000,
+      generateAtMost: Int = 1000000000,
+      minimizeStatements: List[String] = Nil,
+      maximizeStatements: List[String] = Nil,
+      constraints: List[List[String]] = Nil,
+      show: List[String] = Nil,
+      extra: List[String] = Nil,
+      writeToFile: String): Any = {
 
-      Utils.clearFile(writeToFile) // clear here, append everywhere else.
-      Utils.writeToFile(new java.io.File(writeToFile), "append")(p => program foreach (p.println))
-      val genStatems = (generateDirectives, generateAtLeast, generateAtMost) match {
-         case x @ (Nil, _, _)                            => List()
-         case x @ (head :: tail, 1000000000, 1000000000) => for (e <- x._1) yield "{" + e + "}."
-         case x @ (head :: tail, lower, 1000000000)      => (head :: tail).map(y => "$lower {" + y + "}.\n")
-         case x @ (head :: tail, 1000000000, upper)      => (head :: tail).map(y => "0 {" + y + "} $upper.\n")
-         case x @ (head :: tail, lower, upper)           => (head :: tail).map(y => "$lower {" + y + "} $upper.\n")
-      }
-      Utils.writeToFile(new java.io.File(writeToFile), "append")(p => genStatems foreach (p.println))
-      val minStatement = minimizeStatements match { // This is a single string
-         case Nil => ""
-         case _   => "#minimize{ " + minimizeStatements.mkString(",") + "}.\n"
-      }
-      val maxStatement = maximizeStatements match { // This is a single string
-         case Nil => ""
-         case _   => "#maximize{ " + maximizeStatements.mkString(",") + "}.\n"
-      }
-      val constrs = constraints match { // This is a list of strings
-         case Nil => List("")
-         case _   => for (x <- constraints) yield ":- " + x.mkString(",") + ".\n"
-      }
-      Utils.writeLine(minStatement, writeToFile, "append")
-      Utils.writeLine(maxStatement, writeToFile, "append")
-      Utils.writeToFile(new java.io.File(writeToFile), "append")(p => constrs foreach (p.println))
-      val showDirs = show match {
-         case Nil => ""
-         case _   => "\n#show.\n"+(show map (x => s"\n#show $x.")).mkString("\n")
-      }
-      Utils.writeLine(showDirs, writeToFile, "append")
-      Utils.writeToFile(new java.io.File(writeToFile), "append")(p => extra foreach (p.println))
+    Utils.clearFile(writeToFile) // clear here, append everywhere else.
+    Utils.writeToFile(new java.io.File(writeToFile), "append")(p => program foreach (p.println))
+    val genStatems = (generateDirectives, generateAtLeast, generateAtMost) match {
+      case x @ (Nil, _, _) => List()
+      case x @ (head :: tail, 1000000000, 1000000000) => for (e <- x._1) yield "{" + e + "}."
+      case x @ (head :: tail, lower, 1000000000) => (head :: tail).map(y => "$lower {" + y + "}.\n")
+      case x @ (head :: tail, 1000000000, upper) => (head :: tail).map(y => "0 {" + y + "} $upper.\n")
+      case x @ (head :: tail, lower, upper) => (head :: tail).map(y => "$lower {" + y + "} $upper.\n")
+    }
+    Utils.writeToFile(new java.io.File(writeToFile), "append")(p => genStatems foreach (p.println))
+    val minStatement = minimizeStatements match { // This is a single string
+      case Nil => ""
+      case _ => "#minimize{ " + minimizeStatements.mkString(",") + "}.\n"
+    }
+    val maxStatement = maximizeStatements match { // This is a single string
+      case Nil => ""
+      case _ => "#maximize{ " + maximizeStatements.mkString(",") + "}.\n"
+    }
+    val constrs = constraints match { // This is a list of strings
+      case Nil => List("")
+      case _ => for (x <- constraints) yield ":- " + x.mkString(",") + ".\n"
+    }
+    Utils.writeLine(minStatement, writeToFile, "append")
+    Utils.writeLine(maxStatement, writeToFile, "append")
+    Utils.writeToFile(new java.io.File(writeToFile), "append")(p => constrs foreach (p.println))
+    val showDirs = show match {
+      case Nil => ""
+      case _ => "\n#show.\n" + (show map (x => s"\n#show $x.")).mkString("\n")
+    }
+    Utils.writeLine(showDirs, writeToFile, "append")
+    Utils.writeToFile(new java.io.File(writeToFile), "append")(p => extra foreach (p.println))
 
-     Utils.writeToFile(new java.io.File(writeToFile), "append")(p => showDirs foreach (p.println))
-      val debug = scala.io.Source.fromFile(writeToFile).mkString
-      logger.debug(s"\nASP Input:\n \n$debug\n")
-   }
+    Utils.writeToFile(new java.io.File(writeToFile), "append")(p => showDirs foreach (p.println))
+    val debug = scala.io.Source.fromFile(writeToFile).mkString
+    logger.debug(s"\nASP Input:\n \n$debug\n")
+  }
 
-   /**
+  /**
     * This generates a helper ASP program to extract the mode declaration atoms (if any) that match
     * each atom in an answer set returned by the solver. This helps to process the atoms and populate
     * the objects the are constructed from them as their internal representations. In practice this
@@ -244,21 +244,21 @@ object ASP extends ASPResultsParser with LazyLogging {
     *
     *
     */
-   def matchModesProgram(queryModePreds: List[Literal]): List[String] = {
-      val modeDecl: List[String] = for (
-         x <- queryModePreds;
-         y <- List.range(1, queryModePreds.length + 1) zip queryModePreds
-      ) yield "mode(" + y._1 + "," + x.tostring + "," + y._2.tostring + ") :- " + x.typePreds.mkString(",") + "."
-      val modeCount: String = "modeCounter(1.." + queryModePreds.length + ")."
-      val clause = """matchesMode(ModeCounter,Atom,Mode) :- 
+  def matchModesProgram(queryModePreds: List[Literal]): List[String] = {
+    val modeDecl: List[String] = for (
+      x <- queryModePreds;
+      y <- List.range(1, queryModePreds.length + 1) zip queryModePreds
+    ) yield "mode(" + y._1 + "," + x.tostring + "," + y._2.tostring + ") :- " + x.typePreds.mkString(",") + "."
+    val modeCount: String = "modeCounter(1.." + queryModePreds.length + ")."
+    val clause = """matchesMode(ModeCounter,Atom,Mode) :- 
        mode(ModeCounter,Atom, Mode), true(Atom), Atom = Mode."""
-      val trues: List[String] = for (x <- queryModePreds) yield "true(" + x.tostring + ")" + " :- " + x.tostring + "."
-      val program = modeDecl ++ List(modeCount) ++ List(clause) ++ trues ++ List("\n#show matchesMode/3.")
-      //program.foreach(println)
-      program
-   }
+    val trues: List[String] = for (x <- queryModePreds) yield "true(" + x.tostring + ")" + " :- " + x.tostring + "."
+    val program = modeDecl ++ List(modeCount) ++ List(clause) ++ trues ++ List("\n#show matchesMode/3.")
+    //program.foreach(println)
+    program
+  }
 
-   /**
+  /**
     * Calls the ASP solver and returns the results.
     *
     * @param task an indicator for what we want to do with the solver, See the code for details. New task may be
@@ -269,15 +269,14 @@ object ASP extends ASPResultsParser with LazyLogging {
     * FIX THIS!!!
     */
 
+  def solve(
+      task: String = "",
+      useAtomsMap: Map[String, Literal] = Map[String, Literal](),
+      aspInputFile: java.io.File = new File(""),
+      examples: Map[String, List[String]] = Map(),
+      fromWeakExmpl: Boolean = false): List[AnswerSet] = {
 
-
-   def solve(task: String = "",
-             useAtomsMap: Map[String, Literal] = Map[String, Literal](),
-             aspInputFile: java.io.File = new File(""),
-             examples: Map[String, List[String]] = Map(),
-             fromWeakExmpl:Boolean = false): List[AnswerSet] = {
-
-  /*
+    /*
 
       val buffer = new StringBuffer()
       val command = task match {
@@ -397,16 +396,14 @@ object ASP extends ASPResultsParser with LazyLogging {
       lout.toList
      */
 
-     if (Globals.glvalues("with-jep").toBoolean) {
-       //solveASP(task,aspInputFile.getCanonicalPath,fromWeakExmpl)
-       solveASPNoJep(task,aspInputFile.getCanonicalPath,fromWeakExmpl)
-     } else {
-       solveASPNoJep(task,aspInputFile.getCanonicalPath,fromWeakExmpl)
-     }
+    if (Globals.glvalues("with-jep").toBoolean) {
+      //solveASP(task,aspInputFile.getCanonicalPath,fromWeakExmpl)
+      solveASPNoJep(task, aspInputFile.getCanonicalPath, fromWeakExmpl)
+    } else {
+      solveASPNoJep(task, aspInputFile.getCanonicalPath, fromWeakExmpl)
+    }
 
-   }
-
-
+  }
 
   /*
   def solveMLNGrounding(aspFile: String) = {
@@ -420,14 +417,11 @@ object ASP extends ASPResultsParser with LazyLogging {
   }
   */
 
-
-
-
   def solveMLNGrounding(inps: RunningOptions, e: Example,
-                        groundingDirectives: Vector[(Clause, Clause, Clause)],
-                        targetClass: String): Array[String] = {
+      groundingDirectives: Vector[(Clause, Clause, Clause)],
+      targetClass: String): Array[String] = {
 
-    val q = groundingDirectives.map(a => s"${a._1.tostring}\n${a._2.tostring}\n${a._3.tostring}" ).mkString("\n")
+    val q = groundingDirectives.map(a => s"${a._1.tostring}\n${a._2.tostring}\n${a._3.tostring}").mkString("\n")
 
     val cwd = System.getProperty("user.dir") // Current working dir
 
@@ -435,7 +429,7 @@ object ASP extends ASPResultsParser with LazyLogging {
       if (targetClass == "initiatedAt") s"${inps.entryPath}/ASP/ground-initiated.lp"
       else s"${inps.entryPath}/ASP/ground-terminated.lp"
 
-    val all = (e.annotationASP ++ e.narrativeASP ++ List(s"""$q\n#include "$aspBKPath".""")) .mkString("\n")
+    val all = (e.annotationASP ++ e.narrativeASP ++ List(s"""$q\n#include "$aspBKPath".""")).mkString("\n")
     val f = Utils.getTempFile("ground", ".lp")
     Utils.writeLine(all, f.getCanonicalPath, "overwrite")
 
@@ -443,9 +437,7 @@ object ASP extends ASPResultsParser with LazyLogging {
 
     //val aspHandlingScript = s"$cwd/asp/grounding.py"
     //val command = Seq("python", aspHandlingScript, s"aspfile=${f.getCanonicalPath}", s"cores=$cores")
-    val command = Seq("clingo", f.getCanonicalPath , "-Wno-atom-undefined", s"-t$cores", "--verbose=0").mkString(" ")
-
-
+    val command = Seq("clingo", f.getCanonicalPath, "-Wno-atom-undefined", s"-t$cores", "--verbose=0").mkString(" ")
 
     val result = command.lineStream_!
     val results = result.toVector
@@ -467,7 +459,7 @@ object ASP extends ASPResultsParser with LazyLogging {
   def solveASPNoJep(task: String, aspFile: String, fromWeakExmpl: Boolean = false): List[AnswerSet] = {
 
     val solveMode =
-      if(task == Globals.ABDUCTION && Globals.glvalues("iter-deepening").toBoolean) {
+      if (task == Globals.ABDUCTION && Globals.glvalues("iter-deepening").toBoolean) {
         s"${Globals.glvalues("iterations")}"
       } else {
         "all"
@@ -476,12 +468,10 @@ object ASP extends ASPResultsParser with LazyLogging {
     val with_atom_undefiend = "-Wno-atom-undefined"
     val cores = Runtime.getRuntime.availableProcessors
     val aspCores = s"-t$cores"
-    val mode = if (List("all","optN").contains(solveMode)) "0" else ""
+    val mode = if (List("all", "optN").contains(solveMode)) "0" else ""
     //val command = Seq("clingo", aspFile, mode, with_atom_undefiend, aspCores, " > ", outFile.getCanonicalPath)
 
     val command = Seq("clingo", aspFile, mode, with_atom_undefiend, aspCores)
-
-
 
     val result = command.mkString(" ").lineStream_!
     val results = result.toList
@@ -493,7 +483,7 @@ object ASP extends ASPResultsParser with LazyLogging {
       statusLine.head.replaceAll("\\s", "")
     }
 
-    if(status == Globals.UNSAT) {
+    if (status == Globals.UNSAT) {
       task match {
         case Globals.CHECKSAT => return List(AnswerSet.UNSAT)
         case _ =>
@@ -503,8 +493,8 @@ object ASP extends ASPResultsParser with LazyLogging {
             // searching alternative abductive explanations with iterative search
             case Globals.SEARCH_MODELS => return List(AnswerSet.UNSAT)
             case Globals.INFERENCE => return List(AnswerSet.UNSAT)
-            case Globals.SCORE_RULES=> return List(AnswerSet.UNSAT)
-            case Globals.GROW_NEW_RULE_TEST=> return List(AnswerSet.UNSAT)
+            case Globals.SCORE_RULES => return List(AnswerSet.UNSAT)
+            case Globals.GROW_NEW_RULE_TEST => return List(AnswerSet.UNSAT)
             case (Globals.ABDUCTION | Globals.ILED) =>
               // some times a kernel cannot be created from garbage (weak) data points
               // but we don't want a failure in this case. Same holds when generalizing
@@ -527,7 +517,7 @@ object ASP extends ASPResultsParser with LazyLogging {
             case _ =>
               logger.error(s"Task: $task -- Abduction failed (UNSATISFIABLE program)")
               return Nil
-              /*
+            /*
               logger.error(s"\nTask: $task -- Ended up with an UNSATISFIABLE program")
               val program = Source.fromFile(aspFile).getLines.toList.mkString("\n")
               throw new RuntimeException(s"\nTask: $task -- Ended up with an UNSATISFIABLE program:\n$program")
@@ -560,40 +550,30 @@ object ASP extends ASPResultsParser with LazyLogging {
     if (task == Globals.ABDUCTION && _models.head == "") return Nil
     //-------------------------------------------------------------------------
 
-
     //outFile.delete() // it's deleted on exit but it's better to get rid of them as soon as we're done with them.
 
     if (_models.isEmpty) Nil
     else _models map (x => AnswerSet(x.asInstanceOf[List[String]]))
   }
 
-
-
-
-
-
-
-
-
-
-   /**
+  /**
     * Creates and Writes the contents of the ASP file for SAT checking
-     *
-     * @param theory
+    *
+    * @param theory
     * @param example
     * @return the path to the file to be passed to the ASP solver
     */
 
-   def check_SAT_Program(theory: Theory, example: Example, globals: Globals): String = {
-      val e = (example.annotationASP ++ example.narrativeASP).mkString("\n")
-      val exConstr = getCoverageDirectives(withCWA = Globals.glvalues("cwa"), globals = globals).mkString("\n")
-      val t = theory.map(x => x.withTypePreds(globals).tostring).mkString("\n")
-      val f = Utils.getTempFile("sat",".lp")
-      Utils.writeToFile(f, "append")(
-         p => List(e,exConstr,t,s"\n#include "+"\""+globals.BK_WHOLE_EC+"\".\n") foreach p.println
-      )
-      f.getCanonicalPath
-   }
+  def check_SAT_Program(theory: Theory, example: Example, globals: Globals): String = {
+    val e = (example.annotationASP ++ example.narrativeASP).mkString("\n")
+    val exConstr = getCoverageDirectives(withCWA = Globals.glvalues("cwa"), globals = globals).mkString("\n")
+    val t = theory.map(x => x.withTypePreds(globals).tostring).mkString("\n")
+    val f = Utils.getTempFile("sat", ".lp")
+    Utils.writeToFile(f, "append")(
+      p => List(e, exConstr, t, s"\n#include " + "\"" + globals.BK_WHOLE_EC + "\".\n") foreach p.println
+    )
+    f.getCanonicalPath
+  }
 
   def iterSearchFindNotCoveredExmpls(theory: Theory, example: Example, globals: Globals) = {
     val e = (example.annotationASP ++ example.narrativeASP).mkString("\n")
@@ -601,12 +581,11 @@ object ASP extends ASPResultsParser with LazyLogging {
     val constr = varbedExmplPatterns.flatMap(x => List(s"posNotCovered($x) :- example($x), not $x.", s"negsCovered($x):- negExample($x), $x.")).mkString("\n")
     val t = theory.map(x => x.withTypePreds(globals).tostring).mkString("\n")
     val show = s"\n#show.\n#show posNotCovered/1.\n#show negsCovered/1."
-    val program = e+t+constr+show
-    val f = Utils.getTempFile("sat",".lp",deleteOnExit = true)
-    Utils.writeLine(program,f.getCanonicalPath,"overwrite")
+    val program = e + t + constr + show
+    val f = Utils.getTempFile("sat", ".lp", deleteOnExit = true)
+    Utils.writeLine(program, f.getCanonicalPath, "overwrite")
     f.getCanonicalPath
   }
-
 
   /** @todo Refactor these, reduce code **/
 
@@ -620,57 +599,55 @@ object ASP extends ASPResultsParser with LazyLogging {
     //val e = (example.narrativeASP).mkString("\n")
     val exConstr = getCoverageDirectives(checkConsistencyOnly = true, globals = globals).mkString("\n")
     val t = theory.map(x => x.withTypePreds(globals).tostring).mkString("\n")
-    val f = Utils.getTempFile("isConsistent",".lp",deleteOnExit = true)
+    val f = Utils.getTempFile("isConsistent", ".lp", deleteOnExit = true)
     Utils.writeToFile(f, "append")(
-      p => List(e,exConstr,t,s"\n#include "+"\""+globals.ILED_NO_INERTIA+"\"\n.") foreach p.println
+      p => List(e, exConstr, t, s"\n#include " + "\"" + globals.ILED_NO_INERTIA + "\"\n.") foreach p.println
     )
     f.getCanonicalPath
   }
 
+  def isConsistent_program_Marked(theory: Theory, example: Example, globals: Globals): String = {
+    // If annotation is given here, negatives may be covered by inertia.
+    // On the other hand, if the annotation is omitted then during inference
+    // a correct rule will (correctly) entail positives that will be treated
+    // as negatives (due to the lack of annotation). To overcome the issue,
+    // the annotation is provided but inertia is defused during inference.
+    // This method marks each rule in order to track the derivation of
+    // negative examples from the particular rule.
+    val e = (example.annotationASP ++ example.narrativeASP).mkString("\n")
+    //val exConstr = getCoverageDirectives(checkConsistencyOnly = true).mkString("\n")
+    val markInit = "\ninitiatedAt(F,T) :- marked(I,J,initiatedAt(F,T)),rule(I),supportRule(J).\n"
+    val markTerm = "\nterminatedAt(F,T) :- marked(I,J,terminatedAt(F,T)),rule(I),supportRule(J).\n"
+    val show = "\n#show negsCovered/3.\n"
 
-   def isConsistent_program_Marked(theory: Theory, example: Example, globals: Globals): String = {
-     // If annotation is given here, negatives may be covered by inertia.
-     // On the other hand, if the annotation is omitted then during inference
-     // a correct rule will (correctly) entail positives that will be treated
-     // as negatives (due to the lack of annotation). To overcome the issue,
-     // the annotation is provided but inertia is defused during inference.
-     // This method marks each rule in order to track the derivation of
-     // negative examples from the particular rule.
-     val e = (example.annotationASP ++ example.narrativeASP).mkString("\n")
-     //val exConstr = getCoverageDirectives(checkConsistencyOnly = true).mkString("\n")
-     val markInit = "\ninitiatedAt(F,T) :- marked(I,J,initiatedAt(F,T)),rule(I),supportRule(J).\n"
-     val markTerm = "\nterminatedAt(F,T) :- marked(I,J,terminatedAt(F,T)),rule(I),supportRule(J).\n"
-     val show = "\n#show negsCovered/3.\n"
+    val markThem =
+      (for (
+        (c, i) <- theory.clauses zip List.range(0, theory.clauses.length);
+        (cs, j) <- c.supportSet.clauses zip List.range(0, c.supportSet.clauses.length);
+        y = cs.withTypePreds(globals);
+        marked = Clause(Literal(predSymbol = "marked", terms = List(Constant(i.toString), Constant(j.toString), y.head)), body = y.body)
+      ) yield marked.tostring).mkString("\n")
 
-     val markThem =
-       (for( (c,i) <- theory.clauses zip List.range(0,theory.clauses.length);
-             (cs,j) <- c.supportSet.clauses zip List.range(0,c.supportSet.clauses.length);
-             y = cs.withTypePreds(globals);
-             marked = Clause(Literal(predSymbol="marked", terms=List(Constant(i.toString), Constant(j.toString),y.head)),body = y.body))
-          yield marked.tostring).mkString("\n")
+    val ruleGen = s"rule(0..${theory.clauses.length}).\n"
 
-     val ruleGen = s"rule(0..${theory.clauses.length}).\n"
+    val varbedExmplPatterns = globals.EXAMPLE_PATTERNS_AS_STRINGS
+    val coverageConstr = varbedExmplPatterns.map(x =>
+      s"\nnegsCovered(I,J,$x):- marked(I,J,$x), not example($x),rule(I),supportRule(J).\n").mkString("\n")
 
-     val varbedExmplPatterns = globals.EXAMPLE_PATTERNS_AS_STRINGS
-     val coverageConstr = varbedExmplPatterns.map(x =>
-       s"\nnegsCovered(I,J,$x):- marked(I,J,$x), not example($x),rule(I),supportRule(J).\n").mkString("\n")
+    val ssRuleGne = s"supportRule(0..${
+      theory.clauses.foldLeft(0){
+        (x, y) =>
+          val newMax = y.supportSet.clauses.length
+          if (newMax > x) newMax else x
+      }
+    }).\n"
 
-     val ssRuleGne = s"supportRule(0..${theory.clauses.foldLeft(0){
-       (x,y) =>
-         val newMax = y.supportSet.clauses.length
-         if (newMax > x) newMax else x
-     }}).\n"
-
-     val f = Utils.getTempFile("isConsistent",".lp",deleteOnExit = true)
-     Utils.writeToFile(f, "append")(
-       p => List(e,coverageConstr,markThem,markInit,markTerm,s"\n#include "+"\""+globals.BK_INITIATED_ONLY_MARKDED+"\".\n",ruleGen,ssRuleGne,show) foreach p.println
-     )
-     f.getCanonicalPath
-   }
-
-
-
-
+    val f = Utils.getTempFile("isConsistent", ".lp", deleteOnExit = true)
+    Utils.writeToFile(f, "append")(
+      p => List(e, coverageConstr, markThem, markInit, markTerm, s"\n#include " + "\"" + globals.BK_INITIATED_ONLY_MARKDED + "\".\n", ruleGen, ssRuleGne, show) foreach p.println
+    )
+    f.getCanonicalPath
+  }
 
   /**
     * Performs inference, returns the results (ground instances
@@ -683,23 +660,22 @@ object ASP extends ASPResultsParser with LazyLogging {
     *
     */
 
-   def inference(p: Expression, e: Example, globals: Globals): AnswerSet = {
-     val f = (p: Expression) => p match {
-        case x: Clause => x.withTypePreds(globals).tostring
-        case x: Theory => (x.clauses map (z => z.withTypePreds(globals).tostring)).mkString("\n")
-     }
-     val file = Utils.getTempFile("inference",".lp",deleteOnExit = true)
-     val aspProgram =
-        (e.toMapASP("annotation") ++ e.toMapASP("narrative")).mkString("\n")+
-         "\n" + f(p)+ globals.EXAMPLE_PATTERNS.map(x => s"\n#show ${x.tostring}:${x.tostring}.").mkString("\n")
-     ASP.toASPprogram(program = List(aspProgram),
-       writeToFile = file.getCanonicalPath)
-     val covers = ASP.solve("inference",aspInputFile = file)
-     covers.head
-   }
+  def inference(p: Expression, e: Example, globals: Globals): AnswerSet = {
+    val f = (p: Expression) => p match {
+      case x: Clause => x.withTypePreds(globals).tostring
+      case x: Theory => (x.clauses map (z => z.withTypePreds(globals).tostring)).mkString("\n")
+    }
+    val file = Utils.getTempFile("inference", ".lp", deleteOnExit = true)
+    val aspProgram =
+      (e.toMapASP("annotation") ++ e.toMapASP("narrative")).mkString("\n") +
+        "\n" + f(p) + globals.EXAMPLE_PATTERNS.map(x => s"\n#show ${x.tostring}:${x.tostring}.").mkString("\n")
+    ASP.toASPprogram(program     = List(aspProgram),
+                     writeToFile = file.getCanonicalPath)
+    val covers = ASP.solve("inference", aspInputFile = file)
+    covers.head
+  }
 
-
-   /**
+  /**
     *
     * @param kernelSet analyzed using use/2 predicates
     * @param priorTheory analyzed using use/3 predicates
@@ -713,119 +689,118 @@ object ASP extends ASPResultsParser with LazyLogging {
     * @param aspInputFile
     * @param learningTerminatedAtOnly
     * @return
-     * @todo Simplify/refactor this
+    * @todo Simplify/refactor this
     */
 
+  def inductionASPProgram(
+      kernelSet: Theory = Theory(),
+      priorTheory: Theory = Theory(),
+      retained: Theory = Theory(),
+      findAllRefs: (Clause, Clause) = (Clause.empty, Clause.empty), // used only with Rules.getRefinedProgram.search method
+      examples: Map[String, List[String]] = Map(),
+      aspInputFile: java.io.File = new java.io.File(""),
+      learningTerminatedAtOnly: Boolean = false,
+      use3WithWholeSupport: Boolean = false,
+      withSupport: String = "fullSupport", globals: Globals) = {
 
-   def inductionASPProgram(kernelSet: Theory = Theory(),
-                           priorTheory: Theory = Theory(),
-                           retained: Theory = Theory(),
-                           findAllRefs: (Clause,Clause) = (Clause.empty,Clause.empty), // used only with Rules.getRefinedProgram.search method
-                           examples: Map[String, List[String]] = Map(),
-                           aspInputFile: java.io.File = new java.io.File(""),
-                           learningTerminatedAtOnly: Boolean = false,
-                           use3WithWholeSupport: Boolean = false,
-                           withSupport: String = "fullSupport", globals: Globals) = {
-
-      val (defeasibleKS, use2AtomsMap) = kernelSet.use_2_split(globals)
-     /*
+    val (defeasibleKS, use2AtomsMap) = kernelSet.use_2_split(globals)
+    /*
      logger.debug("\nDefeasible Kernel Set:\n" +
         defeasibleKS.clauses.map(x => x.tostring).mkString("\n"))
       logger.debug("Use atoms -- kernel literals map:\n" +
         use2AtomsMap.map(x => x._1 + "->" + x._2.tostring).mkString("\n"))
      */
 
-     val (defeasiblePrior, use3AtomsMap, use3generates) =
-       if (use3WithWholeSupport) priorTheory.use_3_split_all(withSupport=withSupport, globals=globals)
-       else priorTheory.use_3_spilt_one(withSupport=withSupport, globals=globals)
-     /*
+    val (defeasiblePrior, use3AtomsMap, use3generates) =
+      if (use3WithWholeSupport) priorTheory.use_3_split_all(withSupport = withSupport, globals = globals)
+      else priorTheory.use_3_spilt_one(withSupport = withSupport, globals = globals)
+    /*
      logger.debug("\nDefeasible prior theory:\n" +
         defeasiblePrior.clauses.map(x => x.tostring_debug).mkString("\n"))
       logger.debug("Use atoms -- kernel literals map:\n" +
         use3AtomsMap.map(x => x._1 + "->" + x._2.tostring).mkString("\n"))
      */
 
-     // This is used only to analyse one particular support set rule in
-     // order to search for all refinements that may be derived from it.
-     // It is necessary for the search method of Rules.getRefinedProgram
-     // to work
-     val (defeasible_Rule, use3AtomsMap_Rule, use3generates_Rule) = findAllRefs._1.use_3_split_one(1,findAllRefs._2,globals=globals)
+    // This is used only to analyse one particular support set rule in
+    // order to search for all refinements that may be derived from it.
+    // It is necessary for the search method of Rules.getRefinedProgram
+    // to work
+    val (defeasible_Rule, use3AtomsMap_Rule, use3generates_Rule) = findAllRefs._1.use_3_split_one(1, findAllRefs._2, globals = globals)
 
-     val varbedExmplPatterns = globals.EXAMPLE_PATTERNS
+    val varbedExmplPatterns = globals.EXAMPLE_PATTERNS
 
-     val coverageConstr = Globals.glvalues("perfect-fit") match {
-       case "true" => getCoverageDirectives(learningTerminatedAtOnly=learningTerminatedAtOnly,globals=globals)
-       case "false" => List()
-       case _ => throw new IllegalArgumentException("Unspecified parameter for perfect-fit")
-     }
+    val coverageConstr = Globals.glvalues("perfect-fit") match {
+      case "true" => getCoverageDirectives(learningTerminatedAtOnly = learningTerminatedAtOnly, globals = globals)
+      case "false" => List()
+      case _ => throw new IllegalArgumentException("Unspecified parameter for perfect-fit")
+    }
 
-     val generateUse2 =
-       if (use2AtomsMap.nonEmpty) {
-         (for ( (cl, i) <- kernelSet.clauses zip
-           List.range(1, kernelSet.clauses.length + 1)
-         ) yield "{use2(" + i + ",0.." + cl.body.length + ")}.").
-           mkString("\n")
-       } else { "" }
+    val generateUse2 =
+      if (use2AtomsMap.nonEmpty) {
+        (for (
+          (cl, i) <- kernelSet.clauses zip
+            List.range(1, kernelSet.clauses.length + 1)
+        ) yield "{use2(" + i + ",0.." + cl.body.length + ")}.").
+          mkString("\n")
+      } else { "" }
 
-     val generateUse3 = use3generates.mkString("\n")
+    val generateUse3 = use3generates.mkString("\n")
 
-     val program =
-         defeasibleKS.extend(defeasiblePrior).
-           extend(defeasible_Rule).clauses.map(x => x.tostring_debug) ++
-           coverageConstr ++
-           List(generateUse2, generateUse3, use3generates_Rule) ++
-           retained.clauses.map(p => p.withTypePreds(globals).tostring)
+    val program =
+      defeasibleKS.extend(defeasiblePrior).
+        extend(defeasible_Rule).clauses.map(x => x.tostring_debug) ++
+        coverageConstr ++
+        List(generateUse2, generateUse3, use3generates_Rule) ++
+        retained.clauses.map(p => p.withTypePreds(globals).tostring)
 
-     val f = (x: Literal) => "1," + (x.variables(globals) map (y => y.tostring)).mkString(",")
-     val ff = varbedExmplPatterns.map(x =>
-         s"\n${f(x)},posNotCovered(${x.tostring}):example(${x.tostring})," +
-           s" not ${x.tostring};\n${f(x)},negsCovered(${x.tostring}):${x.tostring}," +
-           s" not example(${x.tostring})").mkString(";")
+    val f = (x: Literal) => "1," + (x.variables(globals) map (y => y.tostring)).mkString(",")
+    val ff = varbedExmplPatterns.map(x =>
+      s"\n${f(x)},posNotCovered(${x.tostring}):example(${x.tostring})," +
+        s" not ${x.tostring};\n${f(x)},negsCovered(${x.tostring}):${x.tostring}," +
+        s" not example(${x.tostring})").mkString(";")
 
-     val minimize = Globals.glvalues("perfect-fit") match {
-         case "true" => "#minimize{1,I,J:use2(I,J) ; 1,I,J,K:use3(I,J,K)}."
-         case "false" => "\n#minimize{\n1,I,J:use2(I,J) ; 1,I,J,K:use3(I,J,K) ;" + ff ++ "\n}."
-         case _ => throw new RuntimeException("Unspecified parameter for perfect-fit")
-     }
+    val minimize = Globals.glvalues("perfect-fit") match {
+      case "true" => "#minimize{1,I,J:use2(I,J) ; 1,I,J,K:use3(I,J,K)}."
+      case "false" => "\n#minimize{\n1,I,J:use2(I,J) ; 1,I,J,K:use3(I,J,K) ;" + ff ++ "\n}."
+      case _ => throw new RuntimeException("Unspecified parameter for perfect-fit")
+    }
 
-     ASP.toASPprogram(
-         program =
-           examples("annotation") ++
-             examples("narrative") ++
-             program ++ List(minimize) ++
-             List(s"\n#include "+"\""+globals.BK_WHOLE_EC+"\".") ++
-             List("\n:- use2(I,J), not use2(I,0).\n") ++
-             List("\n#show use2/2.\n \n#show use3/3.\n"),
-         //constraints = constraints, show = show,
-         writeToFile = aspInputFile.getCanonicalPath)
+    ASP.toASPprogram(
+      program =
+        examples("annotation") ++
+          examples("narrative") ++
+          program ++ List(minimize) ++
+          List(s"\n#include " + "\"" + globals.BK_WHOLE_EC + "\".") ++
+          List("\n:- use2(I,J), not use2(I,0).\n") ++
+          List("\n#show use2/2.\n \n#show use3/3.\n"),
+      //constraints = constraints, show = show,
+      writeToFile = aspInputFile.getCanonicalPath)
 
-      (defeasibleKS, use2AtomsMap, defeasiblePrior, use3AtomsMap, defeasible_Rule, use3AtomsMap_Rule)
-   }
+    (defeasibleKS, use2AtomsMap, defeasiblePrior, use3AtomsMap, defeasible_Rule, use3AtomsMap_Rule)
+  }
 
+  def getCoverageDirectives(
+      learningTerminatedAtOnly: Boolean = false,
+      withCWA: String = Globals.glvalues("cwa"),
+      checkConsistencyOnly: Boolean = false, globals: Globals): List[String] = {
 
-
-
-   def getCoverageDirectives(learningTerminatedAtOnly: Boolean = false,
-                             withCWA: String = Globals.glvalues("cwa"),
-                             checkConsistencyOnly: Boolean = false, globals: Globals): List[String] = {
-
-      val varbedExmplPatterns = globals.EXAMPLE_PATTERNS_AS_STRINGS
-      varbedExmplPatterns.flatMap(x =>
-         Globals.glvalues("cwa") match {
-            // CWA on the examples:
-            case "true" =>
-               learningTerminatedAtOnly match {
-                  case true => List(s":- example($x), not $x.", s":- $x, not example($x).", s"$x :- example($x).")
-                  case _ =>
-                    if(!checkConsistencyOnly) List(s":- example($x), not $x.", s":- $x, not example($x).")
-                    else List(s":- $x, not example($x).")
-
-               }
-            // No CWA on the examples, agnostic with missing examples, explicit negatives:
+    val varbedExmplPatterns = globals.EXAMPLE_PATTERNS_AS_STRINGS
+    varbedExmplPatterns.flatMap(x =>
+      Globals.glvalues("cwa") match {
+        // CWA on the examples:
+        case "true" =>
+          learningTerminatedAtOnly match {
+            case true => List(s":- example($x), not $x.", s":- $x, not example($x).", s"$x :- example($x).")
             case _ =>
-              //List(s":- example($x), not $x.", s":- $x, negExample($x).", s"$x :- example($x).")
-              List(s":- example($x), not $x.", s":- $x, negExample($x).")
-               /*
+              if (!checkConsistencyOnly) List(s":- example($x), not $x.", s":- $x, not example($x).")
+              else List(s":- $x, not example($x).")
+
+          }
+        // No CWA on the examples, agnostic with missing examples, explicit negatives:
+        case _ =>
+          //List(s":- example($x), not $x.", s":- $x, negExample($x).", s"$x :- example($x).")
+          List(s":- example($x), not $x.", s":- $x, negExample($x).")
+        /*
                learningTerminatedAtOnly match {
                   case true => List(s":- example($x), not $x.", s":- $x, negExample($x).", s"$x :- example($x).")
                   case _ =>
@@ -834,7 +809,7 @@ object ASP extends ASPResultsParser with LazyLogging {
 
                }
                */
-         })
-   }
+      })
+  }
 
 }

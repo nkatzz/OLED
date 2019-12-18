@@ -30,17 +30,12 @@ import utils.Implicits._
   * Created by nkatz on 20/6/2017.
   */
 
-
-
 trait CoreFunctions {
 
   /**
     * This trait contains functionality used by all versions of OLED.
     *
-    * */
-
-
-
+    */
 
   def filterTriedRules(T: Theory, newRules: Iterable[Clause], logger: org.slf4j.Logger) = {
     val out = newRules.filter { newRule =>
@@ -109,8 +104,8 @@ trait CoreFunctions {
   def pruneRulesNaive(topTheory: Theory, inps: RunningOptions, logger: org.slf4j.Logger) = {
     val (keep, prune) = topTheory.clauses.foldLeft(List[Clause](), List[Clause]()) { (accum, clause) =>
       if (clause.tps == 0) {
-      //val ruleSize = clause.body.length
-      //if (ruleSize >= 4 && clause.score <= 0.4 ) {
+        //val ruleSize = clause.body.length
+        //if (ruleSize >= 4 && clause.score <= 0.4 ) {
         (accum._1, accum._2 :+ clause)
       } else {
         (accum._1 :+ clause, accum._2)
@@ -122,68 +117,60 @@ trait CoreFunctions {
 
   def generateNewBottomClauses(topTheory: Theory, e: Example, initorterm: String, globals: Globals) = {
 
-    val terminatedOnly = if(initorterm == "terminatedAt") true else false
-    val specialBKfile = if(initorterm=="initiatedAt") globals.BK_INITIATED_ONLY else globals.BK_TERMINATED_ONLY
+    val terminatedOnly = if (initorterm == "terminatedAt") true else false
+    val specialBKfile = if (initorterm == "initiatedAt") globals.BK_INITIATED_ONLY else globals.BK_TERMINATED_ONLY
     val (_, varKernel) =
-      LogicUtils.generateKernel(e.toMapASP, learningTerminatedOnly = terminatedOnly, bkFile = specialBKfile, globals=globals)
-    val bottomTheory = topTheory.clauses flatMap(x => x.supportSet.clauses)
+      LogicUtils.generateKernel(e.toMapASP, learningTerminatedOnly = terminatedOnly, bkFile = specialBKfile, globals = globals)
+    val bottomTheory = topTheory.clauses flatMap (x => x.supportSet.clauses)
     val goodKernelRules = varKernel.filter(newBottomRule => !bottomTheory.exists(supportRule => newBottomRule.thetaSubsumes(supportRule)))
     goodKernelRules
   }
 
-
   def generateNewBottomClausesNoEC(topTheory: Theory, e: Example, globals: Globals) = {
     val specialBKfile = globals.BK_WHOLE
-    val (_, varKernel) = LogicUtils.generateKernel(e.toMapASP, bkFile = specialBKfile, globals=globals)
-    val bottomTheory = topTheory.clauses flatMap(x => x.supportSet.clauses)
+    val (_, varKernel) = LogicUtils.generateKernel(e.toMapASP, bkFile = specialBKfile, globals = globals)
+    val bottomTheory = topTheory.clauses flatMap (x => x.supportSet.clauses)
     val goodKernelRules = varKernel.filter(newBottomRule => !bottomTheory.exists(supportRule => newBottomRule.thetaSubsumes(supportRule)))
     goodKernelRules
   }
 
   def getnerateNewBottomClauses_withInertia(topTheory: Theory, e: Example, targetClass: String, globals: Globals) = {
     val specialBKfile = globals.ABDUCE_WITH_INERTIA
-    val (_, varKernel) = LogicUtils.generateKernel(e.toMapASP, bkFile = specialBKfile, globals=globals)
+    val (_, varKernel) = LogicUtils.generateKernel(e.toMapASP, bkFile = specialBKfile, globals = globals)
     val filteredKernel = varKernel.filter(p => p.head.functor == targetClass)
-    val bottomTheory = topTheory.clauses flatMap(x => x.supportSet.clauses)
+    val bottomTheory = topTheory.clauses flatMap (x => x.supportSet.clauses)
     val goodKernelRules = filteredKernel.filter(newBottomRule => !bottomTheory.exists(supportRule => newBottomRule.thetaSubsumes(supportRule)))
     goodKernelRules map { x =>
-      val c = Clause(head=x.head, body = List())
+      val c = Clause(head = x.head, body = List())
       c.addToSupport(x)
       c
     }
   }
 
-
-
-
-
-
-
-
   def showInfo(c: Clause, c1: Clause, c2: Clause, hoeffding: Double, observedDiff: Double, n: Int, inps: RunningOptions) = {
 
-    def format(x: Double) = {
-      val defaultNumFormat = new DecimalFormat("0.############")
-      defaultNumFormat.format(x)
-    }
+      def format(x: Double) = {
+        val defaultNumFormat = new DecimalFormat("0.############")
+        defaultNumFormat.format(x)
+      }
 
     val showRefs = inps.showRefs
     val weightLearn = inps.weightLean
 
     if (showRefs) {
-      if(!weightLearn) {
+      if (!weightLearn) {
         s"\n===========================================================\n" +
           s"\nClause (score: ${c.score} | tps: ${c.tps} fps: ${c.fps} fns: ${c.fns})\n\n${c.tostring}\n\nwas refined to" +
           s" (new score: ${c1.score} | tps: ${c1.tps} fps: ${c1.fps} fns: ${c1.fns})\n\n${c1.tostring}\n\nε: $hoeffding, ΔG: $observedDiff, examples used: $n" +
           //s"\nall refs: \n\n ${c.refinements.sortBy(z => -z.score).map(x => x.tostring+" "+" | score "+x.score+" | similarity "+similarity(x)).mkString("\n")}" +
-          s"\nall refs: \n\n ${c.refinements.sortBy(z => (-z.score,z.body.length+1)).map(x => x.tostring+" | score "+x.score+" (tps|fps|fns): "+(x.tps,x.fps,x.fns)).mkString("\n")}" +
+          s"\nall refs: \n\n ${c.refinements.sortBy(z => (-z.score, z.body.length + 1)).map(x => x.tostring + " | score " + x.score + " (tps|fps|fns): " + (x.tps, x.fps, x.fns)).mkString("\n")}" +
           s"\n===========================================================\n"
       } else {
         s"\n===========================================================\n" +
           s"\nClause (score: ${c.score} | tps: ${c.tps} fps: ${c.fps} fns: ${c.fns} | MLN-weight: ${format(c.weight)})\n\n${c.tostring}\n\nwas refined to" +
           s" (new score: ${c1.score} | tps: ${c1.tps} fps: ${c1.fps} fns: ${c1.fns} | MLN-weight: ${format(c1.weight)})\n\n${c1.tostring}\n\nε: $hoeffding, ΔG: $observedDiff, examples used: $n" +
           //s"\nall refs: \n\n ${c.refinements.sortBy(z => -z.score).map(x => x.tostring+" "+" | score "+x.score+" | similarity "+similarity(x)).mkString("\n")}" +
-          s"\nall refs: \n\n ${c.refinements.sortBy(z => (-z.score,z.body.length+1)).map(x => x.tostring+" | score "+x.score+" (tps|fps|fns): "+(x.tps,x.fps,x.fns) + "| MLN-weight: "+format(x.weight)).mkString("\n")}" +
+          s"\nall refs: \n\n ${c.refinements.sortBy(z => (-z.score, z.body.length + 1)).map(x => x.tostring + " | score " + x.score + " (tps|fps|fns): " + (x.tps, x.fps, x.fns) + "| MLN-weight: " + format(x.weight)).mkString("\n")}" +
           s"\n===========================================================\n"
       }
 
@@ -197,13 +184,12 @@ trait CoreFunctions {
     }
   }
 
-
-
-  def crossVal(t: Theory,
-               data: Iterator[Example],
-               handCraftedTheoryFile: String = "",
-               globals: Globals,
-               inps: RunningOptions) = {
+  def crossVal(
+      t: Theory,
+      data: Iterator[Example],
+      handCraftedTheoryFile: String = "",
+      globals: Globals,
+      inps: RunningOptions) = {
 
     while (data.hasNext) {
       val e = data.next()
@@ -214,7 +200,6 @@ trait CoreFunctions {
     (stats._1, stats._2, stats._3, stats._4, stats._5, stats._6)
   }
 
-
   /* Evaluate a theory on a single batch */
   def eval(t: Theory, exmpl: Example, inps: RunningOptions, inputTheoryFile: String = "") = {
     evaluateTheory(t, exmpl, handCraftedTheoryFile = inputTheoryFile, inps.globals)
@@ -223,13 +208,12 @@ trait CoreFunctions {
     (stats._1, stats._2, stats._3, stats._4, stats._5, stats._6)
   }
 
-
   def evaluateTheory(theory: Theory, e: Example, handCraftedTheoryFile: String = "", globals: Globals): Unit = {
 
     val varbedExmplPatterns = globals.EXAMPLE_PATTERNS_AS_STRINGS
     val coverageConstr = s"${globals.TPS_RULES}\n${globals.FPS_RULES}\n${globals.FNS_RULES}"
     val t =
-      if(theory != Theory()) {
+      if (theory != Theory()) {
         theory.clauses.map(x => x.withTypePreds(globals).tostring).mkString("\n")
       } else {
         globals.INCLUDE_BK(handCraftedTheoryFile)
@@ -237,13 +221,13 @@ trait CoreFunctions {
     val show = globals.SHOW_TPS_ARITY_1 + globals.SHOW_FPS_ARITY_1 + globals.SHOW_FNS_ARITY_1
     val ex = e.tostring
     val program = ex + globals.INCLUDE_BK(globals.BK_CROSSVAL) + t + coverageConstr + show
-    val f = Utils.getTempFile("isConsistent",".lp")
+    val f = Utils.getTempFile("isConsistent", ".lp")
     Utils.writeLine(program, f, "overwrite")
-    val answerSet = ASP.solve(task = Globals.INFERENCE, aspInputFile = f)
+    val answerSet = ASP.solve(task         = Globals.INFERENCE, aspInputFile = f)
     f.delete()
     if (answerSet.nonEmpty) {
       val atoms = answerSet.head.atoms
-      atoms.foreach { a=>
+      atoms.foreach { a =>
         val lit = Literal.parse(a)
         val inner = lit.terms.head
         lit.predSymbol match {
@@ -254,10 +238,6 @@ trait CoreFunctions {
       }
     }
   }
-
-
-
-
 
   /*
   *
@@ -288,17 +268,15 @@ trait CoreFunctions {
     var groundRunningMean = 0.0
     var exmplCounter = 0
 
-    // The running average can be computed by
-    // ((prevAvg*n) + newValue)/(n+1)
-    // where n is the number of seen data points
-    def runningMean(prevAvg: Double, newVal: Double, n: Int) = ((prevAvg*n) + newValue)/(n+1)
+      // The running average can be computed by
+      // ((prevAvg*n) + newValue)/(n+1)
+      // where n is the number of seen data points
+      def runningMean(prevAvg: Double, newVal: Double, n: Int) = ((prevAvg * n) + newValue) / (n + 1)
     what match {
       case "time" => runningMean(timeRunningMean, newValue, exmplCounter)
       case "groundPrg" => runningMean(groundRunningMean, newValue, exmplCounter)
     }
   }
 
-
 }
-
 

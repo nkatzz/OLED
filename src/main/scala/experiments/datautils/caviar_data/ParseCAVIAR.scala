@@ -27,7 +27,6 @@ import utils.parsers.ClausalLogicParser
 
 import scala.collection.immutable.SortedMap
 
-
 /**
   * Created by nkatz on 3/13/17.
   *
@@ -37,16 +36,12 @@ import scala.collection.immutable.SortedMap
 
 object ParseCAVIAR extends ClausalLogicParser {
 
-
-
   /*
   Example({ "_id" : { "$oid" : "56d58f08e4b0842fb35754c8"} , "time" : 1077520 , "annotation" : [ ] ,
    "narrative" : [ "orientation(id1,128,1077520)" , "happensAt(disappear(id1),1077520)" , "orientation(id3,164,1077520)" , "holdsAt(visible(id3),1077520)" ,
     "orientation(id4,166,1077520)" , "holdsAt(visible(id4),1077520)" , "happensAt(running(id1),1077520)" , "coords(id1,77,60,1077520)" , "happensAt(walking(id3),1077520)" ,
      "coords(id3,98,201,1077520)" , "happensAt(inactive(id4),1077520)" , "coords(id4,82,206,1077520)"]},,List(),List(),,false,false,List(),List())
   */
-
-
 
   val fixedBordersDBName = "CAVIAR_Real_FixedBorders"
   val originalDBName = "CAVIAR_Real_original"
@@ -84,14 +79,14 @@ object ParseCAVIAR extends ClausalLogicParser {
       val files = f.listFiles.filter(x => movementOnly.exists(p => x.getName.contains(p)))
       val contents =
         (for (f <- files)
-          yield scala.io.Source.fromFile(f).getLines().filter(p => !p.startsWith("%"))).toList.flatten.mkString.replaceAll("\\s","").split("\\.").toList
-      val parsed = contents.flatMap(x => parseAll(caviarParser(0),x).getOrElse(List(""))).filter(_!="").asInstanceOf[List[Atom]]
+          yield scala.io.Source.fromFile(f).getLines().filter(p => !p.startsWith("%"))).toList.flatten.mkString.replaceAll("\\s", "").split("\\.").toList
+      val parsed = contents.flatMap(x => parseAll(caviarParser(0), x).getOrElse(List(""))).filter(_ != "").asInstanceOf[List[Atom]]
       //println(parsed map (_.atoms))
       val allAtoms = parsed flatMap (_.atoms) map (x => Literal.parse(x))
       val times = allAtoms.map(_.terms.reverse.head.tostring).distinct.length
       //println(times.length)
       val ids = parsed.flatMap(_.atoms).flatMap(z => idPattern.findAllIn(z).toList).distinct.length
-      val size = if (ids > 1) (times * utils.Utils.combinations(ids,2)).toInt else times
+      val size = if (ids > 1) (times * utils.Utils.combinations(ids, 2)).toInt else times
       println(s"current video size: $size")
       totalSize = totalSize + size
     }
@@ -119,25 +114,25 @@ object ParseCAVIAR extends ClausalLogicParser {
       val files = f.listFiles.filter(x => dataFileNames.exists(p => x.getName.contains(p)))
       val contents =
         (for (f <- files)
-          yield scala.io.Source.fromFile(f).getLines().filter(p => !p.startsWith("%"))).toList.flatten.mkString.replaceAll("\\s","").split("\\.").toList
+          yield scala.io.Source.fromFile(f).getLines().filter(p => !p.startsWith("%"))).toList.flatten.mkString.replaceAll("\\s", "").split("\\.").toList
 
-      val parsed = contents.flatMap(x => parseAll(caviarParser(lastTime),x).getOrElse(List(""))).filter(_!="").asInstanceOf[List[Atom]]
+      val parsed = contents.flatMap(x => parseAll(caviarParser(lastTime), x).getOrElse(List(""))).filter(_ != "").asInstanceOf[List[Atom]]
       val atoms = SortedMap[Int, List[Atom]]() ++ parsed.groupBy(_.time.toInt)
-      for ( (k,v) <- atoms ) {
+      for ((k, v) <- atoms) {
         val narrative = v.filter(x => !x.annotationAtom).flatMap(z => z.atoms)
         val annotation = v.filter(x => x.annotationAtom).flatMap(z => z.atoms)
         val entry = MongoDBObject("time" -> k) ++ ("annotation" -> annotation) ++ ("narrative" -> narrative)
         collection.insert(entry)
         //println(s"inserted $entry")
       }
-      lastTime = atoms.keySet.toList.reverse.head+40 // the last time point
+      lastTime = atoms.keySet.toList.reverse.head + 40 // the last time point
     }
   }
 
   val hleMapping = Map("moving" -> "moving", "fighting" -> "fighting", "leaving_object" -> "leavingObject", "interacting" -> "meeting")
   val correctedCaviarPath = "/home/nkatz/dev/CAVIAR-abrupt-corrected-borderlines"
   val originalCaviarPath = "/home/nkatz/dev/CAVIAR-abrupt-original"
-  val dataFileNames = List("AppearenceIndv","MovementIndv","SituationGrp")
+  val dataFileNames = List("AppearenceIndv", "MovementIndv", "SituationGrp")
   val movementOnly = List("MovementIndv")
 
   def word: Parser[String] = """[A-Za-z0-9_]*""".r ^^ { x => x }
@@ -164,29 +159,29 @@ object ParseCAVIAR extends ClausalLogicParser {
 
   def annotationParser(pastTime: Int): Parser[AnnotationAtom] =
     happens ~ "(" ~ (meeting | moving | fighting | leavingObject) ~ "(" ~ word ~ "," ~ persons ~ ")" ~ "," ~ time ~ ")" ^^ {
-      case _~"("~x~"("~_~","~y~")"~","~z~")" => new AnnotationAtom(x, y, (z.toInt+pastTime).toString)
+      case _ ~ "(" ~ x ~ "(" ~ _ ~ "," ~ y ~ ")" ~ "," ~ z ~ ")" => new AnnotationAtom(x, y, (z.toInt + pastTime).toString)
     }
   def lleParser(pastTime: Int): Parser[NarrativeAtom] = happens ~ "(" ~ (walking | active | inactive | running | abrupt) ~ "(" ~ person ~ ")" ~ "," ~ time ~ ")" ^^ {
-    case _~"("~lle~"("~p~")"~","~t~")" => new NarrativeAtom(what = lle, id = p.id, time = (t.toInt+pastTime).toString)
+    case _ ~ "(" ~ lle ~ "(" ~ p ~ ")" ~ "," ~ t ~ ")" => new NarrativeAtom(what = lle, id = p.id, time = (t.toInt + pastTime).toString)
   }
 
   /* This is a utility parser used by data_handling.CopyCAVIAR. It doesn't push time forward*/
   def lleParser1: Parser[NarrativeAtom] = happens ~ "(" ~ (walking | active | inactive | running | abrupt) ~ "(" ~ person ~ ")" ~ "," ~ time ~ ")" ^^ {
-    case _~"("~lle~"("~p~")"~","~t~")" => new NarrativeAtom(what = lle, id = p.id, time = t)
+    case _ ~ "(" ~ lle ~ "(" ~ p ~ ")" ~ "," ~ t ~ ")" => new NarrativeAtom(what = lle, id = p.id, time = t)
   }
 
   def orientationParser(pastTime: Int): Parser[NarrativeAtom] = holds ~ "(" ~ orientation ~ "(" ~ person ~ ")" ~ "=" ~ number ~ "," ~ time ~ ")" ^^ {
-    case _~"("~_~"("~p~")"~"="~v~","~t~")" => new NarrativeAtom(what = "orientation", id = p.id, orientation = v, time = (t.toInt+pastTime).toString)
+    case _ ~ "(" ~ _ ~ "(" ~ p ~ ")" ~ "=" ~ v ~ "," ~ t ~ ")" => new NarrativeAtom(what        = "orientation", id = p.id, orientation = v, time = (t.toInt + pastTime).toString)
   }
   def appearanceParser(pastTime: Int): Parser[NarrativeAtom] = holds ~ "(" ~ appearance ~ "(" ~ person ~ ")" ~ "=" ~ word ~ "," ~ time ~ ")" ^^ {
-    case _~"("~_~"("~p~")"~"="~v~","~t~")" => new NarrativeAtom(what = "appearance", id = p.id, appearance = v, time = (t.toInt+pastTime).toString)
+    case _ ~ "(" ~ _ ~ "(" ~ p ~ ")" ~ "=" ~ v ~ "," ~ t ~ ")" => new NarrativeAtom(what       = "appearance", id = p.id, appearance = v, time = (t.toInt + pastTime).toString)
   }
   def coordsParser(pastTime: Int): Parser[NarrativeAtom] = holds ~ "(" ~ coords ~ "(" ~ person ~ ")" ~ "=" ~ coordinates ~ "," ~ time ~ ")" ^^ {
-    case _~"("~_~"("~p~")"~"="~c~","~t~")" => new NarrativeAtom(what = "coord", id = p.id, xcoord = c._1, ycoord = c._2, time = (t.toInt+pastTime).toString)
+    case _ ~ "(" ~ _ ~ "(" ~ p ~ ")" ~ "=" ~ c ~ "," ~ t ~ ")" => new NarrativeAtom(what   = "coord", id = p.id, xcoord = c._1, ycoord = c._2, time = (t.toInt + pastTime).toString)
   }
 
   def caviarAtomParser(pastTime: Int): Parser[Atom] =
-    annotationParser(pastTime)|lleParser(pastTime)|orientationParser(pastTime)|appearanceParser(pastTime)|coordsParser(pastTime)
+    annotationParser(pastTime) | lleParser(pastTime) | orientationParser(pastTime) | appearanceParser(pastTime) | coordsParser(pastTime)
 
   def caviarParser(pastTime: Int): Parser[List[Atom]] = rep(caviarAtomParser(pastTime))
 
@@ -198,7 +193,7 @@ object ParseCAVIAR extends ClausalLogicParser {
     val time: String
   }
 
-  class AnnotationAtom(val HLE: String, val persons: List[Person], val time: String) extends Atom{
+  class AnnotationAtom(val HLE: String, val persons: List[Person], val time: String) extends Atom {
     val annotationAtom = true
     val atoms =
       if (HLE == "leaving_object") {
@@ -210,8 +205,8 @@ object ParseCAVIAR extends ClausalLogicParser {
 
   // what is either an LLE, or orientation, appearance, coord
   class NarrativeAtom(val what: String = "none", val id: String, val xcoord: String = "none",
-                      val ycoord: String = "none", val orientation: String = "none",
-                      val appearance: String = "none", val time: String) extends Atom{
+      val ycoord: String = "none", val orientation: String = "none",
+      val appearance: String = "none", val time: String) extends Atom {
 
     val annotationAtom = false
     val atoms = what match {

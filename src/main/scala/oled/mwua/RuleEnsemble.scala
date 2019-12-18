@@ -56,7 +56,7 @@ class RuleEnsemble {
   val initiationRuleSets: scala.collection.mutable.Map[Int, Set[Int]] = scala.collection.mutable.Map[Int, Set[Int]]()
   val terminationRuleSets: scala.collection.mutable.Map[Int, Set[Int]] = scala.collection.mutable.Map[Int, Set[Int]]()
 
-  def updateRuleSets(awakeFraction:String, ruleSet: scala.collection.mutable.Map[Int, Set[Int]], markedMap: Map[String, Clause]) = {
+  def updateRuleSets(awakeFraction: String, ruleSet: scala.collection.mutable.Map[Int, Set[Int]], markedMap: Map[String, Clause]) = {
 
   }
 
@@ -96,7 +96,7 @@ class RuleEnsemble {
     } else {
       _merged.clauses foreach (rule => if (rule.refinements.isEmpty) rule.generateCandidateRefs(inps.globals))
       // add the bottom rules here as well
-      val mergedWithRefs = Theory( (_merged.clauses ++ _merged.clauses.flatMap(_.refinements)) ++ _merged.clauses.map(x => x.supportSet.clauses.head) )
+      val mergedWithRefs = Theory((_merged.clauses ++ _merged.clauses.flatMap(_.refinements)) ++ _merged.clauses.map(x => x.supportSet.clauses.head))
       //val mergedWithRefs = Theory( _merged.clauses ++ _merged.clauses.flatMap(_.refinements) )
       mergedWithRefs
     }
@@ -110,7 +110,5 @@ class RuleEnsemble {
     initiationRules.foreach(x => x.w_pos = x.w_pos / totalWeight.toDouble)
     terminationRules.foreach(x => x.w_pos = x.w_pos / totalWeight.toDouble)
   }
-
-
 
 }

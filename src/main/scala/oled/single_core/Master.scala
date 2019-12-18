@@ -23,31 +23,28 @@ import app.runutils.RunningOptions
 import com.typesafe.scalalogging.LazyLogging
 import logic.Examples.Example
 
-
-
 /**
   * Created by nkatz on 9/14/16.
   */
 
-
-
-class Master[T <: InputSource](inps: RunningOptions,
-                               trainingDataOptions: T,
-                               testingDataOptions: T,
-                               trainingDataFunction: T => Iterator[Example],
-                               testingDataFunction: T => Iterator[Example]) extends Actor with LazyLogging{
+class Master[T <: InputSource](
+    inps: RunningOptions,
+    trainingDataOptions: T,
+    testingDataOptions: T,
+    trainingDataFunction: T => Iterator[Example],
+    testingDataFunction: T => Iterator[Example]) extends Actor with LazyLogging {
 
   def receive = {
 
     case "eval" =>
       context.actorOf(Props(
         new Dispatcher(inps, trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction)),
-        name = s"Dispatcher-Actor-eval-mode") ! "eval"
+                      name = s"Dispatcher-Actor-eval-mode") ! "eval"
 
     case "start" =>
       context.actorOf(Props(
         new Dispatcher(inps, trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction)),
-        name = s"Dispatcher-Actor-learning-mode") ! "start"
+                      name = s"Dispatcher-Actor-learning-mode") ! "start"
 
   }
 

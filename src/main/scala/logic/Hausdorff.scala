@@ -20,8 +20,8 @@ package logic
 import utils.parsers.ClausalLogicParser
 
 /**
- * Compute the Haussdorff distance between Herbrand Interpretations.
- */
+  * Compute the Haussdorff distance between Herbrand Interpretations.
+  */
 
 object Hausdorff extends ClausalLogicParser {
 
@@ -36,7 +36,7 @@ object Hausdorff extends ClausalLogicParser {
     val example2 = List("a(1,2,3)","p(a(2,3,4),X)","q(z,Term)")
     println(elemFromExampleDist(atom,example2))
     println(exmplFromExmplDist(example1,example2))
-    * 
+    *
     */
       val e1 = List("happensAt(walking(id0),680)", "coords(id0,262,285,680)", "happensAt(enters(id0),680)", "orientation(id0,0,680)")
       val e2 = List()
@@ -80,9 +80,7 @@ object Hausdorff extends ClausalLogicParser {
     hausdrfDist1(x1, x2)
   }
 
-
-
-/*
+  /*
   def hausdrfDist(x: Literal, y: Literal): Double = {
     hausdrfDist1(x, y)
   }

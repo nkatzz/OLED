@@ -32,10 +32,9 @@ import scala.io.Source
 import scala.util.matching.Regex
 
 class Learner[T <: app.runutils.IOHandling.InputSource](inps: RunningOptions, trainingDataOptions: T,
-                                                        testingDataOptions: T, trainingDataFunction: T => Iterator[Example],
-                                                        testingDataFunction: T => Iterator[Example],
-                                                        targetClass: String) extends
-  WeightedTheoryLearner(inps, trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction, targetClass) {
+    testingDataOptions: T, trainingDataFunction: T => Iterator[Example],
+    testingDataFunction: T => Iterator[Example],
+    targetClass: String) extends WeightedTheoryLearner(inps, trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction, targetClass) {
 
   import context.become
 
@@ -73,7 +72,7 @@ class Learner[T <: app.runutils.IOHandling.InputSource](inps: RunningOptions, tr
       // Get the data in MLN format by doing numerical stuff thresholds etc. with clingo
       // and getting the atoms expected by the mode declarations
       val program = {
-        val nar = batch.narrative.map(_+".").mkString("\n")
+        val nar = batch.narrative.map(_ + ".").mkString("\n")
         val include = s"""#include "${inps.globals.BK_WHOLE_EC}"."""
         val show = inps.globals.bodyAtomSignatures.map(x => s"#show ${x.tostring}.").mkString("\n")
         Vector(nar, include, show)
@@ -81,7 +80,7 @@ class Learner[T <: app.runutils.IOHandling.InputSource](inps: RunningOptions, tr
 
       // This transforms the actual data into an MLN-compatible form.
       val f = woled.Utils.dumpToFile(program)
-      val t = ASP.solve(task=Globals.INFERENCE, aspInputFile=f)
+      val t = ASP.solve(task         = Globals.INFERENCE, aspInputFile = f)
       val answer = t.head.atoms
       val e = new Example(annot = batch.annotation, nar = answer, _time = batch.time)
 
@@ -91,7 +90,7 @@ class Learner[T <: app.runutils.IOHandling.InputSource](inps: RunningOptions, tr
       var fpCounts = 0
       var fnCounts = 0
       var totalGroundings = 0
-      var inertiaAtoms =  Vector.empty[Literal]
+      var inertiaAtoms = Vector.empty[Literal]
 
       // MAP inference and getting true groundings with Clingo (see below should be performed in parallel)
       //this.inertiaAtoms = Vector.empty[Literal]              // Use this to difuse inertia
@@ -115,9 +114,9 @@ class Learner[T <: app.runutils.IOHandling.InputSource](inps: RunningOptions, tr
         fpCounts = _fpCounts
         fnCounts = _fnCounts
         totalGroundings = _totalGroundings
-        inertiaAtoms =_inertiaAtoms
+        inertiaAtoms = _inertiaAtoms
 
-      /*=============== OLED ================*/
+        /*=============== OLED ================*/
       } else {
         rules = state.getBestRules(inps.globals, "score").filter(x => x.score >= 0.7)
         val (_tpCounts, _fpCounts, _fnCounts, _, _, _) = oled.functions.SingleCoreOLEDFunctions.eval(Theory(rules), e, inps)
@@ -131,7 +130,7 @@ class Learner[T <: app.runutils.IOHandling.InputSource](inps: RunningOptions, tr
       }
 
       this.inertiaAtoms = inertiaAtoms
-      this.inertiaAtoms = Vector.empty[Literal]              // Use this to difuse inertia
+      this.inertiaAtoms = Vector.empty[Literal] // Use this to difuse inertia
 
       state.perBatchError = state.perBatchError :+ (fpCounts + fnCounts)
 
@@ -187,14 +186,10 @@ class Learner[T <: app.runutils.IOHandling.InputSource](inps: RunningOptions, tr
         //println(Theory(state.getAllRules(inps.globals, "top")).showWithStats)
       }
 
-
-
       batchCount += 1
       become(normalState)
       self ! new FinishedBatch
 
   }
-
-
 
 }

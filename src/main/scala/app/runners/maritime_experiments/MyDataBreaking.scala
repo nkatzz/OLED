@@ -28,9 +28,7 @@ import scala.io.Source
 object MyDataBreaking {
 
   def splitN[A](list: List[A], n: Int): List[List[A]] =
-    if(n == 1) List(list) else List(list.head) :: splitN(list.tail, n - 1)
-
-
+    if (n == 1) List(list) else List(list.head) :: splitN(list.tail, n - 1)
 
   def main(args: Array[String]) = {
     val vessels = getAllVessels("/home/nkatz/dev/maritime/brest-data/datasets/dataset1.txt")
@@ -45,113 +43,95 @@ object MyDataBreaking {
     //generateSplitData(partitioned8, "/home/nkatz/dev/maritime/brest-data/datasets-my-split", 8)
 
     geterateSplitData_Annotation(partitioned2,
-                                 "/home/nkatz/dev/maritime/brest-data/recognition/1/highSpeedIn.csv",
-                                 "/home/nkatz/dev/maritime/brest-data/recognition-my-split",
-                                 "highSpeedIn",2)
+      "/home/nkatz/dev/maritime/brest-data/recognition/1/highSpeedIn.csv",
+      "/home/nkatz/dev/maritime/brest-data/recognition-my-split",
+      "highSpeedIn", 2)
 
     geterateSplitData_Annotation(partitioned4,
       "/home/nkatz/dev/maritime/brest-data/recognition/1/highSpeedIn.csv",
       "/home/nkatz/dev/maritime/brest-data/recognition-my-split",
-      "highSpeedIn",4)
+      "highSpeedIn", 4)
 
     geterateSplitData_Annotation(partitioned8,
       "/home/nkatz/dev/maritime/brest-data/recognition/1/highSpeedIn.csv",
       "/home/nkatz/dev/maritime/brest-data/recognition-my-split",
-      "highSpeedIn",8)
-
-
+      "highSpeedIn", 8)
 
     geterateSplitData_Annotation(partitioned2,
       "/home/nkatz/dev/maritime/brest-data/recognition/1/close_to_ports.csv",
       "/home/nkatz/dev/maritime/brest-data/recognition-my-split",
-      "close_to_ports",2)
+      "close_to_ports", 2)
 
     geterateSplitData_Annotation(partitioned4,
       "/home/nkatz/dev/maritime/brest-data/recognition/1/close_to_ports.csv",
       "/home/nkatz/dev/maritime/brest-data/recognition-my-split",
-      "close_to_ports",4)
+      "close_to_ports", 4)
 
     geterateSplitData_Annotation(partitioned8,
       "/home/nkatz/dev/maritime/brest-data/recognition/1/close_to_ports.csv",
       "/home/nkatz/dev/maritime/brest-data/recognition-my-split",
-      "close_to_ports",8)
-
-
-
+      "close_to_ports", 8)
 
     geterateSplitData_Annotation(partitioned2,
       "/home/nkatz/dev/maritime/brest-data/recognition/1/stopped.csv",
       "/home/nkatz/dev/maritime/brest-data/recognition-my-split",
-      "stopped",2)
+      "stopped", 2)
 
     geterateSplitData_Annotation(partitioned4,
       "/home/nkatz/dev/maritime/brest-data/recognition/1/stopped.csv",
       "/home/nkatz/dev/maritime/brest-data/recognition-my-split",
-      "stopped",4)
+      "stopped", 4)
 
     geterateSplitData_Annotation(partitioned8,
       "/home/nkatz/dev/maritime/brest-data/recognition/1/stopped.csv",
       "/home/nkatz/dev/maritime/brest-data/recognition-my-split",
-      "stopped",8)
-
-
-
-
+      "stopped", 8)
 
     geterateSplitData_Annotation(partitioned2,
       "/home/nkatz/dev/maritime/brest-data/recognition/1/lowSpeed.csv",
       "/home/nkatz/dev/maritime/brest-data/recognition-my-split",
-      "lowSpeed",2)
+      "lowSpeed", 2)
 
     geterateSplitData_Annotation(partitioned4,
       "/home/nkatz/dev/maritime/brest-data/recognition/1/lowSpeed.csv",
       "/home/nkatz/dev/maritime/brest-data/recognition-my-split",
-      "lowSpeed",4)
+      "lowSpeed", 4)
 
     geterateSplitData_Annotation(partitioned8,
       "/home/nkatz/dev/maritime/brest-data/recognition/1/lowSpeed.csv",
       "/home/nkatz/dev/maritime/brest-data/recognition-my-split",
-      "lowSpeed",8)
-
-
-
-
+      "lowSpeed", 8)
 
     geterateSplitData_Annotation(partitioned2,
       "/home/nkatz/dev/maritime/brest-data/recognition/1/sailing.csv",
       "/home/nkatz/dev/maritime/brest-data/recognition-my-split",
-      "sailing",2)
+      "sailing", 2)
 
     geterateSplitData_Annotation(partitioned4,
       "/home/nkatz/dev/maritime/brest-data/recognition/1/sailing.csv",
       "/home/nkatz/dev/maritime/brest-data/recognition-my-split",
-      "sailing",4)
+      "sailing", 4)
 
     geterateSplitData_Annotation(partitioned8,
       "/home/nkatz/dev/maritime/brest-data/recognition/1/sailing.csv",
       "/home/nkatz/dev/maritime/brest-data/recognition-my-split",
-      "sailing",8)
-
-
-
-
+      "sailing", 8)
 
     geterateSplitData_Annotation(partitioned2,
       "/home/nkatz/dev/maritime/brest-data/recognition/1/loitering.csv",
       "/home/nkatz/dev/maritime/brest-data/recognition-my-split",
-      "loitering",2)
+      "loitering", 2)
 
     geterateSplitData_Annotation(partitioned4,
       "/home/nkatz/dev/maritime/brest-data/recognition/1/loitering.csv",
       "/home/nkatz/dev/maritime/brest-data/recognition-my-split",
-      "loitering",4)
+      "loitering", 4)
 
     geterateSplitData_Annotation(partitioned8,
       "/home/nkatz/dev/maritime/brest-data/recognition/1/loitering.csv",
       "/home/nkatz/dev/maritime/brest-data/recognition-my-split",
-      "loitering",8)
+      "loitering", 8)
   }
-
 
   def geterateSplitData_Annotation(iter: List[Set[String]], originalAnnotationPath: String, pathForNewAnnotation: String, hle: String, coresNum: Int) = {
     var count = 1
@@ -163,7 +143,7 @@ object MyDataBreaking {
       singleAnnotationCoreData foreach { line =>
         val vessel = line.split("\\|")(1)
         if (currentVessels.contains(vessel)) {
-          pw.write(line+"\n")
+          pw.write(line + "\n")
         }
       }
       count += 1
@@ -185,7 +165,7 @@ object MyDataBreaking {
         //val lle = rest.split(" ")(0)
         val vessel = rest.split(" ")(1)
         if (currentVessels.contains(vessel)) {
-          pw.write(line+"\n")
+          pw.write(line + "\n")
         }
       }
       count += 1
@@ -194,7 +174,7 @@ object MyDataBreaking {
   }
 
   def getVesselSplit(vessels: Set[String], coresNum: Int) = {
-    val partitionSize = (vessels.size.toDouble/coresNum).toInt
+    val partitionSize = (vessels.size.toDouble / coresNum).toInt
     vessels.grouped(partitionSize).take(coresNum)
   }
 
@@ -214,6 +194,5 @@ object MyDataBreaking {
       }
     }
   }
-
 
 }

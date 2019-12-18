@@ -30,13 +30,13 @@ import scala.util.matching.Regex
 /**
   * Created by nkatz at 31/3/2019
   */
-class ExpLearner[T <: InputSource](val inps: RunningOptions,
-                                   val trainingDataOptions: T,
-                                   val testingDataOptions: T,
-                                   val trainingDataFunction: T => Iterator[Example],
-                                   val testingDataFunction: T => Iterator[Example],
-                                   val writeExprmtResultsTo: String = "") extends LazyLogging {
-
+class ExpLearner[T <: InputSource](
+    val inps: RunningOptions,
+    val trainingDataOptions: T,
+    val testingDataOptions: T,
+    val trainingDataFunction: T => Iterator[Example],
+    val testingDataFunction: T => Iterator[Example],
+    val writeExprmtResultsTo: String = "") extends LazyLogging {
 
   val learningRate: Double = Globals.sleepingExpertsLearningRate
 
@@ -52,7 +52,7 @@ class ExpLearner[T <: InputSource](val inps: RunningOptions,
   val specializeAllAwakeRulesOnFPMistake = false
 
   // This is either 'winnow' or 'hedge'
-  val weightUpdateStrategy = "hedge"//"winnow"
+  val weightUpdateStrategy = "hedge" //"winnow"
 
   val conservativeRuleGeneration = false
 
@@ -64,11 +64,11 @@ class ExpLearner[T <: InputSource](val inps: RunningOptions,
   val inputTheoryFile = ""
 
   val inputTheory: List[Clause] = {
-    def matches(p: Regex, str: String) = p.pattern.matcher(str).matches
+      def matches(p: Regex, str: String) = p.pattern.matcher(str).matches
     if (inputTheoryFile == "") {
       Nil
-    }  else {
-      val rules = scala.io.Source.fromFile(inputTheoryFile).getLines.toList.filter(line => !matches( """""".r, line) && !line.startsWith("%"))
+    } else {
+      val rules = scala.io.Source.fromFile(inputTheoryFile).getLines.toList.filter(line => !matches("""""".r, line) && !line.startsWith("%"))
       val rulesParsed = rules.map(r => Clause.parse(r))
       rulesParsed
     }
@@ -132,12 +132,10 @@ class ExpLearner[T <: InputSource](val inps: RunningOptions,
             x.replaceAll("active", "active_1")
           }
         }
-        Example(annot = currentBatch.annotation, nar = noisyNarrative, _time=currentBatch.time)
+        Example(annot = currentBatch.annotation, nar = noisyNarrative, _time = currentBatch.time)
       }
     }
   }
-
-
 
   def run() = {
     data = getTrainData
@@ -151,7 +149,7 @@ class ExpLearner[T <: InputSource](val inps: RunningOptions,
 
     var out = (0, 0, 0, 0.0, Vector.empty[Double], Vector.empty[Double])
 
-    while(! done) {
+    while (!done) {
 
       val nextBatch = getNextBatch(lleNoise = false)
       logger.info(s"Processing batch $batchCounter")
@@ -166,20 +164,19 @@ class ExpLearner[T <: InputSource](val inps: RunningOptions,
         val trueLabels = nextBatch.annotation.toSet
         if (inputTheory.isEmpty) {
           ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
-            stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
-            batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
-            receiveFeedbackBias, conservativeRuleGeneration, weightUpdateStrategy, withInertia)
+                                        stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
+                                        batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
+                                        receiveFeedbackBias, conservativeRuleGeneration, weightUpdateStrategy, withInertia)
         } else {
           ExpertAdviceFunctions.process(nextBatch, nextBatch.annotation.toSet, inps,
-            stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
-            batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
-            receiveFeedbackBias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, inputTheory = Some(inputTheory))
+                                        stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
+                                        batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
+                                        receiveFeedbackBias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, inputTheory = Some(inputTheory))
         }
       }
     }
     out
   }
-
 
   def wrapUp() = {
 
@@ -207,9 +204,9 @@ class ExpLearner[T <: InputSource](val inps: RunningOptions,
       testData foreach { batch =>
         val trueLabels = batch.annotation.toSet
         ExpertAdviceFunctions.process(batch, batch.annotation.toSet, inps,
-          _stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
-          batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake, _receiveFeedbackBias,
-          conservativeRuleGeneration, weightUpdateStrategy)
+                                      _stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
+                                      batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake, _receiveFeedbackBias,
+                                      conservativeRuleGeneration, weightUpdateStrategy)
       }
       logger.info(s"Prequential error vector:\n${_stateHandler.perBatchError.mkString(",")}")
       logger.info(s"Prequential error vector (Accumulated Error):\n${_stateHandler.perBatchError.scanLeft(0.0)(_ + _).tail}")
@@ -226,15 +223,14 @@ class ExpLearner[T <: InputSource](val inps: RunningOptions,
       wrapUp_NO_TEST()
     }
 
-
   }
 
   def wrapUp_NO_TEST() = {
 
-    def show(in: List[Clause]) = {
-      in.sortBy(x => -x.w_pos).
-        map(x => x.showWithStats + "\n" + x.refinements.sortBy(x => -x.w_pos).map(x => x.showWithStats).mkString("\n      ")).mkString("\n")
-    }
+      def show(in: List[Clause]) = {
+        in.sortBy(x => -x.w_pos).
+          map(x => x.showWithStats + "\n" + x.refinements.sortBy(x => -x.w_pos).map(x => x.showWithStats).mkString("\n      ")).mkString("\n")
+      }
 
     //logger.info(show(stateHandler.ensemble.initiationRules))
     //logger.info(show(stateHandler.ensemble.terminationRules))
@@ -248,9 +244,9 @@ class ExpLearner[T <: InputSource](val inps: RunningOptions,
 
     logger.info(s"Prequential error vector (Accumulated Error):\n${stateHandler.perBatchError.scanLeft(0.0)(_ + _).tail}")
     logger.info(s"Prequential F1-score:\n${stateHandler.runningF1Score}")
-    logger.info(s"Average prequential F1-score: ${stateHandler.runningF1Score.sum/stateHandler.runningF1Score.length}")
+    logger.info(s"Average prequential F1-score: ${stateHandler.runningF1Score.sum / stateHandler.runningF1Score.length}")
     logger.info(s"Total TPs: ${stateHandler.totalTPs}, Total FPs: ${stateHandler.totalFPs}, Total FNs: ${stateHandler.totalFNs}, Total TNs: ${stateHandler.totalTNs}")
-    logger.info(s"Total time: ${(endTime - startTime)/1000000000.0}")
+    logger.info(s"Total time: ${(endTime - startTime) / 1000000000.0}")
 
     if (randomizedPrediction) {
       logger.info(s"\nPredicted with initiation rules: ${stateHandler.predictedWithInitRule} times")
@@ -267,9 +263,9 @@ class ExpLearner[T <: InputSource](val inps: RunningOptions,
     val fps = stateHandler.totalFPs
     val fns = stateHandler.totalFNs
 
-    val microPrecision = tps.toDouble/(tps.toDouble + fps.toDouble)
-    val microRecall = tps.toDouble/(tps.toDouble + fns.toDouble)
-    val microFscore = (2*microPrecision*microRecall)/(microPrecision+microRecall)
+    val microPrecision = tps.toDouble / (tps.toDouble + fps.toDouble)
+    val microRecall = tps.toDouble / (tps.toDouble + fns.toDouble)
+    val microFscore = (2 * microPrecision * microRecall) / (microPrecision + microRecall)
     //println(s"Micro F1-score: $microFscore")
     //*/
 

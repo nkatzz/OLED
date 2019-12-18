@@ -25,7 +25,6 @@ import logic.Modes._
 import logic.Exceptions._
 import utils.parsers.{ClausalLogicParser, ModesParser, PB2LogicParser}
 
-
 /**
   * Companion object for the Literal class
   */
@@ -106,28 +105,28 @@ object Literal {
    * */
   def toMLNFlat(l: Literal) = {
 
-    def formFlatConstTerm(funct: String, args: List[Expression]) = {
-      val t = s"${funct.capitalize}_${args.map(z => z.name.capitalize).mkString("_")}"
-      Constant(t)
-    }
-
-    def flatten(l: Literal): List[Constant] = {
-      val flattenInner = l.terms.foldLeft(List[Constant]()) { (stack, currentTerm) =>
-        currentTerm match {
-          case x: Constant => stack :+ Constant(x.name.capitalize)
-          // No variables, this only applies to ground clauses.
-          case x: Variable => throw new RuntimeException(s"Found variable: $x while transforming ${l.tostring} to MLN flattened form.")
-          case x: Literal =>
-            if (x.terms.forall(_.isConstant)) {
-              stack :+ formFlatConstTerm(x.predSymbol, x.terms)
-            } else {
-              val f = flatten(x)
-              stack :+ formFlatConstTerm(x.predSymbol, f)
-            }
-        }
+      def formFlatConstTerm(funct: String, args: List[Expression]) = {
+        val t = s"${funct.capitalize}_${args.map(z => z.name.capitalize).mkString("_")}"
+        Constant(t)
       }
-      flattenInner
-    }
+
+      def flatten(l: Literal): List[Constant] = {
+        val flattenInner = l.terms.foldLeft(List[Constant]()) { (stack, currentTerm) =>
+          currentTerm match {
+            case x: Constant => stack :+ Constant(x.name.capitalize)
+            // No variables, this only applies to ground clauses.
+            case x: Variable => throw new RuntimeException(s"Found variable: $x while transforming ${l.tostring} to MLN flattened form.")
+            case x: Literal =>
+              if (x.terms.forall(_.isConstant)) {
+                stack :+ formFlatConstTerm(x.predSymbol, x.terms)
+              } else {
+                val f = flatten(x)
+                stack :+ formFlatConstTerm(x.predSymbol, f)
+              }
+          }
+        }
+        flattenInner
+      }
 
     val flat = flatten(l)
     Literal(l.predSymbol.capitalize, flat, isNAF = l.isNAF, derivedFrom = l.derivedFrom)
@@ -138,41 +137,39 @@ object Literal {
    * */
   def toMLNClauseLiteral(l: Literal) = {
 
-    def handleInner(l: Literal): List[Expression] = {
-      val inner = l.terms.foldLeft(List[Expression]()) { (stack, currentTerm) =>
-        currentTerm match {
-          case x: Constant => stack :+ Constant(x.name.capitalize)
-          case x: Variable => stack :+ Constant(x.name.take(1).toLowerCase() + x.name.drop(1))
-          case x: Literal =>
-            val z = handleInner(x)
-            stack :+ Literal(predSymbol = x.predSymbol, terms = z, isNAF = x.isNAF)
+      def handleInner(l: Literal): List[Expression] = {
+        val inner = l.terms.foldLeft(List[Expression]()) { (stack, currentTerm) =>
+          currentTerm match {
+            case x: Constant => stack :+ Constant(x.name.capitalize)
+            case x: Variable => stack :+ Constant(x.name.take(1).toLowerCase() + x.name.drop(1))
+            case x: Literal =>
+              val z = handleInner(x)
+              stack :+ Literal(predSymbol = x.predSymbol, terms = z, isNAF = x.isNAF)
+          }
         }
+        inner
       }
-      inner
-    }
     val toMLN = handleInner(l)
     Literal(l.predSymbol.capitalize, toMLN, isNAF = l.isNAF, derivedFrom = l.derivedFrom)
   }
 
-
-
   def types(l: String, mode: ModeAtom, globals: Globals) = {
-    def terms(lit: Literal): List[Expression] = {
-      val (in, out, grnd) = lit.placeMarkers
-      val v = in ++ out ++ grnd
-      v match {
-        case Nil =>
-          val mode = lit.matchingMode(globals)
-          if (!mode.isEmpty) {
-            val l = Literal(predSymbol = lit.predSymbol, terms = lit.terms,
-              isNAF = true, modeAtom = mode, typePreds = lit.typePreds)
-            l.variables(globals)
-          } else { Nil }
-        case _ => v
+      def terms(lit: Literal): List[Expression] = {
+        val (in, out, grnd) = lit.placeMarkers
+        val v = in ++ out ++ grnd
+        v match {
+          case Nil =>
+            val mode = lit.matchingMode(globals)
+            if (!mode.isEmpty) {
+              val l = Literal(predSymbol = lit.predSymbol, terms = lit.terms,
+                              isNAF      = true, modeAtom = mode, typePreds = lit.typePreds)
+              l.variables(globals)
+            } else { Nil }
+          case _ => v
+        }
       }
-    }
-    val lit = toLiteral1(l,mode)
-    val termTypes = terms(lit) map {x => s"${x._type}(${x.tostring})"}
+    val lit = toLiteral1(l, mode)
+    val termTypes = terms(lit) map { x => s"${x._type}(${x.tostring})" }
     termTypes.distinct.mkString(",")
   }
 }
@@ -201,7 +198,7 @@ object Literal {
   */
 
 case class Literal(predSymbol: String = "", terms: List[Expression] = Nil, isNAF: Boolean = false,
-                   modeAtom: ModeAtom = ModeAtom("", Nil), typePreds: List[String] = Nil, derivedFrom: Int = 0) extends Expression {
+    modeAtom: ModeAtom = ModeAtom("", Nil), typePreds: List[String] = Nil, derivedFrom: Int = 0) extends Expression {
 
   // No need. Plus messes up MLN <--> ASP
   //require(if (functor != "") !functor.toCharArray()(0).isUpper else true)
@@ -260,9 +257,9 @@ case class Literal(predSymbol: String = "", terms: List[Expression] = Nil, isNAF
       val prefix = if (isNAF) s"not $predSymbol" else predSymbol
       prefix + "(" + (for (
         a <- terms; x = a match {
-        case x @ (_: Constant | _: Variable | _: Literal | _: PosLiteral) => x
-        case _ => throw new LogicException(s"Unexpected type of inner term while parsing Literal: $this")
-      }
+          case x @ (_: Constant | _: Variable | _: Literal | _: PosLiteral) => x
+          case _ => throw new LogicException(s"Unexpected type of inner term while parsing Literal: $this")
+        }
       ) yield x.tostring).mkString(",") + ")"
   }
 
@@ -272,9 +269,9 @@ case class Literal(predSymbol: String = "", terms: List[Expression] = Nil, isNAF
       val prefix = if (isNAF) s"not $predSymbol" else predSymbol;
       prefix + "(" + (for (
         a <- terms; x = a match {
-        case x @ (_: Constant | _: Variable | _: Literal | _: PosLiteral) => x
-        case _ => throw new LogicException("Unexpected type of inner term while parsing Literal.")
-      }
+          case x @ (_: Constant | _: Variable | _: Literal | _: PosLiteral) => x
+          case _ => throw new LogicException("Unexpected type of inner term while parsing Literal.")
+        }
       ) yield x.tostringQuote).mkString(",") + ")"
   }
 
@@ -319,7 +316,7 @@ case class Literal(predSymbol: String = "", terms: List[Expression] = Nil, isNAF
     remaining match {
       case head :: tail => head match {
         case (n: Constant, m @ (_: PlmrkPos | _: PlmrkNeg | _: PlmrkConst)) => matchesMode(tail)
-        case (n: Variable, m @ (_: PlmrkPos | _: PlmrkNeg))                 => matchesMode(tail)
+        case (n: Variable, m @ (_: PlmrkPos | _: PlmrkNeg)) => matchesMode(tail)
         case (n: Variable, m: PlmrkConst) =>
           throw new LogicException("Found a variabilized term that corresponds to a grplmrk.")
         case (n: Literal, m: ModeAtom) =>
@@ -329,7 +326,6 @@ case class Literal(predSymbol: String = "", terms: List[Expression] = Nil, isNAF
       case Nil => true
     }
   }
-
 
   /**
     * Variabilizes a literal. If a matching mode declaration atom is passed with the input, then the literal is variabilzed according
@@ -353,47 +349,47 @@ case class Literal(predSymbol: String = "", terms: List[Expression] = Nil, isNAF
     */
 
   def variabilize(accum: List[Literal], remaining: List[(Expression, Expression)],
-                  previousMap: scala.collection.mutable.Map[Expression, Expression],
-                  ttypes: List[String], counter: Int, runningMode: String = ""): (List[Literal], List[String], scala.collection.mutable.Map[Expression, Expression], Int) = {
+      previousMap: scala.collection.mutable.Map[Expression, Expression],
+      ttypes: List[String], counter: Int, runningMode: String = ""): (List[Literal], List[String], scala.collection.mutable.Map[Expression, Expression], Int) = {
 
-    // x is a tuple (x1,x2), where x1 is a literal's constant and x2 is it's type as specified by the modeAtom
-    def f(x: (Expression, String), sign: String, tail: List[(Expression, Expression)],
+      // x is a tuple (x1,x2), where x1 is a literal's constant and x2 is it's type as specified by the modeAtom
+      def f(x: (Expression, String), sign: String, tail: List[(Expression, Expression)],
           map: scala.collection.mutable.Map[Expression, Expression]) = {
 
-      val cur = accum match {
-        case Nil => Literal(predSymbol = this.predSymbol, terms = List(), isNAF = this.isNAF)
-        case _   => accum.last
-      }
+        val cur = accum match {
+          case Nil => Literal(predSymbol = this.predSymbol, terms = List(), isNAF = this.isNAF)
+          case _ => accum.last
+        }
 
-      val (litUpdate, typesUpdate, varCountUpdate) = sign match {
-        case "#" =>
-          // a term corresponding to constant placemarker remains intact
-          (Literal(predSymbol = cur.predSymbol, terms = cur.terms :+ x._1, isNAF = cur.isNAF), ttypes, counter)
-        case _ =>
-          // if the constant has been variabilized previousely, use the same var.
-          if (map.keySet.contains(x._1)) {
-            (Literal(predSymbol = cur.predSymbol, terms = cur.terms :+ map(x._1), isNAF = cur.isNAF), ttypes, counter)
-          } else {
-            // else, use a new one
-            val newVar = Variable("X" + counter, "+", x._2)
-            map += (x._1 -> newVar)
-            (Literal(predSymbol = cur.predSymbol, terms = cur.terms :+ newVar, isNAF = cur.isNAF),
-              ttypes :+ x._2 + "(X" + counter + ")", counter + 1)
-          }
+        val (litUpdate, typesUpdate, varCountUpdate) = sign match {
+          case "#" =>
+            // a term corresponding to constant placemarker remains intact
+            (Literal(predSymbol = cur.predSymbol, terms = cur.terms :+ x._1, isNAF = cur.isNAF), ttypes, counter)
+          case _ =>
+            // if the constant has been variabilized previousely, use the same var.
+            if (map.keySet.contains(x._1)) {
+              (Literal(predSymbol = cur.predSymbol, terms = cur.terms :+ map(x._1), isNAF = cur.isNAF), ttypes, counter)
+            } else {
+              // else, use a new one
+              val newVar = Variable("X" + counter, "+", x._2)
+              map += (x._1 -> newVar)
+              (Literal(predSymbol = cur.predSymbol, terms = cur.terms :+ newVar, isNAF = cur.isNAF),
+                ttypes :+ x._2 + "(X" + counter + ")", counter + 1)
+            }
+        }
+        this.variabilize(accum.tail :+ litUpdate, tail, map, typesUpdate, varCountUpdate)
       }
-      this.variabilize(accum.tail :+ litUpdate, tail, map, typesUpdate, varCountUpdate)
-    }
     remaining match {
       case head :: tail => head match {
-        case (x: Constant, y: PlmrkPos)   => f((x, y._type), "+", tail, previousMap)
-        case (x: Constant, y: PlmrkNeg)   => f((x, y._type), "-", tail, previousMap)
+        case (x: Constant, y: PlmrkPos) => f((x, y._type), "+", tail, previousMap)
+        case (x: Constant, y: PlmrkNeg) => f((x, y._type), "-", tail, previousMap)
         case (x: Constant, y: PlmrkConst) => f((x, y._type), "#", tail, previousMap)
         case (x: Literal, y: ModeAtom) =>
           val (varbed, newTypes, newMap, newCount) =
             this.variabilize(List(Literal(x.predSymbol)), x.terms zip y.args, previousMap, List(), counter)
           val pop = accum.last
           this.variabilize(List(Literal(predSymbol = pop.predSymbol, terms = pop.terms ::: varbed, isNAF = pop.isNAF)),
-            tail, newMap, ttypes ::: newTypes, newCount)
+                           tail, newMap, ttypes ::: newTypes, newCount)
         case _ => throw new LogicException("Variabilizing Literal " + this.tostring + ": Found unexpected type")
       }
       case Nil =>
@@ -402,8 +398,6 @@ case class Literal(predSymbol: String = "", terms: List[Expression] = Nil, isNAF
           Literal(predSymbol = pop.predSymbol, terms = pop.terms, isNAF = pop.isNAF), ttypes, previousMap, counter)
     }
   }
-
-
 
   lazy val placeMarkers = getPlmrkTerms(Nil, Nil, Nil, this.terms zip this.modeAtom.args)
 
@@ -419,7 +413,7 @@ case class Literal(predSymbol: String = "", terms: List[Expression] = Nil, isNAF
     */
 
   def getPlmrkTerms(in: List[Expression], out: List[Expression], grnd: List[Expression],
-                    remaining: List[(Expression, Expression)]): (List[Expression], List[Expression], List[Expression]) = {
+      remaining: List[(Expression, Expression)]): (List[Expression], List[Expression], List[Expression]) = {
     remaining match {
       case head :: tail => head match {
         case (x: Constant, y: PlmrkPos) =>
@@ -464,13 +458,11 @@ case class Literal(predSymbol: String = "", terms: List[Expression] = Nil, isNAF
     }
   }
 
-
-
   /* Skolemize this literal (replace all variables with skolem constants) */
   def skolemize(skolems: Map[String, String], accum: ListBuffer[Expression] = ListBuffer[Expression]()): ListBuffer[Expression] = {
     var temp = new ListBuffer[Expression]
-    def keyExists = (x: Any) => if (skolems.keySet.exists(_ == x)) true else false
-    def append = (x: Expression) => temp += x
+      def keyExists = (x: Any) => if (skolems.keySet.exists(_ == x)) true else false
+      def append = (x: Expression) => temp += x
     for (x <- this.terms) x match {
 
       case y: Variable =>
@@ -496,8 +488,8 @@ case class Literal(predSymbol: String = "", terms: List[Expression] = Nil, isNAF
 
   def getSkolemConsts(skolems: ListBuffer[(String, String)], counter: Int): (ListBuffer[(String, String)], Int) = {
     var c = counter; var s = skolems
-    def f = (x: String, y: String) => if (!s.contains(x)) s += x -> y else s
-    def g = (x: Int) => c += x
+      def f = (x: String, y: String) => if (!s.contains(x)) s += x -> y else s
+      def g = (x: Int) => c += x
     for (x <- this.terms) x match {
       case y: Variable =>
         f(y.name, "skolem" + c); g(1)
@@ -521,7 +513,7 @@ case class Literal(predSymbol: String = "", terms: List[Expression] = Nil, isNAF
 
   def replace(thisExpr: Expression, thatExpr: Expression): Literal = {
     var temp = new ListBuffer[Expression]
-    def append = (x: Expression) => if (x == thisExpr) temp += thatExpr else temp += x
+      def append = (x: Expression) => if (x == thisExpr) temp += thatExpr else temp += x
     for (x <- this.terms) x match {
       case y: Variable => append(y)
       case y: Constant => append(y)
@@ -596,7 +588,7 @@ case class Literal(predSymbol: String = "", terms: List[Expression] = Nil, isNAF
         val mode = this.matchingMode(globals)
         if (!mode.isEmpty) {
           val l = Literal(predSymbol = this.predSymbol, terms = this.terms,
-            isNAF = true, modeAtom = mode, typePreds = this.typePreds)
+                          isNAF      = true, modeAtom = mode, typePreds = this.typePreds)
           l.variables(globals)
         } else { Nil }
 
@@ -612,14 +604,13 @@ case class Literal(predSymbol: String = "", terms: List[Expression] = Nil, isNAF
         val mode = this.matchingMode(globals)
         if (!mode.isEmpty) {
           val l = Literal(predSymbol = this.predSymbol, terms = this.terms,
-            isNAF = true, modeAtom = mode, typePreds = this.typePreds)
+                          isNAF      = true, modeAtom = mode, typePreds = this.typePreds)
           l.constants(globals)
         } else { Nil }
 
       case _ => v filter (x => !x.isVariabe)
     }
   }
-
 
   def getTermsThatCorrespondToVars(mode: ModeAtom): List[_ <: Expression] = {
     val out = new ListBuffer[T forSome { type T <: Expression }]
@@ -637,9 +628,6 @@ case class Literal(predSymbol: String = "", terms: List[Expression] = Nil, isNAF
 
 }
 
-
-
-
 /**
   * This is a helper class for the representation of non-negated literals.
   */
@@ -649,10 +637,10 @@ object PosLiteral {
 }
 
 case class PosLiteral(functor: String = "", terms: List[Expression] = Nil, isNAF: Boolean = false,
-                      modeAtom: ModeAtom = ModeAtom("", Nil), typePreds: List[String] = Nil) extends Expression {
+    modeAtom: ModeAtom = ModeAtom("", Nil), typePreds: List[String] = Nil) extends Expression {
   def arity = terms.length
   def asLiteral = Literal(predSymbol = functor, terms = terms,
-    isNAF = false, modeAtom = modeAtom, typePreds = typePreds)
+                          isNAF      = false, modeAtom = modeAtom, typePreds = typePreds)
   override def tostring = this.asLiteral.tostring
   override def tostringQuote = this.asLiteral.tostringQuote
 

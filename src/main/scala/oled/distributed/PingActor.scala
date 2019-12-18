@@ -34,8 +34,8 @@ class PingActor(learningActorsNames: List[String]) extends Actor {
 
   def receive = {
     case "go" =>
-      while(true) {
-        val now  = System.currentTimeMillis()
+      while (true) {
+        val now = System.currentTimeMillis()
         if (now - startTime > 10000) {
           actorRefs.foreach(_ ! "ping")
           startTime = System.currentTimeMillis()

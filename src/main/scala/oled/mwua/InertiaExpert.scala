@@ -45,7 +45,4 @@ class InertiaExpert {
 
   def getMemory() = weightMemory
 
-
-
-
 }

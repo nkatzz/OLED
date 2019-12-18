@@ -47,7 +47,6 @@ object Draft extends App {
     }
     .saveAsPDF("/home/nkatz/Desktop/PEA-NEW-RESULTS")*/
 
-
   def plot(dataPath: String, savePath: String) = {
 
     val data = Source.fromFile(dataPath).getLines.filter(x => !x.isEmpty && !x.startsWith("%")) //.split(",")
@@ -62,7 +61,6 @@ object Draft extends App {
       //.plot(lineColor = BLACK)(OLED)
       .plot(lineColor = RED)(OLED_MLN)
       .plot(lineColor = BLUE)(OLED_Experts)
-
 
       .havingLegends("\\footnotesize \\textsf{OLED}", "\\footnotesize \\textsf{WOLED}", "\\footnotesize \\textsf{Experts}")
 
@@ -81,16 +79,15 @@ object Draft extends App {
       havingTitle("\\emph{Meeting},ybar").
       //havingAxisXLabels(Seq("0","5K","10K","15K","20K","25K")).
       //show(compiler = LUALATEX)
-    saveAsPDF(savePath, compiler = LUA_LATEX)
+      saveAsPDF(savePath, compiler = LUA_LATEX)
     //saveAsTeX(savePath)
   }
-
 
   def plotTime(dataPath: String, savePath: String) = {
 
     val data = Source.fromFile(dataPath).getLines.filter(x => !x.isEmpty && !x.startsWith("%")) //.split(",")
 
-    val OLED  = Vector(1.0, 100.0, 500.0) zip data.next().split(",").map(_.toDouble).toVector
+    val OLED = Vector(1.0, 100.0, 500.0) zip data.next().split(",").map(_.toDouble).toVector
     val OLED_MLN = Vector(1.0, 100.0, 500.0) zip data.next().split(",").map(_.toDouble).toVector
     val OLED_Experts = Vector(1.0, 100.0, 500.0) zip data.next().split(",").map(_.toDouble).toVector
 
@@ -99,7 +96,6 @@ object Draft extends App {
       .plot(lineColor = BLACK)(OLED)
       .plot(lineColor = RED)(OLED_MLN)
       .plot(lineColor = BLUE)(OLED_Experts)
-
 
       .havingLegends("\\footnotesize \\textsf{OLED}", "\\footnotesize \\textsf{OLED-MLN}", "\\footnotesize \\textsf{OLED-EXP}")
 
@@ -116,12 +112,11 @@ object Draft extends App {
       .havingYLabel("\\footnotesize Avg. CPU time per batch (sec)").
       //havingTitle("\\emph{Meeting}").
       havingTitle("\\emph{Moving}").
-      havingAxisXLabels(Seq("1","100","500")).
+      havingAxisXLabels(Seq("1", "100", "500")).
       //havingAxisXLabels(Seq("0","5K","10K","15K","20K","25K")).
       //show(compiler = LUALATEX)
       saveAsPDF(savePath, compiler = LUA_LATEX)
-      //saveAsTeX(savePath)
+    //saveAsTeX(savePath)
   }
-
 
 }

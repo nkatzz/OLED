@@ -23,15 +23,16 @@ import logic.Examples.Example
 import oled.mwua.ExpertAdviceFunctions.{getFeedback, ground, groundEnsemble, predict, predictHedge, sortGroundingsByTime}
 import oled.mwua.HelperClasses.AtomTobePredicted
 
-class PrequentialInference(val batch: Example,
-                           val inps: RunningOptions,
-                           val stateHandler: StateHandler,
-                           val trueAtoms: Set[String],
-                           val hedgePredictionThreshold: Double,
-                           val testingMode: Boolean = false,
-                           val streaming: Boolean = false,
-                           val feedBackGap: Int = 0,
-                           val withInertia: Boolean = true) {
+class PrequentialInference(
+    val batch: Example,
+    val inps: RunningOptions,
+    val stateHandler: StateHandler,
+    val trueAtoms: Set[String],
+    val hedgePredictionThreshold: Double,
+    val testingMode: Boolean = false,
+    val streaming: Boolean = false,
+    val feedBackGap: Int = 0,
+    val withInertia: Boolean = true) {
 
   private val withInputTheory = testingMode
   private var batchError = 0
@@ -46,11 +47,9 @@ class PrequentialInference(val batch: Example,
 
   def predictAndUpdate() = {
 
-    while(!finishedBatch) {
+    while (!finishedBatch) {
       val (markedProgram, markedMap, groundingsMap, times, sortedAtomsToBePredicted, orderedTimes) =
         ground(batch, inps, stateHandler, withInputTheory, streaming)
-
-
 
     }
 
@@ -84,14 +83,11 @@ class PrequentialInference(val batch: Example,
       initWeightSum = _initWeightSum
       termWeightSum = _termWeightSum
 
-      val feedback = getFeedback(atom,  Map[String, Double](), None, None, trueAtoms)
+      val feedback = getFeedback(atom, Map[String, Double](), None, None, trueAtoms)
       val predictedLabel = if (prediction >= hedgePredictionThreshold) "true" else "false"
 
     }
   }
 
-
-
 }
-
 

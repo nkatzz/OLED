@@ -24,7 +24,6 @@ import org.slf4j.LoggerFactory
 
 /*TODO*/
 
-
 class MAPActor(inps: RunningOptions) extends Actor {
 
   private val logger = LoggerFactory.getLogger(self.path.name)

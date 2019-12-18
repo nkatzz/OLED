@@ -159,10 +159,6 @@ object Globals {
 
 }
 
-
-
-
-
 class Globals(val entryPath: String) extends LazyLogging {
 
   /*
@@ -177,7 +173,7 @@ class Globals(val entryPath: String) extends LazyLogging {
 
   //val AUXILIARY_PREDS = "auxiliaryPredicates"
 
-  val BK_INITIATED_ONLY =  s"$inputPath/bk-initiated-only.lp"
+  val BK_INITIATED_ONLY = s"$inputPath/bk-initiated-only.lp"
   val BK_TERMINATED_ONLY = s"$inputPath/bk-terminated-only.lp"
   val ABDUCE_WITH_INERTIA = s"$inputPath/abduce-with-inertia.lp"
   val INITIATED_ONLY_INERTIA = s"$inputPath/initiated-only-with-inertia.lp"
@@ -197,8 +193,7 @@ class Globals(val entryPath: String) extends LazyLogging {
 
   val modesParser = new ModesParser
 
-  val MODES: List[String] = Source.fromFile(modesFile).getLines.toList.filter(line => !matches( """""".r, line) && !line.startsWith("%"))
-
+  val MODES: List[String] = Source.fromFile(modesFile).getLines.toList.filter(line => !matches("""""".r, line) && !line.startsWith("%"))
 
   val MODEHS: List[ModeAtom] = MODES.filter(m => m.contains("modeh") && !m.startsWith("%")).map(x => x).
     map(x => modesParser.getParseResult(modesParser.parseModes(modesParser.modeh, x)))
@@ -210,7 +205,6 @@ class Globals(val entryPath: String) extends LazyLogging {
 
   if (MODEBS.isEmpty) logger.error("No body mode declarations found.")
 
-
   /* The input to this method is a Literal representation of mode atoms and example pattern atoms (variabilized). */
 
   def getTypeAxioms(m: Literal): Set[String] = {
@@ -221,7 +215,7 @@ class Globals(val entryPath: String) extends LazyLogging {
     allPlmrks.foldLeft(Set[String]()) { (accum, y) =>
       val allOtherPlmrks = allPlmrks diff Set(y)
       if (y.inOrOutVar == "+" || y.inOrOutVar == "-") {
-        val result_ = s"${y._type}(${{y.name}}) :- ${m.tostring}."
+        val result_ = s"${y._type}(${{ y.name }}) :- ${m.tostring}."
 
         // the regex below matches variable symbols which do not appear in predicate of function
         // names. So it will match X0 in p(X0) but not in pX0(X0), pxX0(X0), pX_0(X0), p_2X0(X0) and so on
@@ -250,12 +244,10 @@ class Globals(val entryPath: String) extends LazyLogging {
       map(x => modesParser.getParseResult(modesParser.parseModes(modesParser.inputPred, x)))
   }
 
-
   if (inputPreds.exists(p => p.isNAF)) {
     logger.error(s"NAF is not allowed in input predicates.")
     System.exit(-1)
   }
-
 
   // This method generates types axioms for the mode declarations,
   // i.e. rules of the form: time(X1) :- happensAt(active(_),X1).
@@ -385,59 +377,58 @@ class Globals(val entryPath: String) extends LazyLogging {
     // Generate bk.lp file (it will be used for reasoning)
     val bkFile = new java.io.File(BK_WHOLE_EC)
     val pw1 = new PrintWriter(bkFile)
-    pw1.write(userBK+"\n")
+    pw1.write(userBK + "\n")
     pw1.write(CORE_EVENT_CALCULUS_BK.mkString("\n"))
-    pw1.write("\n"+tas)
+    pw1.write("\n" + tas)
     pw1.close()
     bkFile.deleteOnExit()
 
     // Generate initiation-only BK file
     val initOnlyBKFile = new java.io.File(BK_INITIATED_ONLY)
     val pw2 = new PrintWriter(initOnlyBKFile)
-    pw2.write(userBK+"\n")
+    pw2.write(userBK + "\n")
     pw2.write(INITIATED_ONLY_EVENT_CALCULUS_BK.mkString("\n"))
-    pw2.write("\n"+tas)
+    pw2.write("\n" + tas)
     pw2.close()
     initOnlyBKFile.deleteOnExit()
 
     // Generate termination-only BK file
     val termOnlyBKFile = new java.io.File(BK_TERMINATED_ONLY)
     val pw3 = new PrintWriter(termOnlyBKFile)
-    pw3.write(userBK+"\n")
+    pw3.write(userBK + "\n")
     pw3.write(TERMINATED_ONLY_EVENT_CALCULUS_BK.mkString("\n"))
-    pw3.write("\n"+tas)
+    pw3.write("\n" + tas)
     pw3.close()
     termOnlyBKFile.deleteOnExit()
 
     // Generate initiation-scoring rules
     val scoreInitFile = new java.io.File(BK_INITIATED_ONLY_MARKDED)
     val pw4 = new PrintWriter(scoreInitFile)
-    pw4.write(userBK+"\n")
-    pw4.write("\n"+scoringRules._1+"\n"+RIGHT_BEFORE_DEF+"\n")
-    pw4.write("\n"+tas)
+    pw4.write(userBK + "\n")
+    pw4.write("\n" + scoringRules._1 + "\n" + RIGHT_BEFORE_DEF + "\n")
+    pw4.write("\n" + tas)
     pw4.close()
     scoreInitFile.deleteOnExit()
 
     // Generate termination-scoring rules
     val scoreTermFile = new java.io.File(BK_TERMINATED_ONLY_MARKDED)
     val pw5 = new PrintWriter(scoreTermFile)
-    pw5.write(userBK+"\n")
-    pw5.write("\n"+scoringRules._2+"\n"+RIGHT_BEFORE_DEF+"\n")
-    pw5.write("\n"+tas)
+    pw5.write(userBK + "\n")
+    pw5.write("\n" + scoringRules._2 + "\n" + RIGHT_BEFORE_DEF + "\n")
+    pw5.write("\n" + tas)
     pw5.close()
     scoreTermFile.deleteOnExit()
 
     // Generate cross-validation file
     val crossValFile = new java.io.File(BK_CROSSVAL)
     val pw6 = new PrintWriter(crossValFile)
-    pw6.write(userBK+"\n")
+    pw6.write(userBK + "\n")
     pw6.write(CROSSVAL_EVENT_CALCULUS_BK.mkString("\n"))
-    pw6.write("\n"+tas)
+    pw6.write("\n" + tas)
     pw6.close()
     crossValFile.deleteOnExit()
 
   }
-
 
   def generateBKFiles_No_Event_Calculus() = {
     // Read the user-input BK
@@ -452,32 +443,31 @@ class Globals(val entryPath: String) extends LazyLogging {
     // Generate bk.lp file (it will be used for reasoning)
     val bkFile = new java.io.File(BK_WHOLE)
     val pw1 = new PrintWriter(bkFile)
-    pw1.write(userBK+"\n")
-    pw1.write("\n"+tas)
+    pw1.write(userBK + "\n")
+    pw1.write("\n" + tas)
     pw1.close()
     bkFile.deleteOnExit()
 
     // Generate BK file for rule scoring
     val scoreTermFile = new java.io.File(BK_RULE_SCORING_MARKDED)
     val pw5 = new PrintWriter(scoreTermFile)
-    pw5.write(userBK+"\n")
-    pw5.write("\n"+scoringRules._2+"\n")
-    pw5.write("\n"+tas)
+    pw5.write(userBK + "\n")
+    pw5.write("\n" + scoringRules._2 + "\n")
+    pw5.write("\n" + tas)
     pw5.close()
     scoreTermFile.deleteOnExit()
 
     // Generate cross-validation file
     val crossValFile = new java.io.File(BK_CROSSVAL)
     val pw6 = new PrintWriter(crossValFile)
-    pw6.write(userBK+"\n")
-    pw6.write("\n"+tas)
+    pw6.write(userBK + "\n")
+    pw6.write("\n" + tas)
     pw6.close()
     crossValFile.deleteOnExit()
 
   }
 
-
-  if(Globals.glvalues("with-ec").toBoolean) {
+  if (Globals.glvalues("with-ec").toBoolean) {
     generateBKFiles_Event_Calculus()
   } else {
     generateBKFiles_No_Event_Calculus()
@@ -505,7 +495,7 @@ class Globals(val entryPath: String) extends LazyLogging {
   val SHOW_FNS_ARITY_2 = "\n#show fns/2."
   val SHOW_TIME = "\n#show times/1."
   val SHOW_INTERPRETATIONS_COUNT = "\n#show countGroundings/1."
-  val INCLUDE_BK: String => String = (file: String) => s"\n\n#include " + "\""+file+"\".\n"
+  val INCLUDE_BK: String => String = (file: String) => s"\n\n#include " + "\"" + file + "\".\n"
   val HIDE = "\n#show.\n"
 
   // if jep is used "UNSAT" else "UNSATISFIABLE"
@@ -549,7 +539,6 @@ class Globals(val entryPath: String) extends LazyLogging {
 
   }
 
-
   /*
    val LOOK_AHEADS = {
      val f = Source.fromFile(modesFile).getLines.toList.filter(line => line.startsWith("lookahead"))
@@ -559,9 +548,8 @@ class Globals(val entryPath: String) extends LazyLogging {
 
   private val LOOK_AHEADS_TEST = {
     val f = Source.fromFile(modesFile).getLines.toList.filter(line => line.startsWith("lookahead"))
-    if (f.nonEmpty) f.map( x => new LookAheadUtils.LookAheadSpecification(x) ) else Nil
+    if (f.nonEmpty) f.map(x => new LookAheadUtils.LookAheadSpecification(x)) else Nil
   }
-
 
   /*
     def getAdditionalLanguageBias(predicateName: String) = {
@@ -626,8 +614,4 @@ class Globals(val entryPath: String) extends LazyLogging {
   }
   */
 }
-
-
-
-
 

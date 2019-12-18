@@ -39,15 +39,15 @@ object Utils {
 
   def getCaviarData(mc: MongoClient, dbName: String, chunkSize: Int): Iterator[List[String]] = {
     val collection = mc(dbName)("examples")
-    collection.find().map(x => Example(x)).grouped(chunkSize).map( x =>
-      x.foldLeft(List[String]())((z, y) => z ++ y.annotation ++ y.narrative) )
+    collection.find().map(x => Example(x)).grouped(chunkSize).map(x =>
+      x.foldLeft(List[String]())((z, y) => z ++ y.annotation ++ y.narrative))
   }
 
   //, dataSize: Double = Double.PositiveInfinity
 
   /* utility function for retrieving data */
   def getDataFromDB(dbName: String, HLE: String, chunkSize: Int,
-                    intervals: DataAsIntervals = DataAsIntervals()): Iterator[Example] = {
+      intervals: DataAsIntervals = DataAsIntervals()): Iterator[Example] = {
     // No worry about removing prior annotation from the examples, since in any case inertia
     // is not used during learning. Even if a pair is passed where in both times
     // there is positive annotation, the first positive example will be covered by
@@ -58,7 +58,6 @@ object Utils {
 
     if (intervals.isEmpty) {
 
-
       //collection.createIndex(MongoDBObject("time" -> 1))
 
       val data = collection.find().sort(MongoDBObject("time" -> 1)).map { x =>
@@ -67,7 +66,7 @@ object Utils {
       }
       val dataChunked = data.grouped(chunkSize)
       val dataIterator = dataChunked.map { x =>
-        val merged = x.foldLeft(Example()) { (z,y) =>
+        val merged = x.foldLeft(Example()) { (z, y) =>
           new Example(annot = z.annotation ++ y.annotation, nar = z.narrative ++ y.narrative, _time = x.head.time)
         }
         merged
@@ -80,7 +79,7 @@ object Utils {
   }
 
   def intervalsToDB(dbToReadFrom: String, intervals: DataAsIntervals, HLE: String,
-                     chunkSize: Int, withChunking: Boolean = true) = {
+      chunkSize: Int, withChunking: Boolean = true) = {
 
     val dbToWriteTo = s"d-oled-DB-${UUID.randomUUID()}"
     val mongoClient = MongoClient()
@@ -90,20 +89,20 @@ object Utils {
     for (interval <- intervals.trainingSet) {
       val batch = collectionReadFrom.find("time" $gte interval.startPoint $lte interval.endPoint).
         sort(MongoDBObject("time" -> 1))
-      val examples = batch.map(x => Example(x))//.toList
+      val examples = batch.map(x => Example(x)) //.toList
       val HLExmpls = examples map { x =>
         val a = x.annotation filter (_.contains(HLE))
         new Example(annot = a, nar = x.narrative, _time = x.time)
       }
 
-      val chunked = if (withChunking) HLExmpls.sliding(chunkSize, chunkSize-1) else HLExmpls.sliding(HLExmpls.length)
+      val chunked = if (withChunking) HLExmpls.sliding(chunkSize, chunkSize - 1) else HLExmpls.sliding(HLExmpls.length)
 
       val out = chunked map { x =>
-          val merged = x.foldLeft(Example()) { (z, y) =>
-            new Example(annot = z.annotation ++ y.annotation, nar = z.narrative ++ y.narrative, _time = x.head.time)
-          }
-        merged
+        val merged = x.foldLeft(Example()) { (z, y) =>
+          new Example(annot = z.annotation ++ y.annotation, nar = z.narrative ++ y.narrative, _time = x.head.time)
         }
+        merged
+      }
       out.foreach{ e =>
         val entry = MongoDBObject("time" -> e._time.toInt) ++ ("annotation" -> e.annotation) ++ ("narrative" -> e.narrative)
         collectionWriteTo.insert(entry)
@@ -122,7 +121,7 @@ object Utils {
 
   // Utility function, returns a list of other Node actors
   def getOtherActors(context: ActorContext, otherNodesNames: List[String]): List[ActorSelection] = {
-    otherNodesNames map(actorName => context.actorSelection(s"${context.parent.path}/$actorName"))
+    otherNodesNames map (actorName => context.actorSelection(s"${context.parent.path}/$actorName"))
   }
 
   def getActorByName(context: ActorContext, name: String) = {
@@ -143,8 +142,8 @@ object Utils {
   * specialization (if b = true).
   * */
   def expand_?(clause: Clause, replies: List[StatsReply], delta: Double,
-               breakTiesThreshold: Double, minSeenExmpls: Int,
-               currentNodeState: String, nodeName: String, params: RunningOptions, logger: org.slf4j.Logger) = {
+      breakTiesThreshold: Double, minSeenExmpls: Int,
+      currentNodeState: String, nodeName: String, params: RunningOptions, logger: org.slf4j.Logger) = {
 
     // A StatsReply is a reply from a node. So it should contain stats
     // for any requested clause. If a clause id is not found in a reply an exception
@@ -168,7 +167,7 @@ object Utils {
    * */
   def updateCountsPerNode(clause: Clause, nodeName: String, replies: Map[String, Structures.Stats], currentNodeState: String, currentlyOnNode: String): Unit = {
     val receivedStats = replies.getOrElse(nodeName,
-        throw new RuntimeException(s"$currentNodeState Could not find node's name $nodeName as key in the nodes-stats map. The map is $replies")
+      throw new RuntimeException(s"$currentNodeState Could not find node's name $nodeName as key in the nodes-stats map. The map is $replies")
     )
     val parentClauseStats = receivedStats.parentStats
     val refinementsStats = receivedStats.refinementsStats
@@ -193,22 +192,22 @@ object Utils {
 
   def copyClause(c: Clause) = {
 
-    def basicopy(clause: Clause) = {
-      val copy_ = Clause(head = clause.head, body = clause.body, uuid = clause.uuid)
-      //copy_.uuid = clause.uuid
-      copy_.tps = clause.tps
-      copy_.fps = clause.fps
-      copy_.fns = clause.fns
-      copy_.seenExmplsNum = clause.seenExmplsNum
-      copy_.countsPerNode = clause.countsPerNode
-      //copy_.generatedAtNode = clause.generatedAtNode
+      def basicopy(clause: Clause) = {
+        val copy_ = Clause(head = clause.head, body = clause.body, uuid = clause.uuid)
+        //copy_.uuid = clause.uuid
+        copy_.tps = clause.tps
+        copy_.fps = clause.fps
+        copy_.fns = clause.fns
+        copy_.seenExmplsNum = clause.seenExmplsNum
+        copy_.countsPerNode = clause.countsPerNode
+        //copy_.generatedAtNode = clause.generatedAtNode
 
-      // don't copy these, there's no need (nothing changes in the parent clause or the support set) and copying
-      // it makes it messy to retrieve ids in other nodes
-      copy_.parentClause = clause.parentClause
-      copy_.supportSet = clause.supportSet
-      copy_
-    }
+        // don't copy these, there's no need (nothing changes in the parent clause or the support set) and copying
+        // it makes it messy to retrieve ids in other nodes
+        copy_.parentClause = clause.parentClause
+        copy_.supportSet = clause.supportSet
+        copy_
+      }
     val copy = basicopy(c)
     val refinementsCopy = c.refinements.map(ref => basicopy(ref))
     copy.refinements = refinementsCopy

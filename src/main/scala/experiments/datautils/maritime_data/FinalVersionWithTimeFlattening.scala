@@ -26,11 +26,9 @@ import com.typesafe.scalalogging.LazyLogging
 
 import scala.collection.mutable.ListBuffer
 
-
 /**
   * Created by nkatz on 6/23/17.
   */
-
 
 /**
   * HERE WE TRY TO STORE EVERYTHING IN A MONGO DB AS IS. TRAINING EXAMPLES WILL
@@ -40,14 +38,14 @@ import scala.collection.mutable.ListBuffer
   * PERHAPS THIS WILL TAKE A BIT MORE TIME THAN HAVING ALL PRE-PROCESSED AND INPLACE,
   * BUT I GET OUT OF HEAP ERRORS WHEN I TRY TO PRE-PROCESS THE DATA WITH IN-MEMORY MAPS.
   *
-  * */
+  */
 
 object FinalVersionWithTimeFlattening extends LazyLogging {
 
   val path = "/home/nkatz/dev/maritime/nkatz_brest/1-core"
 
-  private val datasetFile = path+"/dataset.txt"
-  private val speedLimitsFile = path+"/static_data/all_areas/areas_speed_limits.csv"
+  private val datasetFile = path + "/dataset.txt"
+  private val speedLimitsFile = path + "/static_data/all_areas/areas_speed_limits.csv"
 
   /*
   private val closeToPortsFile = new File(path+"/recognition/close_to_ports.csv") // this has a different schema than the other hles
@@ -59,23 +57,20 @@ object FinalVersionWithTimeFlattening extends LazyLogging {
   private val withinAreaFile = new File(path+"/recognition/withinArea-no-infs.csv")
   private val rendezVousFile = new File(path+"/recognition/rendezVouz-no-infs.csv")
   */
-  private val closeToPortsFile = new File(path+"/recognition/close_to_ports.csv") // this has a different schema than the other hles
-  private val highSpeedFile = new File(path+"/recognition/highSpeedIn.csv")
-  private val loiteringFile = new File(path+"/recognition/loitering.csv")
-  private val lowSpeedFile = new File(path+"/recognition/lowSpeed.csv")
-  private val sailingFile = new File(path+"/recognition/sailing.csv")
-  private val stoppedFile = new File(path+"/recognition/stopped.csv")
-  private val withinAreaFile = new File(path+"/recognition/withinArea.csv")
-  private val rendezVousFile = new File(path+"/recognition/rendezVouz.csv")
-
-
+  private val closeToPortsFile = new File(path + "/recognition/close_to_ports.csv") // this has a different schema than the other hles
+  private val highSpeedFile = new File(path + "/recognition/highSpeedIn.csv")
+  private val loiteringFile = new File(path + "/recognition/loitering.csv")
+  private val lowSpeedFile = new File(path + "/recognition/lowSpeed.csv")
+  private val sailingFile = new File(path + "/recognition/sailing.csv")
+  private val stoppedFile = new File(path + "/recognition/stopped.csv")
+  private val withinAreaFile = new File(path + "/recognition/withinArea.csv")
+  private val rendezVousFile = new File(path + "/recognition/rendezVouz.csv")
 
   /* withinArea IS MISSING ANNOTATION */
 
   val hleFiles = Vector(highSpeedFile, loiteringFile, lowSpeedFile, sailingFile, stoppedFile, rendezVousFile)
 
   //private val hleFiles = Vector(highSpeedFile)
-
 
   def main(args: Array[String]) = {
 
@@ -92,37 +87,29 @@ object FinalVersionWithTimeFlattening extends LazyLogging {
     // TEST: Lest's keep it the same
     val timesMap = (times zip times).toMap
 
-
     /*This takes too much time, just preserve the collection until you debug the piece of shit*/
     //println("Processing LLEs")
     //LLEsToMongo(mongoClient(dbName)("lles"))
-
-
 
     println("Processing stopped")
     val stoppedCol = mongoClient(dbName)("stopped")
     stoppedCol.dropCollection()
     similarHLEsToMongo(stoppedFile.getCanonicalPath, timesMap, stoppedCol)
 
-
     println("Processing close to ports")
     val portsCol = mongoClient(dbName)("ports")
     portsCol.dropCollection()
     portsToMongo(portsCol)
-
 
     println("Processing proximity")
     val proxCol = mongoClient(dbName)("proximity")
     proxCol.dropCollection()
     proximityToMongo(timesMap, proxCol)
 
-
     println("Processing High Speed")
     val highSpeedCol = mongoClient(dbName)("high_speed")
     highSpeedCol.dropCollection()
     AreaHLEsToMongo(highSpeedFile.getCanonicalPath, timesMap, highSpeedCol)
-
-
 
     println("Processing sailing")
     val sailingCol = mongoClient(dbName)("sailing")
@@ -153,7 +140,6 @@ object FinalVersionWithTimeFlattening extends LazyLogging {
     println("Done!")
 
   }
-
 
   private def portsToMongo(collection: MongoCollection) = {
     val data = Source.fromFile(closeToPortsFile).getLines
@@ -193,8 +179,6 @@ object FinalVersionWithTimeFlattening extends LazyLogging {
     }
   }
 
-
-
   private def getProximityTimes() = {
     val lines = Source.fromFile(datasetFile).getLines.filter(x => x.contains("proximity"))
     lines.foldLeft(Vector[String]()){ (accum, x) =>
@@ -210,7 +194,7 @@ object FinalVersionWithTimeFlattening extends LazyLogging {
     try {
       if (dataLine.contains("not_near")) { // this is for close_to_ports that has a different schema
         Vector(dataLine.split("\\|")(0))
-      } else if (dataLine.contains("highSpeedIn") || dataLine.contains("withinArea")){
+      } else if (dataLine.contains("highSpeedIn") || dataLine.contains("withinArea")) {
         val split = dataLine.split("\\|")
         Vector(split(4), split(5))
       } else if (dataLine.contains("loitering") || dataLine.contains("sailing") || dataLine.contains("stopped") || dataLine.contains("lowSpeed")) {
@@ -227,14 +211,13 @@ object FinalVersionWithTimeFlattening extends LazyLogging {
     }
   }
 
-
   /* Convert a data point to predicate form. This does not work with proximity for now.
    * This returns the predicate itself, the vessel and the area (if an area is involved).
    *
    * */
   def LLEsToMongo(collection: MongoCollection) = {
-    val data = Source.fromFile(datasetFile).getLines//.filter(x => !x.contains("HoldsFor") && !x.contains("coord"))
-    while(data.hasNext) {
+    val data = Source.fromFile(datasetFile).getLines //.filter(x => !x.contains("HoldsFor") && !x.contains("coord"))
+    while (data.hasNext) {
       val x = data.next()
       if (!x.contains("HoldsFor") && !x.contains("coord")) {
         var area = "None"
@@ -293,9 +276,6 @@ object FinalVersionWithTimeFlattening extends LazyLogging {
     }
   }
 
-
-
-
   /*
    * Handles: highSpeedIn, withinArea that have the same schema
    *
@@ -319,9 +299,6 @@ object FinalVersionWithTimeFlattening extends LazyLogging {
       collection.insert(entry)
     }
   }
-
-
-
 
   def similarHLEsToMongo(path: String, timesMap: Map[Int, Int], collection: MongoCollection) = {
 
@@ -359,7 +336,7 @@ object FinalVersionWithTimeFlattening extends LazyLogging {
       val vessel2 = s(0)
       val intermediate = List(startTime) ++ (for (x <- startTime to endTime if timesMap.contains(x)) yield x).toList :+ endTime
       val atom = s"""holdsAt($hle("$vessel1","$vessel2"),"ReplaceThisByActualTime")"""
-      val entry = MongoDBObject("interval" -> intermediate) ++ ("hle" -> atom) ++ ("vessels" -> List(vessel1,vessel2))
+      val entry = MongoDBObject("interval" -> intermediate) ++ ("hle" -> atom) ++ ("vessels" -> List(vessel1, vessel2))
       collection.insert(entry)
     }
   }
@@ -377,7 +354,7 @@ object FinalVersionWithTimeFlattening extends LazyLogging {
       val endTime = z(1).toInt - 1
       val intermediate = List(startTime) ++ (for (x <- startTime to endTime if timesMap.contains(x)) yield x).toList :+ endTime
       val atom = s"""close("$vessel1","$vessel2"),"ReplaceThisByActualTime")"""
-      val entry = MongoDBObject("interval" -> intermediate) ++ ("hle" -> atom) ++ ("vessels" -> List(vessel1,vessel2))
+      val entry = MongoDBObject("interval" -> intermediate) ++ ("hle" -> atom) ++ ("vessels" -> List(vessel1, vessel2))
       collection.insert(entry)
     }
   }
@@ -393,11 +370,5 @@ object FinalVersionWithTimeFlattening extends LazyLogging {
       collection.insert(entry)
     }
   }
-
-
-
-
-
-
 
 }

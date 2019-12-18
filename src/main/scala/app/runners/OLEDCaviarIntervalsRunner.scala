@@ -33,31 +33,25 @@ import scala.util.Random
   * Created by nkatz on 7/3/17.
   */
 
-
-
-
 object OLEDCaviarIntervalsRunner {
 
-
-
-  private class DataOptions(val dbName: String,
-                            val collectionName: String = "examples",
-                            val chunkSize: Int = 1,
-                            val limit: Double = Double.PositiveInfinity.toInt,
-                            val targetConcept: String = "None",
-                            val sortDbByField: String = "None",
-                            val sort: String = "ascending",
-                            val intervals: List[Interval] = Nil,
-                            val trainSetid: Int,
-                            val randomOrder: Boolean = false,
-                            val shuffle: Boolean = false) extends MongoSource
-
+  private class DataOptions(
+      val dbName: String,
+      val collectionName: String = "examples",
+      val chunkSize: Int = 1,
+      val limit: Double = Double.PositiveInfinity.toInt,
+      val targetConcept: String = "None",
+      val sortDbByField: String = "None",
+      val sort: String = "ascending",
+      val intervals: List[Interval] = Nil,
+      val trainSetid: Int,
+      val randomOrder: Boolean = false,
+      val shuffle: Boolean = false) extends MongoSource
 
   def main(args: Array[String]) = {
 
     val trainSetId = args.map(x => x.split("=")).find(x => x(0) == "--trainset").
       getOrElse(throw new RuntimeException("--trainset missing."))(1).toInt
-
 
     //val trainSetId = 2 // change this to run different folds
 
@@ -68,21 +62,21 @@ object OLEDCaviarIntervalsRunner {
     } else {
       val runningOptions = CMDArgs.getOLEDInputArgs(args)
       val trainingDataOptions =
-        new DataOptions(dbName = runningOptions.train,
-          collectionName = runningOptions.mongoCollection,
-          chunkSize = runningOptions.chunkSize,
-          limit = runningOptions.dataLimit,
-          targetConcept = runningOptions.targetHLE,
-          sortDbByField = "time",
-          trainSetid = trainSetId,
-          randomOrder = runningOptions.randomOrder)
+        new DataOptions(dbName         = runningOptions.train,
+                        collectionName = runningOptions.mongoCollection,
+                        chunkSize      = runningOptions.chunkSize,
+                        limit          = runningOptions.dataLimit,
+                        targetConcept  = runningOptions.targetHLE,
+                        sortDbByField  = "time",
+                        trainSetid     = trainSetId,
+                        randomOrder    = runningOptions.randomOrder)
       val testingDataOptions = trainingDataOptions
       val trainingDataFunction: DataOptions => Iterator[Example] = getTrainingData
       val testingDataFunction: DataOptions => Iterator[Example] = getTestingData
       val system = ActorSystem("HoeffdingLearningSystem")
       val startMsg = if (runningOptions.evalth != "None") "eval" else "start"
       system.actorOf(Props(new Master(runningOptions, trainingDataOptions,
-        testingDataOptions, trainingDataFunction, testingDataFunction)), name = "Master-Actor") !  startMsg
+                                      testingDataOptions, trainingDataFunction, testingDataFunction)), name = "Master-Actor") ! startMsg
 
     }
   }

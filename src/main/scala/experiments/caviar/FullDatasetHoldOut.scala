@@ -25,7 +25,6 @@ import com.typesafe.scalalogging.LazyLogging
 import logic.Examples.Example
 import oled.mwua.Learner
 
-
 object FullDatasetHoldOut extends LazyLogging {
 
   def main(args: Array[String]) = {
@@ -33,7 +32,7 @@ object FullDatasetHoldOut extends LazyLogging {
     val argsok = CMDArgs.argsOk(args)
 
     if (!argsok._1) {
-      logger.error(argsok._2) ; System.exit(-1)
+      logger.error(argsok._2); System.exit(-1)
     } else {
 
       val runningOptions = CMDArgs.getOLEDInputArgs(args)
@@ -41,12 +40,12 @@ object FullDatasetHoldOut extends LazyLogging {
       val dataset = MeetingTrainTestSets.meeting7
 
       val trainingDataOptions =
-        new MongoDataOptions(dbNames = dataset._1,
-          chunkSize = runningOptions.chunkSize, targetConcept = runningOptions.targetHLE, sortDbByField = "time", what = "training")
+        new MongoDataOptions(dbNames       = dataset._1,
+                             chunkSize     = runningOptions.chunkSize, targetConcept = runningOptions.targetHLE, sortDbByField = "time", what = "training")
 
       val testingDataOptions =
-        new MongoDataOptions(dbNames = dataset._2,
-          chunkSize = runningOptions.chunkSize, targetConcept = runningOptions.targetHLE, sortDbByField = "time", what = "testing")
+        new MongoDataOptions(dbNames       = dataset._2,
+                             chunkSize     = runningOptions.chunkSize, targetConcept = runningOptions.targetHLE, sortDbByField = "time", what = "testing")
 
       val trainingDataFunction: MongoDataOptions => Iterator[Example] = getMongoData
 
@@ -57,19 +56,15 @@ object FullDatasetHoldOut extends LazyLogging {
       val startMsg = if (runningOptions.evalth != "None") "eval" else "start"
 
       system.actorOf(Props(new Learner(runningOptions, trainingDataOptions, testingDataOptions, trainingDataFunction,
-        testingDataFunction)), name = "Learner") !  startMsg
+                                       testingDataFunction)), name = "Learner") ! startMsg
 
     }
   }
 
-
-
-
   class MongoDataOptions(val dbNames: Vector[String], val chunkSize: Int = 1,
-                                 val limit: Double = Double.PositiveInfinity.toInt,
-                                 val targetConcept: String = "None", val sortDbByField: String = "time",
-                                 val sort: String = "ascending", val what: String = "training") extends MongoSource
-
+      val limit: Double = Double.PositiveInfinity.toInt,
+      val targetConcept: String = "None", val sortDbByField: String = "time",
+      val sort: String = "ascending", val what: String = "training") extends MongoSource
 
   /* "what" is either training or testing */
   def getMongoData(opts: MongoDataOptions): Iterator[Example] = {
@@ -125,7 +120,5 @@ object FullDatasetHoldOut extends LazyLogging {
     }
     exmplIters.foldLeft(Iterator[Example]())(_ ++ _)
   }
-
-
 
 }

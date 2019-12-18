@@ -40,8 +40,9 @@ class MAPInference extends LazyLogging {
    * solver.infer(groundNetwork, clausesWithUpdatedWeights, x.clauseIds.toList)
    * */
 
-  def infer(groundNetwork: Vector[Literal],
-            liftedClauses: Vector[Clause], clauseIds: List[Int] = Nil): Vector[Literal] = {
+  def infer(
+      groundNetwork: Vector[Literal],
+      liftedClauses: Vector[Clause], clauseIds: List[Int] = Nil): Vector[Literal] = {
 
     val enumClauses = clauseIds match {
       case Nil => (1 to liftedClauses.length).toList
@@ -88,7 +89,7 @@ class MAPInference extends LazyLogging {
     var nonIntegralSolutionsCounter = 0
     var fractionalSolutions = Vector.empty[Int]
 
-    for((id, lpVar) <- literalLPVars) {
+    for ((id, lpVar) <- literalLPVars) {
       val value = lpVar.value.getOrElse {
         logger.error(s"There is no solution for variable '${lpVar.symbol}'")
         sys.exit()
@@ -99,8 +100,7 @@ class MAPInference extends LazyLogging {
       if (normalisedValue != 0.0 && normalisedValue != 1.0) {
         nonIntegralSolutionsCounter += 1
         fractionalSolutions +:= id
-      }
-      else {
+      } else {
         val currentAtom = groundNetwork(id)
         currentAtom.mlnTruthValue = if (normalisedValue == 0) false else true
       }
@@ -124,7 +124,7 @@ class MAPInference extends LazyLogging {
           currentAtom.mlnTruthValue = true
         else if (currentAtom.isNAF) currentAtom.mlnTruthValue = false
 
-   /*     else if (currentAtom.mlnTruthValue && currentAtom.isNAF && weight >= 0)
+        /*     else if (currentAtom.mlnTruthValue && currentAtom.isNAF && weight >= 0)
           currentAtom.mlnTruthValue = false
         else if (currentAtom.mlnTruthValue && currentAtom.isNAF && weight < 0)
           currentAtom.mlnTruthValue = true

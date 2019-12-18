@@ -30,12 +30,12 @@ import mcts.{InnerNode, RootNode, TreeNode}
 import utils.{ASP, Utils}
 import xhail.Xhail
 
-
-class LoMCTS[T <: InputSource](inps: RunningOptions,
-                               trainingDataOptions: T,
-                               testingDataOptions: T,
-                               trainingDataFunction: T => Iterator[Example],
-                               testingDataFunction: T => Iterator[Example]) extends Actor with LazyLogging {
+class LoMCTS[T <: InputSource](
+    inps: RunningOptions,
+    trainingDataOptions: T,
+    testingDataOptions: T,
+    trainingDataFunction: T => Iterator[Example],
+    testingDataFunction: T => Iterator[Example]) extends Actor with LazyLogging {
 
   private var trainingData = trainingDataFunction(trainingDataOptions)
 
@@ -50,7 +50,7 @@ class LoMCTS[T <: InputSource](inps: RunningOptions,
   val globals = inps.globals
 
   val exploreRate = 0.005 //1.0/Math.sqrt(2) //
-  
+
   val rootNode = RootNode()
 
   def receive = {
@@ -77,7 +77,7 @@ class LoMCTS[T <: InputSource](inps: RunningOptions,
       val newLevelOneNode = generateChildNode(rootNode.theory, exmpl, globals)
       if (newLevelOneNode != Theory()) {
         if (rootNode.children.forall(p =>
-          !(p.theory.thetaSubsumes(newLevelOneNode) && newLevelOneNode.thetaSubsumes(p.theory)) )) {
+          !(p.theory.thetaSubsumes(newLevelOneNode) && newLevelOneNode.thetaSubsumes(p.theory)))) {
           logger.info("Added new child at level 1 (tree expanded horizontally).")
           val score = scoreNode(newLevelOneNode, exmpl, globals)
           val n = InnerNode("new-level-1-node", newLevelOneNode, rootNode)
@@ -145,7 +145,7 @@ class LoMCTS[T <: InputSource](inps: RunningOptions,
       val newExmpl = getNextBatch()
       val newTheory = generateChildNode(fromNode.theory, newExmpl, gl)
       // This is too fucking expensive, something must be done.
-      val isNew = theories.forall(p => !p.thetaSubsumes(newTheory) && ! newTheory.thetaSubsumes(p))
+      val isNew = theories.forall(p => !p.thetaSubsumes(newTheory) && !newTheory.thetaSubsumes(p))
       if (isNew) {
         // score it on this example, don't waste it
         scoreNode(newTheory, newExmpl, gl)
@@ -182,7 +182,7 @@ class LoMCTS[T <: InputSource](inps: RunningOptions,
         candidates.foreach(p => scoreNode(p, e, gl))
       }
 
-      val sorted = candidates.sortBy(x => - x.fscore)
+      val sorted = candidates.sortBy(x => -x.fscore)
       val best = if (sorted.head.fscore > fromNode.theory.fscore) {
         // The depth is used in the id generation of the children nodes.
         val depth = fromNode.getDepth() + 1
@@ -222,7 +222,7 @@ class LoMCTS[T <: InputSource](inps: RunningOptions,
     val varbedExmplPatterns = globals.EXAMPLE_PATTERNS_AS_STRINGS
     val coverageConstr = s"${globals.TPS_RULES}\n${globals.FPS_RULES}\n${globals.FNS_RULES}"
     val t =
-      if(theory != Theory()) {
+      if (theory != Theory()) {
         theory.clauses.map(x => x.withTypePreds(globals).tostring).mkString("\n")
       } else {
         globals.INCLUDE_BK(handCraftedTheoryFile)
@@ -232,10 +232,10 @@ class LoMCTS[T <: InputSource](inps: RunningOptions,
     val program = ex + globals.INCLUDE_BK(globals.BK_CROSSVAL) + t + coverageConstr + show
     val f = Utils.getTempFile(s"eval-theory-${UUID.randomUUID().toString}-${System.currentTimeMillis()}", ".lp")
     Utils.writeLine(program, f.getCanonicalPath, "overwrite")
-    val answerSet = ASP.solve(task = Globals.INFERENCE, aspInputFile = f)
+    val answerSet = ASP.solve(task         = Globals.INFERENCE, aspInputFile = f)
     if (answerSet.nonEmpty) {
       val atoms = answerSet.head.atoms
-      atoms.foreach { a=>
+      atoms.foreach { a =>
         val lit = Literal.parse(a)
         //val inner = lit.terms.head
         lit.predSymbol match {
@@ -258,11 +258,11 @@ class LoMCTS[T <: InputSource](inps: RunningOptions,
       val infile = Utils.getTempFile("example", ".lp")
       Utils.writeToFile(infile, "overwrite") { p => interpretation.foreach(p.println) }
       val bk = gl.BK_WHOLE_EC
-      val (_, varKernel) = Xhail.runXhail(fromFile=infile.getAbsolutePath, kernelSetOnly=true, bkFile=bk, globals=gl)
+      val (_, varKernel) = Xhail.runXhail(fromFile      = infile.getAbsolutePath, kernelSetOnly = true, bkFile = bk, globals = gl)
       val aspFile: File = utils.Utils.getTempFile("aspInduction", ".lp")
       val (_, use2AtomsMap, defeasible, use3AtomsMap, _, _) =
-        ASP.inductionASPProgram(kernelSet = Theory(varKernel),
-          priorTheory = currentNode, examples = currentExample.toMapASP, aspInputFile = aspFile, globals = gl)
+        ASP.inductionASPProgram(kernelSet    = Theory(varKernel),
+                                priorTheory  = currentNode, examples = currentExample.toMapASP, aspInputFile = aspFile, globals = gl)
       val answerSet = ASP.solve("iled", use2AtomsMap ++ use3AtomsMap, aspFile, currentExample.toMapASP)
       if (answerSet != Nil) {
         val newRules = Rules.getNewRules(answerSet.head.atoms, use2AtomsMap)
@@ -293,7 +293,5 @@ class LoMCTS[T <: InputSource](inps: RunningOptions,
       trainingData.next()
     }
   }
-
-
 
 }

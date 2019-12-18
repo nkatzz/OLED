@@ -34,14 +34,15 @@ import utils.Utils
   * Created by nkatz on 28/2/2016.
   */
 
-class Dispatcher[T <: InputSource](inps: RunningOptions,
-                                   trainingDataOptions: T,
-                                   testingDataOptions: T,
-                                   trainingDataFunction: T => Iterator[Example],
-                                   testingDataFunction: T => Iterator[Example]) extends Actor with LazyLogging {
+class Dispatcher[T <: InputSource](
+    inps: RunningOptions,
+    trainingDataOptions: T,
+    testingDataOptions: T,
+    trainingDataFunction: T => Iterator[Example],
+    testingDataFunction: T => Iterator[Example]) extends Actor with LazyLogging {
 
   private var size = inps.globals.MODEHS.size // One process for each target concept.
-  private var theories = List[(Theory,Double)]()
+  private var theories = List[(Theory, Double)]()
   private var merged = Theory()
   private var time = 0.0
 
@@ -51,7 +52,7 @@ class Dispatcher[T <: InputSource](inps: RunningOptions,
 
     case "eval" =>
       if (!inps.evalth.isFile) {
-        logger.error(s"${inps.evalth} is not a file.") ; System.exit(-1)
+        logger.error(s"${inps.evalth} is not a file."); System.exit(-1)
       } else {
 
         println(s"Evaluating theory from ${inps.evalth}")
@@ -60,18 +61,17 @@ class Dispatcher[T <: InputSource](inps: RunningOptions,
         if (!weightLearning) {
 
           val (tps, fps, fns, precision, recall, fscore) = crossVal(merged,
-            data = data, handCraftedTheoryFile = inps.evalth, globals = inps.globals, inps = inps)
+                                                                    data                  = data, handCraftedTheoryFile = inps.evalth, globals = inps.globals, inps = inps)
 
           logger.info(s"\ntps: $tps\nfps: $fps\nfns: $fns\nprecision: " +
             s"$precision\nrecall: $recall\nf-score: $fscore\ntraining time:" +
             s"$time\ntheory size: 0.0")
 
-
         } else {
           //private val mlnClauses = theory.clauses.map(x => x.to_MLNClause())
           val mlnClauses = scala.io.Source.fromFile(inps.evalth).getLines.filter(p => !p.startsWith("//") && p.trim != "").toList
           val evaluator = new EvalAfterWeightLearning(mlnClauses, data)
-          val (tps, fps, fns) =  evaluator.getCounts()
+          val (tps, fps, fns) = evaluator.getCounts()
           logger.info(s"\nEvaluation (weight learning):\ntps: $tps\nfps: $fps\nfns: $fns")
         }
 
@@ -84,15 +84,15 @@ class Dispatcher[T <: InputSource](inps: RunningOptions,
         if (inps.withEventCalculs) {
           context.actorOf(Props(
             new TheoryLearner(inps, trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction, "initiated")),
-            name = s"initiated-learner-${this.##}") ! "go"
+                          name = s"initiated-learner-${this.##}") ! "go"
 
           context.actorOf(Props(
             new TheoryLearner(inps, trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction, "terminated")),
-            name = s"terminated-learner-${this.##}") ! "go"
+                          name = s"terminated-learner-${this.##}") ! "go"
         } else {
           context.actorOf(Props(
             new TheoryLearner(inps, trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction, "None")),
-            name = s"learner-${this.##}") ! "go"
+                          name = s"learner-${this.##}") ! "go"
         }
 
       } else {
@@ -119,15 +119,15 @@ class Dispatcher[T <: InputSource](inps: RunningOptions,
 
       //logger.info(s"Error:\n${Globals.errorProb}")
 
-      if(size == 0) {
+      if (size == 0) {
 
         // merge the theories and do cross-validation
         val first = theories.head
         val second = if (theories.tail.nonEmpty) theories.tail.head else (Theory(), 0.0)
         merged = first._1.clauses ++ second._1.clauses
 
-        val theorySize = merged.clauses.foldLeft(0)((x,y) => x + y.body.length + 1)
-        time = Math.max(first._2,second._2)
+        val theorySize = merged.clauses.foldLeft(0)((x, y) => x + y.body.length + 1)
+        time = Math.max(first._2, second._2)
 
         val data = testingDataFunction(testingDataOptions)
 
@@ -141,10 +141,10 @@ class Dispatcher[T <: InputSource](inps: RunningOptions,
           logger.info(s"\nDone. Theory found:\n ${merged_.showWithStats}")
 
           if (inps.saveTheoryTo != "") {
-            Utils.writeToFile(new File(inps.saveTheoryTo), "overwrite") {p => Vector(merged_.tostring).foreach(p.println)}
+            Utils.writeToFile(new File(inps.saveTheoryTo), "overwrite") { p => Vector(merged_.tostring).foreach(p.println) }
           }
 
-          val (tps,fps,fns,precision,recall,fscore) = crossVal(merged_, data=data, globals = inps.globals, inps = inps)
+          val (tps, fps, fns, precision, recall, fscore) = crossVal(merged_, data = data, globals = inps.globals, inps = inps)
 
           logger.info(s"\ntps: $tps\nfps: $fps\nfns: " +
             s"$fns\nprecision: $precision\nrecall: $recall\nf-score: $fscore\ntraining time: " +
@@ -155,7 +155,6 @@ class Dispatcher[T <: InputSource](inps: RunningOptions,
             s"$fns\nprecision: $precision\nrecall: $recall\nf-score: $fscore\ntraining time: " +
             s"$time\ntheory size: $theorySize")
           */
-
 
           //val test = merged_.withTypePreds(inps.globals)
 
@@ -170,7 +169,7 @@ class Dispatcher[T <: InputSource](inps: RunningOptions,
 
           val _mlnClauses = merged_.clauses.filter(x => x.weight > 0.0 && x.seenExmplsNum >= inps.minEvalOn && x.score >= inps.pruneThreshold)
 
-          val theorySize = _mlnClauses.clauses.foldLeft(0)((x,y) => x + y.body.length + 1)
+          val theorySize = _mlnClauses.clauses.foldLeft(0)((x, y) => x + y.body.length + 1)
 
           //val _mlnClauses = merged_.clauses.filter(x => x.score >= inps.pruneThreshold && x.seenExmplsNum > 2000)
 
@@ -180,10 +179,10 @@ class Dispatcher[T <: InputSource](inps: RunningOptions,
           val mlnClausesString = _mlnClauses.map(x => x.to_MLNClause())
 
           val evaluator = new EvalAfterWeightLearning(mlnClausesString, data)
-          val (tps, fps, fns) =  evaluator.getCounts()
-          val precision = tps.toDouble/(tps.toDouble + fps.toDouble)
-          val recall = tps.toDouble/(tps.toDouble + fns.toDouble)
-          val fscore = 2*precision*recall/(precision+recall)
+          val (tps, fps, fns) = evaluator.getCounts()
+          val precision = tps.toDouble / (tps.toDouble + fps.toDouble)
+          val recall = tps.toDouble / (tps.toDouble + fns.toDouble)
+          val fscore = 2 * precision * recall / (precision + recall)
 
           logger.info(s"\n\nMLN theory (kept clauses):\n${mlnClausesString.mkString("\n")}")
 
@@ -196,16 +195,12 @@ class Dispatcher[T <: InputSource](inps: RunningOptions,
             s"$fns\nprecision: $precision\nrecall: $recall\nf-score: $fscore\ntraining time: $time\ntheory size: $theorySize\n"
 
           Utils.writeLine(msg, s"/home/nkatz/Desktop/weight-learning-experiments/weight-learn-results-δ=" +
-              s"${inps.delta}-ties=${inps.breakTiesThreshold}-adaδ=${inps.adaGradDelta}-adaλ=${inps.adaRegularization}-adaη=" +
-              s"${inps.adaLearnRate}-winsize=${inps.chunkSize}", "append")
+            s"${inps.delta}-ties=${inps.breakTiesThreshold}-adaδ=${inps.adaGradDelta}-adaλ=${inps.adaRegularization}-adaη=" +
+            s"${inps.adaLearnRate}-winsize=${inps.chunkSize}", "append")
 
           context.system.terminate()
         }
       }
   }
-
-
-
-
 
 }

@@ -23,13 +23,11 @@ import app.runutils.Globals
 import mcts.HillClimbing.{constructBottomTheory, generateChildrenNodes, getData}
 import mcts.RootNode
 
-
 /**
   * Created by nkatz on 9/22/17.
   */
 
 object Tests extends App {
-
 
   Globals.glvalues("perfect-fit") = "false"
 

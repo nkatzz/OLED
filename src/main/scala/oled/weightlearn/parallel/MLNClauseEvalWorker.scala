@@ -26,8 +26,6 @@ import oled.weightlearn.{AdaGrad, MAPInference}
 import org.slf4j.LoggerFactory
 import utils.Utils
 
-
-
 class MLNClauseEvalWorker extends Actor {
 
   private val logger = LoggerFactory.getLogger(self.path.name)
@@ -48,8 +46,8 @@ class MLNClauseEvalWorker extends Actor {
     val (clausesWithUpdatedWeights, adagradTime) = {
       val timed = Utils.time{
         AdaGrad.adagrad(x.inps, groundNetwork, x.clauses,
-          trueGroundingsPerClause.toList, annotationMLN,
-          correctlyNotTerminated, incorrectlyTerminated, x.targetClass, x.clauseIds.toList)
+                        trueGroundingsPerClause.toList, annotationMLN,
+                        correctlyNotTerminated, incorrectlyTerminated, x.targetClass, x.clauseIds.toList)
       }
       (timed._1, timed._2)
     }
@@ -66,7 +64,7 @@ class MLNClauseEvalWorker extends Actor {
     val actuallyTrue = annotationMLN
 
     new MLNClauseHandlingOutput(inferredTrue, actuallyTrue, incorrectlyTerminated,
-      correctlyNotTerminated, clausesWithUpdatedWeights, totalExmplCount)
+                                correctlyNotTerminated, clausesWithUpdatedWeights, totalExmplCount)
   }
 
 }

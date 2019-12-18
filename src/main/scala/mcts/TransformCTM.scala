@@ -48,7 +48,7 @@ object TransformCTM extends App {
     (accum :+ new MongoEntry(annotation, narrative, count), count + 1)
   }
 
-  data._1.foreach(x => println(x.annotation+"\n"+x.narrative+"\n"+x.time+"\n"))
+  data._1.foreach(x => println(x.annotation + "\n" + x.narrative + "\n" + x.time + "\n"))
 
   mongoClient.dropDatabase("ctm")
 

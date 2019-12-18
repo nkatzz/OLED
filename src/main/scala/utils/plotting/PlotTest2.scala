@@ -46,37 +46,36 @@ object PlotTest2 extends App {
     //val oled =     Vector(355,823,1744,2300,2640,2724,2738,2738,2738,2738)
     //val oled_exp = Vector(54,158,348,348,562,562,624,624,624,624)
 
-    val oled =     Vector(355,1744,2640,2738,2738)
-    val oled_exp = Vector(54,348,562,624,624)
+    val oled = Vector(355, 1744, 2640, 2738, 2738)
+    val oled_exp = Vector(54, 348, 562, 624, 624)
 
     Figure("dangerousDrivingPrequential").plot(oled).plot(oled_exp).havingLegendPos(LegendPos.NORTH_WEST).
-      havingLegends("\\scriptsize OLED","\\scriptsize OLED-EXP").
+      havingLegends("\\scriptsize OLED", "\\scriptsize OLED-EXP").
       havingXLabel("Time").
-      havingYLabel("Accumulated Number of Mistakes")//.saveAsPDF(savePath)
-      .havingAxisXLabels(Seq("10K","20K","30K","40K","50K")).havingTitle("DangerousDriving (Prequential Evaluation)").saveAsPDF(savePath)
+      havingYLabel("Accumulated Number of Mistakes") //.saveAsPDF(savePath)
+      .havingAxisXLabels(Seq("10K", "20K", "30K", "40K", "50K")).havingTitle("DangerousDriving (Prequential Evaluation)").saveAsPDF(savePath)
   }
 
   def plotTK_holdout(savePath: String) = {
     //val oled =     Vector(355,823,1744,2300,2640,2724,2738,2738,2738,2738)
     //val oled_exp = Vector(54,158,348,348,562,562,624,624,624,624)
 
-    val oled =     Vector(0.48,0.786,0.923,0.968,0.968)
-    val oled_exp = Vector(0.42,0.825,0.820,0.971,0.978)
+    val oled = Vector(0.48, 0.786, 0.923, 0.968, 0.968)
+    val oled_exp = Vector(0.42, 0.825, 0.820, 0.971, 0.978)
 
     Figure("dangerousDrivingHoldout").plot(oled).plot(oled_exp).havingLegendPos(LegendPos.NORTH_WEST).
-      havingLegends("\\scriptsize OLED","\\scriptsize OLED-EXP").
+      havingLegends("\\scriptsize OLED", "\\scriptsize OLED-EXP").
       havingXLabel("Time").
-      havingYLabel("$F_1$-score on test-Set")//.saveAsPDF(savePath)
-      .havingAxisXLabels(Seq("10K","20K","30K","40K","50K")).havingTitle("DangerousDriving (Holdout Evaluation)").saveAsPDF(savePath)
+      havingYLabel("$F_1$-score on test-Set") //.saveAsPDF(savePath)
+      .havingAxisXLabels(Seq("10K", "20K", "30K", "40K", "50K")).havingTitle("DangerousDriving (Holdout Evaluation)").saveAsPDF(savePath)
   }
 
-
   def plotMaritime(dataPath: String, savePath: String) = {
-    val data = Source.fromFile(dataPath).getLines.filter( x => !x.isEmpty && !x.startsWith("%"))//.split(",")
+    val data = Source.fromFile(dataPath).getLines.filter(x => !x.isEmpty && !x.startsWith("%")) //.split(",")
     //val cores = data.next().split(",").map(_.toDouble).toVector
 
-    val syncTime = Vector(1.0,2.0,4.0,8.0,16.0) zip data.next().split(",").map(_.toDouble).toVector
-    val asyncTime = Vector(1.0,2.0,4.0,8.0,16.0) zip data.next().split(",").map(_.toDouble).toVector
+    val syncTime = Vector(1.0, 2.0, 4.0, 8.0, 16.0) zip data.next().split(",").map(_.toDouble).toVector
+    val asyncTime = Vector(1.0, 2.0, 4.0, 8.0, 16.0) zip data.next().split(",").map(_.toDouble).toVector
 
     //val syncTime = Vector(2.0,4.0,8.0,16.0) zip data.next().split(",").map(_.toDouble).toVector
     //val asyncTime = Vector(2.0,4.0,8.0,16.0) zip data.next().split(",").map(_.toDouble).toVector
@@ -95,10 +94,10 @@ object PlotTest2 extends App {
     */
     ///*
     Figure("rendezvous-msgs").plot(syncTime).plot(asyncTime).havingLegendPos(LegendPos.NORTH_EAST).
-      havingLegends("sync","async").
+      havingLegends("sync", "async").
       havingXLabel("Number of cores").
       havingYLabel("Number of messages").
-      havingAxisXLabels(Seq("2","4","8","16")).saveAsPDF(savePath)
+      havingAxisXLabels(Seq("2", "4", "8", "16")).saveAsPDF(savePath)
     //*/
     /*
     Figure("loitering-time").bar(syncTime).plot(asyncTime).havingLegendPos(LegendPos.NORTH_EAST).
@@ -118,7 +117,6 @@ object PlotTest2 extends App {
       havingXLabel("Number of cores").havingYLabel("Number of messages").havingTitle("Loitering").saveAsPDF(savePath)
     */
   }
-
 
   /*
   def plotMeeting1pass(dataPath: String, savePath: String) = {
@@ -163,10 +161,10 @@ object PlotTest2 extends App {
     }
 
     try {
-      if (log10(x).isInfinity) 0.0 else log10(x)/log10(2.0)
+      if (log10(x).isInfinity) 0.0 else log10(x) / log10(2.0)
     } catch {
       case _: NoSuchElementException =>
-        println(x) ; x
+        println(x); x
     }
 
   }
@@ -177,7 +175,7 @@ object PlotTest2 extends App {
       y
     } catch {
       case _: NoSuchElementException =>
-        println(x) ; x
+        println(x); x
     }
 
   }
@@ -210,12 +208,12 @@ object PlotTest2 extends App {
   }
   */
 
-
-  def plotResults(savePath: String,
-                  name: String, trueLabels: Vector[Double], wInit: Vector[Double], wNoInit: Vector[Double],
-                  wTerm: Vector[Double], wNoTerm: Vector[Double],
-                  predictiInt: Vector[Double], predictiTerm: Vector[Double],
-                  inert: Vector[Double], holds: Vector[Double]) = {
+  def plotResults(
+      savePath: String,
+      name: String, trueLabels: Vector[Double], wInit: Vector[Double], wNoInit: Vector[Double],
+      wTerm: Vector[Double], wNoTerm: Vector[Double],
+      predictiInt: Vector[Double], predictiTerm: Vector[Double],
+      inert: Vector[Double], holds: Vector[Double]) = {
 
     //Figure(name).plot(wInit).saveAsTeX(savePath)
 
@@ -285,7 +283,6 @@ object PlotTest2 extends App {
   }
   */
 
-
   /*
   def plotMeeting2passes(dataPath: String, savePath: String) = {
 
@@ -313,11 +310,5 @@ object PlotTest2 extends App {
 
   }
   */
-
-
-
-
-
-
 
 }

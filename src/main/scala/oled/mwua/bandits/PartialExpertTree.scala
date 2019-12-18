@@ -42,7 +42,7 @@ trait TreeNode {
 
   // Running mean reward
   def updateMeanReward(newReward: Double) = {
-    avgReward = ((avgReward*visits) + newReward)/(visits+1)
+    avgReward = ((avgReward * visits) + newReward) / (visits + 1)
     visits += 1
   }
 
@@ -74,8 +74,8 @@ class RootNode(override val rule: Clause) extends TreeNode {
   def descendToBestChild(exploreRate: Double) = {
     var reachedLeaf = false
     var bestChild = this.getBestChild(exploreRate)
-    while(! reachedLeaf) {
-      if (! bestChild.isLeafNode()) {
+    while (!reachedLeaf) {
+      if (!bestChild.isLeafNode()) {
         bestChild = bestChild.getBestChild(exploreRate)
       } else {
         reachedLeaf = true
@@ -89,9 +89,8 @@ class RootNode(override val rule: Clause) extends TreeNode {
 class InnerNode(override val rule: Clause, val parentNode: TreeNode) extends TreeNode {
 
   override def getMCTSScore(exploreRate: Double) = {
-    avgReward + exploreRate * Math.sqrt(2*Math.log(parentNode.visits)/visits)
+    avgReward + exploreRate * Math.sqrt(2 * Math.log(parentNode.visits) / visits)
   }
-
 
   override def getDepth() = {
     var reachedRoot = false
@@ -99,10 +98,10 @@ class InnerNode(override val rule: Clause, val parentNode: TreeNode) extends Tre
     var depth = 1
     while (!reachedRoot) {
       parent match {
-        case _ : InnerNode =>
-          depth = depth+1
+        case _: InnerNode =>
+          depth = depth + 1
           parent = parent.asInstanceOf[InnerNode].parentNode
-        case _ : RootNode => reachedRoot = true
+        case _: RootNode => reachedRoot = true
       }
     }
     depth
@@ -114,10 +113,10 @@ class InnerNode(override val rule: Clause, val parentNode: TreeNode) extends Tre
     var ancestors = Vector[TreeNode]()
     while (!reachedRoot) {
       parent match {
-        case _ : InnerNode =>
+        case _: InnerNode =>
           ancestors = ancestors :+ parent
           parent = parent.asInstanceOf[InnerNode].parentNode
-        case _ : RootNode =>
+        case _: RootNode =>
           ancestors = ancestors :+ parent
           reachedRoot = true
       }

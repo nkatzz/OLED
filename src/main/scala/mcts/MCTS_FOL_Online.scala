@@ -31,20 +31,17 @@ import mcts.HillClimbing.{getData, crossVal}
 import utils.{ASP, Utils}
 import xhail.Xhail
 
-
 /**
   * Created by nkatz on 9/19/17.
   */
 
-
-object MCTS_FOL_Online extends LazyLogging{
+object MCTS_FOL_Online extends LazyLogging {
 
   /* TODO Need to implement the propagation to all theories that subsume the best child */
 
   def main(args: Array[String]) = {
     runCaviarMNL()
   }
-
 
   def runCaviarMNL() = {
 
@@ -62,11 +59,7 @@ object MCTS_FOL_Online extends LazyLogging{
 
     val rootNode = RootNode()
 
-
-
-
     val repeatFor = 1
-
 
     // Generate the 1rst-level child.
     //generateAndScoreChildren(rootNode, trainingData.next(), jep, globals, opts, 0)
@@ -74,7 +67,7 @@ object MCTS_FOL_Online extends LazyLogging{
 
     for (x <- 1 to repeatFor) {
       val trainingData = getData(opts)
-      while(trainingData.hasNext) {
+      while (trainingData.hasNext) {
         val exmpl = trainingData.next()
 
         // First, generate a new kernel set from the new example and a new theory from it,
@@ -82,7 +75,7 @@ object MCTS_FOL_Online extends LazyLogging{
         // level of children of the root node, add T as a node there (so, expand the tree horizontally)
         val newLevelOneNode = generateChildNode(rootNode.theory, exmpl, globals)
         if (newLevelOneNode != Theory()) {
-          if (rootNode.children.forall(p => !(p.theory.thetaSubsumes(newLevelOneNode) && newLevelOneNode.thetaSubsumes(p.theory)) )) {
+          if (rootNode.children.forall(p => !(p.theory.thetaSubsumes(newLevelOneNode) && newLevelOneNode.thetaSubsumes(p.theory)))) {
             logger.info("Added new child at level 1 (tree expanded horizontally).")
             val score = scoreNode(newLevelOneNode, exmpl, globals, opts)
             val n = InnerNode("new-level-1-node", newLevelOneNode, rootNode)
@@ -105,15 +98,12 @@ object MCTS_FOL_Online extends LazyLogging{
               s" mean f1-score: ${newNode.theory.fscore} | visits: ${newNode.visits} | id: ${newNode.id}):\n${newNode.theory.tostring}\n")
           }
 
-
         }
 
         exmplsCount += 1
       }
 
     }
-
-
 
     var finalTheory = rootNode.descendToBestChild(exploreRate).theory
 
@@ -179,7 +169,7 @@ object MCTS_FOL_Online extends LazyLogging{
     val varbedExmplPatterns = globals.EXAMPLE_PATTERNS_AS_STRINGS
     val coverageConstr = s"${globals.TPS_RULES}\n${globals.FPS_RULES}\n${globals.FNS_RULES}"
     val t =
-      if(theory != Theory()) {
+      if (theory != Theory()) {
         theory.clauses.map(x => x.withTypePreds(globals).tostring).mkString("\n")
       } else {
         globals.INCLUDE_BK(handCraftedTheoryFile)
@@ -189,10 +179,10 @@ object MCTS_FOL_Online extends LazyLogging{
     val program = ex + globals.INCLUDE_BK(globals.BK_CROSSVAL) + t + coverageConstr + show
     val f = Utils.getTempFile(s"eval-theory-${UUID.randomUUID().toString}-${System.currentTimeMillis()}", ".lp")
     Utils.writeLine(program, f.getCanonicalPath, "overwrite")
-    val answerSet = ASP.solve(task = Globals.INFERENCE, aspInputFile = f)
+    val answerSet = ASP.solve(task         = Globals.INFERENCE, aspInputFile = f)
     if (answerSet.nonEmpty) {
       val atoms = answerSet.head.atoms
-      atoms.foreach { a=>
+      atoms.foreach { a =>
         val lit = Literal.parse(a)
         //val inner = lit.terms.head
         lit.predSymbol match {
@@ -203,7 +193,6 @@ object MCTS_FOL_Online extends LazyLogging{
       }
     }
   }
-
 
   def generateChildNode(currentNode: Theory, currentExample: Example, gl: Globals) = {
     //logger.info("Generating children nodes")
@@ -216,11 +205,11 @@ object MCTS_FOL_Online extends LazyLogging{
       val infile = Utils.getTempFile("example", ".lp")
       Utils.writeToFile(infile, "overwrite") { p => interpretation.foreach(p.println) }
       val bk = gl.BK_WHOLE_EC
-      val (_, varKernel) = Xhail.runXhail(fromFile=infile.getAbsolutePath, kernelSetOnly=true, bkFile=bk, globals=gl)
+      val (_, varKernel) = Xhail.runXhail(fromFile      = infile.getAbsolutePath, kernelSetOnly = true, bkFile = bk, globals = gl)
       val aspFile: File = utils.Utils.getTempFile("aspInduction", ".lp")
       val (_, use2AtomsMap, defeasible, use3AtomsMap, _, _) =
-        ASP.inductionASPProgram(kernelSet = Theory(varKernel),
-          priorTheory = currentNode, examples = currentExample.toMapASP, aspInputFile = aspFile, globals = gl)
+        ASP.inductionASPProgram(kernelSet    = Theory(varKernel),
+                                priorTheory  = currentNode, examples = currentExample.toMapASP, aspInputFile = aspFile, globals = gl)
       val answerSet = ASP.solve("iled", use2AtomsMap ++ use3AtomsMap, aspFile, currentExample.toMapASP)
       if (answerSet != Nil) {
         val newRules = Rules.getNewRules(answerSet.head.atoms, use2AtomsMap)
@@ -238,17 +227,10 @@ object MCTS_FOL_Online extends LazyLogging{
         }
         */
       } else {
-       Theory()
+        Theory()
       }
     }
 
   }
-
-
-
-
-
-
-
 
 }

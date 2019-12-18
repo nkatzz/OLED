@@ -32,7 +32,7 @@ import mcts.HillClimbing._
 
 /**
   * This is just a test to run MCTS with the MathExchange data
-  * */
+  */
 
 object MathExchange extends App with LazyLogging {
 
@@ -51,7 +51,7 @@ object MathExchange extends App with LazyLogging {
       val narrative = dbObj.get("narrative").asInstanceOf[BasicDBList].toList.map(x => x.toString)
       accum :+ new Example(annot = annotation, nar = narrative, _time = time)
     }
-    val chunked = exmpls.sliding(chunkSize, chunkSize-1).toList
+    val chunked = exmpls.sliding(chunkSize, chunkSize - 1).toList
     chunked map { x =>
       val merged = x.foldLeft(Example()) { (z, y) =>
         new Example(annot = z.annotation ++ y.annotation, nar = z.narrative ++ y.narrative, _time = x.head.time)
@@ -66,7 +66,7 @@ object MathExchange extends App with LazyLogging {
 
   val iterations = 10
 
-  val exploreRate = 1.0/Math.sqrt(2)
+  val exploreRate = 1.0 / Math.sqrt(2)
 
   val f1 = (t: Theory) => t.stats._6
 
@@ -74,14 +74,12 @@ object MathExchange extends App with LazyLogging {
 
   generateAndScoreChildren(rootNode, bottomTheory, globals, data, 0)
 
-
-
   val bestNode = (1 to iterations).foldLeft(rootNode.asInstanceOf[TreeNode]) { (theorySearchedLast, iterCount) =>
     logger.info(s"Iteration $iterCount")
     val bestChild = rootNode.descendToBestChild(exploreRate)
     logger.info(s"Best leaf node selected (MCTS score: ${bestChild.getMCTSScore(exploreRate)} | id: ${bestChild.id}):\n${bestChild.theory.tostring}")
     val newNodes = generateAndScoreChildren(bestChild, bottomTheory, globals, data, iterCount)
-    val bestChildNode = newNodes.maxBy( x => f1(x.theory) )
+    val bestChildNode = newNodes.maxBy(x => f1(x.theory))
 
     bestChildNode.propagateReward(f1(bestChildNode.theory))
 
@@ -91,7 +89,7 @@ object MathExchange extends App with LazyLogging {
     } else {
       if (f1(bestChildNode.theory) > f1(theorySearchedLast.theory)) {
         logger.info(s"Best theory so far (F1-score ${f1(bestChildNode.theory)} | id: ${bestChildNode.id}):\n${bestChildNode.theory.tostring}")
-        bestChildNode//.theory
+        bestChildNode //.theory
       } else {
         logger.info(s"Best theory so far (F1-score ${f1(theorySearchedLast.theory)} | id: ${theorySearchedLast.id}):\n${theorySearchedLast.theory.tostring}")
         theorySearchedLast
@@ -104,8 +102,6 @@ object MathExchange extends App with LazyLogging {
   val theory_ = Theory(bestNode.theory.clauses).compress
   crossVal(theory_, data.toIterator, "", globals) // generate new theory to clear the stats counter
   logger.info(s"F1-score on test set: ${theory_.stats._6}")
-
-
 
   def generateAndScoreChildren(fromNode: TreeNode, bottomTheory: Theory, gl: Globals, data: List[Example], iterationCount: Int) = {
     require(fromNode.isLeafNode())

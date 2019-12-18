@@ -26,13 +26,12 @@ import oled.functions.WeightLearningFunctions.getGroundTheory
 
 object Test extends App {
 
-
   println(Auxil.cnfToRules)
 
   def predictSate(topTheory: Theory, e: Example, inps: RunningOptions, targetClass: String) = {
 
     val clauses = topTheory.clauses.map { topClause =>
-      val bestRef = topClause.refinements.sortBy(x => - x.weight).head
+      val bestRef = topClause.refinements.sortBy(x => -x.weight).head
       if (topClause.weight > bestRef.weight) topClause else bestRef
     }
 

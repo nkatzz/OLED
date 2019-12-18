@@ -45,7 +45,7 @@ class State {
   *  specializations, while "top" returns the top non-empty bodied rules.
   *  */
   def getAllRules(gl: Globals, what: String) = {
-    val topRules  = getTopTheory()
+    val topRules = getTopTheory()
     what match {
       case "all" =>
         topRules.flatMap { topRule =>
@@ -60,7 +60,7 @@ class State {
 
   // Returns the best refinement currently available from each subsumption lattice
   def getBestRules(gl: Globals, quality: String = "weight") = {
-    val topRules  = getTopTheory()
+    val topRules = getTopTheory()
     topRules map { topRule =>
       if (topRule.refinements.isEmpty) topRule.generateCandidateRefs(gl)
       val sorted = (topRule.refinements :+ topRule).sortBy(x => if (quality == "weight") -x.weight else -x.score)
@@ -96,21 +96,16 @@ class State {
 
   def pruneRules(acceptableScore: Double) = {
 
-    /* Remove rules by score */
-    def removeBadRules(rules: List[Clause]) = {
-      rules.foldLeft(List.empty[Clause]) { (accum, rule) =>
-        if (rule.body.length >= 2 && rule.score <= 0.5) accum else accum :+ rule
+      /* Remove rules by score */
+      def removeBadRules(rules: List[Clause]) = {
+        rules.foldLeft(List.empty[Clause]) { (accum, rule) =>
+          if (rule.body.length >= 2 && rule.score <= 0.5) accum else accum :+ rule
+        }
       }
-    }
 
     initiationRules = removeBadRules(initiationRules)
     terminationRules = removeBadRules(terminationRules)
 
   }
-
-
-
-
-
 
 }

@@ -30,11 +30,10 @@ import logic.{Constant, Literal}
 
 object CopyCAVIAR extends App {
 
-
   val numOfCopies = 10
   val idPattern = "id[0-9]+".r
   val originalIds = List("id0", "id1", "id2", "id3", "id4", "id5", "id6", "id7", "id8", "id9").sortBy(x => x.last)
-  val IDCopies = originalIds.map(x => x -> (1 until numOfCopies).map(y => x+y)).toMap
+  val IDCopies = originalIds.map(x => x -> (1 until numOfCopies).map(y => x + y)).toMap
 
   ///*
   val mc = MongoClient()
@@ -51,9 +50,9 @@ object CopyCAVIAR extends App {
     val extendedNarrative = copyAtoms(e.narrative, "narrative")
     val extendedAnnotation = copyAtoms(e.annotation, "annotation")
     // Need to get extra annotation (see the generateExtraAnnotation to see what this is about)
-    val happensAtoms = e.narrative.filter(x => x.contains("happensAt") && (x.contains("walking") || x.contains("active") || x.contains("inactive")) )
+    val happensAtoms = e.narrative.filter(x => x.contains("happensAt") && (x.contains("walking") || x.contains("active") || x.contains("inactive")))
     val extraAnnotation = happensAtoms.flatMap(x => generateExtraAnnotation(x)).distinct
-    val entry = MongoDBObject("time" -> time) ++ ("annotation" -> (extendedAnnotation ++ extraAnnotation) ) ++ ("narrative" -> extendedNarrative)
+    val entry = MongoDBObject("time" -> time) ++ ("annotation" -> (extendedAnnotation ++ extraAnnotation)) ++ ("narrative" -> extendedNarrative)
     newDB.insert(entry)
   }
   //*/
@@ -71,9 +70,9 @@ object CopyCAVIAR extends App {
     val second = replaceWith.tail.head._2
     val newLit =
       Literal(predSymbol = toLit.predSymbol,
-        terms = List(Literal(
+              terms      = List(Literal(
           predSymbol = toLit.terms.head.asInstanceOf[Literal].predSymbol,
-          terms = List(Constant(first), Constant(second)) ), toLit.terms.tail.head)).tostring
+          terms      = List(Constant(first), Constant(second))), toLit.terms.tail.head)).tostring
     newLit
   }
 
@@ -91,7 +90,7 @@ object CopyCAVIAR extends App {
         // instead of a pair of constants toy have 6 constant symbols (id1 -> {id1, id11, id12} and
         // similarly for id2). So you have 2C(6,2) = 30 new pairs of annotation.
         val combinations = idCopies.combinations(2).flatMap(x => List(x, x.reverse))
-        combinations.foldLeft(List[String]()){(accum, y) =>
+        combinations.foldLeft(List[String]()){ (accum, y) =>
           val idsMap = (ids zip y).toMap
           val newAtom = replaceIds(atom, idsMap)
           accum :+ newAtom
@@ -130,8 +129,6 @@ object CopyCAVIAR extends App {
   }
 
   def copyAtoms(atoms: List[String], what: String) = atoms.flatMap(x => copyAtom(x, what)).distinct
-
-
 
   //copyAtoms(List("holdsAt(meeting(id1, id2),22400)", "holdsAt(meeting(id2, id1),22400)"), "annotation").foreach(println)
   //copyAtoms(List("happensAt(walking(id1),2347)", "coords(id4, 3543, 2342, 75)"), "narrative").foreach(println)

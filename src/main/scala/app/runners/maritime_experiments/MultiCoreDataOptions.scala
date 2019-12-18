@@ -23,7 +23,6 @@ package app.runners.maritime_experiments
 
 object MultiCoreDataOptions {
 
-
   def getOptions(hle: String, chunkSize: Int, limit: Int, coresNum: Int) = {
     val prefixes = coresNum match {
       case 2 => List("2-1", "2-2")
@@ -38,10 +37,10 @@ object MultiCoreDataOptions {
 
     val speedLimitsPath = "/home/nkatz/dev/maritime/brest-data/areas_speed_limits.csv"
 
-    val info = prefixes map (x => (s"$llePath/dataset${joinPrefix(x)}.txt", s"brest-$x", s"$hlePath/${joinPrefix(x)}/$hle.csv", s"$hlePath/${joinPrefix(x)}/close_to_ports.csv") )
+    val info = prefixes map (x => (s"$llePath/dataset${joinPrefix(x)}.txt", s"brest-$x", s"$hlePath/${joinPrefix(x)}/$hle.csv", s"$hlePath/${joinPrefix(x)}/close_to_ports.csv"))
 
     info map { x =>
-      new MaritimeDataOptions(llePath=x._1, db=x._2, hlePath=x._3, speedLimitsPath=speedLimitsPath, closeToPortsPath=x._4, chunkSize, limit.toDouble, hle)
+      new MaritimeDataOptions(llePath          = x._1, db = x._2, hlePath = x._3, speedLimitsPath = speedLimitsPath, closeToPortsPath = x._4, chunkSize, limit.toDouble, hle)
     }
 
   }
@@ -192,6 +191,5 @@ object MultiCoreDataOptions {
     targetConcept = "highSpeedIn")
 
     */
-
 
 }

@@ -26,15 +26,14 @@ import logic.{Clause, Theory}
 import oled.distributed.Structures._
 import org.slf4j.LoggerFactory
 
-
 /**
   * Created by nkatz on 2/15/17.
   */
 
-
-class TopLevelActor[T <: InputSource](val dataOptions: List[(T, T => Iterator[Example])],
-                                      val inputParams: RunningOptions,
-                                      val targetConcept: TargetConcept) extends Actor {
+class TopLevelActor[T <: InputSource](
+    val dataOptions: List[(T, T => Iterator[Example])],
+    val inputParams: RunningOptions,
+    val targetConcept: TargetConcept) extends Actor {
 
   import context._
 
@@ -44,18 +43,16 @@ class TopLevelActor[T <: InputSource](val dataOptions: List[(T, T => Iterator[Ex
   var startTime = 0L
   var endTime = 0L
 
-
   /* This function starts the learning Nodes. */
   def getActorsPool() = {
     val NodeActorNames = (1 to dataOptions.length).toList map (i => s"Node-$i-${targetConcept.toString}")
     val nodeActorsPool = (NodeActorNames zip this.dataOptions) map { node =>
       val (nodeName, nodeOptions, nodeDataDunction) = (node._1, node._2._1, node._2._2)
       val otherActors = NodeActorNames.filter(_ != nodeName)
-      context.actorOf(Props( new Node(otherActors, targetConcept, inputParams, nodeOptions, nodeDataDunction) ), name = nodeName)
+      context.actorOf(Props(new Node(otherActors, targetConcept, inputParams, nodeOptions, nodeDataDunction)), name = nodeName)
     }
     nodeActorsPool
   }
-
 
   val actorsPool: List[ActorRef] = getActorsPool()
 
@@ -102,9 +99,9 @@ class TopLevelActor[T <: InputSource](val dataOptions: List[(T, T => Iterator[Ex
       actorsPool foreach (a => a ! "go-no-communication")
       become(replyHandler)
 
-      /*--------------------------------------------------------------------------------------*/
-      // For debugging
-      //context.actorOf(Props( new PingActor(this.actorNames) ), name = "Pinging-Actor") ! "go"
+    /*--------------------------------------------------------------------------------------*/
+    // For debugging
+    //context.actorOf(Props( new PingActor(this.actorNames) ), name = "Pinging-Actor") ! "go"
     /*--------------------------------------------------------------------------------------*/
 
     case request: SpecializationTicketRequest =>
@@ -112,7 +109,6 @@ class TopLevelActor[T <: InputSource](val dataOptions: List[(T, T => Iterator[Ex
       // re-send the message to self to be processed
       self ! request
   }
-
 
   def replyHandler: Receive = {
 
@@ -148,11 +144,6 @@ class TopLevelActor[T <: InputSource](val dataOptions: List[(T, T => Iterator[Ex
       acceptNewLearntTheory(msg)
   }
 
-
-
-
-
-
   def requestHandler: Receive = {
 
     // When in a requestHandler state, the expansion slot (one expanding node at a time) is free,
@@ -170,9 +161,6 @@ class TopLevelActor[T <: InputSource](val dataOptions: List[(T, T => Iterator[Ex
       acceptNewLearntTheory(msg)
   }
 
-
-
-
   def processNewRequest(requestingNodeName: String) = {
     val others = getOtherActorRefs(requestingNodeName)
     this.nodeHavingTheSlot = requestingNodeName // that's only for logging
@@ -183,7 +171,7 @@ class TopLevelActor[T <: InputSource](val dataOptions: List[(T, T => Iterator[Ex
   }
 
   def handleReply() = {
-    if(this.queuedExpandingNodes.nonEmpty) {
+    if (this.queuedExpandingNodes.nonEmpty) {
       val nextInQueue = this.queuedExpandingNodes.dequeue()
       logger.info(s"Sending specialization ticket to queued node ${nextInQueue.senderName}")
       processNewRequest(nextInQueue.senderName)
@@ -203,8 +191,6 @@ class TopLevelActor[T <: InputSource](val dataOptions: List[(T, T => Iterator[Ex
     }
   }
 
-
-
   def acceptNewLearntTheory(msg: NodeTheoryMessage) = {
     this.nodesCounter -= 1
     logger.info(s"Node ${msg.sender} sent:\n${msg.theory.clauses.map(x => x.showWithStats + s"evaluated on ${x.seenExmplsNum} exmpls | refs: ${x.refinements.length}").mkString("\n")}")
@@ -214,7 +200,7 @@ class TopLevelActor[T <: InputSource](val dataOptions: List[(T, T => Iterator[Ex
     if (this.nodesCounter == 0) {
       this.endTime = System.nanoTime()
       this.actorsPool.foreach(_ ! PoisonPill)
-      val totalTime = (this.endTime - this.startTime)/1000000000.0
+      val totalTime = (this.endTime - this.startTime) / 1000000000.0
       logger.info(s"Total training time: $totalTime sec")
       val totalMsgNum = childrenMsgNums.sum + messages.length
       val totalMsgSize = childrenMsgSizes.sum + messages.sum
@@ -247,11 +233,10 @@ class TopLevelActor[T <: InputSource](val dataOptions: List[(T, T => Iterator[Ex
   }
   */
 
-
   def getFinalTheory() = {
     this.finalTheories.head.clauses.foldLeft(List[Clause]()){ (accum, clause) =>
       val clauseCopies = this.finalTheories.tail.flatMap(theory => theory.clauses.filter(c => c.uuid == clause.uuid))
-      if(clauseCopies.length + 1 != this.finalTheories.length) {
+      if (clauseCopies.length + 1 != this.finalTheories.length) {
         logger.info(s"\nCLAUSE\n${clause.tostring} (uuid: ${clause.uuid}) \nIS NOT FOUND IS SOME FINAL THEORY")
       }
       val sumCounts = clauseCopies.foldLeft(clause.tps, clause.fps, clause.fns, clause.seenExmplsNum) { (x, y) =>
@@ -269,11 +254,6 @@ class TopLevelActor[T <: InputSource](val dataOptions: List[(T, T => Iterator[Ex
     }
   }
 
-
-
-
-
-
   /* Modify to handle data in intervals. */
   /*
   def getActorsPool() = {
@@ -290,9 +270,5 @@ class TopLevelActor[T <: InputSource](val dataOptions: List[(T, T => Iterator[Ex
     nodeActorsPool
   }
   */
-
-
-
-
 
 }

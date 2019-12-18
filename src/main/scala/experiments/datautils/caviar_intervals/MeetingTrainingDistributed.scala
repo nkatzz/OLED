@@ -40,16 +40,14 @@ object MeetingTrainingDistributed {
   }
 
   def getData(testingPos: Interval, testingNegs: List[Interval], coresNum: Int) = {
-    /*
+      /*
     * meetPos1 (size=470) and meetPos1 (size=858) are large positive intervals.
     * Therefore, if they are in the training set, we break them into smaller
     * intervals in order to evenly distribute the data across nodes.
     * */
 
-    ///*
-    def isInTrainingSet(x: Interval) = x != testingPos
-
-
+      ///*
+      def isInTrainingSet(x: Interval) = x != testingPos
 
     /*
 
@@ -71,7 +69,7 @@ object MeetingTrainingDistributed {
     */
     //*/
 
-    val allowedPos = allPosIntervals.filter(x => x!= testingPos)
+    val allowedPos = allPosIntervals.filter(x => x != testingPos)
     val allowedNegs = allNegIntervals.filter(z => !testingNegs.contains(z))
 
     val positives = splitN(allowedPos, coresNum).toList
@@ -81,7 +79,7 @@ object MeetingTrainingDistributed {
 
     val zipped = positives zip negatives
     val testing = List(testingPos) ++ testingNegs
-    val out = zipped.map(x => new DataAsIntervals(trainingSet = List(x._1.head) ++ Random.shuffle(x._1.tail ++ x._2), testingSet = testing) )
+    val out = zipped.map(x => new DataAsIntervals(trainingSet = List(x._1.head) ++ Random.shuffle(x._1.tail ++ x._2), testingSet = testing))
     out
   }
 
@@ -105,10 +103,6 @@ object MeetingTrainingDistributed {
     //println(Interval("meeting",5720,24480) == meetPos1)
   }
 
-
-
-
-
   object TwoFoldSplit {
 
     val cores = 2
@@ -125,8 +119,6 @@ object MeetingTrainingDistributed {
     val meetTrainingSet10 = getData(meetPos10, testingNeg10, cores)
 
   }
-
-
 
   object FourFoldSplit {
 
@@ -159,7 +151,5 @@ object MeetingTrainingDistributed {
     val meetTrainingSet9 = getData(meetPos9, testingNeg9, cores)
     val meetTrainingSet10 = getData(meetPos10, testingNeg10, cores)
   }
-
-
 
 }

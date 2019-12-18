@@ -30,7 +30,6 @@ import scala.io._
 
 object CheckOutInfs {
 
-
   def main(args: Array[String]) = {
     val path = args(0)
     val hle = args(1)
@@ -40,39 +39,37 @@ object CheckOutInfs {
     handleInfs(path, hle)
   }
 
-
-
   def handleInfs(path: String, hle: String) = {
 
-    def getStartTime(splittedLine: Array[String], hle: String) = {
-      if (List("highSpeedIn", "withinArea", "rendezVouz").contains(hle)) {
-        splittedLine(4).toInt
-      } else {
-        splittedLine(3).toInt
+      def getStartTime(splittedLine: Array[String], hle: String) = {
+        if (List("highSpeedIn", "withinArea", "rendezVouz").contains(hle)) {
+          splittedLine(4).toInt
+        } else {
+          splittedLine(3).toInt
+        }
       }
-    }
 
-    def getVessel(splittedLine: Array[String]) = splittedLine(1)
+      def getVessel(splittedLine: Array[String]) = splittedLine(1)
 
-    val newPath = path.split("\\.")(0)+"-no-infs.csv"
+    val newPath = path.split("\\.")(0) + "-no-infs.csv"
     utils.Utils.clearFile(newPath)
     val pw = new PrintWriter(new File(newPath))
     val times = getAllTimes()
     val lastTimePoint = times.last
 
-    val infs = Source.fromFile(path).getLines.filter { x => x.split("\\|").last == "inf"}.toVector.distinct
-    val nonInfs = Source.fromFile(path).getLines.filter { x => x.split("\\|").last != "inf"}.toVector.distinct
+    val infs = Source.fromFile(path).getLines.filter { x => x.split("\\|").last == "inf" }.toVector.distinct
+    val nonInfs = Source.fromFile(path).getLines.filter { x => x.split("\\|").last != "inf" }.toVector.distinct
 
     val buffer = ListBuffer[String]()
 
-    nonInfs.foreach(x => pw.write(x+"\n"))
+    nonInfs.foreach(x => pw.write(x + "\n"))
 
     for (line <- infs) {
       val splitted = line.split("\\|")
       val vessel = getVessel(splitted)
       val startTime = getStartTime(splitted, hle)
       // Check if the inf closes at some point
-      val nonInfLines = Source.fromFile(path).getLines.filter { x => x.split("\\|").last != "inf"}.toList.distinct
+      val nonInfLines = Source.fromFile(path).getLines.filter { x => x.split("\\|").last != "inf" }.toList.distinct
       val infClosingLine = nonInfLines.find { otherLine =>
         val otherLineSplitted = otherLine.split("\\|")
         val (v, t) = (getVessel(otherLineSplitted), getStartTime(otherLineSplitted, hle))
@@ -86,8 +83,8 @@ object CheckOutInfs {
         // The same line with the same inf interval may appear over and over again.
         // We use a buffer to avoid re-writting it multiple times.
         if (!buffer.contains(vessel)) {
-          val lineToReplace = splitted.take(splitted.length - 1).mkString("|")+s"|$lastTimePoint"
-          pw.write(lineToReplace+"\n")
+          val lineToReplace = splitted.take(splitted.length - 1).mkString("|") + s"|$lastTimePoint"
+          pw.write(lineToReplace + "\n")
           println(vessel)
           buffer += vessel
         }
@@ -95,10 +92,5 @@ object CheckOutInfs {
     }
     pw.close()
   }
-
-
-
-
-
 
 }

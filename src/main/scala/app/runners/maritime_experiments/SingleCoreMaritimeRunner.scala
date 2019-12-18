@@ -28,7 +28,6 @@ import scala.io.Source
   * Created by nkatz on 7/9/17.
   */
 
-
 object SingleCoreMaritimeRunner {
 
   def main(args: Array[String]) = {
@@ -47,15 +46,14 @@ object SingleCoreMaritimeRunner {
       val speedLimitsMap = populateSpeedLimitsMap(trainingDataOptions.speedLimitsPath, scala.collection.mutable.Map[String, scala.collection.mutable.Set[String]]())
 
       val nodeData = new NodeData(trainingDataOptions.hlePath, trainingDataOptions.llePath, trainingDataOptions.closeToPortsPath,
-        trainingDataOptions.targetConcept, speedLimitsMap)
+                                  trainingDataOptions.targetConcept, speedLimitsMap)
 
       val trainingFunction: MaritimeDataOptions => Iterator[Example] = nodeData.getTrainingData
       val testingFunction: MaritimeDataOptions => Iterator[Example] = nodeData.getTestingData
 
       val system = ActorSystem("HoeffdingLearningSystem")
       val startMsg = if (runOpts.evalth != "None") "eval" else "start"
-      system.actorOf(Props(new Master(runOpts, trainingDataOptions, testingDataOptions, trainingFunction, testingFunction)), name = "Master-Actor") !  startMsg
-
+      system.actorOf(Props(new Master(runOpts, trainingDataOptions, testingDataOptions, trainingFunction, testingFunction)), name = "Master-Actor") ! startMsg
 
     }
   }
@@ -73,6 +71,5 @@ object SingleCoreMaritimeRunner {
     }
     speedLimitsMap
   }
-
 
 }

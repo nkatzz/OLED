@@ -32,7 +32,6 @@ import utils.Utils
 import scala.util.control.Breaks._
 import scala.util.matching.Regex
 
-
 /**
   * Created by nkatz at 26/10/2018
   */
@@ -45,12 +44,13 @@ import scala.util.matching.Regex
 *
 * */
 
-class Learner_OLD_DEBUG[T <: InputSource](val inps: RunningOptions,
-                                          val trainingDataOptions: T,
-                                          val testingDataOptions: T,
-                                          val trainingDataFunction: T => Iterator[Example],
-                                          val testingDataFunction: T => Iterator[Example],
-                                          val writeExprmtResultsTo: String = "") extends Actor {
+class Learner_OLD_DEBUG[T <: InputSource](
+    val inps: RunningOptions,
+    val trainingDataOptions: T,
+    val testingDataOptions: T,
+    val trainingDataFunction: T => Iterator[Example],
+    val testingDataFunction: T => Iterator[Example],
+    val writeExprmtResultsTo: String = "") extends Actor {
 
   startTime = System.nanoTime()
 
@@ -105,7 +105,6 @@ class Learner_OLD_DEBUG[T <: InputSource](val inps: RunningOptions,
   // recognized fluents to persist.
   private val isStrongInertia = false
   //----------------------------------------------------------------------
-
 
   /* All these are for presenting analytics/results after a run. */
   private val initWeightSums = new ListBuffer[Double]
@@ -172,12 +171,10 @@ class Learner_OLD_DEBUG[T <: InputSource](val inps: RunningOptions,
             x.replaceAll("active", "active_1")
           }
         }
-        Example(annot = currentBatch.annotation, nar = noisyNarrative, _time=currentBatch.time)
+        Example(annot = currentBatch.annotation, nar = noisyNarrative, _time = currentBatch.time)
       }
     }
   }
-
-
 
   def receive = {
 
@@ -213,8 +210,8 @@ class Learner_OLD_DEBUG[T <: InputSource](val inps: RunningOptions,
     // Use a hand-crafted theory for sequential prediction. This updates the rule weights after each round,
     // but it does not mess with the structure of the rules.
     case "predict" => {
-      def matches(p: Regex, str: String) = p.pattern.matcher(str).matches
-      val rules = scala.io.Source.fromFile(inps.evalth).getLines.toList.filter(line => !matches( """""".r, line) && !line.startsWith("%"))
+        def matches(p: Regex, str: String) = p.pattern.matcher(str).matches
+      val rules = scala.io.Source.fromFile(inps.evalth).getLines.toList.filter(line => !matches("""""".r, line) && !line.startsWith("%"))
       val rulesParsed = rules.map(r => Clause.parse(r))
       (1 to repeatFor) foreach { _ =>
         this.data = getTrainData
@@ -232,7 +229,6 @@ class Learner_OLD_DEBUG[T <: InputSource](val inps: RunningOptions,
     case "move on" => processNext()
 
   }
-
 
   /*
   * Performs online evaluation and sends the next batch to the worker(s) for processing.
@@ -272,8 +268,8 @@ class Learner_OLD_DEBUG[T <: InputSource](val inps: RunningOptions,
       }
     }
 
-    val theorySize = merged.clauses.foldLeft(0)((x,y) => x + y.body.length + 1)
-    val totalRunningTime = (endTime - startTime)/1000000000.0
+    val theorySize = merged.clauses.foldLeft(0)((x, y) => x + y.body.length + 1)
+    val totalRunningTime = (endTime - startTime) / 1000000000.0
     val totalTrainingTime = totalBatchProcessingTime
 
     logger.info(s"\nAll rules found (non-pruned, non-compressed):\n ${merged.showWithStats}")
@@ -355,11 +351,6 @@ class Learner_OLD_DEBUG[T <: InputSource](val inps: RunningOptions,
     //logger.info(s"\ntps: $tps\nfps: $fps\nfns: " + s"$fns\nprecision: $precision\nrecall: $recall\nf-score: $fscore)")
   }
 
-
-
-
-
-
   var TPs = 0
   var FPs = 0
   var FNs = 0
@@ -376,7 +367,7 @@ class Learner_OLD_DEBUG[T <: InputSource](val inps: RunningOptions,
 
         //val merged = Theory( (init.clauses ++ term.clauses).filter(p => p.body.length >= 1 && p.score > 0.9) )
 
-        val merged = Theory( init.clauses.filter(p => p.precision >= inps.pruneThreshold) ++ term.clauses.filter(p => p.recall >= inps.pruneThreshold) )
+        val merged = Theory(init.clauses.filter(p => p.precision >= inps.pruneThreshold) ++ term.clauses.filter(p => p.recall >= inps.pruneThreshold))
 
         val (tps, fps, fns, precision, recall, fscore) = eval(merged, batch, inps, inputTheoryFile)
 
@@ -384,13 +375,13 @@ class Learner_OLD_DEBUG[T <: InputSource](val inps: RunningOptions,
         FPs += fps
         FNs += fns
 
-        val currentPrecision = TPs.toDouble/(TPs+FPs)
-        val currentRecall = TPs.toDouble/(TPs+FNs)
-        val _currentF1Score = 2*currentPrecision*currentRecall/(currentPrecision+currentRecall)
+        val currentPrecision = TPs.toDouble / (TPs + FPs)
+        val currentRecall = TPs.toDouble / (TPs + FNs)
+        val _currentF1Score = 2 * currentPrecision * currentRecall / (currentPrecision + currentRecall)
         val currentF1Score = if (_currentF1Score.isNaN) 0.0 else _currentF1Score
         runningF1Score = runningF1Score :+ currentF1Score
 
-        val error = (fps+fns).toDouble
+        val error = (fps + fns).toDouble
 
         currentError = s"Number of mistakes (FPs+FNs) "
         this.prequentialError = this.prequentialError :+ error
@@ -408,9 +399,6 @@ class Learner_OLD_DEBUG[T <: InputSource](val inps: RunningOptions,
 
     }
   }
-
-
-
 
   private def getMergedTheory(testOnly: Boolean) = {
     if (withec) {
@@ -461,8 +449,9 @@ class Learner_OLD_DEBUG[T <: InputSource](val inps: RunningOptions,
   }
 
   /* This is called whenever we're specializing a rule due to a mistake */
-  private def specializeRuleAndUpdate(topRule: Clause,
-                                      refinement: Clause, currentAtom: String, mistakeType: String, testOnly: Boolean = false) = {
+  private def specializeRuleAndUpdate(
+      topRule: Clause,
+      refinement: Clause, currentAtom: String, mistakeType: String, testOnly: Boolean = false) = {
 
     val filter = (p: List[Clause]) => {
       p.foldLeft(List[Clause]()) { (x, y) =>
@@ -510,13 +499,8 @@ class Learner_OLD_DEBUG[T <: InputSource](val inps: RunningOptions,
 
   }
 
-
-
-
-
-
   def evaluateTest_NEW(batch: Example, inputTheoryFile: String = "",
-                       testOnly: Boolean = false, weightsOnly: Boolean = false, inputTheory: Theory = Theory()) = {
+      testOnly: Boolean = false, weightsOnly: Boolean = false, inputTheory: Theory = Theory()) = {
 
     if (withec) {
 
@@ -543,7 +527,7 @@ class Learner_OLD_DEBUG[T <: InputSource](val inps: RunningOptions,
 
       var alreadyProcessedAtoms = Set.empty[String]
 
-      while(!finishedBatch) {
+      while (!finishedBatch) {
 
         val groundingsMapTimed = Utils.time{
           computeRuleGroundings(inps, markedProgram, markedMap, e, trueAtoms)
@@ -583,7 +567,7 @@ class Learner_OLD_DEBUG[T <: InputSource](val inps: RunningOptions,
                 // only updates weights when we're not running in test mode.
                 val prediction =
                   predictAndUpdate(currentAtom, currentFluent,
-                    initiatedBy, terminatedBy, markedMap, testOnly, trueAtoms, batch)
+                                   initiatedBy, terminatedBy, markedMap, testOnly, trueAtoms, batch)
 
                 //val prediction = _prediction._1
 
@@ -595,7 +579,7 @@ class Learner_OLD_DEBUG[T <: InputSource](val inps: RunningOptions,
                   case _ => throw new RuntimeException("Unexpected response from predictAndUpdate")
                 }
 
-                if (! testOnly && ! weightsOnly) {
+                if (!testOnly && !weightsOnly) {
 
                   if (prediction == "FP" && terminatedBy.isEmpty) {
 
@@ -685,9 +669,8 @@ class Learner_OLD_DEBUG[T <: InputSource](val inps: RunningOptions,
 
   }
 
-
   def evaluateTest_NEW_EXPAND_WHEN_NEEDED(batch: Example, inputTheoryFile: String = "",
-                                          testOnly: Boolean = false, weightsOnly: Boolean = false, inputTheory: Theory = Theory()) = {
+      testOnly: Boolean = false, weightsOnly: Boolean = false, inputTheory: Theory = Theory()) = {
 
     if (withec) {
 
@@ -718,7 +701,7 @@ class Learner_OLD_DEBUG[T <: InputSource](val inps: RunningOptions,
 
       var alreadyProcessedAtoms = Set.empty[String]
 
-      while(!finishedBatch) {
+      while (!finishedBatch) {
 
         val groundingsMapTimed = Utils.time{
           computeRuleGroundings(inps, markedProgram, markedMap, e, trueAtoms)
@@ -753,7 +736,6 @@ class Learner_OLD_DEBUG[T <: InputSource](val inps: RunningOptions,
               //val (currentAtom, currentTime) = (y._1._1, y._1._2)
               val (currentAtom, currentTime) = (y.atom, y.time)
 
-
               if (!alreadyProcessedAtoms.contains(currentAtom)) {
                 val parsed = Literal.parse(currentAtom)
                 val currentFluent = parsed.terms.head.tostring
@@ -766,8 +748,8 @@ class Learner_OLD_DEBUG[T <: InputSource](val inps: RunningOptions,
                 // to avoid doing it twice.
                 ///*
                 val nonFiringInitRules =
-                markedMap.filter(x =>
-                  x._2.head.functor.contains("initiated") && !initiatedBy.contains(x._1))
+                  markedMap.filter(x =>
+                    x._2.head.functor.contains("initiated") && !initiatedBy.contains(x._1))
                 //*/
 
                 // This is also calculated at predictAndUpdate, we need to factor it out.
@@ -775,8 +757,8 @@ class Learner_OLD_DEBUG[T <: InputSource](val inps: RunningOptions,
                 // to avoid doing it twice.
                 ///*
                 val nonFiringTermRules =
-                markedMap.filter(x =>
-                  x._2.head.functor.contains("terminated") && !terminatedBy.toSet.contains(x._1))
+                  markedMap.filter(x =>
+                    x._2.head.functor.contains("terminated") && !terminatedBy.toSet.contains(x._1))
                 //*/
 
                 //val initWeightSum = if (initiatedBy.nonEmpty) initiatedBy.map(x => markedMap(x).w).sum else 0.0
@@ -785,7 +767,7 @@ class Learner_OLD_DEBUG[T <: InputSource](val inps: RunningOptions,
                 // only updates weights when we're not running in test mode.
                 val prediction =
                   predictAndUpdate(currentAtom, currentFluent,
-                    initiatedBy, terminatedBy, markedMap, testOnly, trueAtoms, batch)
+                                   initiatedBy, terminatedBy, markedMap, testOnly, trueAtoms, batch)
 
                 prediction match {
                   case "TP" => perBatchTPs += 1
@@ -795,7 +777,7 @@ class Learner_OLD_DEBUG[T <: InputSource](val inps: RunningOptions,
                   case _ => throw new RuntimeException("Unexpected response from predictAndUpdate")
                 }
 
-                if (! testOnly && ! weightsOnly) {
+                if (!testOnly && !weightsOnly) {
 
                   if (prediction == "FP") {
 
@@ -844,9 +826,9 @@ class Learner_OLD_DEBUG[T <: InputSource](val inps: RunningOptions,
                         // initiatedBy is non empty, at least some of the rules in there must be top rules.
 
                         val rulesToSpecialize =
-                        // This is the first minor difference with the piece of code
-                        // for specializing termination rules (below). Here We select the
-                        // rules from the initiation part of the theory, below from the termination
+                          // This is the first minor difference with the piece of code
+                          // for specializing termination rules (below). Here We select the
+                          // rules from the initiation part of the theory, below from the termination
                           theory.head.clauses.
                             filter(x => initiatedBy.toSet.contains(x.##.toString))
 
@@ -856,14 +838,14 @@ class Learner_OLD_DEBUG[T <: InputSource](val inps: RunningOptions,
                           // Find suitable refinements, i.e refinements that DO NOT fire
                           // w.r.t. the current FP atom.
                           val suitableRefs =
-                          // Here is the second difference. We use nonFiringInitRules here.
-                          // It's really stupid to have this code duplicated like that.
-                          // Fuck your quick & dirty bullshit.
+                            // Here is the second difference. We use nonFiringInitRules here.
+                            // It's really stupid to have this code duplicated like that.
+                            // Fuck your quick & dirty bullshit.
                             ruleToSpecialize.refinements.
                               filter(r => nonFiringInitRules.keySet.contains(r.##.toString)).
                               filter(s => s.score > ruleToSpecialize.score).
                               filter(r => !theory.head.clauses.exists(r1 => r1.thetaSubsumes(r) && r.thetaSubsumes(r1))).
-                              sortBy { x => (- x.w_pos, - x.score, x.body.length+1) }
+                              sortBy { x => (-x.w_pos, -x.score, x.body.length + 1) }
 
                           if (suitableRefs.nonEmpty) {
                             performedSpecialization = true
@@ -880,7 +862,6 @@ class Learner_OLD_DEBUG[T <: InputSource](val inps: RunningOptions,
                         }
 
                         if (performedSpecialization) break
-
 
                       }
                     }
@@ -928,7 +909,7 @@ class Learner_OLD_DEBUG[T <: InputSource](val inps: RunningOptions,
                               filter(r => nonFiringTermRules.keySet.contains(r.##.toString)).
                               filter(s => s.score > ruleToSpecialize.score).
                               filter(r => !theory.tail.head.clauses.exists(r1 => r1.thetaSubsumes(r) && r.thetaSubsumes(r1))).
-                              sortBy { x => (- x.w_pos, - x.score, x.body.length+1) }
+                              sortBy { x => (-x.w_pos, -x.score, x.body.length + 1) }
 
                           if (suitableRefs.nonEmpty) {
                             performedSpecialization = true
@@ -992,30 +973,10 @@ class Learner_OLD_DEBUG[T <: InputSource](val inps: RunningOptions,
 
   }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   def updateAnalyticsBuffers(atom: String, initWghtSum: Double, termWghtSum: Double,
-                             nonInitWghtSum: Double, nonTermWghtSum: Double,
-                             predictInitWghtSum: Double, predictTermWghtSum: Double,
-                             inertWghtSum: Double, holdsWght: Double) = {
+      nonInitWghtSum: Double, nonTermWghtSum: Double,
+      predictInitWghtSum: Double, predictTermWghtSum: Double,
+      inertWghtSum: Double, holdsWght: Double) = {
 
     if (atom.contains(keepStatsForFluent)) {
       initWeightSums += initWghtSum
@@ -1035,11 +996,9 @@ class Learner_OLD_DEBUG[T <: InputSource](val inps: RunningOptions,
     }
   }
 
-
-
   def predictAndUpdate(currentAtom: String, currentFluent: String, init: Vector[String],
-                       term: Vector[String], markedMap: scala.collection.immutable.Map[String, Clause],
-                       testOnly: Boolean, trueAtoms: Set[String], batch: Example) = {
+      term: Vector[String], markedMap: scala.collection.immutable.Map[String, Clause],
+      testOnly: Boolean, trueAtoms: Set[String], batch: Example) = {
 
     val (initiatedBy, terminatedBy) = (init, term)
 
@@ -1056,7 +1015,7 @@ class Learner_OLD_DEBUG[T <: InputSource](val inps: RunningOptions,
 
     // Use this to have all rules and their refs vote independently:
     // This was the default but does not seam reasonable.
-    val predictInitiated = initWeightSum// - nonFiringInitRules.values.map(_.w).sum
+    val predictInitiated = initWeightSum // - nonFiringInitRules.values.map(_.w).sum
 
     // Use this to have one prediction per top rule, resulting by combing the
     // opinions of the rule's sub-expert committee (its specializations)
@@ -1091,7 +1050,7 @@ class Learner_OLD_DEBUG[T <: InputSource](val inps: RunningOptions,
 
     // Use this to have all rules and their refs vote independently:
     // This was the default but does not seam reasonable.
-    val predictTerminated = termWeightSum// - nonFiringTermRules.values.map(_.w).sum
+    val predictTerminated = termWeightSum // - nonFiringTermRules.values.map(_.w).sum
 
     // Use this to have one prediction per top rule, resulting by combing the
     // opinions of the rule's sub-expert committee (its specializations):
@@ -1129,8 +1088,8 @@ class Learner_OLD_DEBUG[T <: InputSource](val inps: RunningOptions,
     //val (predictAtomHolds, holdsWeight) = (if (_predictAtomHolds > 0) true else false, _predictAtomHolds)
 
     updateAnalyticsBuffers(currentAtom, initWeightSum, termWeightSum,
-      nonFiringInitRules.values.map(_.w_pos).sum, nonFiringTermRules.values.map(_.w_pos).sum,
-      predictInitiated, predictTerminated, inertiaExpertPrediction, holdsWeight)
+                           nonFiringInitRules.values.map(_.w_pos).sum, nonFiringTermRules.values.map(_.w_pos).sum,
+                           predictInitiated, predictTerminated, inertiaExpertPrediction, holdsWeight)
 
     /*
     * THIS PREDICTION RULE IS WRONG:
@@ -1160,8 +1119,6 @@ class Learner_OLD_DEBUG[T <: InputSource](val inps: RunningOptions,
     //val holdsPredictionWeight = inertiaExpertPrediction + predictInitiated - predictTerminated
     //val predictAtomHolds = holdsPredictionWeight > 0.0
 
-
-
     if (predictAtomHolds) {
 
       // If the fluent we predicted that it holds is not in the inertia expert map, add it,
@@ -1181,7 +1138,7 @@ class Learner_OLD_DEBUG[T <: InputSource](val inps: RunningOptions,
         updateTrueLabels(currentAtom, 1.0)
 
         updateRulesScore("TP", initiatedBy.map(x => markedMap(x)), nonFiringInitRules.values.toVector,
-          terminatedBy.map(x => markedMap(x)), nonFiringTermRules.values.toVector)
+                               terminatedBy.map(x => markedMap(x)), nonFiringTermRules.values.toVector)
 
         "TP"
 
@@ -1229,7 +1186,7 @@ class Learner_OLD_DEBUG[T <: InputSource](val inps: RunningOptions,
         }
 
         updateRulesScore("FP", initiatedBy.map(x => markedMap(x)), nonFiringInitRules.values.toVector,
-          terminatedBy.map(x => markedMap(x)), nonFiringTermRules.values.toVector)
+                               terminatedBy.map(x => markedMap(x)), nonFiringTermRules.values.toVector)
 
         "FP" // result returned to the calling method.
       }
@@ -1249,7 +1206,7 @@ class Learner_OLD_DEBUG[T <: InputSource](val inps: RunningOptions,
           termWeightSum, nonFiringInitRules.values.map(_.w).sum, nonFiringTermRules.values.map(_.w).sum, this.logger)
         */
 
-        if (! testOnly) {
+        if (!testOnly) {
 
           // Increase the weights of all rules that initiate it
           increaseWeights(initiatedBy, markedMap, learningRate)
@@ -1274,7 +1231,7 @@ class Learner_OLD_DEBUG[T <: InputSource](val inps: RunningOptions,
         }
 
         updateRulesScore("FN", initiatedBy.map(x => markedMap(x)), nonFiringInitRules.values.toVector,
-          terminatedBy.map(x => markedMap(x)), nonFiringTermRules.values.toVector)
+                               terminatedBy.map(x => markedMap(x)), nonFiringTermRules.values.toVector)
 
         "FN" // result returned to the calling method.
 
@@ -1294,22 +1251,11 @@ class Learner_OLD_DEBUG[T <: InputSource](val inps: RunningOptions,
         }
 
         updateRulesScore("TN", initiatedBy.map(x => markedMap(x)), nonFiringInitRules.values.toVector,
-          terminatedBy.map(x => markedMap(x)), nonFiringTermRules.values.toVector)
+                               terminatedBy.map(x => markedMap(x)), nonFiringTermRules.values.toVector)
 
         "TN"
       }
     }
   }
-
-
-
-
-
-
-
-
-
-
-
 
 }

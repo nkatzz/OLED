@@ -32,12 +32,12 @@ object Runner_Streaming extends LazyLogging {
   def main(args: Array[String]) = {
     val argsok = CMDArgs.argsOk(args)
     if (!argsok._1) {
-      logger.error(argsok._2) ; System.exit(-1)
+      logger.error(argsok._2); System.exit(-1)
     } else {
 
       val runningOptions = CMDArgs.getOLEDInputArgs(args)
 
-      val trainingDataOptions = new StreamingMongoDataOptions(dbName = runningOptions.train, targetConcept = runningOptions.targetHLE)
+      val trainingDataOptions = new StreamingMongoDataOptions(dbName        = runningOptions.train, targetConcept = runningOptions.targetHLE)
 
       val testingDataOptions = trainingDataOptions
 
@@ -50,15 +50,15 @@ object Runner_Streaming extends LazyLogging {
       val startMsg = "start-streaming" //"start"//if (runningOptions.evalth != "None") "eval" else "start"
 
       system.actorOf(Props(new Learner_NEW(runningOptions, trainingDataOptions, testingDataOptions, trainingDataFunction,
-        testingDataFunction)), name = "Learner") ! startMsg
+                                           testingDataFunction)), name = "Learner") ! startMsg
 
     }
   }
 
   class StreamingMongoDataOptions(val dbName: String, val chunkSize: Int = 1,
-                                  val limit: Double = Double.PositiveInfinity.toInt,
-                                  val targetConcept: String = "None", val sortDbByField: String = "time",
-                                  val sort: String = "ascending") extends MongoSource
+      val limit: Double = Double.PositiveInfinity.toInt,
+      val targetConcept: String = "None", val sortDbByField: String = "time",
+      val sort: String = "ascending") extends MongoSource
 
   def getMongoData(opts: StreamingMongoDataOptions): Iterator[Example] = {
     val mc = MongoClient()
@@ -71,7 +71,7 @@ object Runner_Streaming extends LazyLogging {
         case _ => new Example(annot = e.annotation filter (_.contains(opts.targetConcept)), nar = e.narrative, _time = e.time)
       }
     }
-    dataIterator//.take(1000)
+    dataIterator //.take(1000)
   }
 
 }

@@ -70,7 +70,7 @@ object OLEDRunner_MLNExperiments {
 
       if (!learnWholeTheories) {
         val system = ActorSystem("HoeffdingLearningSystem")
-        system.actorOf(Props(new Dispatcher(inps, trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction) ), name = "Learner") ! msg
+        system.actorOf(Props(new Dispatcher(inps, trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction)), name = "Learner") ! msg
       } else {
         /* This doesn't work */
         /*
@@ -82,9 +82,7 @@ object OLEDRunner_MLNExperiments {
       }
     }
 
-
   }
-
 
   /* This is used in "offline" mode (EXPERIMENTAL): the training set is passed once
    * to collect the bottom clauses and these bottom clauses are generalized
@@ -99,7 +97,7 @@ object OLEDRunner_MLNExperiments {
     Globals.glvalues("perfect-fit") = "false"
     var time = 0
     val (accumKernel, accumAnnotation, accumNarrative) =
-      dataset.testingSet.foldLeft( List[Clause](), List[String](), List[String]() ) { (x,y) =>
+      dataset.testingSet.foldLeft(List[Clause](), List[String](), List[String]()) { (x, y) =>
         val ker = x._1
         val annotAccum = x._2
         val narrativeAccum = x._3
@@ -109,7 +107,7 @@ object OLEDRunner_MLNExperiments {
         val interpretation = y.annotationASP ++ y.narrativeASP
         Utils.writeToFile(infile, "overwrite") { p => interpretation.foreach(p.println) }
         val (_, varKernel) =
-          Xhail.runXhail(fromFile=infile.getAbsolutePath, kernelSetOnly=true, bkFile=bk, globals=globals)
+          Xhail.runXhail(fromFile      = infile.getAbsolutePath, kernelSetOnly = true, bkFile = bk, globals = globals)
         (ker ++ varKernel, annotAccum ++ y.annotation, narrativeAccum ++ y.narrative)
       }
     val compressedKernel = LogicUtils.compressTheory(accumKernel.toList)
@@ -118,18 +116,16 @@ object OLEDRunner_MLNExperiments {
 
 }
 
-
 object MLNDataHandler {
 
   //"/home/nkatz/dev/CAVIAR_MLN/CAVIAR_MLN/meet/fold_0/training/batch/training.fold_0.db"
   ///home/nkatz/dev/CAVIAR_MLN/CAVIAR_MLN/meet/fold_0
 
-
   class MLNDataOptions(val foldPath: String, val chunkSize: Int, val take: Int = 0) extends app.runutils.IOHandling.MongoSource
 
   def getTrainingData(opts: MLNDataOptions): Iterator[Example] = {
     val d = getData(opts)
-    val training = if(opts.take == 0) d._1 else d._1.take(opts.take/opts.chunkSize)
+    val training = if (opts.take == 0) d._1 else d._1.take(opts.take / opts.chunkSize)
     training.toIterator
   }
 
@@ -145,44 +141,44 @@ object MLNDataHandler {
       "Active" -> "active", "Inactive" -> "inactive", "Walking" -> "walking", "Abrupt" -> "abrupt" -> "Running" -> "running",
       "Enter" -> "appear", "Exit" -> "disappear", "Meet" -> "meeting", "Move" -> "moving")
 
-    def process(s: String) = {
-      def replAll(s: String, chunks: List[(String, String)]) = chunks.foldLeft(s)((x, y) => x.replaceAll(y._1, y._2))
-      val wordChunks = word findAllIn s toList
-      val time = wordChunks.reverse.head
-      val chunks = ((word findAllIn s).map(x => (x, map.getOrElse(x, handleInnerTerms(x)))).toList, time.toInt)
-      val newS = (replAll(s, chunks._1).replaceAll("\\s", ""), time)
-      newS
-    }
-
-    def isPred(s: String) = {
-      s.startsWith("HoldsAt") || s.startsWith("Happens") || s.startsWith("Close") || s.startsWith("OrientationMove")
-    }
-
-    def handleInnerTerms(s: String) = {
-      def lowerFirst(s: String) = s.replace(s(0), s(0).toLower)
-      //val p = "[A-Z][\\w]+[_][\\w]" // matches stuff like Walking_A and Meet_B_A
-      val split = s.split("_")
-      split.length match {
-        case 1 => lowerFirst(s) // no underscores, simply to lower-case
-        case 2 => s"${map(split(0))}(${lowerFirst(split(1))})"
-        case 3 => s"${map(split(0))}(${lowerFirst(split(1))},${lowerFirst(split(2))})"
+      def process(s: String) = {
+          def replAll(s: String, chunks: List[(String, String)]) = chunks.foldLeft(s)((x, y) => x.replaceAll(y._1, y._2))
+        val wordChunks = word findAllIn s toList
+        val time = wordChunks.reverse.head
+        val chunks = ((word findAllIn s).map(x => (x, map.getOrElse(x, handleInnerTerms(x)))).toList, time.toInt)
+        val newS = (replAll(s, chunks._1).replaceAll("\\s", ""), time)
+        newS
       }
-    }
 
-    ///*
-    def formatAndSplitData(data: List[String], split: Boolean) = {
-      //val slideStep = if (split) chunkSize - 1 else data.length-1
-      val sorted = (data map process _ groupBy (_._2) map { case (k, v) => (k, v.map(_._1)) }).toList.sortBy(_._1.toInt) map (_._2)
-      val iter = if (split) sorted.sliding(opts.chunkSize, opts.chunkSize - 1) map (_.flatten) toList else sorted
-      val d = iter map { p =>
-        val (annotation, narrative) = p.foldLeft(List[String](), List[String]()) { (x, y) =>
-          if (y.startsWith("holdsAt")) (x._1 :+ y, x._2) else (x._1, x._2 :+ y)
+      def isPred(s: String) = {
+        s.startsWith("HoldsAt") || s.startsWith("Happens") || s.startsWith("Close") || s.startsWith("OrientationMove")
+      }
+
+      def handleInnerTerms(s: String) = {
+          def lowerFirst(s: String) = s.replace(s(0), s(0).toLower)
+        //val p = "[A-Z][\\w]+[_][\\w]" // matches stuff like Walking_A and Meet_B_A
+        val split = s.split("_")
+        split.length match {
+          case 1 => lowerFirst(s) // no underscores, simply to lower-case
+          case 2 => s"${map(split(0))}(${lowerFirst(split(1))})"
+          case 3 => s"${map(split(0))}(${lowerFirst(split(1))},${lowerFirst(split(2))})"
         }
-        val time = (word findAllIn p.head toList).reverse.head
-        new Example(annot = annotation, nar = narrative, _time = time)
       }
-      d.toList
-    }
+
+      ///*
+      def formatAndSplitData(data: List[String], split: Boolean) = {
+        //val slideStep = if (split) chunkSize - 1 else data.length-1
+        val sorted = (data map process _ groupBy (_._2) map { case (k, v) => (k, v.map(_._1)) }).toList.sortBy(_._1.toInt) map (_._2)
+        val iter = if (split) sorted.sliding(opts.chunkSize, opts.chunkSize - 1) map (_.flatten) toList else sorted
+        val d = iter map { p =>
+          val (annotation, narrative) = p.foldLeft(List[String](), List[String]()) { (x, y) =>
+            if (y.startsWith("holdsAt")) (x._1 :+ y, x._2) else (x._1, x._2 :+ y)
+          }
+          val time = (word findAllIn p.head toList).reverse.head
+          new Example(annot = annotation, nar = narrative, _time = time)
+        }
+        d.toList
+      }
     //*/
 
     /*
@@ -254,7 +250,6 @@ object MLNDataHandler {
     val trainingData = formatAndSplitData(training, split = true)
     // use this to use a whole video per mini-batch (as in the OSLa experiments)
     //val trainingData = t
-
 
     // make sure that we start with positive examples (don't waste negatives from which nothing is learnt)
     val pos = trainingData.filter(x => x.annotation.nonEmpty)

@@ -40,13 +40,12 @@ import com.mongodb.casbah.Imports._
 
 object Runner extends LazyLogging {
 
-
   def main(args: Array[String]) = {
 
     val argsok = CMDArgs.argsOk(args)
 
     if (!argsok._1) {
-      logger.error(argsok._2) ; System.exit(-1)
+      logger.error(argsok._2); System.exit(-1)
     } else {
 
       val runningOptions = CMDArgs.getOLEDInputArgs(args)
@@ -72,7 +71,6 @@ object Runner extends LazyLogging {
       system.actorOf(Props(new Learner(runningOptions, trainingDataOptions, testingDataOptions, trainingDataFunction,
         testingDataFunction)), name = "Learner") !  startMsg
       */
-
 
       // This is the running setting in the object FullDatasetHoldOut
 
@@ -110,7 +108,7 @@ object Runner extends LazyLogging {
           "caviar-video-12-moving", "caviar-video-1-meeting-moving", "caviar-video-9", "caviar-video-16", "caviar-video-23-moving",
           "caviar-video-29", "caviar-video-5", "caviar-video-22-meeting-moving", "caviar-video-18", "caviar-video-4",
           "caviar-video-24-meeting-moving", "caviar-video-8", "caviar-video-10", "caviar-video-2-meeting-moving",
-           "caviar-video-15", "caviar-video-3", "caviar-video-17")
+          "caviar-video-15", "caviar-video-3", "caviar-video-17")
 
       val train3 = Vector("caviar-streaming-meeting")
 
@@ -122,8 +120,8 @@ object Runner extends LazyLogging {
       /* This is for running with the entire CAVIAR (no test set)*/
       ///*
       val trainingDataOptions =
-        new MongoDataOptions(dbNames = train1, //trainShuffled ,//dataset._1,
-          chunkSize = runningOptions.chunkSize, targetConcept = runningOptions.targetHLE, sortDbByField = "time", what = "training")
+        new MongoDataOptions(dbNames       = train1, //trainShuffled ,//dataset._1,
+                             chunkSize     = runningOptions.chunkSize, targetConcept = runningOptions.targetHLE, sortDbByField = "time", what = "training")
 
       val testingDataOptions = trainingDataOptions
       //*/
@@ -157,8 +155,7 @@ object Runner extends LazyLogging {
       val startMsg = "start"
 
       system.actorOf(Props(new Learner_NEW(runningOptions, trainingDataOptions, testingDataOptions, trainingDataFunction,
-        testingDataFunction)), name = "Learner") ! startMsg
-
+                                           testingDataFunction)), name = "Learner") ! startMsg
 
       /*
         // This is used to generate the "streaming" version of CAVIAR, where each entry in the database
@@ -191,9 +188,9 @@ object Runner extends LazyLogging {
   }
 
   private class DefaultMongoDataOptions(val dbName: String, val collectionName: String = "examples", val chunkSize: Int = 1,
-                                        val limit: Double = Double.PositiveInfinity.toInt, val targetConcept: String = "None",
-                                        val sortDbByField: String = "time", val sort: String = "ascending",
-                                        val intervals: List[Interval] = Nil, val examplesIds: List[String] = Nil) extends MongoSource
+      val limit: Double = Double.PositiveInfinity.toInt, val targetConcept: String = "None",
+      val sortDbByField: String = "time", val sort: String = "ascending",
+      val intervals: List[Interval] = Nil, val examplesIds: List[String] = Nil) extends MongoSource
 
   def getMongoData(opts: DefaultMongoDataOptions): Iterator[Example] = {
 
@@ -219,6 +216,5 @@ object Runner extends LazyLogging {
         }
     }
   }
-
 
 }

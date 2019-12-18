@@ -45,10 +45,10 @@ object Eval {
     val program = ex + globals.INCLUDE_BK(globals.BK_CROSSVAL) + stringTheory + coverageConstr + show
     val f = Utils.getTempFile(s"eval-theory-${UUID.randomUUID().toString}-${System.currentTimeMillis()}", ".lp")
     Utils.writeLine(program, f.getCanonicalPath, "overwrite")
-    val answerSet = ASP.solve(task = Globals.INFERENCE, aspInputFile = f)
+    val answerSet = ASP.solve(task         = Globals.INFERENCE, aspInputFile = f)
     if (answerSet.nonEmpty) {
       val atoms = answerSet.head.atoms
-      atoms.foreach { a=>
+      atoms.foreach { a =>
         val lit = Literal.parse(a)
         val inner = lit.terms.head
         lit.predSymbol match {

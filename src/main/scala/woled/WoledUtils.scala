@@ -37,7 +37,6 @@ import scala.io.Source
 
 object WoledUtils {
 
-
   def evalOnTestSet(testData: Iterator[Example], rules: List[Clause], inps: RunningOptions) = {
 
     println("Evaluating on the test set...")
@@ -48,14 +47,14 @@ object WoledUtils {
 
     testData foreach { batch =>
       val program = {
-        val nar = batch.narrative.map(_+".").mkString("\n")
+        val nar = batch.narrative.map(_ + ".").mkString("\n")
         val include = s"""#include "${inps.globals.BK_WHOLE_EC}"."""
         val show = inps.globals.bodyAtomSignatures.map(x => s"#show ${x.tostring}.").mkString("\n")
         Vector(nar, include, show)
       }
       // This transforms the actual data into an MLN-compatible form.
       val f = woled.Utils.dumpToFile(program)
-      val t = ASP.solve(task=Globals.INFERENCE, aspInputFile=f)
+      val t = ASP.solve(task         = Globals.INFERENCE, aspInputFile = f)
       val answer = t.head.atoms
       val e = new Example(annot = batch.annotation, nar = answer, _time = batch.time)
 
@@ -71,14 +70,11 @@ object WoledUtils {
       totalFNs += fns
     }
 
-    val precision = totalTPs.toDouble/(totalTPs+totalFPs)
-    val recall = totalTPs.toDouble/(totalTPs+totalFNs)
-    val f1 = 2*(precision*recall)/(precision+recall)
+    val precision = totalTPs.toDouble / (totalTPs + totalFPs)
+    val recall = totalTPs.toDouble / (totalTPs + totalFNs)
+    val f1 = 2 * (precision * recall) / (precision + recall)
     println(s"F1-score on test set: $f1")
   }
-
-
-
 
   def getInferredState(rules: List[Clause], e: Example, inertiaAtoms: Vector[Literal], mode: String, inps: RunningOptions) = {
 
@@ -143,9 +139,6 @@ object WoledUtils {
       val domains = kb.predicateSchema(AtomSignature(atom.predSymbol, args.length))
       domains.zip(args).foreach { case (domain, value) => const += domain -> value.symbol }
     }
-
-
-
 
     /* For CAVIAR fragment */
     /*const += "dist" -> "34"
@@ -238,7 +231,6 @@ object WoledUtils {
     const += "event" -> "Disappear_Id3"
     const += "event" -> "Disappear_Id6"
     const += "event" -> "Disappear_Id2"*/
-
 
     /*val domains = const.result()
     domains.foreach { case (name, set) =>
@@ -356,7 +348,6 @@ object WoledUtils {
     evidenceBuilder.functions += new FunctionMapping("Disappear_Id6", "disappear", Vector("Id6"))
     evidenceBuilder.functions += new FunctionMapping("Disappear_Id2", "disappear", Vector("Id2"))*/
 
-
     for (atom <- mlnEvidenceAtoms) {
       val predicate = atom.predSymbol
       val args = atom.terms.map(x => lomrf.logic.Constant(x.tostring)).toVector
@@ -413,7 +404,7 @@ object WoledUtils {
     var result = Map.empty[String, Boolean]
 
     val it = s.mrf.atoms.iterator()
-    while(it.hasNext) {
+    while (it.hasNext) {
       it.advance()
       val a = it.value()
       val atom = a.id.decodeAtom(mln).get
@@ -462,7 +453,7 @@ object WoledUtils {
 
     val file = utils.Utils.getTempFile("function-mappings", ".lp")
     utils.Utils.writeLine(all.mkString("\n"), file.getCanonicalPath, "overwrite")
-    val stuff = ASP.solve(task=Globals.INFERENCE, aspInputFile=file).head.atoms
+    val stuff = ASP.solve(task         = Globals.INFERENCE, aspInputFile = file).head.atoms
 
     val (fluents, events, nextAtoms) = stuff.foldLeft(List[String](), List[String](), List[String]()) { (x, y) =>
       if (y.startsWith("fluent")) (x._1 :+ y, x._2, x._3)
@@ -477,7 +468,7 @@ object WoledUtils {
       val atom = parsed.terms.head
       val atomStr = atom.tostring
       val functor = atom.asInstanceOf[Literal].predSymbol
-      val args =  atom.asInstanceOf[Literal].terms
+      val args = atom.asInstanceOf[Literal].terms
 
       // This is the term that represents the MLN constant (function value) that is generated from this atom.
       // For instance, given the atom meeting(id0,id2), the corresponding constant term is Meeting_Id0_Id2
@@ -506,6 +497,5 @@ object WoledUtils {
     }
     (functionMappings, MLNEvidenceAtoms, MLNConstantsToASPAtomsMap)
   }
-
 
 }

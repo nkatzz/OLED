@@ -38,7 +38,7 @@ object FindPositiveNegativeIntervals {
     * @return a tuple containing the list of positive and negative intervals for the HLE respectively
     */
 
-  def getPositiveNegativeIntervals(DBName: String, HLE: String):  (List[Interval], List[Interval]) = {
+  def getPositiveNegativeIntervals(DBName: String, HLE: String): (List[Interval], List[Interval]) = {
     import scala.collection.mutable.Stack
     val step = 40
     var lastTime = 0
@@ -53,7 +53,7 @@ object FindPositiveNegativeIntervals {
     }
     val startNewInterval = (i: Stack[Interval], e: Example, what: String) => {
       // give some "air" around the positive intervals (hence -step)
-      if (what == "positive") i.push( Interval(HLE, e.time.toInt - step) ) else i.push( Interval("nothing", e.time.toInt) )
+      if (what == "positive") i.push(Interval(HLE, e.time.toInt - step)) else i.push(Interval("nothing", e.time.toInt))
     }
     val closeLastInterval = (i: Stack[Interval]) => {
       val last = i.pop()
@@ -63,13 +63,13 @@ object FindPositiveNegativeIntervals {
 
     val DB = new Database(DBName, "examples")
     val dataIterator = DB.collection.find().sort(MongoDBObject("time" -> 1))
-    while(dataIterator.hasNext) {
+    while (dataIterator.hasNext) {
       val x = dataIterator.next()
       val e = Example(x)
       val annotation = e.annotation
 
-      if(annotation.exists(x => x.contains(HLE))) {
-        if (! holdsPreviousely) {
+      if (annotation.exists(x => x.contains(HLE))) {
+        if (!holdsPreviousely) {
           // close the last negative interval
           closeInterval(negativeIntervals, e, "negative")
           // start a new positive interval
@@ -94,8 +94,8 @@ object FindPositiveNegativeIntervals {
     }
     closeLastInterval(negativeIntervals)
     closeLastInterval(intervals)
-    intervals.toList.reverse foreach (x => println(s"${x.HLE}: (${x.startPoint},${x.endPoint}), length: ${x.length}")  )
-    negativeIntervals.toList.reverse foreach (x => println(s"${x.HLE}: (${x.startPoint},${x.endPoint}), length: ${x.length}")  )
+    intervals.toList.reverse foreach (x => println(s"${x.HLE}: (${x.startPoint},${x.endPoint}), length: ${x.length}"))
+    negativeIntervals.toList.reverse foreach (x => println(s"${x.HLE}: (${x.startPoint},${x.endPoint}), length: ${x.length}"))
     // The average length of positive intervals
     val averagePositiveLenth = intervals.foldLeft(0.0)(_ + _.length) / intervals.length
     println(s"Average positive length: ${averagePositiveLenth.ceil}")
@@ -106,11 +106,10 @@ object FindPositiveNegativeIntervals {
     val totalPositiveLength = intervals.foldLeft(0.0)(_ + _.length)
     println(s"Total positive length: $totalPositiveLength")
     // 90% of negatives will be used for training:
-    val trainingNegativesNumber = ((90.0/100) * totalNegativeLength).toInt
-    println(s"90% of negatives (training set size) is ${(90.0/100) * totalNegativeLength}")
+    val trainingNegativesNumber = ((90.0 / 100) * totalNegativeLength).toInt
+    println(s"90% of negatives (training set size) is ${(90.0 / 100) * totalNegativeLength}")
     println(s"So negatives' testing set size is ${totalNegativeLength - trainingNegativesNumber}")
     (intervals.toList.reverse, negativeIntervals.toList.reverse)
   }
-
 
 }

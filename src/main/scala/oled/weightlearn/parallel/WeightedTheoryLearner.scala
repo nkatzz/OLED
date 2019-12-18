@@ -41,10 +41,10 @@ import woled.WoledUtils
  * */
 
 class WeightedTheoryLearner[T <: InputSource](inps: RunningOptions, trainingDataOptions: T,
-                                              testingDataOptions: T, trainingDataFunction: T => Iterator[Example],
-                                              testingDataFunction: T => Iterator[Example],
-                                              targetClass: String) extends TheoryLearner(inps,
-  trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction, targetClass) {
+    testingDataOptions: T, trainingDataFunction: T => Iterator[Example],
+    testingDataFunction: T => Iterator[Example],
+    targetClass: String) extends TheoryLearner(inps,
+                                               trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction, targetClass) {
 
   import context.become
 
@@ -56,7 +56,7 @@ class WeightedTheoryLearner[T <: InputSource](inps: RunningOptions, trainingData
 
   private var workers: Vector[ActorRef] = Vector.empty[ActorRef]
 
-  private val master: ActorRef = context.actorOf(Props( new MLNClauseEvalMaster(inps, initorterm) ), name = s"${this.initorterm}-master")
+  private val master: ActorRef = context.actorOf(Props(new MLNClauseEvalMaster(inps, initorterm)), name = s"${this.initorterm}-master")
 
   override def receive = {
     case "go" =>
@@ -71,7 +71,7 @@ class WeightedTheoryLearner[T <: InputSource](inps: RunningOptions, trainingData
   def start = {
     this.repeatFor -= 1
     data = getTrainData
-    if (data.isEmpty) { logger.error(s"No data received.") ; System.exit(-1) }
+    if (data.isEmpty) { logger.error(s"No data received."); System.exit(-1) }
     become(normalState)
     self ! getNextBatch
   }
@@ -85,18 +85,18 @@ class WeightedTheoryLearner[T <: InputSource](inps: RunningOptions, trainingData
           self ! "start-over"
         } else if (repeatFor == 0) {
           val endTime = System.nanoTime()
-          val totalTime = (endTime - startTime)/1000000000.0
+          val totalTime = (endTime - startTime) / 1000000000.0
 
           val theory = if (topTheory.clauses.nonEmpty) topTheory.clauses else inps.globals.state.getAllRules(inps.globals, "top")
 
-          // used for printing out the avegare loss vector
-          def avgLoss(in: Vector[Int]) = {
-            in.foldLeft(0, 0, Vector.empty[Double]){ (x, y) =>
-              val (count, prevSum, avgVector) = (x._1, x._2, x._3)
-              val (newCount, newSum) = (count + 1, prevSum + y)
-              (newCount, newSum, avgVector :+ newSum.toDouble/newCount )
+            // used for printing out the avegare loss vector
+            def avgLoss(in: Vector[Int]) = {
+              in.foldLeft(0, 0, Vector.empty[Double]){ (x, y) =>
+                val (count, prevSum, avgVector) = (x._1, x._2, x._3)
+                val (newCount, newSum) = (count + 1, prevSum + y)
+                (newCount, newSum, avgVector :+ newSum.toDouble / newCount)
+              }
             }
-          }
 
           logger.info(s"\nTheory:\n${Theory(theory).showWithStats}\nTraining time: $totalTime")
           logger.info(s"Mistakes per batch:\n${inps.globals.state.perBatchError}")
@@ -139,25 +139,24 @@ class WeightedTheoryLearner[T <: InputSource](inps: RunningOptions, trainingData
             (rule => if (rule.refinements.isEmpty) rule.generateCandidateRefs(inps.globals))
 
           newTopTheory.clauses.map { topClause =>
-            val bestRef = topClause.refinements.sortBy(x => - x.weight).head
+            val bestRef = topClause.refinements.sortBy(x => -x.weight).head
             if (topClause.weight > bestRef.weight) topClause else bestRef
 
           }
         } else newTopTheory.clauses
-
 
       //val error = predictSate(useToPredict, e, inps, initorterm, jep)
       //Globals.errorProb = Globals.errorProb :+ error
 
       val (_, startNewRulesTime) = Utils.time {
         val startNew =
-        //if (this.inps.tryMoreRules && (this.targetClass == "terminated" ||this.targetClass == "initiated" )) true
-        if (this.inps.tryMoreRules && targetClass == "terminated"){
-          true
-        } else {
-          //newTopTheory.growNewRuleTest(e, jep, initorterm, inps.globals)
-          Theory(useToPredict).growNewRuleTest(e, initorterm, inps.globals)
-        }
+          //if (this.inps.tryMoreRules && (this.targetClass == "terminated" ||this.targetClass == "initiated" )) true
+          if (this.inps.tryMoreRules && targetClass == "terminated") {
+            true
+          } else {
+            //newTopTheory.growNewRuleTest(e, jep, initorterm, inps.globals)
+            Theory(useToPredict).growNewRuleTest(e, initorterm, inps.globals)
+          }
         //*/
         if (startNew) {
           val newRules_ = if (inps.tryMoreRules) {
@@ -202,7 +201,7 @@ class WeightedTheoryLearner[T <: InputSource](inps: RunningOptions, trainingData
         //val error = predictSate(useToPredict, e, inps, initorterm, jep)
         //Globals.errorProb = Globals.errorProb :+ error
 
-        become( waitingState(newTopTheory, uuidsToRuleIdsMap) )
+        become(waitingState(newTopTheory, uuidsToRuleIdsMap))
         master ! input
 
       } else {
@@ -225,13 +224,13 @@ class WeightedTheoryLearner[T <: InputSource](inps: RunningOptions, trainingData
         newTopTheory.clauses foreach { clause =>
 
           if (clause.body.nonEmpty) Auxil.updateClauseStats(clause,
-            uuidsToRuleIdsMap, result.inferredTrue, result.actuallyTrue, result.incorrectlyTerminated,
-            result.correctlyNotTerminated, result.clausesWithUpdatedWeights, this.initorterm)
+                                                            uuidsToRuleIdsMap, result.inferredTrue, result.actuallyTrue, result.incorrectlyTerminated,
+                                                            result.correctlyNotTerminated, result.clausesWithUpdatedWeights, this.initorterm)
 
           clause.refinements.foreach(ref =>
             Auxil.updateClauseStats(ref, uuidsToRuleIdsMap, result.inferredTrue,
-              result.actuallyTrue, result.incorrectlyTerminated, result.correctlyNotTerminated,
-              result.clausesWithUpdatedWeights, this.initorterm))
+                                    result.actuallyTrue, result.incorrectlyTerminated, result.correctlyNotTerminated,
+                                    result.clausesWithUpdatedWeights, this.initorterm))
 
           clause.seenExmplsNum += exmplCount
           clause.refinements.toVector.foreach(y => y.seenExmplsNum += exmplCount)
@@ -253,14 +252,12 @@ class WeightedTheoryLearner[T <: InputSource](inps: RunningOptions, trainingData
 
   def getWorkersPool = {
     ///*
-    val  cores = Runtime.getRuntime.availableProcessors()
+    val cores = Runtime.getRuntime.availableProcessors()
     val workerNames = (1 to cores).toList map (i => s"Worker-${this.initorterm}-$i")
-    workerNames map { name => context.actorOf(Props( new MLNClauseEvalWorker ), name = name) } toVector
+    workerNames map { name => context.actorOf(Props(new MLNClauseEvalWorker), name = name) } toVector
     //*/
     //Vector(context.actorOf(Props( new MLNClauseEvalWorker ), name = "worker"))
   }
-
-
 
   /* Perform MAP inference to detect whether a new rule should be added.
    * This is half-finished and is currently not used anywhere. */
@@ -289,7 +286,7 @@ class WeightedTheoryLearner[T <: InputSource](inps: RunningOptions, trainingData
     val tps = _inferredTrue.intersect(_actuallyTrue).size
     val fps = _inferredTrue.diff(_actuallyTrue).size
 
-    val error = Math.abs(_actuallyTrue.size - (tps+fps))
+    val error = Math.abs(_actuallyTrue.size - (tps + fps))
 
     error
     //Math.abs(_inferredTrue.size - _actuallyTrue.size)
@@ -297,8 +294,5 @@ class WeightedTheoryLearner[T <: InputSource](inps: RunningOptions, trainingData
     //(inferredTrue, actuallyTrue, incorrectlyTerminated, correctlyNotTerminated, clauses, totalExmplCount)
 
   }
-
-
-
 
 }

@@ -21,7 +21,6 @@ import com.mongodb.{BasicDBList, BasicDBObject}
 import com.mongodb.casbah.{MongoClient, MongoCollection}
 import com.mongodb.casbah.Imports._
 
-
 /**
   * Created by nkatz on 6/23/17.
   */
@@ -65,18 +64,14 @@ object Tests extends App {
   val proximityCollection = mongoClient(dbName)("proximity")
   //proximityCollection.createIndex(MongoDBObject("interval"))
 
-
   val hleCollections = List(highSpeedCollection, withinAreaCollection, sailingCollection,
-    stoppedCollection, loiteringCollection, rendezvousCollection, lowSpeedCollection, proximityCollection)
-
-
+                            stoppedCollection, loiteringCollection, rendezvousCollection, lowSpeedCollection, proximityCollection)
 
   val writeToDB = mongoClient("high-speed-stand-alone-db")("examples")
   mongoClient.dropDatabase("high-speed-stand-alone-db")
   writeToDB.createIndex(MongoDBObject("time" -> 1))
 
   getMaritimeDataInChunks(llesCollection, 5)
-
 
   def getMaritimeDataInChunks(llesCollection: MongoCollection, chunkSize: Int) = {
 
@@ -97,7 +92,7 @@ object Tests extends App {
       val (annotAtoms, areas2) = timeSlice.toList.foldLeft(List[String](), List[String]()) { (accum, time) =>
 
         val results = hleCollections.foldLeft(Iterator[DBObject]()) { (x, collection) =>
-          val t = collection.find( MongoDBObject("interval" -> time) )
+          val t = collection.find(MongoDBObject("interval" -> time))
           x ++ t
         }
 
@@ -111,8 +106,8 @@ object Tests extends App {
 
       val areas = (areas1 ++ areas2).distinct.filter(_ != "None")
       val speedLimitAtoms = areas.foldLeft(List[String]()){ (k, area) =>
-        val results = speedLimitsCollection.find( MongoDBObject("area" -> area) )
-        val resToStrs = results.map ( obj => obj.asInstanceOf[BasicDBObject].get("atom").toString )
+        val results = speedLimitsCollection.find(MongoDBObject("area" -> area))
+        val resToStrs = results.map (obj => obj.asInstanceOf[BasicDBObject].get("atom").toString)
         k ++ resToStrs
       }
 
@@ -121,7 +116,7 @@ object Tests extends App {
       //------------------------------
       // INSERT TO THE STAND-ALONE DB
       //------------------------------
-      val entry = MongoDBObject("time" -> first) ++ ("annotation" -> annotAtoms) ++ ("narrative" -> (narrativeAtoms++speedLimitAtoms++notCloseToPortsAtoms))
+      val entry = MongoDBObject("time" -> first) ++ ("annotation" -> annotAtoms) ++ ("narrative" -> (narrativeAtoms ++ speedLimitAtoms ++ notCloseToPortsAtoms))
       writeToDB.insert(entry)
     }
   }
@@ -130,8 +125,8 @@ object Tests extends App {
     val atom = o.asInstanceOf[BasicDBObject].get("lle").toString
     //val vs = o.asInstanceOf[BasicDBObject].get("vessels").asInstanceOf[BasicDBList].toList.map(_.toString)
     val time = o.asInstanceOf[BasicDBObject].get("time").toString.toInt
-    val r = closeToPortsCollection.find( MongoDBObject("time" -> time) )
-    val notCloseToPortsAtoms = r.map( obj => obj.asInstanceOf[BasicDBObject].get("atom").toString )
+    val r = closeToPortsCollection.find(MongoDBObject("time" -> time))
+    val notCloseToPortsAtoms = r.map(obj => obj.asInstanceOf[BasicDBObject].get("atom").toString)
     val as = o.asInstanceOf[BasicDBObject].get("areas").asInstanceOf[BasicDBList].toList.map(_.toString)
     (atom, notCloseToPortsAtoms, as)
   }
@@ -144,14 +139,11 @@ object Tests extends App {
     (atom, as)
   }
 
-
-
-
   /**
     * Returns all documents from a collection, either sorted or not.
     * Use it like getAllDataFromDb(col, "time") foreach { do something }, or e.g.
     * getAllDataFromDb(mongoClient(dbName)("high_speed")).foreach(x => println(x))
-    * */
+    */
   def getAllDataFromDb(collection: MongoCollection, sortByKeyName: String = ""): collection.CursorType = {
     if (sortByKeyName != "") {
       collection.createIndex(MongoDBObject(sortByKeyName -> 1))

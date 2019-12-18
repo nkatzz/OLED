@@ -24,28 +24,24 @@ import oled.mwua.HelperClasses.AtomTobePredicted
   * Created by nkatz at 10/2/2019
   */
 
-
-
 //val delayedUpdate = new mwua.StateHandler.DelayedUpdate(atom, prediction, inertiaExpertPrediction,
 //  predictedLabel, feedback, stateHandler, epsilon, markedMap, totalWeight)
 
 class DelayedUpdate(val atom: AtomTobePredicted, val prediction: Double, val inertiaExpertPrediction: Double,
-                    val initWeightSum: Double, val termWeightSum: Double, val predictedLabel: String,
-                    val markedMap: Map[String, Clause], val feedback: String, val stateHandler: StateHandler,
-                    val learningRate: Double, val weightUpdateStrategy: String, val withInertia: Boolean = true,
-                    val orderedTimes: Vector[Int]) {
+    val initWeightSum: Double, val termWeightSum: Double, val predictedLabel: String,
+    val markedMap: Map[String, Clause], val feedback: String, val stateHandler: StateHandler,
+    val learningRate: Double, val weightUpdateStrategy: String, val withInertia: Boolean = true,
+    val orderedTimes: Vector[Int]) {
 
   var generateNewRuleFlag: Boolean = false
 
 }
-
 
 class StateHandler {
 
   /*===============================================================================================================*/
   /* This is all helper/test code for updating weights after mini-batch prediction from all mistakes cumulatively. */
   /* ============================================ Test-helper code start ==========================================*/
-
 
   var delayedUpdates = Vector.empty[DelayedUpdate]
 
@@ -66,8 +62,8 @@ class StateHandler {
     val totalAwakeRulesWeight = awakeExperts.map(x => x.w_pos).sum
     val inertiaWeight = inertiaExpert.getWeight(currentFluent)
     val totalWeight = totalAwakeRulesWeight + inertiaWeight
-    awakeExperts.foreach(x => x.w_pos = x.w_pos/totalWeight.toDouble)
-    if (inertiaWeight > 0) inertiaExpert.updateWeight(currentFluent, inertiaWeight/totalWeight)
+    awakeExperts.foreach(x => x.w_pos = x.w_pos / totalWeight.toDouble)
+    if (inertiaWeight > 0) inertiaExpert.updateWeight(currentFluent, inertiaWeight / totalWeight)
   }
 
   def addRule(rule: Clause) = {
@@ -81,9 +77,9 @@ class StateHandler {
   }
 
   def removeRule(rule: Clause) = {
-    def remove(clauses: List[Clause], r: Clause) = {
-      clauses.filter(x => !x.equals(r))
-    }
+      def remove(clauses: List[Clause], r: Clause) = {
+        clauses.filter(x => !x.equals(r))
+      }
     if (rule.head.functor.contains("initiated")) {
       ensemble.initiationRules = remove(ensemble.initiationRules, rule)
     } else if (rule.head.functor.contains("terminated")) {
@@ -95,20 +91,18 @@ class StateHandler {
 
   def pruneUnderPerformingRules(weightThreshold: Double) = {
 
-    def pruneRefinements(topRule: Clause) = {
-      val goodRefs = topRule.refinements.filter(x => x.w_pos >= weightThreshold)
-      topRule.refinements = goodRefs
-    }
+      def pruneRefinements(topRule: Clause) = {
+        val goodRefs = topRule.refinements.filter(x => x.w_pos >= weightThreshold)
+        topRule.refinements = goodRefs
+      }
 
     ensemble.initiationRules.foreach(x => pruneRefinements(x))
     ensemble.terminationRules.foreach(x => pruneRefinements(x))
-    val goodInitRules = ensemble.initiationRules.filter(x => x.body.isEmpty || (x.body.nonEmpty && x.w_pos >= weightThreshold) )
+    val goodInitRules = ensemble.initiationRules.filter(x => x.body.isEmpty || (x.body.nonEmpty && x.w_pos >= weightThreshold))
     ensemble.initiationRules = goodInitRules
-    val goodTermRules = ensemble.terminationRules.filter(x => x.body.isEmpty || (x.body.nonEmpty && x.w_pos >= weightThreshold) )
+    val goodTermRules = ensemble.terminationRules.filter(x => x.body.isEmpty || (x.body.nonEmpty && x.w_pos >= weightThreshold))
     ensemble.terminationRules = goodTermRules
   }
-
-
 
   // "what" here is either "weight" of "score". If what=weight then acceptableScore
   // should be a weight threshold, e.g. 0.005. what=score then acceptableScore is a
@@ -116,27 +110,25 @@ class StateHandler {
   // does not work, a large number of redundant rules have very good score but very low coverage.
   def pruneRules(what: String, acceptableScore: Double, logger: org.slf4j.Logger) = {
 
-    /* Remove rules by score */
-    def removeBadRules(rules: List[Clause]) = {
-      rules.foldLeft(List.empty[Clause]) { (accum, rule) =>
-        if (what == "score") {
-          if (rule.body.length >= 2 && rule.score <= 0.5) accum else accum :+ rule
-        } else {
-          if (rule.body.length >= 3 && rule.w_pos < acceptableScore) {
-            logger.info(s"\nRemoved rule (weight threshold is $acceptableScore)\n${rule.showWithStats}")
-            accum
+      /* Remove rules by score */
+      def removeBadRules(rules: List[Clause]) = {
+        rules.foldLeft(List.empty[Clause]) { (accum, rule) =>
+          if (what == "score") {
+            if (rule.body.length >= 2 && rule.score <= 0.5) accum else accum :+ rule
           } else {
-            accum :+ rule
+            if (rule.body.length >= 3 && rule.w_pos < acceptableScore) {
+              logger.info(s"\nRemoved rule (weight threshold is $acceptableScore)\n${rule.showWithStats}")
+              accum
+            } else {
+              accum :+ rule
+            }
           }
-        }
 
+        }
       }
-    }
     ensemble.initiationRules = removeBadRules(ensemble.initiationRules)
     ensemble.terminationRules = removeBadRules(ensemble.terminationRules)
   }
-
-
 
   /*-----------------------------*/
   /* Grounding-related variables */
@@ -162,9 +154,9 @@ class StateHandler {
   var runningRulesNumber: Vector[Int] = Vector.empty[Int]
 
   def updateRunningF1Score = {
-    val currentPrecision = totalTPs.toDouble/(totalTPs+totalFPs)
-    val currentRecall = totalTPs.toDouble/(totalTPs+totalFNs)
-    val _currentF1Score = 2*currentPrecision*currentRecall/(currentPrecision+currentRecall)
+    val currentPrecision = totalTPs.toDouble / (totalTPs + totalFPs)
+    val currentRecall = totalTPs.toDouble / (totalTPs + totalFNs)
+    val _currentF1Score = 2 * currentPrecision * currentRecall / (currentPrecision + currentRecall)
     val currentF1Score = if (_currentF1Score.isNaN) 0.0 else _currentF1Score
     runningF1Score = runningF1Score :+ currentF1Score
   }

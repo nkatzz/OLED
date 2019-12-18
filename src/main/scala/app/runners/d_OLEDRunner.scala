@@ -26,13 +26,9 @@ import logic.Examples.Example
 import oled.distributed.{Dispatcher, Utils}
 import utils.DataUtils.DataAsIntervals
 
-
-
 /**
   * Created by nkatz on 2/13/17.
   */
-
-
 
 object d_OLEDRunner {
 
@@ -58,7 +54,6 @@ object d_OLEDRunner {
       //populateProximityMap(dataOpts1.llePath)
       //populateSpeedLimitsMap(dataOpts1.speedLimitsPath)
 
-
       val message = "go"
 
       // Start the actor system
@@ -68,19 +63,5 @@ object d_OLEDRunner {
 
     }
   }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 }

@@ -29,9 +29,8 @@ import logic.Clause
 import scala.io.Source
 
 /**
- * Created by nkatz at 17/10/19
- */
-
+  * Created by nkatz at 17/10/19
+  */
 
 object NewTest extends App {
 
@@ -46,7 +45,6 @@ object NewTest extends App {
   println(events)
 
 }
-
 
 object Test {
 
@@ -80,7 +78,7 @@ object Run extends App {
 
   implicit val timeout: Timeout = Timeout(21474800 seconds)
 
-  val master = system.actorOf( Props[Master], name = "test-actor" )
+  val master = system.actorOf(Props[Master], name = "test-actor")
 
   val future = ask(master, new Work).mapTo[Reply]
 
@@ -92,7 +90,6 @@ object Run extends App {
 
   println("Shut down and exit")
 }
-
 
 object SubsumptionTest extends App {
 

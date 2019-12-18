@@ -34,19 +34,15 @@ import scala.util.Random
   */
 
 /**
-*
-* This object contains functionality used by the single-core version of OLED only.
-*
-* */
+  *
+  * This object contains functionality used by the single-core version of OLED only.
+  *
+  */
 
 object SingleCoreOLEDFunctions extends CoreFunctions {
 
-
-
-
-
   def processExample(topTheory: Theory, e: Example, targetClass: String,
-                     inps: RunningOptions, logger: org.slf4j.Logger, learningWeights: Boolean = false) = {
+      inps: RunningOptions, logger: org.slf4j.Logger, learningWeights: Boolean = false) = {
 
     var newTopTheory = topTheory
 
@@ -57,8 +53,8 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
     var newRuleGenerationTime = 0.0
 
     val initorterm: String =
-      if(targetClass=="initiated") "initiatedAt"
-      else if (targetClass=="terminated") "terminatedAt"
+      if (targetClass == "initiated") "initiatedAt"
+      else if (targetClass == "terminated") "terminatedAt"
       else inps.globals.MODEHS.head.varbed.tostring
 
     val withInertia = Globals.glvalues("with-inertia").toBoolean
@@ -87,8 +83,7 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
           //val coinFlip = r.nextFloat
           //if (coinFlip >= 0.5) true else false
           true // Sometimes, depending on the order of the examples, it's necessary to try more even for initiation.
-        }
-        else {
+        } else {
           val r = Utils.time{ newTopTheory.growNewRuleTest(e, initorterm, inps.globals) }
           if (inps.showStats) logger.info(s"grow new rule test time: ${r._2}")
           newRuleTestTime += r._2
@@ -126,8 +121,8 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
         newTopTheory = topTheory.clauses ++ newRules
       }
       val o2 = System.nanoTime()
-      if (inps.showStats) logger.info(s"compressing rules time: ${(o2-o1)/1000000000.0}")
-      compressRulesTime += (o2-o1)/1000000000.0
+      if (inps.showStats) logger.info(s"compressing rules time: ${(o2 - o1) / 1000000000.0}")
+      compressRulesTime += (o2 - o1) / 1000000000.0
 
     }
     if (newTopTheory.clauses.nonEmpty) {
@@ -148,10 +143,10 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
 
       ///*
       val expanded =
-        if (! learningWeights) {
-          Utils.time {  expandRules(newTopTheory, inps, logger) }
+        if (!learningWeights) {
+          Utils.time { expandRules(newTopTheory, inps, logger) }
         } else {
-          ( (newTopTheory, false), 0.0)
+          ((newTopTheory, false), 0.0)
         }
       //*/
       if (inps.showStats) logger.info(s"Expanding rules time: ${expanded._2}")
@@ -169,8 +164,6 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
     }
   }
 
-
-
   def rightWay(parentRule: Clause, inps: RunningOptions) = {
 
     if (true) { //parentRule.precision <= inps.preprune ||| parentRule.score <= inps.preprune
@@ -178,23 +171,21 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
 
       val epsilon = Utils.hoeffding(inps.delta, parentRule.seenExmplsNum)
 
-
       //println(parentRule.refinements.map(x => x.score))
       //println(observedDiff, epsilon)
-
 
       //logger.info(s"\n(observedDiff, epsilon, bestScore, secondBestScore): ($observedDiff, $epsilon, ${best.score}, ${secondBest.score})")
 
       val passesTest = if (epsilon < observedDiff) true else false
       //val tie = if (epsilon <= breakTiesThreshold && parentRule.seenExmplsNum >= minSeenExmpls) true else false
-      val tie = if (observedDiff < epsilon  && epsilon < inps.breakTiesThreshold && parentRule.seenExmplsNum >= inps.minSeenExmpls) true else false
+      val tie = if (observedDiff < epsilon && epsilon < inps.breakTiesThreshold && parentRule.seenExmplsNum >= inps.minSeenExmpls) true else false
 
       //println(s"best score: ${best.score} 2nd-best: ${secondBest.score} $observedDiff < $epsilon && $epsilon < ${inps.breakTiesThreshold} ${parentRule.seenExmplsNum} >= ${inps.minSeenExmpls} $tie")
 
       val couldExpand =
         if (inps.minTpsRequired != 0) {
           // The best.mlnWeight >= parentRule.mlnWeight condition doesn't work of course...
-          (passesTest || tie) && (best.getTotalTPs >= parentRule.getTotalTPs * inps.minTpsRequired/100.0) //&& best.mlnWeight >= parentRule.mlnWeight
+          (passesTest || tie) && (best.getTotalTPs >= parentRule.getTotalTPs * inps.minTpsRequired / 100.0) //&& best.mlnWeight >= parentRule.mlnWeight
         } else {
           // The best.mlnWeight >= parentRule.mlnWeight condition doesn't work of course...
           passesTest || tie //&& best.mlnWeight >= parentRule.mlnWeight
@@ -221,11 +212,11 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
           // This is the extra test that I added at Feedzai
           val extraTest =
             if (inps.scoringFun != "foilgain") {
-              if(secondBest != parentRule) (best.score > parentRule.score) && (best.score - parentRule.score > epsilon)
+              if (secondBest != parentRule) (best.score > parentRule.score) && (best.score - parentRule.score > epsilon)
               else best.score > parentRule.score
             } else {
               // We want the refinement to have some gain. We do not expand for no gain
-              best.score > 0//true
+              best.score > 0 //true
             }
 
           extraTest match { //&& (1.0/best.body.size+1 > 1.0/parentRule.body.size+1) match {
@@ -246,7 +237,6 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
     //println(s"expandRules time: ${(t1-t0)/1000000000.0}")
     (Theory(out), expanded)
   }
-
 
   def processExampleNoEC(topTheory: Theory, e: Example, inps: RunningOptions, logger: org.slf4j.Logger) = {
 
@@ -282,15 +272,15 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
         newTopTheory = topTheory.clauses ++ newRules
       }
       val o2 = System.nanoTime()
-      if (inps.showStats) logger.info(s"compressing rules time: ${(o2-o1)/1000000000.0}")
-      compressRulesTime += (o2-o1)/1000000000.0
+      if (inps.showStats) logger.info(s"compressing rules time: ${(o2 - o1) / 1000000000.0}")
+      compressRulesTime += (o2 - o1) / 1000000000.0
     }
     if (newTopTheory.clauses.nonEmpty) {
       val t = Utils.time { newTopTheory.scoreRulesNoEC(e, inps.globals) }
       if (inps.showStats) logger.info(s"Scoring rules time: ${t._2}")
       scoringTime += t._2
 
-      val expanded = Utils.time {  expandRules(newTopTheory, inps, logger) }
+      val expanded = Utils.time { expandRules(newTopTheory, inps, logger) }
       if (inps.showStats) logger.info(s"Expanding rules time: ${expanded._2}")
       expandRulesTime += expanded._2
 
@@ -305,18 +295,12 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
     }
   }
 
-
-
-
-
-
-
   def getTrainingData(params: RunningOptions, data: TrainingSet, targetClass: String): Iterator[Example] = {
 
     val mc = MongoClient()
     val collection = mc(params.train)("examples")
 
-    def getData = utils.CaviarUtils.getDataAsChunks(collection, params.chunkSize, targetClass)
+      def getData = utils.CaviarUtils.getDataAsChunks(collection, params.chunkSize, targetClass)
 
     data match {
       case x: DataAsIntervals =>
@@ -339,7 +323,6 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
     }
   }
 
-
   def reScore(params: RunningOptions, data: Iterator[Example], theory: Theory, targetClass: String, logger: org.slf4j.Logger) = {
     theory.clauses foreach (p => p.clearStatistics) // zero all counters before re-scoring
     for (x <- data) {
@@ -350,13 +333,13 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
       }
 
     }
-    logger.debug( theory.clauses map { p => s"score: ${p.score}, tps: ${p.tps}, fps: ${p.fps}, fns: ${p.fns}\n${p.tostring}" } mkString "\n" )
+    logger.debug(theory.clauses map { p => s"score: ${p.score}, tps: ${p.tps}, fps: ${p.fps}, fns: ${p.fns}\n${p.tostring}" } mkString "\n")
   }
 
   def generateNewRules(topTheory: Theory, e: Example, initorterm: String, globals: Globals) = {
     val bcs = generateNewBottomClauses(topTheory, e, initorterm, globals)
     bcs map { x =>
-      val c = Clause(head=x.head, body = List())
+      val c = Clause(head = x.head, body = List())
       c.addToSupport(x)
       c
     }
@@ -365,7 +348,7 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
   def generateNewRulesNoEC(topTheory: Theory, e: Example, globals: Globals) = {
     val bcs = generateNewBottomClausesNoEC(topTheory, e, globals)
     bcs map { x =>
-      val c = Clause(head=x.head, body = List())
+      val c = Clause(head = x.head, body = List())
       c.addToSupport(x)
       c
     }
@@ -386,13 +369,13 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
     val e = (example.annotationASP ++ example.narrativeASP).mkString("\n")
     val exConstr = getCoverageDirectives(withCWA = Globals.glvalues("cwa"), globals = globals).mkString("\n")
     val t = theory.map(x => x.withTypePreds(globals).tostring).mkString("\n")
-    val f = Utils.getTempFile("sat",".lp")
+    val f = Utils.getTempFile("sat", ".lp")
     Utils.writeToFile(f, "append")(
-      p => List(e,exConstr,t,s"\n#include "+"\""+globals.ABDUCE_WITH_INERTIA+"\".\n") foreach p.println
+      p => List(e, exConstr, t, s"\n#include " + "\"" + globals.ABDUCE_WITH_INERTIA + "\".\n") foreach p.println
     )
     val inFile = f.getCanonicalPath
     val out = ASP.solve(Globals.CHECKSAT, Map(), new java.io.File(inFile), example.toMapASP)
-    if (out != Nil && out.head == AnswerSet.UNSAT){
+    if (out != Nil && out.head == AnswerSet.UNSAT) {
       false
     } else {
       true
@@ -406,15 +389,15 @@ object SingleCoreOLEDFunctions extends CoreFunctions {
    * screw things up.*/
   def updateGlobalTheoryStore(theory: Theory, target: String, gl: Globals) = {
 
-    def getBestClause(c: Clause) = {
-      val allSorted = (List(c) ++ c.refinements).sortBy { x => (- x.score, x.body.length+1) }
-      val best = allSorted.take(1)
-      best.head
-    }
+      def getBestClause(c: Clause) = {
+        val allSorted = (List(c) ++ c.refinements).sortBy { x => (-x.score, x.body.length + 1) }
+        val best = allSorted.take(1)
+        best.head
+      }
 
-    def getBestClauses(T: Theory) = {
-      T.clauses.map(x => getBestClause(x))
-    }
+      def getBestClauses(T: Theory) = {
+        T.clauses.map(x => getBestClause(x))
+      }
 
     if (target == "initiatedAt") {
       Globals.CURRENT_THEORY_INITIATED = getBestClauses(theory).toVector

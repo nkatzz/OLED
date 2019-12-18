@@ -53,13 +53,11 @@ object MultiCoreMaritimeRunner {
       // Start the actor system
       val system = ActorSystem("distributed-oled")
 
-      system.actorOf(Props( new Dispatcher( opts zip p.map(x => x._2) , runOpts, 2, testingOptions, testingFunction) ), name = "TopLevelDispatcher") ! message
-
+      system.actorOf(Props(new Dispatcher(opts zip p.map(x => x._2), runOpts, 2, testingOptions, testingFunction)), name = "TopLevelDispatcher") ! message
 
     }
 
   }
-
 
   def getOptions(hle: String, chunkSize: Int, limit: Int, coresNum: Int) = {
     val prefixes = coresNum match {
@@ -71,15 +69,15 @@ object MultiCoreMaritimeRunner {
     val llePath = "/home/nkatz/dev/maritime/brest-data/datasets-my-split"
     val hlePath = "/home/nkatz/dev/maritime/brest-data/recognition-my-split"
     val speedLimitsPath = "/home/nkatz/dev/maritime/brest-data/areas_speed_limits.csv"
-    val info = prefixes map (x => (s"$llePath/dataset${joinPrefix(x)}.txt", s"brest-$x", s"$hlePath/${joinPrefix(x)}/$hle.csv", s"$hlePath/${joinPrefix(x)}/close_to_ports.csv") )
+    val info = prefixes map (x => (s"$llePath/dataset${joinPrefix(x)}.txt", s"brest-$x", s"$hlePath/${joinPrefix(x)}/$hle.csv", s"$hlePath/${joinPrefix(x)}/close_to_ports.csv"))
     info map { x =>
-      new MaritimeDataOptions(llePath=x._1, db=x._2, hlePath=x._3, speedLimitsPath=speedLimitsPath, closeToPortsPath=x._4, chunkSize, limit.toDouble, hle)
+      new MaritimeDataOptions(llePath          = x._1, db = x._2, hlePath = x._3, speedLimitsPath = speedLimitsPath, closeToPortsPath = x._4, chunkSize, limit.toDouble, hle)
     }
 
   }
 
   def prepare(runOpts: RunningOptions, opts: List[MaritimeDataOptions],
-              speedLimitsMap: scala.collection.mutable.Map[String, scala.collection.mutable.Set[String]]) = {
+      speedLimitsMap: scala.collection.mutable.Map[String, scala.collection.mutable.Set[String]]) = {
 
     opts.map { opt =>
       val nodeData = new NodeData(opt.hlePath, opt.llePath, opt.closeToPortsPath, opt.targetConcept, speedLimitsMap)
@@ -89,9 +87,6 @@ object MultiCoreMaritimeRunner {
 
     //val testingFunction: MaritimeDataOptions => Iterator[Example] = nodeData.getTestingData
 
-
   }
-
-
 
 }

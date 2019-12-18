@@ -37,30 +37,29 @@ import scala.util.control.Breaks._
 
 object ExpertAdviceFunctions extends LazyLogging {
 
-
-
   // The "batch" argument contains only the evidence atoms here. The annotation atoms found in the batch
   // are passed-in via the "trueAtoms" argument.
-  def process(batch: Example,
-              trueAtoms: Set[String],
-              inps: RunningOptions,
-              stateHandler: StateHandler,
-              trueLabels: Set[String],
-              learningRate: Double,
-              epsilon: Double, // used for the randomized version
-              randomizedPrediction: Boolean,
-              batchCounter: Int,
-              percentOfMistakesBeforeSpecialize: Int,
-              specializeAllAwakeOnMistake: Boolean,
-              receiveFeedbackBias: Double,
-              conservativeRuleGeneration: Boolean = true,
-              weightUpdateStrategy: String = "winnow", // this is either 'hedge' or 'winnow',
-              withInertia: Boolean = true,
-              feedBackGap: Int = 0,
-              splice: Option[Map[String, Double] => (Set[EvidenceAtom], Evidence)] = None,
-              mapper: Option[Set[EvidenceAtom] => Vector[String]] = None,
-              incompleteTrueAtoms: Option[Set[String]] = None,
-              inputTheory: Option[List[Clause]] = None) = {
+  def process(
+      batch: Example,
+      trueAtoms: Set[String],
+      inps: RunningOptions,
+      stateHandler: StateHandler,
+      trueLabels: Set[String],
+      learningRate: Double,
+      epsilon: Double, // used for the randomized version
+      randomizedPrediction: Boolean,
+      batchCounter: Int,
+      percentOfMistakesBeforeSpecialize: Int,
+      specializeAllAwakeOnMistake: Boolean,
+      receiveFeedbackBias: Double,
+      conservativeRuleGeneration: Boolean = true,
+      weightUpdateStrategy: String = "winnow", // this is either 'hedge' or 'winnow',
+      withInertia: Boolean = true,
+      feedBackGap: Int = 0,
+      splice: Option[Map[String, Double] => (Set[EvidenceAtom], Evidence)] = None,
+      mapper: Option[Set[EvidenceAtom] => Vector[String]] = None,
+      incompleteTrueAtoms: Option[Set[String]] = None,
+      inputTheory: Option[List[Clause]] = None) = {
 
     //========================================
     //stateHandler.ensemble.removeZeroWeights
@@ -78,7 +77,7 @@ object ExpertAdviceFunctions extends LazyLogging {
     var batchFNs = 0
     var batchAtoms = 0
     var atomCounter = 0 //used for feedback gap
-    val hedgePredictionThreshold = 0.5  //hedgePredictionThreshold = Globals.hedgePredictionThreshold
+    val hedgePredictionThreshold = 0.5 //hedgePredictionThreshold = Globals.hedgePredictionThreshold
     var withInputTheory = inputTheory.isDefined
 
     /* TEST PHASE ONLY (NO WEIGHT/STRUCTURE UPDATE) */
@@ -97,7 +96,7 @@ object ExpertAdviceFunctions extends LazyLogging {
     var finishedBatch = false
 
     val predictAndUpdateTimed = Utils.time {
-      while(!finishedBatch) {
+      while (!finishedBatch) {
 
         val (markedProgram, markedMap, groundingsMap, times, sortedAtomsToBePredicted, orderedTimes) =
           ground(batch, inps, stateHandler, withInputTheory, streaming)
@@ -139,7 +138,7 @@ object ExpertAdviceFunctions extends LazyLogging {
                   if (weightUpdateStrategy == "winnow") predict(atom, stateHandler, markedMap)
 
                   else predictHedge(atom, stateHandler, markedMap, withInertia, topRulesOnly = false)
-                  //else ClassicSleepingExpertsHedge.predictHedge_NO_INERTIA(atom, stateHandler, markedMap)
+                //else ClassicSleepingExpertsHedge.predictHedge_NO_INERTIA(atom, stateHandler, markedMap)
 
                 prediction = _prediction
                 inertiaExpertPrediction = _inertiaExpertPrediction
@@ -155,7 +154,7 @@ object ExpertAdviceFunctions extends LazyLogging {
 
               // This has not been carried over to the PrequentialInference class.
               // You need to modify the logic there to add it.
-              if(splice.isDefined) {
+              if (splice.isDefined) {
                 val time = atom.atomParsed.terms.tail.head.name
                 val eventAtom = atom.atomParsed.terms.head.asInstanceOf[Literal]
                 val eventPred = eventAtom.predSymbol.capitalize
@@ -167,7 +166,7 @@ object ExpertAdviceFunctions extends LazyLogging {
                   // rescaledPrediction = (prediction - min(I))/(max(I) - min(I)),
                   // where min(I) = -termWeightSum
                   // max(I) = initWeightSum + inertiaExpertPrediction
-                  val _rescaledPrediction = (prediction - (-termWeightSum))/((initWeightSum + inertiaExpertPrediction) - (-termWeightSum))
+                  val _rescaledPrediction = (prediction - (-termWeightSum)) / ((initWeightSum + inertiaExpertPrediction) - (-termWeightSum))
                   val rescaledPrediction = {
                     if (_rescaledPrediction.isNaN) 0.0
                     else if (prediction <= 0) (-1) * _rescaledPrediction else _rescaledPrediction
@@ -275,7 +274,7 @@ object ExpertAdviceFunctions extends LazyLogging {
 
                   ///*
                   generateNewRuleFlag = updateWeights(atom, prediction, inertiaExpertPrediction, initWeightSum,
-                    termWeightSum, predictedLabel, markedMap, feedback, stateHandler, learningRate, weightUpdateStrategy, withInertia)
+                                                      termWeightSum, predictedLabel, markedMap, feedback, stateHandler, learningRate, weightUpdateStrategy, withInertia)
                   // */
 
                   /*
@@ -313,8 +312,8 @@ object ExpertAdviceFunctions extends LazyLogging {
               } else {
 
                 val delayedUpdate = new DelayedUpdate(atom, prediction, inertiaExpertPrediction,
-                  initWeightSum, termWeightSum, predictedLabel, markedMap, feedback, stateHandler,
-                  learningRate, weightUpdateStrategy, withInertia, orderedTimes)
+                                                      initWeightSum, termWeightSum, predictedLabel, markedMap, feedback, stateHandler,
+                                                      learningRate, weightUpdateStrategy, withInertia, orderedTimes)
 
                 stateHandler.delayedUpdates = stateHandler.delayedUpdates :+ delayedUpdate
 
@@ -341,11 +340,9 @@ object ExpertAdviceFunctions extends LazyLogging {
       }
     }
 
-    if (batchError > 0) logger.info(s"*** Batch #$batchCounter Total mistakes: ${batchFPs+batchFNs} (FPs: $batchFPs | FNs: $batchFNs). Total batch atoms: $batchAtoms ***")
+    if (batchError > 0) logger.info(s"*** Batch #$batchCounter Total mistakes: ${batchFPs + batchFNs} (FPs: $batchFPs | FNs: $batchFNs). Total batch atoms: $batchAtoms ***")
     batchError
   }
-
-
 
   def setFinalTestingRules(stateHandler: StateHandler, streaming: Boolean) = {
     val weightThreshold = 1.0 //0.00001 //1.1 // // 0.0
@@ -358,16 +355,15 @@ object ExpertAdviceFunctions extends LazyLogging {
     }
   }
 
-
   def getFinalRulesDefault(s: StateHandler, weightThreshold: Double) = {
 
     val isGood = (r: Clause) => r.w_pos > weightThreshold //r.w_pos >= weightThreshold
 
-    def getGoodRules(x: List[Clause], threshold: Double) = {
-      x.foldLeft(List.empty[Clause]) { (accum, rule) =>
-        if (isGood(rule)) accum :+ rule else accum
+      def getGoodRules(x: List[Clause], threshold: Double) = {
+        x.foldLeft(List.empty[Clause]) { (accum, rule) =>
+          if (isGood(rule)) accum :+ rule else accum
+        }
       }
-    }
 
     val init = getGoodRules(s.ensemble.initiationRules, weightThreshold)
     val term = getGoodRules(s.ensemble.terminationRules, weightThreshold)
@@ -379,58 +375,56 @@ object ExpertAdviceFunctions extends LazyLogging {
 
   }
 
-
   def updateWeightsRandomized(atom: AtomTobePredicted, prediction: Double,
-                              inertiaExpertPrediction: Double, predictedLabel: String,
-                              feedback: String, stateHandler: StateHandler, epsilon:Double,
-                              markedMap: Map[String, Clause], totalWeight: Double) = {
+      inertiaExpertPrediction: Double, predictedLabel: String,
+      feedback: String, stateHandler: StateHandler, epsilon: Double,
+      markedMap: Map[String, Clause], totalWeight: Double) = {
 
-
-    def weightNoInfinity(prev: Double, _new: Double) = {
-      if (_new.isPosInfinity) prev else _new
-    }
-
-    def getMistakeProbability(incorrectExperts: Vector[Clause], isInertiaCorrect: Boolean) = {
-      // The algorithm's probability of making a mistake is the sum, for all awake
-      // experts, of the each expert's h_i selection probability (h_i/totalAwakeWeight)
-      // times 1 (if the expert is incorrect) or 0 (if the expert is correct). Since
-      // correct experts do not contribute to the sum we only take into account the incorrect ones.
-      if (isInertiaCorrect) {
-        incorrectExperts.map(i => i.w_pos/totalWeight.toDouble).sum
-      } else {
-        incorrectExperts.map(i => i.w_pos/totalWeight.toDouble).sum + inertiaExpertPrediction/totalWeight.toDouble
+      def weightNoInfinity(prev: Double, _new: Double) = {
+        if (_new.isPosInfinity) prev else _new
       }
 
-    }
-
-    def updateRulesWeights(correctExperts: Vector[String], incorrectExperts: Vector[String], isInertiaCorrect: Boolean) = {
-
-      val inc = incorrectExperts.map(x => markedMap(x))
-      val mistakeProbability = getMistakeProbability(inc, isInertiaCorrect)
-      val correctExponent = mistakeProbability/(1+epsilon)
-      //val inCorrectExponent = mistakeProbability/((1+epsilon) - 1)
-      val inCorrectExponent = mistakeProbability/(1+epsilon) - 1
-
-      correctExperts foreach { x =>
-        val rule = markedMap(x)
-        rule.w_pos = weightNoInfinity(rule.w_pos, rule.w_pos * Math.pow(1+epsilon, correctExponent))
-      }
-
-      incorrectExperts foreach { x =>
-        val rule = markedMap(x)
-        rule.w_pos = weightNoInfinity(rule.w_pos, rule.w_pos * Math.pow(1+epsilon, inCorrectExponent))
-      }
-
-      if (inertiaExpertPrediction > 0) {
+      def getMistakeProbability(incorrectExperts: Vector[Clause], isInertiaCorrect: Boolean) = {
+        // The algorithm's probability of making a mistake is the sum, for all awake
+        // experts, of the each expert's h_i selection probability (h_i/totalAwakeWeight)
+        // times 1 (if the expert is incorrect) or 0 (if the expert is correct). Since
+        // correct experts do not contribute to the sum we only take into account the incorrect ones.
         if (isInertiaCorrect) {
-          stateHandler.inertiaExpert.updateWeight(atom.fluent,
-            weightNoInfinity(inertiaExpertPrediction, inertiaExpertPrediction * Math.pow(1+epsilon, correctExponent)) )
+          incorrectExperts.map(i => i.w_pos / totalWeight.toDouble).sum
         } else {
-          stateHandler.inertiaExpert.updateWeight(atom.fluent,
-            weightNoInfinity(inertiaExpertPrediction, inertiaExpertPrediction * Math.pow(1+epsilon, inCorrectExponent)) )
+          incorrectExperts.map(i => i.w_pos / totalWeight.toDouble).sum + inertiaExpertPrediction / totalWeight.toDouble
+        }
+
+      }
+
+      def updateRulesWeights(correctExperts: Vector[String], incorrectExperts: Vector[String], isInertiaCorrect: Boolean) = {
+
+        val inc = incorrectExperts.map(x => markedMap(x))
+        val mistakeProbability = getMistakeProbability(inc, isInertiaCorrect)
+        val correctExponent = mistakeProbability / (1 + epsilon)
+        //val inCorrectExponent = mistakeProbability/((1+epsilon) - 1)
+        val inCorrectExponent = mistakeProbability / (1 + epsilon) - 1
+
+        correctExperts foreach { x =>
+          val rule = markedMap(x)
+          rule.w_pos = weightNoInfinity(rule.w_pos, rule.w_pos * Math.pow(1 + epsilon, correctExponent))
+        }
+
+        incorrectExperts foreach { x =>
+          val rule = markedMap(x)
+          rule.w_pos = weightNoInfinity(rule.w_pos, rule.w_pos * Math.pow(1 + epsilon, inCorrectExponent))
+        }
+
+        if (inertiaExpertPrediction > 0) {
+          if (isInertiaCorrect) {
+            stateHandler.inertiaExpert.updateWeight(atom.fluent,
+                                                    weightNoInfinity(inertiaExpertPrediction, inertiaExpertPrediction * Math.pow(1 + epsilon, correctExponent)))
+          } else {
+            stateHandler.inertiaExpert.updateWeight(atom.fluent,
+                                                    weightNoInfinity(inertiaExpertPrediction, inertiaExpertPrediction * Math.pow(1 + epsilon, inCorrectExponent)))
+          }
         }
       }
-    }
 
     val nonFiringInitRules =
       markedMap.filter(x =>
@@ -456,16 +450,16 @@ object ExpertAdviceFunctions extends LazyLogging {
       updateRulesWeights(atom.initiatedBy, atom.terminatedBy, true)
 
       updateRulesScore("TP", atom.initiatedBy.map(x => markedMap(x)), nonFiringInitRules.values.toVector,
-        atom.terminatedBy.map(x => markedMap(x)), nonFiringTermRules.values.toVector)
+                             atom.terminatedBy.map(x => markedMap(x)), nonFiringTermRules.values.toVector)
 
     }
 
     if (is_FP_mistake(predictedLabel, feedback)) {
       // Awake initiation rules are incorrect, awake termination rules are correct and inertia is incorrect
-      updateRulesWeights(atom.terminatedBy,atom.initiatedBy, false)
+      updateRulesWeights(atom.terminatedBy, atom.initiatedBy, false)
 
       updateRulesScore("FP", atom.initiatedBy.map(x => markedMap(x)), nonFiringInitRules.values.toVector,
-        atom.terminatedBy.map(x => markedMap(x)), nonFiringTermRules.values.toVector)
+                             atom.terminatedBy.map(x => markedMap(x)), nonFiringTermRules.values.toVector)
 
       // This is clearly wrong... But the randomized version does not work anyway.
       if (stateHandler.inertiaExpert.knowsAbout(atom.fluent)) stateHandler.inertiaExpert.forget(atom.fluent)
@@ -477,26 +471,25 @@ object ExpertAdviceFunctions extends LazyLogging {
       updateRulesWeights(atom.initiatedBy, atom.terminatedBy, true)
 
       updateRulesScore("FN", atom.initiatedBy.map(x => markedMap(x)), nonFiringInitRules.values.toVector,
-        atom.terminatedBy.map(x => markedMap(x)), nonFiringTermRules.values.toVector)
+                             atom.terminatedBy.map(x => markedMap(x)), nonFiringTermRules.values.toVector)
     }
 
     if (is_TN(predictedLabel, feedback)) { // TN
       // Awake initiation rules are incorrect, awake termination rules are correct and inertia is incorrect
-      updateRulesWeights(atom.terminatedBy,atom.initiatedBy, false)
+      updateRulesWeights(atom.terminatedBy, atom.initiatedBy, false)
 
       updateRulesScore("TN", atom.initiatedBy.map(x => markedMap(x)), nonFiringInitRules.values.toVector,
-        atom.terminatedBy.map(x => markedMap(x)), nonFiringTermRules.values.toVector)
+                             atom.terminatedBy.map(x => markedMap(x)), nonFiringTermRules.values.toVector)
 
       if (inertiaExpertPrediction > 0.0) stateHandler.inertiaExpert.forget(atom.fluent)
 
     }
   }
 
-
   def updateWeights(atom: AtomTobePredicted, prediction: Double, inertiaExpertPrediction: Double,
-                    initWeightSum: Double, termWeightSum: Double, predictedLabel: String,
-                    markedMap: Map[String, Clause], feedback: String, stateHandler: StateHandler,
-                    learningRate: Double, weightUpdateStrategy: String, withInertia: Boolean = true) = {
+      initWeightSum: Double, termWeightSum: Double, predictedLabel: String,
+      markedMap: Map[String, Clause], feedback: String, stateHandler: StateHandler,
+      learningRate: Double, weightUpdateStrategy: String, withInertia: Boolean = true) = {
 
     var generateNewRule = false
 
@@ -517,8 +510,8 @@ object ExpertAdviceFunctions extends LazyLogging {
     // to show the weight updates in the case of Hedge (this is for debugging).
     var initRulesMap = scala.collection.mutable.Map.empty[Int, (String, Double)]
     var termRulesMap = scala.collection.mutable.Map.empty[Int, (String, Double)]
-    awakeInitRules.foreach(x => initRulesMap += (x.## -> (x.tostring, x.w_pos) ) )
-    awakeTermRules.foreach(x => termRulesMap += (x.## -> (x.tostring, x.w_pos) ) )
+    awakeInitRules.foreach(x => initRulesMap += (x.## -> (x.tostring, x.w_pos)))
+    awakeTermRules.foreach(x => termRulesMap += (x.## -> (x.tostring, x.w_pos)))
 
     val totalWeightBeforeUpdate =
       if (withInertia) {
@@ -527,18 +520,17 @@ object ExpertAdviceFunctions extends LazyLogging {
         initWeightSum + termWeightSum
       }
 
-
-    def getSleeping(what: String) = {
-      val awake = if (what == "initiated") atom.initiatedBy.toSet else atom.terminatedBy.toSet
-      markedMap.filter(x => x._2.head.functor.contains(what) && !awake.contains(x._1))
-    }
+      def getSleeping(what: String) = {
+        val awake = if (what == "initiated") atom.initiatedBy.toSet else atom.terminatedBy.toSet
+        markedMap.filter(x => x._2.head.functor.contains(what) && !awake.contains(x._1))
+      }
 
     val sleepingInitRules = getSleeping("initiated")
     val sleepingTermRules = getSleeping("terminated")
 
-    def updateScore(what: String) = {
-      updateRulesScore(what, _awakeInitRules, sleepingInitRules.values.toVector, _awakeTermRules, sleepingTermRules.values.toVector)
-    }
+      def updateScore(what: String) = {
+        updateRulesScore(what, _awakeInitRules, sleepingInitRules.values.toVector, _awakeTermRules, sleepingTermRules.values.toVector)
+      }
 
     var outcome = ""
 
@@ -631,7 +623,7 @@ object ExpertAdviceFunctions extends LazyLogging {
       val allRulesWeightsAfterUpdatesMap = (initWeightsAfterUpdatesMap ++ termWeightsAfterUpdatesMap).toMap
 
       val totalInitWeightAfterWeightsUpdate = getTotalWeight(awakeInitRules) // the updates have already taken place
-      val totalTermWeightAfterWeightsUpdate  = getTotalWeight(awakeTermRules) // the updates have already taken place
+      val totalTermWeightAfterWeightsUpdate = getTotalWeight(awakeTermRules) // the updates have already taken place
 
       val inertAfterWeightUpdate = stateHandler.inertiaExpert.getWeight(currentFluent)
 
@@ -642,13 +634,13 @@ object ExpertAdviceFunctions extends LazyLogging {
           totalInitWeightAfterWeightsUpdate + totalTermWeightAfterWeightsUpdate
         }
 
-      val mult = totalWeightBeforeUpdate/totalWeightAfterUpdate
+      val mult = totalWeightBeforeUpdate / totalWeightAfterUpdate
 
       val updateWeight = (rule: Clause, y: Double) => rule.w_pos = y
 
       if (!mult.isNaN) {
-        awakeInitRules.foreach(x =>  updateWeight(x, mult * x.w_pos ) )
-        awakeTermRules.foreach(x =>  updateWeight(x, mult * x.w_pos ) )
+        awakeInitRules.foreach(x => updateWeight(x, mult * x.w_pos))
+        awakeTermRules.foreach(x => updateWeight(x, mult * x.w_pos))
         if (stateHandler.inertiaExpert.knowsAbout(currentFluent)) {
           stateHandler.inertiaExpert.updateWeight(currentFluent, mult * inertAfterWeightUpdate)
         }
@@ -685,13 +677,13 @@ object ExpertAdviceFunctions extends LazyLogging {
       if (outcome == "FP" && totalInitWeightAfterNormalization >= totalInitWeightPrevious) generateNewRule = true
       if (outcome == "FN" && totalTermWeightAfterNormalization >= totalTermWeightPrevious) generateNewRule = true
 
-      /* DEBUGGING INFO */
-      def debuggingInfo(x: Vector[Clause], what: String) = {
-        x foreach { rule =>
-          val entry = if (what == "initiated") initRulesMap(rule.##) else termRulesMap(rule.##)
-          println(s"weight prev/after update/after normalization: ${entry._2}/${allRulesWeightsAfterUpdatesMap(rule.##)}/${rule.w_pos} (tps,fps,fns): (${rule.tps},${rule.fps},${rule.fns})\n${entry._1}")
+        /* DEBUGGING INFO */
+        def debuggingInfo(x: Vector[Clause], what: String) = {
+          x foreach { rule =>
+            val entry = if (what == "initiated") initRulesMap(rule.##) else termRulesMap(rule.##)
+            println(s"weight prev/after update/after normalization: ${entry._2}/${allRulesWeightsAfterUpdatesMap(rule.##)}/${rule.w_pos} (tps,fps,fns): (${rule.tps},${rule.fps},${rule.fns})\n${entry._1}")
+          }
         }
-      }
 
       /*if (outcome == "FP") { //|| outcome == "FN"
         println("======================================================================")
@@ -705,8 +697,6 @@ object ExpertAdviceFunctions extends LazyLogging {
         println("======================================================================")
       }*/
 
-
-
       if (outcome == "TP") { // || outcome == "FP" // should we do this for FP as well (remember the fluent)? NO! MESSES THINGS UP. Generates wrong termination rules
         // If we recognized the fluent successfully during at this round, remember it
         if (!stateHandler.inertiaExpert.knowsAbout(currentFluent)) {
@@ -717,45 +707,37 @@ object ExpertAdviceFunctions extends LazyLogging {
     generateNewRule
   }
 
+  def updateStructure_NEW(
+      atom: AtomTobePredicted,
+      markedMap: Map[String, Clause],
+      predictedLabel: String,
+      feedback: String,
+      batch: Example,
+      currentAtom: String,
+      inps: RunningOptions,
+      logger: org.slf4j.Logger,
+      stateHandler: StateHandler,
+      percentOfMistakesBeforeSpecialize: Int,
+      randomizedPrediction: Boolean,
+      selected: String,
+      specializeAllAwakeOnMistake: Boolean,
+      conservativeRuleGeneration: Boolean) = {
 
-
-
-
-
-
-
-
-
-  def updateStructure_NEW(atom: AtomTobePredicted,
-                          markedMap: Map[String, Clause],
-                          predictedLabel: String,
-                          feedback: String,
-                          batch: Example,
-                          currentAtom: String,
-                          inps: RunningOptions,
-                          logger: org.slf4j.Logger,
-                          stateHandler: StateHandler,
-                          percentOfMistakesBeforeSpecialize: Int,
-                          randomizedPrediction: Boolean,
-                          selected: String,
-                          specializeAllAwakeOnMistake: Boolean,
-                          conservativeRuleGeneration: Boolean) = {
-
-    def getAwakeBottomRules(what: String) = {
-      if (what == "initiatedAt") atom.initiatedBy.filter(x => markedMap(x).isBottomRule)
-      else atom.terminatedBy.filter(x => markedMap(x).isBottomRule)
-    }
-
-    def splitAwakeAsleep(rulesToSplit: List[Clause], awakeIds: Set[String]) = {
-      val rulesToSplitIds = rulesToSplit.map(_##).toSet
-      val (topLevelAwakeRules, topLevelAsleepRules) = rulesToSplit.foldLeft(Vector.empty[Clause], Vector.empty[Clause]) { (x, rule) =>
-        val isAwake = awakeIds.contains(rule.##.toString)
-        val isTopLevel = rulesToSplitIds.contains(rule.##)
-        if (isAwake) if (isTopLevel) (x._1 :+ rule, x._2) else (x._1, x._2) // then it's a refinement rule
-        else if (isTopLevel) (x._1, x._2 :+ rule) else (x._1, x._2) // then it's a refinement rule
+      def getAwakeBottomRules(what: String) = {
+        if (what == "initiatedAt") atom.initiatedBy.filter(x => markedMap(x).isBottomRule)
+        else atom.terminatedBy.filter(x => markedMap(x).isBottomRule)
       }
-      (topLevelAwakeRules, topLevelAsleepRules)
-    }
+
+      def splitAwakeAsleep(rulesToSplit: List[Clause], awakeIds: Set[String]) = {
+        val rulesToSplitIds = rulesToSplit.map(_##).toSet
+        val (topLevelAwakeRules, topLevelAsleepRules) = rulesToSplit.foldLeft(Vector.empty[Clause], Vector.empty[Clause]) { (x, rule) =>
+          val isAwake = awakeIds.contains(rule.##.toString)
+          val isTopLevel = rulesToSplitIds.contains(rule.##)
+          if (isAwake) if (isTopLevel) (x._1 :+ rule, x._2) else (x._1, x._2) // then it's a refinement rule
+          else if (isTopLevel) (x._1, x._2 :+ rule) else (x._1, x._2) // then it's a refinement rule
+        }
+        (topLevelAwakeRules, topLevelAsleepRules)
+      }
 
     var updatedStructure = false
 
@@ -829,23 +811,12 @@ object ExpertAdviceFunctions extends LazyLogging {
     updatedStructure
   }
 
-
-
-
-
-
-
-
-
-
-
-
   def updateStructure(atom: AtomTobePredicted, markedMap: Map[String, Clause],
-                      predictedLabel: String, feedback: String, batch: Example,
-                      currentAtom: String, inps: RunningOptions,
-                      logger: org.slf4j.Logger, stateHandler: StateHandler,
-                      percentOfMistakesBeforeSpecialize: Int, randomizedPrediction: Boolean,
-                      selected: String, specializeAllAwakeOnMistake: Boolean) = {
+      predictedLabel: String, feedback: String, batch: Example,
+      currentAtom: String, inps: RunningOptions,
+      logger: org.slf4j.Logger, stateHandler: StateHandler,
+      percentOfMistakesBeforeSpecialize: Int, randomizedPrediction: Boolean,
+      selected: String, specializeAllAwakeOnMistake: Boolean) = {
 
     if (is_FP_mistake(predictedLabel, feedback)) {
       if (atom.terminatedBy.isEmpty) {
@@ -889,11 +860,10 @@ object ExpertAdviceFunctions extends LazyLogging {
           }
           */
 
-
           // This is for expanding to a sleeping refinement immediately after an FP mistake. No sense in doing that.
           ///*
           val break_? = specialize(atom, stateHandler, markedMap, "initiated", inps,
-            logger, percentOfMistakesBeforeSpecialize, "FP", randomizedPrediction, selected, specializeAllAwakeOnMistake)
+                                   logger, percentOfMistakesBeforeSpecialize, "FP", randomizedPrediction, selected, specializeAllAwakeOnMistake)
           if (break_?) break
           //*/
         }
@@ -943,7 +913,7 @@ object ExpertAdviceFunctions extends LazyLogging {
           // This is for expanding to a sleeping refinement immediately after an FP mistake. No sense in doing that.
           ///*
           val break_? = specialize(atom, stateHandler, markedMap, "terminated", inps,
-            logger, percentOfMistakesBeforeSpecialize, "FN", randomizedPrediction, selected, specializeAllAwakeOnMistake)
+                                   logger, percentOfMistakesBeforeSpecialize, "FN", randomizedPrediction, selected, specializeAllAwakeOnMistake)
           if (break_?) break
           //*/
         }
@@ -951,17 +921,12 @@ object ExpertAdviceFunctions extends LazyLogging {
     }
   }
 
-
-
-
-
-
   def updateStructure_STRONGLY_INIT(atom: AtomTobePredicted, markedMap: Map[String, Clause],
-                      predictedLabel: String, feedback: String, batch: Example,
-                      currentAtom: String, inps: RunningOptions,
-                      logger: org.slf4j.Logger, stateHandler: StateHandler,
-                      percentOfMistakesBeforeSpecialize: Int, randomizedPrediction: Boolean,
-                      selected: String, specializeAllAwakeOnMistake: Boolean) = {
+      predictedLabel: String, feedback: String, batch: Example,
+      currentAtom: String, inps: RunningOptions,
+      logger: org.slf4j.Logger, stateHandler: StateHandler,
+      percentOfMistakesBeforeSpecialize: Int, randomizedPrediction: Boolean,
+      selected: String, specializeAllAwakeOnMistake: Boolean) = {
 
     if (is_FP_mistake(predictedLabel, feedback)) {
       // For an FP mistake we have the following cases:
@@ -980,7 +945,7 @@ object ExpertAdviceFunctions extends LazyLogging {
           generateNewRule(batch, currentAtom, inps, "FP", logger, stateHandler, "terminatedAt", 1.0)
         } else { // this is 1.2 from above.
           val break_? = specialize(atom, stateHandler, markedMap, "initiated", inps,
-            logger, percentOfMistakesBeforeSpecialize, "FP", randomizedPrediction, selected, specializeAllAwakeOnMistake)
+                                   logger, percentOfMistakesBeforeSpecialize, "FP", randomizedPrediction, selected, specializeAllAwakeOnMistake)
           if (break_?) break
         }
 
@@ -1005,10 +970,9 @@ object ExpertAdviceFunctions extends LazyLogging {
         } else {
           // it holds by inertia, let the weights fix the problem
           val break_? = specialize(atom, stateHandler, markedMap, "terminated", inps,
-            logger, percentOfMistakesBeforeSpecialize, "FN", randomizedPrediction, selected, specializeAllAwakeOnMistake)
+                                   logger, percentOfMistakesBeforeSpecialize, "FN", randomizedPrediction, selected, specializeAllAwakeOnMistake)
           if (break_?) break
         }
-
 
       } else {
         // We do have firing initiation rules.
@@ -1016,7 +980,7 @@ object ExpertAdviceFunctions extends LazyLogging {
         ///*
         if (atom.terminatedBy.nonEmpty) {
           val break_? = specialize(atom, stateHandler, markedMap, "terminated", inps,
-            logger, percentOfMistakesBeforeSpecialize, "FN", randomizedPrediction, selected, specializeAllAwakeOnMistake)
+                                   logger, percentOfMistakesBeforeSpecialize, "FN", randomizedPrediction, selected, specializeAllAwakeOnMistake)
           if (break_?) break
         }
         //*/
@@ -1024,20 +988,19 @@ object ExpertAdviceFunctions extends LazyLogging {
     }
   }
 
-
   def generateNewExpert_NEW(batch: Example, currentAtom: AtomTobePredicted, previousTimePoint: Int,
-                            inps: RunningOptions, mistakeType: String, logger: org.slf4j.Logger,
-                            stateHandler: StateHandler, what: String, totalWeight: Double,
-                            removePastExperts: Boolean = false, otherAwakeExperts: Vector[Clause] = Vector.empty[Clause]) = {
+      inps: RunningOptions, mistakeType: String, logger: org.slf4j.Logger,
+      stateHandler: StateHandler, what: String, totalWeight: Double,
+      removePastExperts: Boolean = false, otherAwakeExperts: Vector[Clause] = Vector.empty[Clause]) = {
 
-    def isRedundant(newRule: Clause) = {
-      val getAllBottomRules = (x: List[Clause]) => x.flatMap(y => y.supportSet.clauses)
-      val allBottomRules = {
-        if (newRule.head.functor.contains("initiated")) getAllBottomRules(stateHandler.ensemble.initiationRules)
-        else getAllBottomRules(stateHandler.ensemble.terminationRules)
+      def isRedundant(newRule: Clause) = {
+        val getAllBottomRules = (x: List[Clause]) => x.flatMap(y => y.supportSet.clauses)
+        val allBottomRules = {
+          if (newRule.head.functor.contains("initiated")) getAllBottomRules(stateHandler.ensemble.initiationRules)
+          else getAllBottomRules(stateHandler.ensemble.terminationRules)
+        }
+        allBottomRules.exists(c => newRule.thetaSubsumes(c))
       }
-      allBottomRules.exists(c => newRule.thetaSubsumes(c))
-    }
     var generatedRule = false
 
     val newRule = {
@@ -1045,7 +1008,7 @@ object ExpertAdviceFunctions extends LazyLogging {
       val xhailInput = Map("annotation" -> batch.annotationASP, "narrative" -> batch.narrativeASP)
       val bkFile = if (what == "initiatedAt") inps.globals.BK_INITIATED_ONLY else inps.globals.BK_TERMINATED_ONLY
       val aspFile: File = Utils.getTempFile("aspinput", ".lp")
-      val (_, bcs) = Xhail.generateKernel(List(headAtom), examples = xhailInput, aspInputFile = aspFile, bkFile=bkFile, globals = inps.globals)
+      val (_, bcs) = Xhail.generateKernel(List(headAtom), examples = xhailInput, aspInputFile = aspFile, bkFile = bkFile, globals = inps.globals)
 
       aspFile.delete()
 
@@ -1085,40 +1048,39 @@ object ExpertAdviceFunctions extends LazyLogging {
     generatedRule
   }
 
-
   def generateNewRule(batch: Example, currentAtom: String, inps: RunningOptions, mistakeType: String,
-                      logger: org.slf4j.Logger, stateHandler: StateHandler,
-                      what: String, totalWeight: Double, removePastExperts: Boolean = false,
-                      otherAwakeExperts: Vector[Clause] = Vector.empty[Clause]) = {
+      logger: org.slf4j.Logger, stateHandler: StateHandler,
+      what: String, totalWeight: Double, removePastExperts: Boolean = false,
+      otherAwakeExperts: Vector[Clause] = Vector.empty[Clause]) = {
 
-    def isRedundant(newRule: Clause) = {
-      val getAllBottomRules = (x: List[Clause]) => x.flatMap(y => y.supportSet.clauses)
-      val allBottomRules = {
-        if (newRule.head.functor.contains("initiated")) getAllBottomRules(stateHandler.ensemble.initiationRules)
-        else getAllBottomRules(stateHandler.ensemble.terminationRules)
+      def isRedundant(newRule: Clause) = {
+        val getAllBottomRules = (x: List[Clause]) => x.flatMap(y => y.supportSet.clauses)
+        val allBottomRules = {
+          if (newRule.head.functor.contains("initiated")) getAllBottomRules(stateHandler.ensemble.initiationRules)
+          else getAllBottomRules(stateHandler.ensemble.terminationRules)
+        }
+        allBottomRules.exists(c => newRule.thetaSubsumes(c))
       }
-      allBottomRules.exists(c => newRule.thetaSubsumes(c))
-    }
     var generatedRule = false
     val newRule = generateNewExpert(batch, currentAtom, inps.globals, what, totalWeight, otherAwakeExperts)
     //if (!isRedundant(newRule)) {
-      if (!newRule.equals(Clause.empty)) {
-        logger.info(s"Generated new $what rule in response to $mistakeType atom: $currentAtom")
-        stateHandler.addRule(newRule)
-        generatedRule = true
-      } else {
-        logger.info(s"At batch ${stateHandler.batchCounter}: Failed to generate bottom rule from $mistakeType mistake with atom: $currentAtom")
-      }
+    if (!newRule.equals(Clause.empty)) {
+      logger.info(s"Generated new $what rule in response to $mistakeType atom: $currentAtom")
+      stateHandler.addRule(newRule)
+      generatedRule = true
+    } else {
+      logger.info(s"At batch ${stateHandler.batchCounter}: Failed to generate bottom rule from $mistakeType mistake with atom: $currentAtom")
+    }
     //} else {
-      //logger.info(s"At batch ${stateHandler.batchCounter}: Dropped redundant bottom rule.")
+    //logger.info(s"At batch ${stateHandler.batchCounter}: Dropped redundant bottom rule.")
     //}
 
     generatedRule
   }
 
   def generateNewRule_1(batch: Example, currentAtom: String, inps: RunningOptions,
-                      logger: org.slf4j.Logger, stateHandler: StateHandler,
-                      what: String, totalWeight: Double, removePastExperts: Boolean = false) = {
+      logger: org.slf4j.Logger, stateHandler: StateHandler,
+      what: String, totalWeight: Double, removePastExperts: Boolean = false) = {
 
     var generatedNewRule = false
     val newRule = generateNewExpert(batch, currentAtom, inps.globals, what, totalWeight)
@@ -1133,9 +1095,9 @@ object ExpertAdviceFunctions extends LazyLogging {
   }
 
   def specialize(atom: AtomTobePredicted, stateHandler: StateHandler,
-                 markedMap: Map[String, Clause], what: String, inps: RunningOptions,
-                 logger: org.slf4j.Logger, percentOfMistakesBeforeSpecialize: Int,
-                 mistakeType: String, randomizedPrediction: Boolean, selected: String, specializeAllAwakeOnMistake: Boolean) = {
+      markedMap: Map[String, Clause], what: String, inps: RunningOptions,
+      logger: org.slf4j.Logger, percentOfMistakesBeforeSpecialize: Int,
+      mistakeType: String, randomizedPrediction: Boolean, selected: String, specializeAllAwakeOnMistake: Boolean) = {
 
     val topLevelRules = if (what == "initiated") stateHandler.ensemble.initiationRules else stateHandler.ensemble.terminationRules
     val awakeExperts = if (what == "initiated") atom.initiatedBy else atom.terminatedBy // This contains the refinements
@@ -1145,17 +1107,17 @@ object ExpertAdviceFunctions extends LazyLogging {
       markedMap.filter(x =>
         x._2.head.functor.contains(what) && !awakeExperts.toSet.contains(x._1))
 
-    def getSleepingChildren(ruleToSpecialize: Clause) = {
-      ruleToSpecialize.refinements.filter(r => nonFiringRules.keySet.contains(r.##.toString)).
-        //filter(s => s.score > ruleToSpecialize.score).
-        //filter(r => !allRules.exists(r1 => r1.thetaSubsumes(r) && r.thetaSubsumes(r1))).
-        sortBy { x => (- x.w_pos, - x.score, x.body.length+1) }
-    }
+      def getSleepingChildren(ruleToSpecialize: Clause) = {
+        ruleToSpecialize.refinements.filter(r => nonFiringRules.keySet.contains(r.##.toString)).
+          //filter(s => s.score > ruleToSpecialize.score).
+          //filter(r => !allRules.exists(r1 => r1.thetaSubsumes(r) && r.thetaSubsumes(r1))).
+          sortBy { x => (-x.w_pos, -x.score, x.body.length + 1) }
+      }
 
-    def performSpecialization(ruleToSpecialize: (Clause, List[Clause])) = {
-      val suitableRefs = ruleToSpecialize._2
-      val bestRefinement = suitableRefs.head
-      /*
+      def performSpecialization(ruleToSpecialize: (Clause, List[Clause])) = {
+        val suitableRefs = ruleToSpecialize._2
+        val bestRefinement = suitableRefs.head
+        /*
       if (bestRefinement.w > ruleToSpecialize._1.w) {
         if (bestRefinement.refinements.isEmpty) bestRefinement.generateCandidateRefs(inps.globals)
         showInfo(ruleToSpecialize._1, bestRefinement, atom.atom, mistakeType)
@@ -1163,21 +1125,21 @@ object ExpertAdviceFunctions extends LazyLogging {
         stateHandler.addRule(bestRefinement)
       }
       */
-      if (bestRefinement.refinements.isEmpty) bestRefinement.generateCandidateRefs(inps.globals)
-      showInfo(ruleToSpecialize._1, bestRefinement, atom.atom, mistakeType)
-      stateHandler.removeRule(ruleToSpecialize._1)
-      stateHandler.addRule(bestRefinement)
-    }
+        if (bestRefinement.refinements.isEmpty) bestRefinement.generateCandidateRefs(inps.globals)
+        showInfo(ruleToSpecialize._1, bestRefinement, atom.atom, mistakeType)
+        stateHandler.removeRule(ruleToSpecialize._1)
+        stateHandler.addRule(bestRefinement)
+      }
 
     val allIncorrectAwakeTopLevelRules = {
       topLevelRules.filter{ x =>
         val totalFPs = stateHandler.totalFPs
-        val specialize = x.fps >= totalFPs * (percentOfMistakesBeforeSpecialize.toDouble/100)
+        val specialize = x.fps >= totalFPs * (percentOfMistakesBeforeSpecialize.toDouble / 100)
         awakeExperts.toSet.contains(x.##.toString) && specialize
       }
     }
 
-    val goAheads = allIncorrectAwakeTopLevelRules.map(x => (x, getSleepingChildren(x)) ).filter(x => x._2.nonEmpty)
+    val goAheads = allIncorrectAwakeTopLevelRules.map(x => (x, getSleepingChildren(x))).filter(x => x._2.nonEmpty)
 
     var performedSpecialization = false
 
@@ -1226,11 +1188,12 @@ object ExpertAdviceFunctions extends LazyLogging {
     predictedLabel == "false" && feedback == "false"
   }
 
-  def getFeedback(a: AtomTobePredicted,
-                  predictions: Map[String, Double],
-                  splice: Option[Map[String, Double] => (Set[EvidenceAtom], Evidence)] = None,
-                  mapper: Option[Set[EvidenceAtom] => Vector[String]] = None,
-                  labels: Set[String] = Set[String]()) = {
+  def getFeedback(
+      a: AtomTobePredicted,
+      predictions: Map[String, Double],
+      splice: Option[Map[String, Double] => (Set[EvidenceAtom], Evidence)] = None,
+      mapper: Option[Set[EvidenceAtom] => Vector[String]] = None,
+      labels: Set[String] = Set[String]()) = {
     // The prediction is sent to Splice here to receive the feedback.
     // If the atom is labelled Slice will return its true label, otherwise it will send
     // a Splice-predicted label for this atom.
@@ -1248,7 +1211,7 @@ object ExpertAdviceFunctions extends LazyLogging {
           case Success(terms) if atomDB(id) == TRUE =>
             Some(EvidenceAtom.asTrue(s"${querySig.symbol}", terms.map(lomrf.logic.Constant).toVector))
           case Failure(exception) => throw exception
-          case _                  => None
+          case _ => None
         }
       }
       /////
@@ -1259,7 +1222,6 @@ object ExpertAdviceFunctions extends LazyLogging {
       if (labels.contains(a.atom)) "true" else "false"
     }
   }
-
 
   private def showInfo(parent: Clause, child: Clause, currentAtom: String, mistakeType: String) = {
 
@@ -1272,28 +1234,29 @@ object ExpertAdviceFunctions extends LazyLogging {
 
   }
 
-
-  def ground(batch: Example,
-             inps: RunningOptions,
-             stateHandler: StateHandler,
-             withInputTheory: Boolean = false,
-             streaming: Boolean = false) = {
+  def ground(
+      batch: Example,
+      inps: RunningOptions,
+      stateHandler: StateHandler,
+      withInputTheory: Boolean = false,
+      streaming: Boolean = false) = {
     val startTime = System.nanoTime()
     val (markedProgram, markedMap, groundingsMap, times) = groundEnsemble(batch, inps, stateHandler, withInputTheory, streaming)
     val sortedAtomsToBePredicted = sortGroundingsByTime(groundingsMap)
     val orderedTimes = (sortedAtomsToBePredicted.map(x => x.time) ++ times.toVector).sorted
     val endTime = System.nanoTime()
-    println(s"Grounding time: ${(endTime - startTime)/1000000000.0}")
+    println(s"Grounding time: ${(endTime - startTime) / 1000000000.0}")
     (markedProgram, markedMap, groundingsMap, times, sortedAtomsToBePredicted, orderedTimes)
   }
 
   /* Generate groundings of the rules currently in the ensemble. */
 
-  def groundEnsemble(batch: Example,
-                     inps: RunningOptions,
-                     stateHandler: StateHandler,
-                     withInputTheory: Boolean = false,
-                     streaming: Boolean = false) = {
+  def groundEnsemble(
+      batch: Example,
+      inps: RunningOptions,
+      stateHandler: StateHandler,
+      withInputTheory: Boolean = false,
+      streaming: Boolean = false) = {
 
     val ensemble = stateHandler.ensemble
     val merged = ensemble.merged(inps, withInputTheory)
@@ -1322,13 +1285,12 @@ object ExpertAdviceFunctions extends LazyLogging {
     (markedProgram, markedMap, groundingsMap, times)
   }
 
-
   // givenLabels are the real annotation given in the case of full supervision. sliceLabels are the labels
   // received by splice in case of partial supervision.
-  def sortGroundingsByTime(groundingsMap: scala.collection.mutable.Map[String, (scala.Vector[String], scala.Vector[String])]//,
-                           //givenLabels: Set[String] = Set[String](),
-                           //sliceLabels: Map[String, String] = Map[String, String]()
-                           ) = {
+  def sortGroundingsByTime(groundingsMap: scala.collection.mutable.Map[String, (scala.Vector[String], scala.Vector[String])] //,
+  //givenLabels: Set[String] = Set[String](),
+  //sliceLabels: Map[String, String] = Map[String, String]()
+  ) = {
 
     val objs = groundingsMap.foldLeft(Vector[AtomTobePredicted]()) { (accum, mapEntry) =>
       val (atom, initBy, termBy) = (mapEntry._1, mapEntry._2._1, mapEntry._2._2)
@@ -1350,7 +1312,6 @@ object ExpertAdviceFunctions extends LazyLogging {
     objs.sortBy(x => x.time)
   }
 
-
   /* Make a prediction on the current atom */
   def predict(a: AtomTobePredicted, stateHanlder: StateHandler, markedMap: Map[String, Clause]) = {
 
@@ -1363,7 +1324,6 @@ object ExpertAdviceFunctions extends LazyLogging {
     val prediction = inertiaExpertPrediction + initWeightSum - termWeightSum
     //val prediction = initWeightSum - termWeightSum
     (prediction, inertiaExpertPrediction, initWeightSum, termWeightSum)
-
 
     /*
     val initWeightSum = if (awakeInit.nonEmpty) awakeInit.map(x => markedMap(x).w_pos).sum else 0.0
@@ -1383,7 +1343,7 @@ object ExpertAdviceFunctions extends LazyLogging {
   }
 
   def predictHedge(a: AtomTobePredicted, stateHanlder: StateHandler,
-                   markedMap: Map[String, Clause], withInertia: Boolean = true, topRulesOnly: Boolean = false) = {
+      markedMap: Map[String, Clause], withInertia: Boolean = true, topRulesOnly: Boolean = false) = {
 
     // Here we assume that initiation rules predict '1' and termination rules predict '0'.
     // The prediction is a number in [0,1] resulting from the weighted average of the experts predictions:
@@ -1401,7 +1361,7 @@ object ExpertAdviceFunctions extends LazyLogging {
     val termWeightSum = if (awakeTerm.nonEmpty) awakeTerm.map(x => markedMap(x)).filter(x => x.body.nonEmpty).map(x => x.w_pos).sum else 0.0
 
     val _prediction =
-      if (! topRulesOnly) {
+      if (!topRulesOnly) {
         if (withInertia) {
           (inertiaExpertPrediction + initWeightSum) / (inertiaExpertPrediction + initWeightSum + termWeightSum)
         } else {
@@ -1418,18 +1378,13 @@ object ExpertAdviceFunctions extends LazyLogging {
         }
       }
 
-
     //val _prediction = initWeightSum / (initWeightSum + termWeightSum)
 
     val prediction = if (_prediction.isNaN) 0.0 else _prediction
 
-
     (prediction, inertiaExpertPrediction, initWeightSum, termWeightSum)
 
   }
-
-
-
 
   def predict_NEW(a: AtomTobePredicted, stateHanlder: StateHandler, markedMap: Map[String, Clause]) = {
 
@@ -1486,8 +1441,6 @@ object ExpertAdviceFunctions extends LazyLogging {
     }
   }
 
-
-
   def predictRandomized(a: AtomTobePredicted, stateHanlder: StateHandler, markedMap: Map[String, Clause]) = {
 
     val (awakeInit, awakeTerm, currentFluent) = (a.initiatedBy, a.terminatedBy, a.fluent)
@@ -1497,7 +1450,6 @@ object ExpertAdviceFunctions extends LazyLogging {
       (0.0, 0.0, "None")
     } else {
 
-
       val nonEmprtyBodied = (awakeInit ++ awakeTerm).map(x => markedMap(x)).filter(_.body.nonEmpty)
       val awakeRuleExpertsWithWeights = nonEmprtyBodied.map(x => (x.##.toString, x.w_pos)).toMap
 
@@ -1505,13 +1457,12 @@ object ExpertAdviceFunctions extends LazyLogging {
         if (inertiaExpertPrediction > 0) awakeRuleExpertsWithWeights + ("inertia" -> inertiaExpertPrediction)
         else awakeRuleExpertsWithWeights
 
-
       val totalWeight = awakeExpertsWithWeights.values.sum
 
       // We need to pick an element according to the probability of w_i/totalAwakeWeight
 
       // ORDERING DOESN'T MATTER. IS THIS TRUE?
-      val sorted = awakeExpertsWithWeights.toVector.map(x => (x._1, x._2/totalWeight.toDouble)).sortBy(x => x._2)
+      val sorted = awakeExpertsWithWeights.toVector.map(x => (x._1, x._2 / totalWeight.toDouble)).sortBy(x => x._2)
       //val sorted = awakeExpertsWithWeights.toVector.map(x => (x._1, x._2/totalWeight.toDouble))
 
       // Pick an element according to its probability:
@@ -1552,9 +1503,5 @@ object ExpertAdviceFunctions extends LazyLogging {
       }
     }
   }
-
-
-
-
 
 }

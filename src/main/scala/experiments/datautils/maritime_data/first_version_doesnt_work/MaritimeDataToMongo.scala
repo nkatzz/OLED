@@ -21,12 +21,10 @@ package experiments.datautils.maritime_data.first_version_doesnt_work
   * Created by nkatz on 4/26/17.
   */
 
-
 import com.mongodb.casbah.Imports._
 import com.mongodb.casbah.MongoClient
 import com.mongodb.casbah.commons.MongoDBObject
 import logic.Examples.Example
-
 
 /**
   *
@@ -36,11 +34,9 @@ import logic.Examples.Example
   *
   *
   *
-  * */
-
+  */
 
 object MaritimeDataToMongo {
-
 
   def main(args: Array[String]) = {
 
@@ -68,35 +64,34 @@ object MaritimeDataToMongo {
   /* Try to get all data at once, for all HLEs */
   def getMaritimeData_Whole(readFromDB: String, chunkSize: Int, mc: MongoClient) = {
 
-    def getHLEs(cursor: Iterator[DBObject], lleTime: Int, initiationPoint: Boolean) = {
-      cursor.foldLeft(List[String]()) { (atoms, hleDbObject) =>
-        val hle = hleDbObject.asInstanceOf[BasicDBObject].get("hle").toString
-        val atom = hle match {
-          case "highSpeedIn" | "withinArea" =>
-            val vessel = hleDbObject.asInstanceOf[BasicDBObject].get("vessel").toString
-            val area = hleDbObject.asInstanceOf[BasicDBObject].get("area").toString
-            if (!initiationPoint) s"""holdsAt($hle("$vessel","$area"),"$lleTime")""" else s"""holdsAt($hle("$vessel","$area"),"${lleTime+1}")"""
-          case "loitering" | "lowSpeed" | "sailing" | "stopped" =>
-            val vessel = hleDbObject.asInstanceOf[BasicDBObject].get("vessel").toString
-            if (!initiationPoint) s"""holdsAt($hle("$vessel"),"$lleTime")""" else s"""holdsAt($hle("$vessel"),"${lleTime+1}")"""
-          case "rendezVouz" =>
-            val v1 = hleDbObject.asInstanceOf[BasicDBObject].get("vessel1").toString
-            val v2 = hleDbObject.asInstanceOf[BasicDBObject].get("vessel2").toString
-            if (!initiationPoint) s"""holdsAt($hle("$v1","$v2"),"$lleTime")""" else s"""holdsAt($hle("$v1","$v2"),"${lleTime+1}")"""
-          case _ => throw new RuntimeException(s"HLE name: $hle not found")
+      def getHLEs(cursor: Iterator[DBObject], lleTime: Int, initiationPoint: Boolean) = {
+        cursor.foldLeft(List[String]()) { (atoms, hleDbObject) =>
+          val hle = hleDbObject.asInstanceOf[BasicDBObject].get("hle").toString
+          val atom = hle match {
+            case "highSpeedIn" | "withinArea" =>
+              val vessel = hleDbObject.asInstanceOf[BasicDBObject].get("vessel").toString
+              val area = hleDbObject.asInstanceOf[BasicDBObject].get("area").toString
+              if (!initiationPoint) s"""holdsAt($hle("$vessel","$area"),"$lleTime")""" else s"""holdsAt($hle("$vessel","$area"),"${lleTime + 1}")"""
+            case "loitering" | "lowSpeed" | "sailing" | "stopped" =>
+              val vessel = hleDbObject.asInstanceOf[BasicDBObject].get("vessel").toString
+              if (!initiationPoint) s"""holdsAt($hle("$vessel"),"$lleTime")""" else s"""holdsAt($hle("$vessel"),"${lleTime + 1}")"""
+            case "rendezVouz" =>
+              val v1 = hleDbObject.asInstanceOf[BasicDBObject].get("vessel1").toString
+              val v2 = hleDbObject.asInstanceOf[BasicDBObject].get("vessel2").toString
+              if (!initiationPoint) s"""holdsAt($hle("$v1","$v2"),"$lleTime")""" else s"""holdsAt($hle("$v1","$v2"),"${lleTime + 1}")"""
+            case _ => throw new RuntimeException(s"HLE name: $hle not found")
+          }
+          atoms :+ atom
         }
-        atoms :+ atom
       }
-    }
 
     //val mc = MongoClient()
     val lleCollection = mc(readFromDB)("lles")
     val portsCollection = mc(readFromDB)("not-close-to-ports")
     val speedLimitsCollection = mc(readFromDB)("speed-limits")
 
-
     val hleCollections = List(mc(readFromDB)("high_speed"), mc(readFromDB)("within-area"),
-      mc(readFromDB)("loitering"), mc(readFromDB)("low-speed"), mc(readFromDB)("sailing"), mc(readFromDB)("stopped"))
+                              mc(readFromDB)("loitering"), mc(readFromDB)("low-speed"), mc(readFromDB)("sailing"), mc(readFromDB)("stopped"))
 
     /*
     val hleCollection = HLE match {
@@ -122,15 +117,15 @@ object MaritimeDataToMongo {
         val lles = dbObject.asInstanceOf[BasicDBObject].get("atoms").asInstanceOf[BasicDBList].toList.map(x => x.toString)
         val currentTime = dbObject.asInstanceOf[BasicDBObject].get("time").toString
 
-        val vesselQueries = vessels.map(v => MongoDBObject("vessel" -> v) ++ ("time" -> currentTime) )
-        val vs = vesselQueries flatMap ( q => portsCollection.find(q) )
+        val vesselQueries = vessels.map(v => MongoDBObject("vessel" -> v) ++ ("time" -> currentTime))
+        val vs = vesselQueries flatMap (q => portsCollection.find(q))
         val portsAtoms = vs.map{ x =>
           val vessel = x.asInstanceOf[BasicDBObject].get("vessel").toString
           s"""notCloseToPorts("$vessel","$currentTime")"""
         }
 
-        val areaQueries = areas.map(a => MongoDBObject("area" -> a)  )
-        val as = areaQueries flatMap ( q => speedLimitsCollection.find(q) )
+        val areaQueries = areas.map(a => MongoDBObject("area" -> a))
+        val as = areaQueries flatMap (q => speedLimitsCollection.find(q))
         val speedLimitAtoms = as.map{ x =>
           val area = x.asInstanceOf[BasicDBObject].get("area").toString
           val speed = x.asInstanceOf[BasicDBObject].get("limit").toString
@@ -138,14 +133,14 @@ object MaritimeDataToMongo {
         }
 
         val query1 = ("start_time" $lte currentTime.toInt) ++ ("end_time" $gte currentTime.toInt)
-        val query2 = "start_time" $eq currentTime.toInt+1
+        val query2 = "start_time" $eq currentTime.toInt + 1
         val hledocs1 = hleCollections.map(c => c.find(query1))
         val hledocs2 = hleCollections.map(c => c.find(query2))
 
-        val initiationPoints = hledocs2.flatMap(x => getHLEs(x, currentTime.toInt, initiationPoint=true))
-        val medianPoints = hledocs1.flatMap(x => getHLEs(x, currentTime.toInt, initiationPoint=false))
+        val initiationPoints = hledocs2.flatMap(x => getHLEs(x, currentTime.toInt, initiationPoint = true))
+        val medianPoints = hledocs1.flatMap(x => getHLEs(x, currentTime.toInt, initiationPoint = false))
 
-        (_narrative ++ lles ++ portsAtoms ++ speedLimitAtoms, (_annotation ++ initiationPoints ++ medianPoints).distinct )
+        (_narrative ++ lles ++ portsAtoms ++ speedLimitAtoms, (_annotation ++ initiationPoints ++ medianPoints).distinct)
       }
       val mergedExmplTime = docs.head.asInstanceOf[BasicDBObject].get("time").toString
       val _merged = new Example(annot = annotation, nar = narrative, _time = mergedExmplTime)
@@ -154,13 +149,5 @@ object MaritimeDataToMongo {
     }
     chunked
   }
-
-
-
-
-
-
-
-
 
 }

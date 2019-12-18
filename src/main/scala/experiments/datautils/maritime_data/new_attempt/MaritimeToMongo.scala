@@ -28,7 +28,6 @@ import scala.collection.immutable.HashSet
   * Created by nkatz on 7/4/17.
   */
 
-
 object Runner {
 
   def main(args: Array[String]) = {
@@ -39,9 +38,9 @@ object Runner {
   }
 
   private val path = "/home/nkatz/dev/maritime/nkatz_brest/1-core"
-  private val datasetFile = path+"/dataset.txt" // The LLEs file
+  private val datasetFile = path + "/dataset.txt" // The LLEs file
 
-   def getAllTimes() = {
+  def getAllTimes() = {
     val lleTimes = Source.fromFile(datasetFile).getLines.map(x => getTimeLLEs(x)).filter(_ != "None").toVector.distinct
     val procimityTimes = getProximityTimes()
     (lleTimes ++ procimityTimes).distinct.map(_.toInt).sorted
@@ -71,27 +70,25 @@ object Runner {
 
 }
 
-
 class Master(times: HashSet[Int]) extends Actor {
 
   val path = "/home/nkatz/dev/maritime/nkatz_brest/1-core"
-  private val datasetFile = path+"/dataset.txt" // The LLEs file
-  private val speedLimitsFile = path+"/static_data/all_areas/areas_speed_limits.csv"
-  private val closeToPortsFile = path+"/recognition/close_to_ports.csv" // this has a different schema than the other hles
-  private val highSpeedFile = path+"/recognition/highSpeedIn-no-infs.csv"
-  private val loiteringFile = path+"/recognition/loitering-no-infs.csv"
-  private val lowSpeedFile = path+"/recognition/lowSpeed-no-infs.csv"
-  private val sailingFile = path+"/recognition/sailing-no-infs.csv"
-  private val stoppedFile = path+"/recognition/stopped-no-infs.csv"
-  private val withinAreaFile = path+"/recognition/withinArea-no-infs.csv"
-  private val rendezVousFile = path+"/recognition/rendezVouz-no-infs.csv"
+  private val datasetFile = path + "/dataset.txt" // The LLEs file
+  private val speedLimitsFile = path + "/static_data/all_areas/areas_speed_limits.csv"
+  private val closeToPortsFile = path + "/recognition/close_to_ports.csv" // this has a different schema than the other hles
+  private val highSpeedFile = path + "/recognition/highSpeedIn-no-infs.csv"
+  private val loiteringFile = path + "/recognition/loitering-no-infs.csv"
+  private val lowSpeedFile = path + "/recognition/lowSpeed-no-infs.csv"
+  private val sailingFile = path + "/recognition/sailing-no-infs.csv"
+  private val stoppedFile = path + "/recognition/stopped-no-infs.csv"
+  private val withinAreaFile = path + "/recognition/withinArea-no-infs.csv"
+  private val rendezVousFile = path + "/recognition/rendezVouz-no-infs.csv"
 
   val dbName = "maritime-brest"
   val mongoClient = MongoClient()
   mongoClient.dropDatabase(dbName)
 
   var counter = 9 // THIS MUST BE ADAPTED IF THE JOBS CHANGE
-
 
   def receive = {
     case "go" =>
@@ -115,12 +112,7 @@ class Master(times: HashSet[Int]) extends Actor {
       }
   }
 
-
-
 }
-
-
-
 
 class HighLevelEventToMongo(val dataPath: String, val times: HashSet[Int], val hle: String, val collection: MongoCollection) extends Actor {
 
@@ -247,13 +239,12 @@ class LLEsToMongo(val dataPath: String, val collection: MongoCollection) extends
       self ! PoisonPill
   }
 
-
   def LLEsToMongo(collection: MongoCollection) = {
 
     //collection.createIndex(MongoDBObject("time") -> 1)
 
-    val data = Source.fromFile(dataPath).getLines//.filter(x => !x.contains("HoldsFor") && !x.contains("coord"))
-    while(data.hasNext) {
+    val data = Source.fromFile(dataPath).getLines //.filter(x => !x.contains("HoldsFor") && !x.contains("coord"))
+    while (data.hasNext) {
       val x = data.next()
       if (!x.contains("HoldsFor") && !x.contains("coord")) {
         var area = "None"
@@ -314,9 +305,6 @@ class LLEsToMongo(val dataPath: String, val collection: MongoCollection) extends
   }
 }
 
-
-
-
 class SpeedLimitsToMongo(val path: String, val collection: MongoCollection) extends Actor {
 
   def receive = {
@@ -346,7 +334,6 @@ class SpeedLimitsToMongo(val path: String, val collection: MongoCollection) exte
   }
 
 }
-
 
 class ProximityToMongo(val path: String, val times: HashSet[Int], val collection: MongoCollection) extends Actor {
 
@@ -401,8 +388,6 @@ class ProximityToMongo(val path: String, val times: HashSet[Int], val collection
 
 }
 
-
-
 class PortsToMongo(val path: String, val collection: MongoCollection) extends Actor {
 
   def receive = {
@@ -431,7 +416,4 @@ class PortsToMongo(val path: String, val collection: MongoCollection) extends Ac
     context.self ! "done"
   }
 }
-
-
-
 

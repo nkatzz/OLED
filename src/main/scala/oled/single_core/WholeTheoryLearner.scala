@@ -23,8 +23,6 @@ package oled.single_core
 
 class WholeTheoryLearner {}
 
-
-
 /*
 
 class WholeTheoryLearner(override val DB: Database,
@@ -197,4 +195,4 @@ class WholeTheoryLearner(override val DB: Database,
 
 
 }
-*/
+*/ 

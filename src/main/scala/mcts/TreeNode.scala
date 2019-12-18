@@ -72,8 +72,7 @@ trait TreeNode {
   * The id of a node is a string of the form 2-3-12, where 2 is the iteration number,
   * 3 is the "depth" of the node and 12 is a counter of the the other nodes generated at this round.
   *
-  * */
-
+  */
 
 case class RootNode(override val id: String, override val theory: Theory) extends TreeNode {
 
@@ -90,8 +89,8 @@ case class RootNode(override val id: String, override val theory: Theory) extend
   def descendToBestChild(exploreRate: Double) = {
     var reachedLeaf = false
     var bestChild = this.getBestChild(exploreRate)
-    while(! reachedLeaf) {
-      if (! bestChild.isLeafNode()) {
+    while (!reachedLeaf) {
+      if (!bestChild.isLeafNode()) {
         bestChild = bestChild.getBestChild(exploreRate)
       } else {
         reachedLeaf = true
@@ -99,7 +98,6 @@ case class RootNode(override val id: String, override val theory: Theory) extend
     }
     bestChild
   }
-
 
 }
 
@@ -116,7 +114,7 @@ case class InnerNode(override val id: String, override val theory: Theory, paren
   override val isRootNode = false
 
   override def getMCTSScore(exploreRate: Double) =
-    meanReward() + exploreRate * Math.sqrt(2*Math.log(this.parentNode.visits)/this.visits)
+    meanReward() + exploreRate * Math.sqrt(2 * Math.log(this.parentNode.visits) / this.visits)
 
   override def getDepth() = {
     var reachedRoot = false
@@ -124,10 +122,10 @@ case class InnerNode(override val id: String, override val theory: Theory, paren
     var depth = 1
     while (!reachedRoot) {
       parent match {
-        case _ : InnerNode =>
-          depth = depth+1
+        case _: InnerNode =>
+          depth = depth + 1
           parent = parent.asInstanceOf[InnerNode].parentNode
-        case _ : RootNode => reachedRoot = true
+        case _: RootNode => reachedRoot = true
       }
     }
     depth
@@ -136,13 +134,13 @@ case class InnerNode(override val id: String, override val theory: Theory, paren
   override def getAncestorsPath() = {
     var reachedRoot = false
     var parent = this.parentNode
-    var ancestors = Vector[TreeNode]()//Vector(parent)
+    var ancestors = Vector[TreeNode]() //Vector(parent)
     while (!reachedRoot) {
       parent match {
-        case _ : InnerNode =>
+        case _: InnerNode =>
           ancestors = ancestors :+ parent
           parent = parent.asInstanceOf[InnerNode].parentNode
-        case _ : RootNode =>
+        case _: RootNode =>
           ancestors = ancestors :+ parent
           reachedRoot = true
       }
@@ -162,7 +160,4 @@ case class InnerNode(override val id: String, override val theory: Theory, paren
   */
 
 }
-
-
-
 

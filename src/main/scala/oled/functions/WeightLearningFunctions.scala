@@ -25,14 +25,11 @@ import lomrf.mln.model.mrf.MRF
 import lomrf.mln.model.{AtomIdentityFunctionOps, EvidenceBuilder, EvidenceDB, KB, MLN}
 import utils.{ASP, Utils}
 
-
-
 object WeightLearningFunctions {
 
-
   class MLNInfoContainer(val mln: MLN, val labelAtoms: Set[String],
-                         val fluentsMap: Map[String, String], val clauseIds: List[Int],
-                         val annotationDB: EvidenceDB, val exmplCount: Int)
+      val fluentsMap: Map[String, String], val clauseIds: List[Int],
+      val annotationDB: EvidenceDB, val exmplCount: Int)
 
   /*
   *
@@ -43,10 +40,8 @@ object WeightLearningFunctions {
   *
   * */
 
-
-
   def getGroundTheory(clauses: Vector[Clause], e: Example,
-                      inps: RunningOptions, targetClass: String, clauseIds: List[Int] = Nil) = {
+      inps: RunningOptions, targetClass: String, clauseIds: List[Int] = Nil) = {
 
     /*
     def proxyAtom(lit: PosLiteral) = {
@@ -80,17 +75,16 @@ object WeightLearningFunctions {
       */
 
       // We don't need the body terms
-      val unsatClauseHead = Literal(predSymbol = "false_clause", terms = List(Constant(s"ruleId_$index"), clause.head) )
+      val unsatClauseHead = Literal(predSymbol = "false_clause", terms = List(Constant(s"ruleId_$index"), clause.head))
       // the body is the negation of the head
       val unsatClauseBody = Literal(predSymbol = clause.head.functor, terms = clause.head.terms :+ Constant(s"ruleId_$index"), isNAF = true)
-      val unsatClause = Clause(head = unsatClauseHead.asPosLiteral, body = List(unsatClauseBody)++ typeAtoms)
+      val unsatClause = Clause(head = unsatClauseHead.asPosLiteral, body = List(unsatClauseBody) ++ typeAtoms)
 
       // We also need the satisfied clauses
-      val satClauseHead = Literal(predSymbol = "true_clause", terms = List(Constant(s"ruleId_$index"), clause.head) )
+      val satClauseHead = Literal(predSymbol = "true_clause", terms = List(Constant(s"ruleId_$index"), clause.head))
       // the body is the negation of the head
       val satClauseBody = Literal(predSymbol = clause.head.functor, terms = clause.head.terms :+ Constant(s"ruleId_$index"))
-      val satClause = Clause(head = satClauseHead.asPosLiteral, body = List(satClauseBody)++ typeAtoms)
-
+      val satClause = Clause(head = satClauseHead.asPosLiteral, body = List(satClauseBody) ++ typeAtoms)
 
       (markedClause, unsatClause, satClause)
     }
@@ -104,18 +98,17 @@ object WeightLearningFunctions {
 
     val (trueGroundingsAtoms, totalExmplCount_, trueFalseGrndClauseAtoms, annotation_, fnsTerminated_, tpsTerminated_) =
       atoms.foldLeft(Vector[String](), Vector[String](), Vector[String](),
-        Vector[String](), Vector[String](), Vector[String]()) { (x, atom) =>
-      if (atom.startsWith("true_groundings")) (x._1 :+ atom, x._2, x._3, x._4, x._5, x._6)
-      else if (atom.startsWith("exmplCount")) (x._1, x._2 :+ atom, x._3, x._4, x._5, x._6)
-      else if (atom.startsWith("false_clause") || atom.startsWith("true_clause"))  (x._1, x._2, x._3 :+ atom, x._4, x._5,x._6)
-      else if (atom.startsWith("annotation"))  (x._1, x._2, x._3, x._4 :+ atom, x._5,x._6)
-      else if (atom.startsWith("fns_terminated"))  (x._1, x._2, x._3, x._4, x._5 :+ atom, x._6)
-      else if (atom.startsWith("tps_terminated"))  (x._1, x._2, x._3, x._4, x._5, x._6 :+ atom)
-      else throw new RuntimeException(s"Unexpected atom $atom")
-    }
+                     Vector[String](), Vector[String](), Vector[String]()) { (x, atom) =>
+          if (atom.startsWith("true_groundings")) (x._1 :+ atom, x._2, x._3, x._4, x._5, x._6)
+          else if (atom.startsWith("exmplCount")) (x._1, x._2 :+ atom, x._3, x._4, x._5, x._6)
+          else if (atom.startsWith("false_clause") || atom.startsWith("true_clause")) (x._1, x._2, x._3 :+ atom, x._4, x._5, x._6)
+          else if (atom.startsWith("annotation")) (x._1, x._2, x._3, x._4 :+ atom, x._5, x._6)
+          else if (atom.startsWith("fns_terminated")) (x._1, x._2, x._3, x._4, x._5 :+ atom, x._6)
+          else if (atom.startsWith("tps_terminated")) (x._1, x._2, x._3, x._4, x._5, x._6 :+ atom)
+          else throw new RuntimeException(s"Unexpected atom $atom")
+        }
 
-
-    if (totalExmplCount_.length !=1)
+    if (totalExmplCount_.length != 1)
       throw new RuntimeException(s"Problem with the total example count (mun of target predicate groundings): ${totalExmplCount_.mkString(" ")}")
 
     val totalExmplCount = totalExmplCount_.head.split("\\(")(1).split("\\)")(0).toInt
@@ -133,7 +126,7 @@ object WeightLearningFunctions {
     val annotation = annotation_.map{ x =>
       val a = Literal.parseWPB2(x).terms.head.asInstanceOf[Literal]
       val derivedFromClause = a.terms.last.name.split("_")(1).toInt
-      val b = Literal(predSymbol = a.predSymbol, terms = a.terms, derivedFrom = derivedFromClause)
+      val b = Literal(predSymbol  = a.predSymbol, terms = a.terms, derivedFrom = derivedFromClause)
       Literal.toMLNFlat(b)
     }
 
@@ -141,14 +134,14 @@ object WeightLearningFunctions {
     val incorrectlyTerminated = fnsTerminated_.map { x =>
       val a = Literal.parseWPB2(x).terms.head.asInstanceOf[Literal]
       val derivedFromClause = a.terms.last.name.split("_")(1).toInt
-      val b = Literal(predSymbol = a.predSymbol, terms = a.terms, derivedFrom = derivedFromClause)
+      val b = Literal(predSymbol  = a.predSymbol, terms = a.terms, derivedFrom = derivedFromClause)
       Literal.toMLNFlat(b)
     }
 
     val correctlyNotTerminated = tpsTerminated_.map { x =>
       val a = Literal.parseWPB2(x).terms.head.asInstanceOf[Literal]
       val derivedFromClause = a.terms.last.name.split("_")(1).toInt
-      val b = Literal(predSymbol = a.predSymbol, terms = a.terms, derivedFrom = derivedFromClause)
+      val b = Literal(predSymbol  = a.predSymbol, terms = a.terms, derivedFrom = derivedFromClause)
       Literal.toMLNFlat(b)
     }
 
@@ -172,11 +165,10 @@ object WeightLearningFunctions {
       val clauseHead = p.terms(1).asInstanceOf[Literal]
 
       if (p.predSymbol == "true_clause") {
-        val l = Literal(predSymbol = clauseHead.predSymbol, terms = clauseHead.terms :+ p.terms.head, derivedFrom = clauseId)
+        val l = Literal(predSymbol  = clauseHead.predSymbol, terms = clauseHead.terms :+ p.terms.head, derivedFrom = clauseId)
         Literal.toMLNFlat(l)
-      }
-      else {
-        val l = Literal(predSymbol = clauseHead.predSymbol, terms = clauseHead.terms :+ p.terms.head, isNAF = true, derivedFrom = clauseId)
+      } else {
+        val l = Literal(predSymbol  = clauseHead.predSymbol, terms = clauseHead.terms :+ p.terms.head, isNAF = true, derivedFrom = clauseId)
         Literal.toMLNFlat(l)
       }
 
@@ -185,8 +177,6 @@ object WeightLearningFunctions {
     (groundNetwork, trueGroundingsPerClause, totalExmplCount, annotation, incorrectlyTerminated, correctlyNotTerminated)
 
   }
-
-
 
   def getMRFAsStringSet(mrf: MRF): scala.collection.mutable.Set[String] = {
 
@@ -198,7 +188,6 @@ object WeightLearningFunctions {
     while (constraintIterator.hasNext) {
       constraintIterator.advance()
       val currentConstraint = constraintIterator.value()
-
 
       groundClausesSet += currentConstraint.literals.map { lit => decodeLiteral(lit)(mrf.mln).getOrElse(throw new RuntimeException(s"Fuck this shit"))
       }.mkString(" v ")

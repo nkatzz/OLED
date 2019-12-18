@@ -77,8 +77,7 @@ object MaritimeDataFetcher extends App {
 
   val newCollection = mongoClient(dbName)("examples")
   newCollection.dropCollection()
-  newCollection.createIndex(MongoDBObject("time"-> 1))
-
+  newCollection.createIndex(MongoDBObject("time" -> 1))
 
   println("Creating times hash set")
   val times = HashSet() ++ Runner.getAllTimes()
@@ -104,7 +103,7 @@ object MaritimeDataFetcher extends App {
       ///*
       val hleAtoms = hleCollections.foldLeft(List[String]()) { (x, collection) =>
         val r = vessels flatMap { vessel =>
-          collection.find( MongoDBObject("vessel" -> vessel) ).map(obj => obj.asInstanceOf[BasicDBObject].get("atom").toString)
+          collection.find(MongoDBObject("vessel" -> vessel)).map(obj => obj.asInstanceOf[BasicDBObject].get("atom").toString)
         }
         x ++ r
       }
@@ -115,12 +114,12 @@ object MaritimeDataFetcher extends App {
       val areas = areas_.distinct.filter(_ != "None")
 
       val speedLimitAtoms = areas.foldLeft(List[String]()){ (k, area) =>
-        val results = speedLimitsCollection.find( MongoDBObject("area" -> area) )
-        val resToStrs = results.map ( obj => obj.asInstanceOf[BasicDBObject].get("atom").toString )
+        val results = speedLimitsCollection.find(MongoDBObject("area" -> area))
+        val resToStrs = results.map (obj => obj.asInstanceOf[BasicDBObject].get("atom").toString)
         k ++ resToStrs
       }
 
-      val narrative = narrativeAtoms++speedLimitAtoms++notCloseToPortsAtoms
+      val narrative = narrativeAtoms ++ speedLimitAtoms ++ notCloseToPortsAtoms
       if (narrative.nonEmpty) {
         val entry = MongoDBObject("annotation" -> hleAtoms) ++ ("narrative" -> narrative) ++ ("time" -> counter)
         println(counter, time)
@@ -133,11 +132,10 @@ object MaritimeDataFetcher extends App {
     val atom = o.asInstanceOf[BasicDBObject].get("lle").toString
     val vs = o.asInstanceOf[BasicDBObject].get("vessels").asInstanceOf[BasicDBList].toList.map(_.toString)
     val time = o.asInstanceOf[BasicDBObject].get("time").toString.toInt
-    val r = closeToPortsCollection.find( MongoDBObject("time" -> time) )
-    val notCloseToPortsAtoms = r.map( obj => obj.asInstanceOf[BasicDBObject].get("atom").toString )
+    val r = closeToPortsCollection.find(MongoDBObject("time" -> time))
+    val notCloseToPortsAtoms = r.map(obj => obj.asInstanceOf[BasicDBObject].get("atom").toString)
     val as = o.asInstanceOf[BasicDBObject].get("areas").asInstanceOf[BasicDBList].toList.map(_.toString)
     (atom, notCloseToPortsAtoms, as, vs)
   }
-
 
 }

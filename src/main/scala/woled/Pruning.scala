@@ -20,8 +20,8 @@ package woled
 import logic.{Clause, Theory}
 
 /**
- * Created by nkatz at 13/10/19
- */
+  * Created by nkatz at 13/10/19
+  */
 
 object Pruning {
 

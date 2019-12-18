@@ -27,7 +27,6 @@ import oled.non_blocking.Dispatcher
   * Created by nkatz on 7/10/17.
   */
 
-
 object NonBlockingMaritimeDistRunner {
 
   def main(args: Array[String]) = {
@@ -55,16 +54,14 @@ object NonBlockingMaritimeDistRunner {
       // Start the actor system
       val system = ActorSystem("distributed-oled")
 
-      system.actorOf(Props( new Dispatcher( opts zip p.map(x => x._2) , runOpts, 2, testingOptions, testingFunction) ), name = "TopLevelDispatcher") ! message
-
+      system.actorOf(Props(new Dispatcher(opts zip p.map(x => x._2), runOpts, 2, testingOptions, testingFunction)), name = "TopLevelDispatcher") ! message
 
     }
 
   }
 
-
   def prepare(runOpts: RunningOptions, opts: List[MaritimeDataOptions],
-              speedLimitsMap: scala.collection.mutable.Map[String, scala.collection.mutable.Set[String]]) = {
+      speedLimitsMap: scala.collection.mutable.Map[String, scala.collection.mutable.Set[String]]) = {
 
     opts.map { opt =>
       val nodeData = new NodeData(opt.hlePath, opt.llePath, opt.closeToPortsPath, opt.targetConcept, speedLimitsMap)
@@ -74,8 +71,6 @@ object NonBlockingMaritimeDistRunner {
 
     //val testingFunction: MaritimeDataOptions => Iterator[Example] = nodeData.getTestingData
 
-
   }
-
 
 }

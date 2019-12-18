@@ -28,18 +28,17 @@ class EvalAfterWeightLearning(val mlnClauses: List[String], val testData: Iterat
 
   private val cwd = System.getProperty("user.dir")
 
-  private val scriptsPath = if (cwd.contains("scripts")) cwd+"/weight-learn-eval-meet" else cwd+"/scripts/weight-learn-eval-meet"
+  private val scriptsPath = if (cwd.contains("scripts")) cwd + "/weight-learn-eval-meet" else cwd + "/scripts/weight-learn-eval-meet"
 
   //private val scriptsPath = if (cwd.contains("scripts")) cwd+"/weight-learn-eval-move" else cwd+"/scripts/weight-learn-eval-move"
 
-
-  private val bkFile = scriptsPath+"/bk.mln"
-  private val resultsFile = scriptsPath+"/results"
-  private val inferScript = scriptsPath+"/infer.sh"
-  private val compileScript = scriptsPath+"/compile.sh"
-  private val compiled = scriptsPath+"/compiled.mln"
-  private val evidenceFile = scriptsPath+"/evidence.db"
-  private val domainFile = scriptsPath+"/domain.lp"
+  private val bkFile = scriptsPath + "/bk.mln"
+  private val resultsFile = scriptsPath + "/results"
+  private val inferScript = scriptsPath + "/infer.sh"
+  private val compileScript = scriptsPath + "/compile.sh"
+  private val compiled = scriptsPath + "/compiled.mln"
+  private val evidenceFile = scriptsPath + "/evidence.db"
+  private val domainFile = scriptsPath + "/domain.lp"
 
   private val bk = Source.fromFile(bkFile).getLines.
     toList.takeWhile(line => line != "// LEARNT RULES FROM HERE!") ++
@@ -52,7 +51,7 @@ class EvalAfterWeightLearning(val mlnClauses: List[String], val testData: Iterat
   private val res1 = command1 !!
 
   def getCounts() = {
-    testData.foldLeft(0,0,0) { (accum, testBatch) =>
+    testData.foldLeft(0, 0, 0) { (accum, testBatch) =>
       val (_tps, _fps, _fns) = (accum._1, accum._2, accum._3)
 
       /* Get the domain signatures for events and fluents */
@@ -67,7 +66,7 @@ class EvalAfterWeightLearning(val mlnClauses: List[String], val testData: Iterat
           // All inner terms of the signature atom should be constants,
           // otherwise something's wrong...
           Literal(predSymbol = innerSignatureAtom.predSymbol,
-            terms = innerSignatureAtom.terms.map(x => Constant(x.name.capitalize))).tostring
+                  terms      = innerSignatureAtom.terms.map(x => Constant(x.name.capitalize))).tostring
         }
 
         val flattened = Literal.toMLNFlat(parsed).terms.head.tostring
@@ -94,7 +93,7 @@ class EvalAfterWeightLearning(val mlnClauses: List[String], val testData: Iterat
       val inferredAtoms = Source.fromFile(resultsFile).getLines.
         filter(p => p.startsWith("HoldsAt") && p.split(" ")(1) == "1").map(x => x.split(" ")(0)).toSet
 
-      val annotationAtoms = testBatch.annotation.map { x => toMLNFormat(x)}.toSet
+      val annotationAtoms = testBatch.annotation.map { x => toMLNFormat(x) }.toSet
 
       /* Calculate tps, fps, fns */
 
@@ -108,10 +107,6 @@ class EvalAfterWeightLearning(val mlnClauses: List[String], val testData: Iterat
     }
   }
 
-
-
-
-
   /* Utility functions */
 
   def toMLNFormat(x: String) = {
@@ -120,11 +115,11 @@ class EvalAfterWeightLearning(val mlnClauses: List[String], val testData: Iterat
   }
 
   def getEventFluentSignatures(e: Example) = {
-    val all = (e.narrativeASP ++ List(s"""#include "$domainFile".""")) .mkString("\n")
+    val all = (e.narrativeASP ++ List(s"""#include "$domainFile".""")).mkString("\n")
     val f = Utils.getTempFile("ground", ".lp")
     Utils.writeLine(all, f.getCanonicalPath, "overwrite")
     val cores = Runtime.getRuntime.availableProcessors
-    val command = Seq("clingo", f.getCanonicalPath , "-Wno-atom-undefined", s"-t$cores", "--verbose=0").mkString(" ")
+    val command = Seq("clingo", f.getCanonicalPath, "-Wno-atom-undefined", s"-t$cores", "--verbose=0").mkString(" ")
     val result = command.lineStream_!
     val results = result.toVector
     val atoms = results(0)
@@ -132,8 +127,5 @@ class EvalAfterWeightLearning(val mlnClauses: List[String], val testData: Iterat
     if (status == "UNSATISFIABLE") throw new RuntimeException("UNSATISFIABLE program!")
     atoms.split(" ")
   }
-
-
-
 
 }

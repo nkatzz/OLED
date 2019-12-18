@@ -41,7 +41,6 @@ object TK extends App {
     Try(new File(oldName).renameTo(new File(newName))).getOrElse(false)
   }
 
-
   def getListOfFiles(dir: String) = {
     val d = new File(dir)
     var i = 0
@@ -77,7 +76,7 @@ object TK extends App {
 
             val engineStatus = split(3)
             val speed = split(10)
-            val ttype = split(23).replaceAll("\\s", "").replaceAll(",","").toLowerCase
+            val ttype = split(23).replaceAll("\\s", "").replaceAll(",", "").toLowerCase
             /*
             if (engineStatus != "0" && engineStatus != "3") {
               val newLine = s"speed|$time|$time|$vehicle|$ttype|$speed"
@@ -85,14 +84,14 @@ object TK extends App {
             }
             */
             val newLine = s"speed|$time|$time|$vehicle|$ttype|$speed"
-            pw.write(newLine+"\n")
+            pw.write(newLine + "\n")
           }
         } finally { source.close() }
       }
       pw.close()
       rename(newFileName, s"$rtecDataPath/$i-$firstTime-$endTime.csv")
       i += 1
-      println(i+" complete.")
+      println(i + " complete.")
     }
   }
 

@@ -27,16 +27,13 @@ import experiments.caviar.{FullDatasetHoldOut, MeetingTrainTestSets}
 import logic.Examples.Example
 import oled.mwua.Learner
 
-
 /**
   * Created by nkatz at 2/11/2018
   */
 
-
 /* NOT USED IN ANYTHING YET!! */
 
 object ExpRunner extends LazyLogging {
-
 
   def main(args: Array[String]) = {
 
@@ -64,7 +61,7 @@ object ExpRunner extends LazyLogging {
     val argsok = CMDArgs.argsOk(args)
 
     if (!argsok._1) {
-      logger.error(argsok._2) ; System.exit(-1)
+      logger.error(argsok._2); System.exit(-1)
     } else {
 
       val runningOptions = CMDArgs.getOLEDInputArgs(args)
@@ -77,8 +74,8 @@ object ExpRunner extends LazyLogging {
             Globals.hedgeInertia = withInertia
 
             val trainingDataOptions =
-              new MongoDataOptions(dbNames = train2, chunkSize = runningOptions.chunkSize,
-                targetConcept = runningOptions.targetHLE, sortDbByField = "time", what = "training")
+              new MongoDataOptions(dbNames       = train2, chunkSize = runningOptions.chunkSize,
+                                   targetConcept = runningOptions.targetHLE, sortDbByField = "time", what = "training")
 
             val testingDataOptions = trainingDataOptions
 
@@ -89,21 +86,19 @@ object ExpRunner extends LazyLogging {
             val result = learner.run()
 
             //(Int, Int, Int, Double, Vector[Double])
-            val (tps, fps, fns, fscore, errorVec, fscoreVec) = (result._1,result._2,result._3,result._4,result._5, result._6)
+            val (tps, fps, fns, fscore, errorVec, fscoreVec) = (result._1, result._2, result._3, result._4, result._5, result._6)
 
             val msg = s"${runningOptions.targetHLE}, rate: $rate, feedback bias: $bias, " +
-              s"inertia: $withInertia\ntps: $tps, fps: $fps, fns: $fns, total error: ${fps+fns}, " +
+              s"inertia: $withInertia\ntps: $tps, fps: $fps, fns: $fns, total error: ${fps + fns}, " +
               s"fscore: $fscore\nerror vector:\n$errorVec\nprequential " +
-              s"F1-score vector:\n$fscoreVec\nAverage prequential F1-score:${fscoreVec.sum/fscoreVec.length}\n\n"
+              s"F1-score vector:\n$fscoreVec\nAverage prequential F1-score:${fscoreVec.sum / fscoreVec.length}\n\n"
 
             println(msg)
 
             val fw = new FileWriter(s"/home/nkatz/Desktop/TPLP-2019-results/${runningOptions.targetHLE}", true)
             try {
               fw.write(msg)
-            }
-            finally fw.close()
-
+            } finally fw.close()
 
           }
         }

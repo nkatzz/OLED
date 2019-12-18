@@ -37,25 +37,23 @@ import scala.io.Source
   *
   * THIS CLASS IS TO BE USED ONLY ONCE PER LLE FILE (SEE EXAMPLE BELOW) TO GET THE LLES INTO MONGO.
   *
-  * */
-
+  */
 
 object LLEsToMongo {
 
   // The key is time
   var LLEMap = scala.collection.mutable.Map[Int, (scala.collection.mutable.Set[String], scala.collection.mutable.Set[String], scala.collection.mutable.Set[String])]()
 
-
   def main(args: Array[String]) = {
     val dataOpts1 = new MaritimeDataOptions(
-      llePath = "/home/nkatz/dev/maritime/brest-data/datasets-my-split/dataset88.txt",
-      hlePath = "/home/nkatz/dev/maritime/brest-data/recognition/21/lowSpeed-no-infs.csv",
-      speedLimitsPath = "/home/nkatz/dev/maritime/brest-data/areas_speed_limits.csv",
+      llePath          = "/home/nkatz/dev/maritime/brest-data/datasets-my-split/dataset88.txt",
+      hlePath          = "/home/nkatz/dev/maritime/brest-data/recognition/21/lowSpeed-no-infs.csv",
+      speedLimitsPath  = "/home/nkatz/dev/maritime/brest-data/areas_speed_limits.csv",
       closeToPortsPath = "/home/nkatz/dev/maritime/brest-data/recognition/88/close_to_ports.csv",
-      chunkSize = 10,
-      targetConcept = "lowSpeed",
-      limit = 100000.0,
-      trainingMode = false)
+      chunkSize        = 10,
+      targetConcept    = "lowSpeed",
+      limit            = 100000.0,
+      trainingMode     = false)
 
     populateLLEsMap(dataOpts1.llePath)
 
@@ -68,7 +66,7 @@ object LLEsToMongo {
     var counter = 0
 
     val data = Source.fromFile(dataPath).getLines
-    while(data.hasNext) {
+    while (data.hasNext) {
       val x = data.next()
       if (!x.contains("HoldsFor") && !x.contains("coord")) {
         var area = "None"
@@ -135,7 +133,6 @@ object LLEsToMongo {
       //println(s"Grouping LLEs by time. Data point: $counter")
     }
   }
-
 
   /* Call this method to insert the LLEs from a dataset to mongo. This is supposed to be called once. */
   def llesToMongo(dbName: String) = {

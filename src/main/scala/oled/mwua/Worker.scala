@@ -24,7 +24,6 @@ import oled.functions.SingleCoreOLEDFunctions._
 import oled.mwua.MessageTypes.{FinishedBatchMsg, ProcessBatchMsg}
 import org.slf4j.LoggerFactory
 
-
 /**
   * Created by nkatz at 1/11/2018
   */

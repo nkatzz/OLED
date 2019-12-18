@@ -21,30 +21,28 @@ import java.io.{File, FileWriter}
 import java.util.UUID
 
 /**
- * Created by nkatz at 5/10/19
- */
+  * Created by nkatz at 5/10/19
+  */
 
 object Utils {
 
-
-
   def dumpToFile(input: Any, file: String = "", howTowrite: String = "overwrite") = {
 
-    /* Write an iterable to file. Usage:
+      /* Write an iterable to file. Usage:
      * listToFile(new File("example.txt")) { p => data.foreach(p.println) }
      */
-    def listToFile(f: java.io.File, mode: String)(op: java.io.PrintWriter => Unit) {
+      def listToFile(f: java.io.File, mode: String)(op: java.io.PrintWriter => Unit) {
 
-      val p = mode match {
-        case "append" => new java.io.PrintWriter(new FileWriter(f, true))
-        case "overwrite" => new java.io.PrintWriter(new FileWriter(f, false))
-        case _ => new java.io.PrintWriter(new FileWriter(f, false)) // default is overwrite
+        val p = mode match {
+          case "append" => new java.io.PrintWriter(new FileWriter(f, true))
+          case "overwrite" => new java.io.PrintWriter(new FileWriter(f, false))
+          case _ => new java.io.PrintWriter(new FileWriter(f, false)) // default is overwrite
+        }
+        try { op(p) } finally { p.close() }
       }
-      try { op(p) } finally { p.close() }
-    }
 
     val writeTo =
-      if (file == "") File.createTempFile(s"temp-${System.currentTimeMillis()}-${UUID.randomUUID.toString}","asp")
+      if (file == "") File.createTempFile(s"temp-${System.currentTimeMillis()}-${UUID.randomUUID.toString}", "asp")
       else new File(file)
 
     val deleteOnExit = if (file == "") true else false
@@ -59,7 +57,5 @@ object Utils {
     if (deleteOnExit) writeTo.deleteOnExit()
     writeTo
   }
-
-
 
 }

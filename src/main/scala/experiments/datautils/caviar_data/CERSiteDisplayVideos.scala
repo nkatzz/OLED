@@ -59,7 +59,7 @@ object CERSiteDisplayVideos {
       val videoNum = video.split("caviar-video-")(1).split("-")(0)
 
       println(videoNum)
-      val testingDataOptions = new MongoDataOptions(dbNames = Vector(video), chunkSize = runOpts.chunkSize, sortDbByField = "time", what = "testing")
+      val testingDataOptions = new MongoDataOptions(dbNames       = Vector(video), chunkSize = runOpts.chunkSize, sortDbByField = "time", what = "testing")
 
       val testingDataFunction: MongoDataOptions => Iterator[Example] = FullDatasetHoldOut.getMongoData
 
@@ -137,26 +137,27 @@ object CERSiteDisplayVideos {
       val parsed = Literal.parse(x._1)
       val ids = parsed.terms.map(_.tostring.split("id")(1)).mkString(",")
       val first = s"${parsed.predSymbol.tostring}($ids)"
-      val second = x._2.map(y => s"(${(y.head/40.0).toInt}, ${(y.last/40.0).toInt})" ).mkString(",")
+      val second = x._2.map(y => s"(${(y.head / 40.0).toInt}, ${(y.last / 40.0).toInt})").mkString(",")
       val msg = s"$first:[$second]"
-      file.write(msg+"\n")
+      file.write(msg + "\n")
     }
   }
 
-  def evaluate(data: Example,
-               handCraftedTheoryFile: String = "",
-               globals: Globals,
-               inps: RunningOptions,
-               CE: String) = {
+  def evaluate(
+      data: Example,
+      handCraftedTheoryFile: String = "",
+      globals: Globals,
+      inps: RunningOptions,
+      CE: String) = {
 
     val e = data // only 1 entry in the iterator (no chunking)
     val t = globals.INCLUDE_BK(handCraftedTheoryFile)
     val show = s"#show.\n#show holdsAt($CE(X0,X1),X2):holdsAt($CE(X0,X1),X2)."
     val ex = e.tostring
     val program = ex + globals.INCLUDE_BK(globals.BK_CROSSVAL) + t + show
-    val f = Utils.getTempFile("isConsistent",".lp")
+    val f = Utils.getTempFile("isConsistent", ".lp")
     Utils.writeLine(program, f, "overwrite")
-    val answerSet = ASP.solve(task = Globals.INFERENCE, aspInputFile = f)
+    val answerSet = ASP.solve(task         = Globals.INFERENCE, aspInputFile = f)
     f.delete()
     if (answerSet.nonEmpty) {
       val atoms = answerSet.head.atoms

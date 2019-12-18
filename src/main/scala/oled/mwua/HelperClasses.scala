@@ -26,6 +26,6 @@ import logic.{Clause, Literal, Theory}
 object HelperClasses {
 
   // Label can be "true", "false" or "unknown".
-  class AtomTobePredicted(val atom: String, val fluent: String, val atomParsed: Literal,  val time: Int,
-                          val initiatedBy: Vector[String], val terminatedBy: Vector[String], val label: String = "unknown")
+  class AtomTobePredicted(val atom: String, val fluent: String, val atomParsed: Literal, val time: Int,
+      val initiatedBy: Vector[String], val terminatedBy: Vector[String], val label: String = "unknown")
 }

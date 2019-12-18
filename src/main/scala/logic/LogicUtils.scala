@@ -24,7 +24,6 @@ import xhail.Xhail
 
 import scala.collection.mutable.ListBuffer
 
-
 /**
   * Created by nkatz on 9/13/16.
   */
@@ -54,7 +53,7 @@ object LogicUtils {
 
     val newTerms = nonComparisonPreds.toList ++ simplified.toList
 
-    val cc = Clause(head = c.head, body = newTerms, supportSet = c.supportSet, uuid = c.uuid)
+    val cc = Clause(head       = c.head, body = newTerms, supportSet = c.supportSet, uuid = c.uuid)
     // Just to be on the safe side...
     cc.parentClause = c.parentClause
     cc.countsPerNode = c.countsPerNode
@@ -98,7 +97,6 @@ object LogicUtils {
     compressed.toList
   }
 
-
   //*/
 
   /*
@@ -112,31 +110,30 @@ object LogicUtils {
   }
   */
 
-  def generateKernel(examples: Map[String,List[String]], fromWeakExmpl: Boolean = false,
-                     learningTerminatedOnly: Boolean=false, bkFile: String, globals: Globals) = {
+  def generateKernel(examples: Map[String, List[String]], fromWeakExmpl: Boolean = false,
+      learningTerminatedOnly: Boolean = false, bkFile: String, globals: Globals) = {
 
     val infile = Utils.getTempFile("example", ".lp")
     val f = (x: String) => if (x.endsWith(".")) x else s"$x."
     val interpretation = examples("annotation").map(x => s"${f(x)}") ++ examples("narrative").map(x => s"${f(x)}")
     Utils.writeToFile(infile, "overwrite") { p => interpretation.foreach(p.println) }
     var (kernel, varKernel) =
-      Xhail.runXhail(fromFile = infile.getAbsolutePath, kernelSetOnly = true,
-        fromWeakExmpl = fromWeakExmpl, learningTerminatedAtOnly=learningTerminatedOnly, bkFile=bkFile, globals=globals)
+      Xhail.runXhail(fromFile                 = infile.getAbsolutePath, kernelSetOnly = true,
+                     fromWeakExmpl            = fromWeakExmpl, learningTerminatedAtOnly = learningTerminatedOnly, bkFile = bkFile, globals = globals)
     if (fromWeakExmpl) {
       varKernel = varKernel.map (x => Clause.updateField(x, fromWeakExample = true))
     }
     infile.delete()
-    (kernel,varKernel)
+    (kernel, varKernel)
   }
 
   /*The only difference is that the examples are provided with a file. I have to
   * fix this, it's stupid to duplicate code like that.*/
   def generateKernel2(examplesFile: java.io.File, bkFile: String, globals: Globals) = {
     val (kernel, varKernel) =
-      Xhail.runXhail(fromFile = examplesFile.getAbsolutePath, kernelSetOnly = true, bkFile=bkFile, globals=globals)
-    (kernel,varKernel)
+      Xhail.runXhail(fromFile      = examplesFile.getAbsolutePath, kernelSetOnly = true, bkFile = bkFile, globals = globals)
+    (kernel, varKernel)
   }
-
 
   def isSAT(theory: Theory, example: Example, globals: Globals, F: (Theory, Example, Globals) => String): Boolean = {
     val f = F(theory, example, globals)
@@ -152,9 +149,10 @@ object LogicUtils {
     val isRedundant = (ss: Clause, c: Clause) =>
       c.supportSet.clauses exists (x => ss.thetaSubsumes(x))
 
-    for (c <- theory.clauses;
-         ks <- kernelSet.clauses
-         if !isRedundant(ks, c) && c.thetaSubsumes(ks)) {
+    for (
+      c <- theory.clauses;
+      ks <- kernelSet.clauses if !isRedundant(ks, c) && c.thetaSubsumes(ks)
+    ) {
       val markedKS = Clause.updateField(ks, fromWeakExample = fromWeakExample)
       c.supportSet = Theory(c.supportSet.clauses :+ markedKS)
     }
@@ -171,6 +169,5 @@ object LogicUtils {
 
     theory.clauses foreach (x => x.compressSupport)
   }
-
 
 }

@@ -64,7 +64,7 @@ object RendezvousMLNRunner {
       val system = ActorSystem("HoeffdingLearningSystem")
       val msg = "start"
       //val msg = "EvaluateHandCrafted"
-      system.actorOf(Props(new Dispatcher(inps, trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction) ), name = "Learner") ! msg
+      system.actorOf(Props(new Dispatcher(inps, trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction)), name = "Learner") ! msg
     }
   }
 
@@ -107,10 +107,6 @@ object RendezvousMLNRunner {
 
   }
 
-
-
-
-
   def getTrainingData(dataPath: String, chunkSize: Int) = {
     var i = 0
     Source.fromFile(dataPath).getLines.sliding(chunkSize, chunkSize - 1) map { chunk =>
@@ -139,12 +135,10 @@ object RendezvousMLNRunner {
       val predSplit = pred.split("_")
       val vessel1 = predSplit(1)
       val vessel2 = predSplit(2)
-      (vessel1, vessel2,  time)
+      (vessel1, vessel2, time)
     } catch {
       case e: ArrayIndexOutOfBoundsException => println(in)
     }
-
-
 
   }
 
@@ -163,7 +157,7 @@ object RendezvousMLNRunner {
       val (vessel, time) = split1(in)
       s"""happensAt(change_in_heading("$vessel"),$time)"""
 
-    } else if(in.contains("Change_in_speed_end")) {
+    } else if (in.contains("Change_in_speed_end")) {
 
       val (vessel, time) = split1(in)
       s"""happensAt(change_in_speed_end("$vessel"),$time)"""

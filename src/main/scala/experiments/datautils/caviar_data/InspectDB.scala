@@ -64,5 +64,4 @@ object InspectDB extends App {
     idCounter += 1
   }
 
-
 }

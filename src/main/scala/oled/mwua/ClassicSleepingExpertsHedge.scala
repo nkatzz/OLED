@@ -38,7 +38,6 @@ import oled.mwua.HelperClasses.AtomTobePredicted
 
 object ClassicSleepingExpertsHedge {
 
-
   def splitAwakeAsleep(rulesToSplit: List[Clause], awakeIds: Set[String]) = {
     val rulesToSplitIds = rulesToSplit.map(_##).toSet
     val (topLevelAwakeRules, topLevelAsleepRules) = rulesToSplit.foldLeft(Vector.empty[Clause], Vector.empty[Clause]) { (x, rule) =>
@@ -50,45 +49,45 @@ object ClassicSleepingExpertsHedge {
     (topLevelAwakeRules, topLevelAsleepRules)
   }
 
+  def updateStructure_NEW_HEDGE(
+      atom: AtomTobePredicted,
+      previousTime: Int,
+      markedMap: Map[String, Clause],
+      predictedLabel: String,
+      feedback: String,
+      batch: Example,
+      currentAtom: String,
+      inps: RunningOptions,
+      logger: org.slf4j.Logger,
+      stateHandler: StateHandler,
+      percentOfMistakesBeforeSpecialize: Int,
+      randomizedPrediction: Boolean,
+      selected: String,
+      specializeAllAwakeOnMistake: Boolean,
+      conservativeRuleGeneration: Boolean,
+      generateNewRuleFlag: Boolean) = {
 
-  def updateStructure_NEW_HEDGE(atom: AtomTobePredicted,
-                                previousTime: Int,
-                                markedMap: Map[String, Clause],
-                                predictedLabel: String,
-                                feedback: String,
-                                batch: Example,
-                                currentAtom: String,
-                                inps: RunningOptions,
-                                logger: org.slf4j.Logger,
-                                stateHandler: StateHandler,
-                                percentOfMistakesBeforeSpecialize: Int,
-                                randomizedPrediction: Boolean,
-                                selected: String,
-                                specializeAllAwakeOnMistake: Boolean,
-                                conservativeRuleGeneration: Boolean,
-                                generateNewRuleFlag: Boolean) = {
-
-    def getAwakeBottomRules(what: String) = {
-      if (what == "initiatedAt") atom.initiatedBy.filter(x => markedMap(x).isBottomRule)
-      else atom.terminatedBy.filter(x => markedMap(x).isBottomRule)
-    }
+      def getAwakeBottomRules(what: String) = {
+        if (what == "initiatedAt") atom.initiatedBy.filter(x => markedMap(x).isBottomRule)
+        else atom.terminatedBy.filter(x => markedMap(x).isBottomRule)
+      }
 
     var updatedStructure = false
 
     if (is_FP_mistake(predictedLabel, feedback)) {
       val awakeBottomRules = getAwakeBottomRules("terminatedAt")
-      if (generateNewRuleFlag ) {//&& awakeBottomRules.isEmpty //atom.terminatedBy.isEmpty
+      if (generateNewRuleFlag) { //&& awakeBottomRules.isEmpty //atom.terminatedBy.isEmpty
         // If we leave the if (stateHandler.inertiaExpert.knowsAbout(atom.fluent)) clause here
         // we get many more mistakes. On the other hand, it seems more reasonable to generate
         // termination rules only when the fluent holds by inertia... (don't know what to do)
         //if (stateHandler.inertiaExpert.knowsAbout(atom.fluent)) {
 
-          // Use the rest of the awake termination rules to compare the new
-          // ones to and make sure that no redundant rules are generated:
-          val awakeTerminationRules = atom.terminatedBy.map( x => markedMap(x) )
+        // Use the rest of the awake termination rules to compare the new
+        // ones to and make sure that no redundant rules are generated:
+        val awakeTerminationRules = atom.terminatedBy.map(x => markedMap(x))
 
-          // This generates bottom clause heads with adbuction
-          /*
+        // This generates bottom clause heads with adbuction
+        /*
           updatedStructure =
             generateNewRule(batch, currentAtom, inps, "FP", logger,
               stateHandler, "terminatedAt", 1.0, otherAwakeExperts = awakeTerminationRules)
@@ -100,7 +99,7 @@ object ClassicSleepingExpertsHedge {
         ///*
         updatedStructure =
           generateNewExpert_NEW(batch, atom, previousTime, inps, "FP", logger,
-            stateHandler, "terminatedAt", 1.0, otherAwakeExperts = awakeTerminationRules)
+                                stateHandler, "terminatedAt", 1.0, otherAwakeExperts = awakeTerminationRules)
         //*/
         //}
       }
@@ -142,7 +141,7 @@ object ClassicSleepingExpertsHedge {
           ///*
           updatedStructure =
             generateNewExpert_NEW(batch, atom, previousTime, inps, "FN", logger,
-              stateHandler, "initiatedAt", 1.0, otherAwakeExperts = awakeInitiationRules)
+                                  stateHandler, "initiatedAt", 1.0, otherAwakeExperts = awakeInitiationRules)
           //*/
         }
       } else {
@@ -172,14 +171,6 @@ object ClassicSleepingExpertsHedge {
     updatedStructure
   }
 
-
-
-
-
-
-
-
-
   def predictHedge_NO_INERTIA(a: AtomTobePredicted, stateHanlder: StateHandler, markedMap: Map[String, Clause]) = {
 
     // Here we assume that initiation rules predict '1' and termination rules predict '0'.
@@ -199,7 +190,6 @@ object ClassicSleepingExpertsHedge {
     (prediction, 0.0, initWeightSum, termWeightSum)
 
   }
-
 
   /*
   def updateWeights_NO_INERTIA(atom: AtomTobePredicted, prediction: Double, inertiaExpertPrediction: Double,
@@ -296,7 +286,5 @@ object ClassicSleepingExpertsHedge {
   }
 
    */
-
-
 
 }

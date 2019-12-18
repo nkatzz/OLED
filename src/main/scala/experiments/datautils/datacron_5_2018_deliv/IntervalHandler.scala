@@ -45,13 +45,13 @@ object Haversine {
 
   import math._
 
-  val R = 6372.8  //radius in km
+  val R = 6372.8 //radius in km
 
-  def haversine(lat1:Double, lon1:Double, lat2:Double, lon2:Double)={
-    val dLat=(lat2 - lat1).toRadians
-    val dLon=(lon2 - lon1).toRadians
+  def haversine(lat1: Double, lon1: Double, lat2: Double, lon2: Double) = {
+    val dLat = (lat2 - lat1).toRadians
+    val dLon = (lon2 - lon1).toRadians
 
-    val a = pow(sin(dLat/2),2) + pow(sin(dLon/2),2) * cos(lat1.toRadians) * cos(lat2.toRadians)
+    val a = pow(sin(dLat / 2), 2) + pow(sin(dLon / 2), 2) * cos(lat1.toRadians) * cos(lat2.toRadians)
     val c = 2 * asin(sqrt(a))
     R * c
   }
@@ -71,19 +71,19 @@ object IntervalHandler extends App {
   val intervalTree =
     generateIntervalTree(
       pathToHLEIntervals,
-      List("rendezVous","stopped", "lowSpeed")
+      List("rendezVous", "stopped", "lowSpeed")
     )
 
   readDataIntoMiniBatches(pathToLLEs, 10, "rendezVous", "asp")
 
   // mode is either "asp" or "mln"
   /**
-   * Parses the input data into logical syntax and generates data mini-batches for training.
-   *
-   * A data batch is a chunk of input data of given size. Size is measured by temporal duration,
-   * so given batchSize = n, a mini-batch consists of input data with time stamps t to t+n.
-   *
-   * */
+    * Parses the input data into logical syntax and generates data mini-batches for training.
+    *
+    * A data batch is a chunk of input data of given size. Size is measured by temporal duration,
+    * so given batchSize = n, a mini-batch consists of input data with time stamps t to t+n.
+    *
+    */
   def readDataIntoMiniBatches(dataPath: String, batchSize: Int, targetEvent: String, mode: String) = {
 
     val f = new File("/home/nkatz/dev/Brest-data-5-5-2018/rendezVous-batchsize-10")
@@ -96,7 +96,7 @@ object IntervalHandler extends App {
     var timesAccum = scala.collection.mutable.SortedSet[Long]()
     var llesAccum = scala.collection.mutable.SortedSet[String]()
     var batchCount = 0
-    while(data.hasNext) {
+    while (data.hasNext) {
       val newLine = data.next()
       val split = newLine.split("\\|")
       println(split.mkString(" "))
@@ -113,7 +113,7 @@ object IntervalHandler extends App {
         val intervals = intervalTree.range(timesAccum.head, timesAccum.last)
 
         val extras = timesAccum.flatMap{ timeStamp =>
-          val containedIn = intervals.filter(interval => interval._1 <= timeStamp && timeStamp <= interval._2 )
+          val containedIn = intervals.filter(interval => interval._1 <= timeStamp && timeStamp <= interval._2)
           containedIn.map(x => HLEIntervalToAtom(x._3, timeStamp.toString, targetEvent))
         }
 
@@ -136,18 +136,12 @@ object IntervalHandler extends App {
     writeToFile.close()
   }
 
-
-
-
-
-
-
   // mode is either "asp" or "mln"
   def generateLLEInstances(line: String, mode: String) = {
     // These have a different schema
     val abnormalLLEs = Set[String]("coord", "entersArea", "leavesArea", "proximity", "velocity")
     val split = line.split("\\|")
-    if (! abnormalLLEs.contains(split(0))) {
+    if (!abnormalLLEs.contains(split(0))) {
 
       // These have a common simple schema:
       // change_in_heading, change_in_speed_start, change_in_speed_end,
@@ -198,10 +192,6 @@ object IntervalHandler extends App {
     }
   }
 
-
-
-
-
   object HLEInterval {
     def apply(hleLine: String) = {
       val split = hleLine.split("\\|")
@@ -237,7 +227,6 @@ object IntervalHandler extends App {
 
   class HLEInterval(val hle: String, val vessels: List[String], val value: String, val stime: Long, val etime: Long)
 
-
   /* Generate an HLE logical atom. The i var carries all the info, the t var is the particular
    * time point of the generated atom. "target" is the name of the target complex event. The
    * target event is turned into a holdsAt predicate, while all others are turned into happensAt predicates. */
@@ -252,17 +241,16 @@ object IntervalHandler extends App {
     s"$functor($fluentTerm,$t)"
   }
 
-
   def generateIntervalTree(pathToHLEs: String, interestedIn: List[String]) = {
 
-    def getListOfFiles(dir: String):List[File] = {
-      val d = new File(dir)
-      if (d.exists && d.isDirectory) {
-        d.listFiles.filter(f => f.isFile && interestedIn.exists(eventName => f.getName.contains(eventName))).toList
-      } else {
-        List[File]()
+      def getListOfFiles(dir: String): List[File] = {
+        val d = new File(dir)
+        if (d.exists && d.isDirectory) {
+          d.listFiles.filter(f => f.isFile && interestedIn.exists(eventName => f.getName.contains(eventName))).toList
+        } else {
+          List[File]()
+        }
       }
-    }
 
     val files = getListOfFiles(pathToHLEs).map(_.getCanonicalPath)
 
@@ -281,14 +269,7 @@ object IntervalHandler extends App {
     intervalTree
   }
 
-
-
-
-
-
-
 }
-
 
 package object data {
 

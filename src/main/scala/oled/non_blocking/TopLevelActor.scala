@@ -26,15 +26,14 @@ import logic.{Clause, Theory}
 import oled.distributed.Structures._
 import org.slf4j.LoggerFactory
 
-
 /**
   * Created by nkatz on 2/15/17.
   */
 
-
-class TopLevelActor[T <: InputSource](val dataOptions: List[(T, T => Iterator[Example])],
-                                      val inputParams: RunningOptions,
-                                      val targetConcept: TargetConcept) extends Actor {
+class TopLevelActor[T <: InputSource](
+    val dataOptions: List[(T, T => Iterator[Example])],
+    val inputParams: RunningOptions,
+    val targetConcept: TargetConcept) extends Actor {
 
   import context._
 
@@ -44,18 +43,16 @@ class TopLevelActor[T <: InputSource](val dataOptions: List[(T, T => Iterator[Ex
   var startTime = 0L
   var endTime = 0L
 
-
   /* This function starts the learning Nodes. */
   def getActorsPool() = {
     val NodeActorNames = (1 to dataOptions.length).toList map (i => s"Node-$i-${targetConcept.toString}")
     val nodeActorsPool = (NodeActorNames zip this.dataOptions) map { node =>
       val (nodeName, nodeOptions, nodeDataDunction) = (node._1, node._2._1, node._2._2)
       val otherActors = NodeActorNames.filter(_ != nodeName)
-      context.actorOf(Props( new Node(otherActors, targetConcept, inputParams, nodeOptions, nodeDataDunction) ), name = nodeName)
+      context.actorOf(Props(new Node(otherActors, targetConcept, inputParams, nodeOptions, nodeDataDunction)), name = nodeName)
     }
     nodeActorsPool
   }
-
 
   val actorsPool: List[ActorRef] = getActorsPool()
 
@@ -94,7 +91,7 @@ class TopLevelActor[T <: InputSource](val dataOptions: List[(T, T => Iterator[Ex
       Thread.sleep(4000)
       this.startTime = System.nanoTime()
       actorsPool foreach (a => a ! "go-no-communication")
-      //become(replyHandler)
+    //become(replyHandler)
 
     case msg: NodeDoneMessage =>
       acceptNewDoneMsg(msg)
@@ -102,9 +99,7 @@ class TopLevelActor[T <: InputSource](val dataOptions: List[(T, T => Iterator[Ex
     case msg: NodeTheoryMessage =>
       acceptNewLearntTheory(msg)
 
-
   }
-
 
   def acceptNewDoneMsg(msg: NodeDoneMessage) = {
     this.actorsPoolSize -= 1
@@ -116,8 +111,6 @@ class TopLevelActor[T <: InputSource](val dataOptions: List[(T, T => Iterator[Ex
     }
   }
 
-
-
   def acceptNewLearntTheory(msg: NodeTheoryMessage) = {
     this.nodesCounter -= 1
     logger.info(s"Node ${msg.sender} sent:\n${msg.theory.clauses.map(x => x.showWithStats + s"evaluated on ${x.seenExmplsNum} exmpls | refs: ${x.refinements.length}").mkString("\n")}")
@@ -127,7 +120,7 @@ class TopLevelActor[T <: InputSource](val dataOptions: List[(T, T => Iterator[Ex
     if (this.nodesCounter == 0) {
       this.endTime = System.nanoTime()
       this.actorsPool.foreach(_ ! PoisonPill)
-      val totalTime = (this.endTime - this.startTime)/1000000000.0
+      val totalTime = (this.endTime - this.startTime) / 1000000000.0
       logger.info(s"Total training time: $totalTime sec")
       val totalMsgNum = childrenMsgNums.sum + messages.length
       val totalMsgSize = childrenMsgSizes.sum + messages.sum
@@ -135,13 +128,10 @@ class TopLevelActor[T <: InputSource](val dataOptions: List[(T, T => Iterator[Ex
     }
   }
 
-
-
-
   def getFinalTheory() = {
     this.finalTheories.head.clauses.foldLeft(List[Clause]()){ (accum, clause) =>
       val clauseCopies = this.finalTheories.tail.flatMap(theory => theory.clauses.filter(c => c.uuid == clause.uuid))
-      if(clauseCopies.length + 1 != this.finalTheories.length) {
+      if (clauseCopies.length + 1 != this.finalTheories.length) {
         logger.info(s"\nCLAUSE\n${clause.tostring} (uuid: ${clause.uuid}) \nIS NOT FOUND IS SOME FINAL THEORY")
       }
       val sumCounts = clauseCopies.foldLeft(clause.tps, clause.fps, clause.fns, clause.seenExmplsNum) { (x, y) =>

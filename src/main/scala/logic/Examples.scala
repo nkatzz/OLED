@@ -28,22 +28,20 @@ import utils.DataUtils.Data
 
 object Examples {
 
-
   object Example {
 
-    val f_annot = (x:DBObject) =>
+    val f_annot = (x: DBObject) =>
       x.asInstanceOf[BasicDBObject].get("annotation").asInstanceOf[BasicDBList].toList.map(x => x.toString)
-    val f_narrative = (x:DBObject) =>
+    val f_narrative = (x: DBObject) =>
       x.asInstanceOf[BasicDBObject].get("narrative").asInstanceOf[BasicDBList].toList.map(x => x.toString)
-    val f_time = (x:DBObject) => x.asInstanceOf[BasicDBObject].get("time").toString
-
+    val f_time = (x: DBObject) => x.asInstanceOf[BasicDBObject].get("time").toString
 
     // Merges a batch into one example with the original annotation (does not throw away annotation for weaks)
     def merge(_exs: List[Example], markedAsWeak: Boolean = false) = {
       _exs match {
         case Nil => new Example()
         case _ =>
-          val exs  = _exs.filter(x => x!=Example())
+          val exs = _exs.filter(x => x != Example())
           val startTimePredicate = s"starttime(${exs.map(x => x.time).map(x => x.toInt).distinct.sorted.head})"
           /*
           val annotation = asWeakExmpls match {
@@ -53,29 +51,27 @@ object Examples {
           */
           val annotation = exs.flatMap(x => x.annotation).distinct
 
-          val narrative = startTimePredicate :: exs.flatMap(x => x.narrative).filter( p => !p.contains("starttime"))
+          val narrative = startTimePredicate :: exs.flatMap(x => x.narrative).filter(p => !p.contains("starttime"))
           val time = exs.map(x => x.time).map(x => x.toInt).distinct.sorted.head.toString
-          new Example(annot=annotation,nar=narrative,_time=time,isWeak=markedAsWeak)
+          new Example(annot  = annotation, nar = narrative, _time = time, isWeak = markedAsWeak)
       }
     }
-
-
 
     ///*
     def tranformToExample(examples: List[DBObject], usingWeakExmpls: Boolean = false) = {
       val startTimePredicate = s"starttime(${examples.map(x => f_time(x)).map(x => x.toInt).distinct.sorted.head})"
       val annotation =
-         if (!usingWeakExmpls)
-           examples.flatMap(x => f_annot(x))
-         else examples.tail.flatMap(x => f_annot(x)) // leave the starttime annotation out to enforce learning
+        if (!usingWeakExmpls)
+          examples.flatMap(x => f_annot(x))
+        else examples.tail.flatMap(x => f_annot(x)) // leave the starttime annotation out to enforce learning
       val narrative =
-        startTimePredicate :: examples.flatMap(x => f_narrative(x)).filter( p => !p.contains("starttime"))
+        startTimePredicate :: examples.flatMap(x => f_narrative(x)).filter(p => !p.contains("starttime"))
       //val time = f_time(examples.head)
       val time = examples.map(x => f_time(x)).map(x => x.toInt).distinct.sorted.head.toString
       val suppressedAnnotation = if (usingWeakExmpls) f_annot(examples.head) else List[String]()
-      val isWeak = if(examples.length == 2 && f_annot(examples.head).nonEmpty && f_annot(examples.tail.head).nonEmpty) true else false
+      val isWeak = if (examples.length == 2 && f_annot(examples.head).nonEmpty && f_annot(examples.tail.head).nonEmpty) true else false
 
-      new Example(annot=annotation,nar=narrative,_time=time,suppressedAnnotation=suppressedAnnotation,isWeak=isWeak)
+      new Example(annot                = annotation, nar = narrative, _time = time, suppressedAnnotation = suppressedAnnotation, isWeak = isWeak)
     }
     //*/
 
@@ -99,10 +95,10 @@ object Examples {
         case false => tranformToExample(examples)
         case _ =>
           val pairs = examples.map(p =>
-            if(examples.indexOf(p)+1 < examples.length)
-              (p,examples(examples.indexOf(p)+1))
-            else (p,p)).filter(x => x._1 != x._2)
-          val weaks = for (p <- pairs) yield tranformToExample(List(p._1,p._2), usingWeakExmpls = true)
+            if (examples.indexOf(p) + 1 < examples.length)
+              (p, examples(examples.indexOf(p) + 1))
+            else (p, p)).filter(x => x._1 != x._2)
+          val weaks = for (p <- pairs) yield tranformToExample(List(p._1, p._2), usingWeakExmpls = true)
           new Example(containedExamples = weaks)
 
       }
@@ -120,39 +116,40 @@ object Examples {
     */
   }
 
-  case class Example(e: DBObject = DBObject(),
-                     commingFromDB: String = "",
-                     private val annot:List[String] = Nil,
-                     private val nar:List[String] = Nil,
-                     _time:String="",
-                     isWeak: Boolean = false,
-                     usingWeakExmpls: Boolean = false,
-                     containedExamples: List[Example] = List[Example](),
-                     suppressedAnnotation: List[String] = Nil) extends Data {
+  case class Example(
+      e: DBObject = DBObject(),
+      commingFromDB: String = "",
+      private val annot: List[String] = Nil,
+      private val nar: List[String] = Nil,
+      _time: String = "",
+      isWeak: Boolean = false,
+      usingWeakExmpls: Boolean = false,
+      containedExamples: List[Example] = List[Example](),
+      suppressedAnnotation: List[String] = Nil) extends Data {
 
     var startTime = 0
     var endTime = 0
 
     val annotation: List[String] =
-      if (this.annot.isEmpty && this.nar.isEmpty)// then this is really coming from db, so read the DBObject
+      if (this.annot.isEmpty && this.nar.isEmpty) // then this is really coming from db, so read the DBObject
         if (this.e.nonEmpty)
           e.asInstanceOf[BasicDBObject].get("annotation").asInstanceOf[BasicDBList].toList.map(x => x.toString)
         else this.annot
       else this.annot
 
-    val annotationASP = this.annotation map(x => if(x.contains("example(") || x.contains("negExample(")) s"$x." else s"example($x).")
+    val annotationASP = this.annotation map (x => if (x.contains("example(") || x.contains("negExample(")) s"$x." else s"example($x).")
 
     val narrative =
-      if(this.nar.isEmpty)
+      if (this.nar.isEmpty)
         if (this.e.nonEmpty)
           e.asInstanceOf[BasicDBObject].get("narrative").asInstanceOf[BasicDBList].toList.map(x => x.toString)
         else this.nar
       else this.nar
 
-    val narrativeASP = this.narrative map(x => if(x.endsWith(".")) x else s"$x.")
+    val narrativeASP = this.narrative map (x => if (x.endsWith(".")) x else s"$x.")
 
     val time =
-      if(this._time == "")
+      if (this._time == "")
         if (this.e.nonEmpty)
           e.asInstanceOf[BasicDBObject].get("time").toString()
         else this._time
@@ -165,20 +162,15 @@ object Examples {
     def tostring = (annotationASP ++ narrativeASP).mkString("\n")
   }
 
+  case class ExampleBatch(exs: List[DBObject] = List[DBObject](), usingWeakExmpls: Boolean = false) {
 
-
-
-
-
-  case class ExampleBatch(exs: List[DBObject] = List[DBObject]() , usingWeakExmpls: Boolean = false) {
-
-    private val pairs = exs.map(p => if(exs.indexOf(p)+1 < exs.length) (p,exs(exs.indexOf(p)+1)) else (p,p)).filter(x => x._1 != x._2)
+    private val pairs = exs.map(p => if (exs.indexOf(p) + 1 < exs.length) (p, exs(exs.indexOf(p) + 1)) else (p, p)).filter(x => x._1 != x._2)
 
     val isEmpty = this.exs == List[DBObject]()
 
-    val examples = for (p <- pairs) yield Example.tranformToExample(List(p._1,p._2), usingWeakExmpls = false)
+    val examples = for (p <- pairs) yield Example.tranformToExample(List(p._1, p._2), usingWeakExmpls = false)
 
-    val examplesAsWeaks = for (p <- pairs) yield Example.tranformToExample(List(p._1,p._2), usingWeakExmpls = true)
+    val examplesAsWeaks = for (p <- pairs) yield Example.tranformToExample(List(p._1, p._2), usingWeakExmpls = true)
 
     def weakExmpls = this.examplesAsWeaks.filter(x => x.isWeak)
 
@@ -186,7 +178,7 @@ object Examples {
 
     //def asSingleExmpl = Example(exs,usingWeakExmpls)
 
-    def asSingleExmpl = Example(exs,usingWeakExmpls)
+    def asSingleExmpl = Example(exs, usingWeakExmpls)
 
     def without(e: Example): List[Example] = {
       this.examples.filter(x => x.time != e.time)
@@ -200,9 +192,9 @@ object Examples {
       val asWeakBatch = this.examples map {
         x =>
           new Example(
-          annot = x.annotation.filter(y => !e.suppressedAnnotation.contains(y)).distinct,
-          nar = x.narrative,
-          _time = x.time
+            annot = x.annotation.filter(y => !e.suppressedAnnotation.contains(y)).distinct,
+            nar   = x.narrative,
+            _time = x.time
           )
       }
 
@@ -212,7 +204,6 @@ object Examples {
     }
 
   }
-
 
   /**
     * This class represents a pair of interpretations at two consecutive time points t1, t2 = t1+step.
@@ -248,7 +239,5 @@ object Examples {
       e.asInstanceOf[BasicDBObject].get("asVarbedInterpretation").asInstanceOf[BasicDBList].toList.map { x => x.toString() }
     var similarExamples = 2.0
   }
-
-
 
 }

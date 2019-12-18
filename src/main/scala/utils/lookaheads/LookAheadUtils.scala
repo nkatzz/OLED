@@ -42,7 +42,7 @@ object LookAheadUtils {
   class LinkingPredicate(val literal: Literal, val vs: List[LinkingVariable])
   class LinkingPredicatesGroup(val predicates: List[LinkingPredicate])
 
-  class LookAheadSpecification(val lookAheadSpecification: String) extends LookAheadsParser{
+  class LookAheadSpecification(val lookAheadSpecification: String) extends LookAheadsParser {
     /*
      * An example pf a lookahead spcification is
      * lookahead( transaction(Whatever1,A1,Whatever2,T1) <-> transaction(Whatever3,A2,Whatever4,T2) : {before(T1,T2) | after(T1,T2)}, {greaterThan(A1,A2) | lessThan(A1,A2)} )
@@ -53,7 +53,7 @@ object LookAheadUtils {
     val litToBeAdded = linkedAtoms._1
     val litToLinkTo = linkedAtoms._2
     private def isVariableUncommon(v: logic.Variable) = {
-      ! (litToBeAdded.getVars.contains(v) && litToLinkTo.getVars.contains(v))
+      !(litToBeAdded.getVars.contains(v) && litToLinkTo.getVars.contains(v))
     }
     private def variableExists(v: logic.Variable) = {
       litToBeAdded.getVars.contains(v) || litToLinkTo.getVars.contains(v)
@@ -72,56 +72,51 @@ object LookAheadUtils {
         val positionInLiteral = litItAppearsIn.getVars.indexOf(v)
         new LinkingVariable(v, appearsInLiteral, positionInLiteral)
       }
-      (l,t)
+      (l, t)
     }
     // That's the only thing that matters from this class. Everything that happens in this class aims at getting this list
     val actualLinkingGroups =
-      linkingPredGroups.map(group => group.map( literal => getLinkingVars(literal))).
+      linkingPredGroups.map(group => group.map(literal => getLinkingVars(literal))).
         map(z => z.map(p => new LinkingPredicate(p._1, p._2))).map(a => new LinkingPredicatesGroup(a))
   }
-
 
   class LookAheadsParser extends ClausalLogicParser {
 
     def linkPredsGroup: Parser[List[Literal]] = "{" ~> repsep(literal, "|") <~ "}"
     def linkPredsGroups: Parser[List[List[Literal]]] = repsep(linkPredsGroup, ",")
-    def linkedLiterals: Parser[(Literal, Literal)] = literal ~ "<->" ~ literal ^^ {case x ~ "<->" ~ y => (x, y) }
-    def specificationParser: Parser[((Literal, Literal),List[List[Literal]])] =
-      "lookahead" ~ "(" ~ linkedLiterals ~ ":" ~ linkPredsGroups ~ ")" ^^ {case "lookahead" ~ "(" ~ x ~ ":" ~ y ~ ")" => (x,y) }
+    def linkedLiterals: Parser[(Literal, Literal)] = literal ~ "<->" ~ literal ^^ { case x ~ "<->" ~ y => (x, y) }
+    def specificationParser: Parser[((Literal, Literal), List[List[Literal]])] =
+      "lookahead" ~ "(" ~ linkedLiterals ~ ":" ~ linkPredsGroups ~ ")" ^^ { case "lookahead" ~ "(" ~ x ~ ":" ~ y ~ ")" => (x, y) }
 
-    private def _parse(expression: String): Option[((Literal, Literal),List[List[Literal]])] = {
+    private def _parse(expression: String): Option[((Literal, Literal), List[List[Literal]])] = {
       parseAll(specificationParser, expression) match {
         case Success(result, _) => Some(result)
-        case f                  => None
+        case f => None
       }
     }
 
-    private def getParseResult(x: Option[((Literal, Literal),List[List[Literal]])]): ((Literal, Literal),List[List[Literal]]) = x match {
+    private def getParseResult(x: Option[((Literal, Literal), List[List[Literal]])]): ((Literal, Literal), List[List[Literal]]) = x match {
       case Some(y) => y
-      case _       => throw new MyParsingException(x.toString)
+      case _ => throw new MyParsingException(x.toString)
     }
 
-    def parse(expression: String): ((Literal, Literal),List[List[Literal]]) = {
+    def parse(expression: String): ((Literal, Literal), List[List[Literal]]) = {
       getParseResult(_parse(expression))
     }
   }
 
   object Run extends App {
 
-
     val LOOK_AHEADS_TEST = {
       val f = Source.fromFile("/home/nkatz/dev/ILED/datasets/Fraud/modes").getLines.toList.filter(line => line.startsWith("lookahead"))
-      if (f.nonEmpty) f.map( x => new LookAheadSpecification(x) ) else Nil
+      if (f.nonEmpty) f.map(x => new LookAheadSpecification(x)) else Nil
     }
 
     val stop = "stop"
-
 
     val p = new LookAheadsParser
     p.parse("lookahead( transaction(Whatever,A1,Whatever,T1) <-> transaction(Whatever,A2,Whatever,T2) : {before(T1,T2) | after(T1,T2)}, {greaterThan(A1,A2) | lessThan(A1,A2)} )")
 
   }
-
-
 
 }

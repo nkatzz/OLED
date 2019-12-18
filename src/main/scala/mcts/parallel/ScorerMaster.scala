@@ -27,9 +27,10 @@ import logic.Theory
   * Created by nkatz on 9/22/17.
   */
 
-class ScorerMaster[T <: InputSource](globals: Globals,
-                                     options: T,
-                                     dataFunction: T => Iterator[Example]) extends Actor {
+class ScorerMaster[T <: InputSource](
+    globals: Globals,
+    options: T,
+    dataFunction: T => Iterator[Example]) extends Actor {
 
   private var theoriesCount = 0
 
@@ -45,7 +46,7 @@ class ScorerMaster[T <: InputSource](globals: Globals,
     case theories: Vector[Theory] =>
       theoriesCount = theories.length
       scoredTheories = List[Theory]()
-      val jobsPerCore = math.ceil(cores.toDouble/theories.length).toInt
+      val jobsPerCore = math.ceil(cores.toDouble / theories.length).toInt
       var i = 0
       //theories.map(x => stringTheory(x)).grouped(jobsPerCore) foreach { jobs =>
       theories.grouped(jobsPerCore) foreach { jobs =>
@@ -67,9 +68,5 @@ class ScorerMaster[T <: InputSource](globals: Globals,
 
       }
   }
-
-
-
-
 
 }

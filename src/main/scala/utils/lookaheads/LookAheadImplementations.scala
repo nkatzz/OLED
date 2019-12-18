@@ -45,16 +45,12 @@ object LookAheadImplementations {
  */
 
     currentClause.toLiteralList.reverse.
-      find(p => matches(p, spec.litToLinkTo) ).
+      find(p => matches(p, spec.litToLinkTo)).
       getOrElse {
-      throw new RuntimeException(s"Could not find any literal in\n ${currentClause.tostring}\nthat " +
-        s"matches the schema of\n${spec.litToLinkTo.tostring}. The lookahead schema is:\n${spec.lookAheadSpecification}")
+        throw new RuntimeException(s"Could not find any literal in\n ${currentClause.tostring}\nthat " +
+          s"matches the schema of\n${spec.litToLinkTo.tostring}. The lookahead schema is:\n${spec.lookAheadSpecification}")
       }
   }
-
-
-
-
 
   private def getLinkingAtoms(lit1: Literal, lit2: Literal, l: LinkingPredicatesGroup, bottomClause: Clause) = {
 
@@ -62,7 +58,7 @@ object LookAheadImplementations {
 
     val linkingAtoms = l.predicates.map { x =>
       val linkingAtom = x.literal
-      val actualVars = x.vs.map(z => map(z.appearsInLiteral).getVars(z.positionInLiteral) )
+      val actualVars = x.vs.map(z => map(z.appearsInLiteral).getVars(z.positionInLiteral))
       val dummyVars = linkingAtom.getVars.toList
       val paired = if (dummyVars.length == actualVars.length) dummyVars zip actualVars else throw new RuntimeException(s"dummy and actual vars cannot" +
         s" be paired for literal $linkingAtom. Dummy vars are ${dummyVars.map(_.tostring).mkString(" ")} and actual vars are ${actualVars.map(_.tostring).mkString(" ")}")
@@ -89,12 +85,12 @@ object LookAheadImplementations {
     lookaheadSpecs.exists(p => p.litToBeAdded.predSymbol == lit.predSymbol && p.litToBeAdded.arity == lit.arity)
   }
 
-  def matches(x: Literal, y:Literal) = {
+  def matches(x: Literal, y: Literal) = {
     x.predSymbol == y.predSymbol && x.arity == y.arity
   }
 
   def selectLookaheadSpec(litToAdd: Literal, c: Clause, bottomClause: Clause, lookaheadSpecs: List[LookAheadSpecification]): LookAheadSpecification = {
-    val (headLookaheadSpec, bodyLookaheadSpecs) = lookaheadSpecs.foldLeft(List[LookAheadSpecification](),List[LookAheadSpecification]()) { (x,y) =>
+    val (headLookaheadSpec, bodyLookaheadSpecs) = lookaheadSpecs.foldLeft(List[LookAheadSpecification](), List[LookAheadSpecification]()) { (x, y) =>
       val headLink = x._1
       val bodyLink = x._2
       if (matches(bottomClause.head.asLiteral, y.litToLinkTo)) {
@@ -112,7 +108,7 @@ object LookAheadImplementations {
       throw new RuntimeException("No lookahead spec linking to the head. Add one")
     }
     if (headLookaheadSpec.length > 1) throw new RuntimeException("Something's wrong, I'm getting multiple head-linking lookaheads")
-    bodyLookaheadSpecs.find(p => matches(p.litToLinkTo, litToAdd) && c.body.exists(z => matches(z,p.litToLinkTo))).getOrElse(headLookaheadSpec.head)
+    bodyLookaheadSpecs.find(p => matches(p.litToLinkTo, litToAdd) && c.body.exists(z => matches(z, p.litToLinkTo))).getOrElse(headLookaheadSpec.head)
   }
 
 }

@@ -90,8 +90,6 @@ object Structures {
   *  a (k,v) map where k is the uuid of a parent clause's refinement and v is an object carrying the counts for
   *  that refinement. */
 
-
-
   case class Stats(parentStats: ClauseStats = ClauseStats(), refinementsStats: Map[String, ClauseStats] = Map[String, ClauseStats]())
 
   case class ClauseStats(tps: Int = 0, fps: Int = 0, fns: Int = 0, Nexmls: Int = 0)
@@ -107,8 +105,8 @@ object Structures {
   class QueuedExpandingNode(val senderName: String, val otherNodesNames: List[String])
 
   class FinalTheoryMessage(val theory: List[Clause], val trainingTime: String,
-                           val totalMsgNum: Int, val totalMsgSize: Long,
-                           val targetPredicate: TargetConcept)
+      val totalMsgNum: Int, val totalMsgSize: Long,
+      val targetPredicate: TargetConcept)
 
   class ExpansionAbortMsg(val abortingNodeName: String)
 
@@ -119,9 +117,9 @@ object Structures {
   class ShutDown(val senderName: String)
 
   abstract class TargetConcept
-  case class Initiated() extends TargetConcept {override def toString() = "initiated"}
-  case class Terminated() extends TargetConcept {override def toString() = "terminated"}
-  case class WhatEver() extends TargetConcept{override def toString() = ""}
+  case class Initiated() extends TargetConcept { override def toString() = "initiated" }
+  case class Terminated() extends TargetConcept { override def toString() = "terminated" }
+  case class WhatEver() extends TargetConcept { override def toString() = "" }
 
 }
 

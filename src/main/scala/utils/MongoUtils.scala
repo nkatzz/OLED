@@ -17,8 +17,6 @@
 
 package utils
 
-
-
 import app.runutils.Globals
 import com.mongodb.BasicDBObject
 import com.mongodb.casbah.Imports._
@@ -34,9 +32,6 @@ import utils.DataUtils.Interval
 /**
   * Created by nkatz on 11/8/15.
   */
-
-
-
 
 trait MongoUtils {
 
@@ -63,7 +58,7 @@ trait MongoUtils {
       val narrative = x.asInstanceOf[BasicDBObject].get("nar").asInstanceOf[BasicDBList].toList.map(x => x.toString)
       val prev = x.asInstanceOf[BasicDBObject].get("innert").asInstanceOf[BasicDBList].toList.map(x => x.toString)
       val time = x.asInstanceOf[BasicDBObject].get("example")
-      accum = accum :+ new Example(annot = annot, nar = narrative, _time=time.toString)
+      accum = accum :+ new Example(annot = annot, nar = narrative, _time = time.toString)
       //val annotation = annot ++ prev
 
     }
@@ -78,8 +73,6 @@ trait MongoUtils {
     mongoClient1.close()
     mongoClient2.close()
   }
-
-
 
   /**
     * Helper container class for getDBsWithTimes()
@@ -111,7 +104,6 @@ trait MongoUtils {
   }
 
 }
-
 
 class Database(val name: String, val collectionName: String = "examples") {
   val mongoClient = MongoClient()
@@ -151,17 +143,15 @@ class Database(val name: String, val collectionName: String = "examples") {
     *         example in the bacth (used as start time for the next batch)
     */
 
-
-  def getBatch1(startTime: Int, howMany: Int, usingWeakExmpls: Boolean = false): (Example,Int) = {
+  def getBatch1(startTime: Int, howMany: Int, usingWeakExmpls: Boolean = false): (Example, Int) = {
     //def batchQuery = this.collection.find("time" $gte startTime).limit(howMany)
     val _batch = this.collection.find("time" $gte startTime).sort(MongoDBObject("time" -> 1)).limit(howMany)
     val batch = _batch.toList
     val endTime = batch.last.asInstanceOf[BasicDBObject].get("time").toString
-    (Example(batch.toList, usingWeakExmpls),endTime.toInt)
+    (Example(batch.toList, usingWeakExmpls), endTime.toInt)
   }
 
-
-  def getBatch(startTime: Int, howMany: Int, usingWeakExmpls: Boolean = true): (ExampleBatch,Int) = {
+  def getBatch(startTime: Int, howMany: Int, usingWeakExmpls: Boolean = true): (ExampleBatch, Int) = {
     val _batch = this.collection.find("time" $gte startTime).sort(MongoDBObject("time" -> 1)).limit(howMany)
     val x = _batch.toList
     val batch = if (x.isEmpty) {
@@ -174,7 +164,6 @@ class Database(val name: String, val collectionName: String = "examples") {
     (ExampleBatch(batch.toList, usingWeakExmpls), endTime.toInt)
   }
 
-
   /* startTime and endTime are respectively starting and ending points for an interval of
   *  the form (s,e). This method partitions the input interval into batches of a specified
   *  batch size (indicated by the howMany parameter) and returns a list of these batches.*/
@@ -182,11 +171,11 @@ class Database(val name: String, val collectionName: String = "examples") {
   def getBatches(startTime: Int, endTime: Int, step: Int, howMany: Int, usingWeakExmpls: Boolean = true): List[ExampleBatch] = {
     val batches = new ListBuffer[ExampleBatch]
     var start = startTime
-    while ( (start <= endTime - step) && (start < this.endTime) ) {
+    while ((start <= endTime - step) && (start < this.endTime)) {
       //println(s"start: $start")
       //println(s"end: $endTime")
       val _batch =
-        this.collection.find("time" $gte start - 2*step $lte endTime + 2*step).sort(MongoDBObject("time" -> 1)).limit(howMany)
+        this.collection.find("time" $gte start - 2 * step $lte endTime + 2 * step).sort(MongoDBObject("time" -> 1)).limit(howMany)
       val batch = _batch.toList
       batches += ExampleBatch(batch.toList, usingWeakExmpls)
       start = batch.last.asInstanceOf[BasicDBObject].get("time").toString.toInt
@@ -195,7 +184,6 @@ class Database(val name: String, val collectionName: String = "examples") {
   }
 
 }
-
 
 /* Stuff for CAVIAR experiments */
 
@@ -208,7 +196,7 @@ object CaviarUtils {
   }
 
   def findIntervals(DB: Database, hle: String) = {
-    /*
+      /*
     def getTimes = {
       var times = List[Int]()
       for (x <- DB.collection.find()) {
@@ -219,9 +207,9 @@ object CaviarUtils {
     }
     val getFirst = DB.collection.findOne()
     */
-    def samePair(x: (String,String), y:(String,String)) = y._1 == x._2 && y._2 == x._1
-    var pairs = List[(String,String)]()
-    def idPair(e: Example, hle: String) = {}
+      def samePair(x: (String, String), y: (String, String)) = y._1 == x._2 && y._2 == x._1
+    var pairs = List[(String, String)]()
+      def idPair(e: Example, hle: String) = {}
     var previous = Example()
     for (x <- DB.collection.find().sort(MongoDBObject("time" -> 1))) {
       val e = Example(x)
@@ -245,40 +233,40 @@ object CaviarUtils {
     */
 
   def createPairsDB: Unit = {
-    def mergeExmplesWithInnertia(e1:Example, e2:Example) = {
-      val annotation = e1.annotation ++ e2.annotation
-      val narrative = e1.narrative ++ e2.narrative
-      val time = e1.time
-      new Example(annot = annotation, nar = narrative, _time = time)
-    }
-    def mergeExamplesNoInertia(e1: Example, e2: Example) = {
-      // see the comments in mergeExample function from ILEDNoiseTollerant to see what keepAtom does
-      val keepAtom = (atom: String, annotation: List[String]) => {
-        val fluent = Literal.parse(atom).terms.head.tostring // the fluent is the first term
-        annotation forall (x => !x.contains(fluent))
+      def mergeExmplesWithInnertia(e1: Example, e2: Example) = {
+        val annotation = e1.annotation ++ e2.annotation
+        val narrative = e1.narrative ++ e2.narrative
+        val time = e1.time
+        new Example(annot = annotation, nar = narrative, _time = time)
       }
-      val time = e1.time
-      val narrative = e1.narrative ++ e2.narrative
-      val annotation = e1.annotation.filter(x => keepAtom(x,e2.annotation)) ++ e2.annotation
-      new Example(annot = annotation, nar = narrative, _time = time)
-    }
-    def examplesToDBObject(inertia: Example, noInertia: Example, id: String) = {
-      val first = MongoDBObject("time" -> inertia.time) ++ ("annotation" -> inertia.annotation) ++ ("narrative" -> inertia.narrative)
-      val second = MongoDBObject("time" -> noInertia.time) ++ ("annotation" -> noInertia.annotation) ++ ("narrative" -> noInertia.narrative)
-      MongoDBObject("exampleId" -> id.toInt, "time" -> inertia.time.toInt, "noInertia" -> second, "inertia" -> first)
-    }
+      def mergeExamplesNoInertia(e1: Example, e2: Example) = {
+        // see the comments in mergeExample function from ILEDNoiseTollerant to see what keepAtom does
+        val keepAtom = (atom: String, annotation: List[String]) => {
+          val fluent = Literal.parse(atom).terms.head.tostring // the fluent is the first term
+          annotation forall (x => !x.contains(fluent))
+        }
+        val time = e1.time
+        val narrative = e1.narrative ++ e2.narrative
+        val annotation = e1.annotation.filter(x => keepAtom(x, e2.annotation)) ++ e2.annotation
+        new Example(annot = annotation, nar = narrative, _time = time)
+      }
+      def examplesToDBObject(inertia: Example, noInertia: Example, id: String) = {
+        val first = MongoDBObject("time" -> inertia.time) ++ ("annotation" -> inertia.annotation) ++ ("narrative" -> inertia.narrative)
+        val second = MongoDBObject("time" -> noInertia.time) ++ ("annotation" -> noInertia.annotation) ++ ("narrative" -> noInertia.narrative)
+        MongoDBObject("exampleId" -> id.toInt, "time" -> inertia.time.toInt, "noInertia" -> second, "inertia" -> first)
+      }
 
     val DB = new Database("CAVIAR_Real_FixedBorders", "examples")
     val dataIterator = DB.collection.find().sort(MongoDBObject("time" -> 1))
     val data = new ListBuffer[Example]
-    while(dataIterator.hasNext) {
+    while (dataIterator.hasNext) {
       val x = Example(dataIterator.next())
       data += x
     }
     val mongoClient = MongoClient()
     mongoClient.dropDatabase("CAVIAR_Real_FixedBorders_AsPairs") // clear in any case
     val collection = mongoClient("CAVIAR_Real_FixedBorders_AsPairs")("examples")
-    data.toList.sliding(2).foldLeft(1){ (z,x) =>
+    data.toList.sliding(2).foldLeft(1){ (z, x) =>
       val withInertia = mergeExmplesWithInnertia(x.head, x.tail.head)
       val withoutInertia = mergeExamplesNoInertia(x.head, x.tail.head)
       val entry = examplesToDBObject(withInertia, withoutInertia, z.toString)
@@ -288,21 +276,20 @@ object CaviarUtils {
     }
   }
 
-
   //val dataIterator = DB.collection.find().sort(MongoDBObject("exampleId" -> 1))
   def getDataAsChunks(collection: MongoCollection, chunkSize: Int, targetClass: String): Iterator[Example] = {
-    def mergeExmpl(in: List[Example]) = {
-      val time = in.head.time
-      //val id = in.head.id
-      val merged = in.foldLeft(Example()){ (x,newExmpl) =>
-        val accum = x
-        val annotation = accum.annotation ++ newExmpl.annotation.distinct
-        val narrative = accum.narrative ++ newExmpl.narrative.distinct
-        new Example(annot = annotation, nar = narrative, _time = time)
+      def mergeExmpl(in: List[Example]) = {
+        val time = in.head.time
+        //val id = in.head.id
+        val merged = in.foldLeft(Example()){ (x, newExmpl) =>
+          val accum = x
+          val annotation = accum.annotation ++ newExmpl.annotation.distinct
+          val narrative = accum.narrative ++ newExmpl.narrative.distinct
+          new Example(annot = annotation, nar = narrative, _time = time)
+        }
+        //new Exmpl(_id = id, exampleWithInertia = merged)
+        merged
       }
-      //new Exmpl(_id = id, exampleWithInertia = merged)
-      merged
-    }
 
     val dataIterator = collection.find().sort(MongoDBObject("time" -> 1))
 
@@ -317,14 +304,6 @@ object CaviarUtils {
     chunked map { x => mergeExmpl(x) }
   }
 
-
-
-
-
-
-
-
-
   /*
     If withChunking=true (default behaviour) then the intervals are chunked according to chunkSize.
     This is used in order to create the training set. To create the testing set however, intervals
@@ -335,10 +314,10 @@ object CaviarUtils {
     the lack thereof.
    */
   def getDataFromIntervals(collection: MongoCollection, HLE: String, i: List[Interval], chunkSize: Int, withChunking: Boolean = true): Iterator[Example] = {
-    val out  = i.foldLeft(Iterator[Example]()){ (x,y) =>
+    val out = i.foldLeft(Iterator[Example]()){ (x, y) =>
       val z = getDataFromInterval(collection, HLE, y, chunkSize, withChunking)
       x ++ z
-    }// simply merge iterators without producing them
+    } // simply merge iterators without producing them
     out
   }
 
@@ -354,7 +333,7 @@ object CaviarUtils {
 
     val chunked =
       if (HLExmpls.nonEmpty) {
-        if (withChunking) HLExmpls.sliding(chunkSize, chunkSize-1) else HLExmpls.sliding(HLExmpls.length) // won't be chunked in the else case
+        if (withChunking) HLExmpls.sliding(chunkSize, chunkSize - 1) else HLExmpls.sliding(HLExmpls.length) // won't be chunked in the else case
       } else {
         println(s"""${collection.name} returned no results for the query "DB.collection.find("time" gte $startTime lte $endTime).sort(MongoDBObject("time" -> 1))" """)
         Iterator.empty
@@ -367,17 +346,16 @@ object CaviarUtils {
 
     val out =
 
-        chunked map { x =>
-          val merged = x.foldLeft(Example()) { (z, y) =>
-            new Example(annot = z.annotation ++ y.annotation, nar = z.narrative ++ y.narrative, _time = x.head.time)
-          }
-          //new Exmpl(_id = merged.time, exampleWithInertia = merged)
-          merged
+      chunked map { x =>
+        val merged = x.foldLeft(Example()) { (z, y) =>
+          new Example(annot = z.annotation ++ y.annotation, nar = z.narrative ++ y.narrative, _time = x.head.time)
         }
+        //new Exmpl(_id = merged.time, exampleWithInertia = merged)
+        merged
+      }
 
     out
   }
-
 
   /**
     * Uses the hand-crafted rules to perform inference on CAVIAR narrative and
@@ -406,16 +384,16 @@ object CaviarUtils {
     val collection = mongoClient(newDB)("examples")
 
     val gl = new Globals(entryPath)
-    val (handCraftedRules,show) = HLE match {
+    val (handCraftedRules, show) = HLE match {
       case "meeting" =>
-        (handCraftedRulesPath,s"\n#show.\n#show holdsAt($HLE(X,Y),T):holdsAt($HLE(X,Y),T).\n")
+        (handCraftedRulesPath, s"\n#show.\n#show holdsAt($HLE(X,Y),T):holdsAt($HLE(X,Y),T).\n")
       case "moving" =>
-        (handCraftedRulesPath,s"\n#show.\n#show holdsAt($HLE(X,Y),T):holdsAt($HLE(X,Y),T).\n")
+        (handCraftedRulesPath, s"\n#show.\n#show holdsAt($HLE(X,Y),T):holdsAt($HLE(X,Y),T).\n")
     }
 
-    val file = Utils.getTempFile("generate",".lp")
+    val file = Utils.getTempFile("generate", ".lp")
 
-    val db = new Database(CaviarDB,"examples")
+    val db = new Database(CaviarDB, "examples")
     db.collection.find().sort(MongoDBObject("time" -> 1)).foldLeft(List[String]()){ (priorAnnotation, newExmpl) =>
       val e = Example(newExmpl)
 
@@ -424,21 +402,21 @@ object CaviarUtils {
       }
 
       val narrative = e.narrativeASP
-      val in  = narrative ++ priorAnnotation.map(x => x+".") ++ List(s"time(${e.time.toInt+40}).")
+      val in = narrative ++ priorAnnotation.map(x => x + ".") ++ List(s"time(${e.time.toInt + 40}).")
       val content = in.mkString("\n") + gl.INCLUDE_BK(gl.BK_WHOLE_EC) + gl.INCLUDE_BK(handCraftedRules) + show
-      Utils.writeLine(content,file.getCanonicalPath,"overwrite")
-      val out = ASP.solve(task = Globals.INFERENCE, aspInputFile = file)
+      Utils.writeLine(content, file.getCanonicalPath, "overwrite")
+      val out = ASP.solve(task         = Globals.INFERENCE, aspInputFile = file)
 
       val prior =
-        if (out.nonEmpty)  {
-          out.head.atoms.map( x => (Literal.parse(x).terms(1).tostring,x) ).filter(z => z._1 == e.time).map(_._2)
+        if (out.nonEmpty) {
+          out.head.atoms.map(x => (Literal.parse(x).terms(1).tostring, x)).filter(z => z._1 == e.time).map(_._2)
         } else {
           Nil
         }
 
       val next =
-        if (out.nonEmpty)  {
-          out.head.atoms.map( x => (Literal.parse(x).terms(1).tostring,x) ).filter(z => z._1 == (e.time.toInt+40).toString).map(_._2)
+        if (out.nonEmpty) {
+          out.head.atoms.map(x => (Literal.parse(x).terms(1).tostring, x)).filter(z => z._1 == (e.time.toInt + 40).toString).map(_._2)
         } else {
           Nil
         }
@@ -450,9 +428,6 @@ object CaviarUtils {
     }
   }
 
-
-
-
   def copyCAVIAR = {
     //val CaviarDB = new Database("CAVIAR_Real_FixedBorders")
     val CaviarDB = new Database("caviar")
@@ -460,21 +435,21 @@ object CaviarUtils {
     val originalIds = List("id0", "id4", "id5", "id1", "id2", "id3", "id6", "id7", "id8", "id9")
     val sort = (ids: List[String]) => ids.sortBy(z => z.split("id")(1).toInt)
     val getFirstLastIndex = (ids: List[String]) => {
-      val s = sort(ids)//.last.split("id")(1).toInt
+      val s = sort(ids) //.last.split("id")(1).toInt
       val first = s.head.split("id")(1).toInt
       val last = s.last.split("id")(1).toInt
-      (first,last)
+      (first, last)
     }
-    def replaceAll = (s: String, map: Map[String,String]) => {
-      val ids = idPattern.findAllIn(s)
-      val toLit = if (!s.contains(".")) Literal.parse(s) else Literal.parse(s.split("\\.")(0))
-      //ids.foldLeft(s){ (x,id) => x.replaceFirst(id,map(id)) }
-      ids.foldLeft(toLit){ (x,id) => x.replace(Constant(id),Constant(map(id))) }.tostring
-    }
+      def replaceAll = (s: String, map: Map[String, String]) => {
+        val ids = idPattern.findAllIn(s)
+        val toLit = if (!s.contains(".")) Literal.parse(s) else Literal.parse(s.split("\\.")(0))
+        //ids.foldLeft(s){ (x,id) => x.replaceFirst(id,map(id)) }
+        ids.foldLeft(toLit){ (x, id) => x.replace(Constant(id), Constant(map(id))) }.tostring
+      }
     var lastIndex = getFirstLastIndex(originalIds)._2
     for (count <- 1 to 9) {
       lastIndex += 1
-      val extraIds = (lastIndex to lastIndex+9).map(index => s"id$index").toList
+      val extraIds = (lastIndex to lastIndex + 9).map(index => s"id$index").toList
       val map = (sort(originalIds) zip sort(extraIds)).toMap
       val indexes = getFirstLastIndex(extraIds)
       lastIndex = indexes._2
@@ -484,7 +459,7 @@ object CaviarUtils {
       mongoClient.dropDatabase(newDB)
       val collection = mongoClient(newDB)("examples")
 
-      CaviarDB.collection.find().sort(MongoDBObject("time" -> 1)).foldLeft(()) { (_,newExmpl) =>
+      CaviarDB.collection.find().sort(MongoDBObject("time" -> 1)).foldLeft(()) { (_, newExmpl) =>
         val e = Example(newExmpl)
         val narrative = e.narrativeASP map (x => replaceAll(x, map))
         val annotation = e.annotation map (x => replaceAll(x, map))
@@ -523,8 +498,6 @@ object CaviarUtils {
   }
   */
 
-
-
 }
 
 /*
@@ -535,8 +508,4 @@ class Exmpl(e: DBObject = DBObject(), _id: String = "", exampleWithInertia: Exam
   val exmplNoInertia = if (e != DBObject()) Example(e.asInstanceOf[BasicDBObject].get("noInertia").asInstanceOf[BasicDBObject]) else Example()
 }
 */
-
-
-
-
 

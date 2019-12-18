@@ -24,11 +24,9 @@ import com.typesafe.scalalogging.LazyLogging
 import logic.Theory
 import mcts.HillClimbing.{constructBottomTheory, generateChildrenNodes, getData, scoreNodes, crossVal}
 
-
 /**
   * Created by nkatz on 9/19/17.
   */
-
 
 object MCTS_FOL extends LazyLogging {
 
@@ -37,7 +35,6 @@ object MCTS_FOL extends LazyLogging {
   def main(args: Array[String]) = {
     runCaviarMNL()
   }
-
 
   def runCaviarMNL() = {
 
@@ -55,7 +52,7 @@ object MCTS_FOL extends LazyLogging {
 
     val iterations = 4
 
-    val exploreRate = 1.0/Math.sqrt(2) //0.005 //
+    val exploreRate = 1.0 / Math.sqrt(2) //0.005 //
 
     val f1 = (t: Theory) => t.stats._6
 
@@ -71,7 +68,7 @@ object MCTS_FOL extends LazyLogging {
       val bestChild = rootNode.descendToBestChild(exploreRate)
       logger.info(s"Best leaf node selected (MCTS score: ${bestChild.getMCTSScore(exploreRate)} | id: ${bestChild.id}):\n${bestChild.theory.tostring}")
       val newNodes = generateAndScoreChildren(bestChild, bottomTheory, globals, opts, iterCount)
-      val bestChildNode = newNodes.maxBy( x => f1(x.theory) )
+      val bestChildNode = newNodes.maxBy(x => f1(x.theory))
       bestChildNode.propagateReward(f1(bestChildNode.theory))
       if (theorySearchedLast.theory == Theory()) {
         logger.info(s"Best theory so far (F1-score ${f1(bestChildNode.theory)} | id: ${bestChildNode.id}):\n${bestChildNode.theory.tostring}")
@@ -79,7 +76,7 @@ object MCTS_FOL extends LazyLogging {
       } else {
         if (f1(bestChildNode.theory) > f1(theorySearchedLast.theory)) {
           logger.info(s"Best theory so far (F1-score ${f1(bestChildNode.theory)} | id: ${bestChildNode.id}):\n${bestChildNode.theory.tostring}")
-          bestChildNode//.theory
+          bestChildNode //.theory
         } else {
           logger.info(s"Best theory so far (F1-score ${f1(theorySearchedLast.theory)} | id: ${theorySearchedLast.id}):\n${theorySearchedLast.theory.tostring}")
           theorySearchedLast
@@ -122,12 +119,5 @@ object MCTS_FOL extends LazyLogging {
 
     newNodes
   }
-
-
-
-
-
-
-
 
 }

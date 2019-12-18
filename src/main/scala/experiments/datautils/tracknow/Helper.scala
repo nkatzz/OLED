@@ -65,7 +65,6 @@ object Helper extends App {
   - Mean time per batch
    */
 
-
   def f(s: String) = {
     val z = s.split(": ")(1).split("/")
     (z(0), z(1))
@@ -75,27 +74,27 @@ object Helper extends App {
   val source = Source.fromFile(new File(resultsFile))
   try {
     val lines = source.getLines
-    val results = lines.foldLeft(0.0,List[Double](),0.0,List[Double](),0.0,List[Double]()) { (x, y) =>
+    val results = lines.foldLeft(0.0, List[Double](), 0.0, List[Double](), 0.0, List[Double]()) { (x, y) =>
       val (llesTotal, llesAvg, hlesTotal, hlesAvg, timeTotal, timeAvg) = (x._1, x._2, x._3, x._4, x._5, x._6)
       if (y.contains("Total/Average number of input LLEs:")) {
         val (total, avg) = f(y)
-        (llesTotal+total.toDouble, llesAvg :+ avg.toDouble, hlesTotal, hlesAvg, timeTotal, timeAvg)
+        (llesTotal + total.toDouble, llesAvg :+ avg.toDouble, hlesTotal, hlesAvg, timeTotal, timeAvg)
       } else if (y.contains("Total/Average number of HLE instances:")) {
         val (total, avg) = f(y)
-        (llesTotal, llesAvg, hlesTotal+total.toDouble, hlesAvg:+ avg.toDouble, timeTotal, timeAvg)
+        (llesTotal, llesAvg, hlesTotal + total.toDouble, hlesAvg :+ avg.toDouble, timeTotal, timeAvg)
       } else if (y.contains("Total/Average time:")) {
         val (total, avg) = f(y)
-        (llesTotal, llesAvg, hlesTotal, hlesAvg, timeTotal+total.toDouble, timeAvg:+ avg.toDouble)
+        (llesTotal, llesAvg, hlesTotal, hlesAvg, timeTotal + total.toDouble, timeAvg :+ avg.toDouble)
       } else {
         (llesTotal, llesAvg, hlesTotal, hlesAvg, timeTotal, timeAvg)
       }
     }
     println(s"Total LLEs number: ${results._1}")
-    println(s"Average LLEs number per batch: ${results._2.sum/results._2.length}")
+    println(s"Average LLEs number per batch: ${results._2.sum / results._2.length}")
     println(s"Total HLEs number: ${results._3}")
-    println(s"Average HLEs number per batch: ${results._4.sum/results._4.length}")
+    println(s"Average HLEs number per batch: ${results._4.sum / results._4.length}")
     println(s"Total Time: ${results._5}")
-    println(s"Average time per batch: ${results._6.sum/results._6.length}")
+    println(s"Average time per batch: ${results._6.sum / results._6.length}")
   } finally {
     source.close()
   }

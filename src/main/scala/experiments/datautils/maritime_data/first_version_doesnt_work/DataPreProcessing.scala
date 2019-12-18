@@ -27,7 +27,6 @@ import scala.io.Source
   * Created by nkatz on 24/4/2017.
   */
 
-
 /**
   *
   * THIS IS THE OLD VERSION THAT DOES NOT FLATTEN TIME STAMPS.
@@ -36,8 +35,7 @@ import scala.io.Source
   *
   *
   *
-  * */
-
+  */
 
 object DataPreProcessing {
 
@@ -79,18 +77,12 @@ object DataPreProcessing {
   *
   * */
 
-
-
   case class LLE(lleName: String, atom: String, time: String, vessel: String, area: String)
-
-
 
   def main(args: Array[String]) = {
 
-
     val mongoClient = MongoClient()
     val dbName = "Maritime-Aegean-whole"
-
 
     val LLEcollection = mongoClient(dbName)("lles")
 
@@ -105,7 +97,6 @@ object DataPreProcessing {
     val withinAreaCollection = mongoClient(dbName)("within-area")
     val notCloseToPortsCollection = mongoClient(dbName)("not-close-to-ports")
     val speedLimitsCollections = mongoClient(dbName)("speed-limits")
-
 
     ///*
     mongoClient.dropDatabase("Maritime-Aegean")
@@ -130,7 +121,6 @@ object DataPreProcessing {
     *
     * */
 
-
     /*
     findDoc(LLEcollection, List(highSpeedCollection, loiteringCollection, lowSpeedCollection, rendezvousCollection, sailingCollection, stoppedCollection, withinAreaCollection), notCloseToPortsCollection, speedLimitsCollections)
     */
@@ -152,34 +142,32 @@ object DataPreProcessing {
 
   }
 
-
   def wholeDatasetToMongo(dbName: String) = {
 
   }
 
-
   def getMaritimeData(dbName: String, HLE: String, chunkSize: Int) = {
 
-    def getHLEs(cursor: hleCollection.CursorType, lleTime: Int, initiationPoint: Boolean) = {
-      cursor.foldLeft(List[String]()) { (atoms, hleDbObject) =>
-        val hle = hleDbObject.asInstanceOf[BasicDBObject].get("hle").toString
-        val atom = hle match {
-          case "highSpeedIn" | "withinArea" =>
-            val vessel = hleDbObject.asInstanceOf[BasicDBObject].get("vessel").toString
-            val area = hleDbObject.asInstanceOf[BasicDBObject].get("area").toString
-            if (!initiationPoint) s"""holdsAt($hle("$vessel","$area"),"$lleTime")""" else s"""holdsAt($hle("$vessel","$area"),"${lleTime+1}")"""
-          case "loitering" | "lowSpeed" | "sailing" | "stopped" =>
-            val vessel = hleDbObject.asInstanceOf[BasicDBObject].get("vessel").toString
-            if (!initiationPoint) s"""holdsAt($hle("$vessel"),"$lleTime")""" else s"""holdsAt($hle("$vessel"),"${lleTime+1}")"""
-          case "rendezVouz" =>
-            val v1 = hleDbObject.asInstanceOf[BasicDBObject].get("vessel1").toString
-            val v2 = hleDbObject.asInstanceOf[BasicDBObject].get("vessel2").toString
-            if (!initiationPoint) s"""holdsAt($hle("$v1","$v2"),"$lleTime")""" else s"""holdsAt($hle("$v1","$v2"),"${lleTime+1}")"""
-          case _ => throw new RuntimeException(s"HLE name: $hle not found")
+      def getHLEs(cursor: hleCollection.CursorType, lleTime: Int, initiationPoint: Boolean) = {
+        cursor.foldLeft(List[String]()) { (atoms, hleDbObject) =>
+          val hle = hleDbObject.asInstanceOf[BasicDBObject].get("hle").toString
+          val atom = hle match {
+            case "highSpeedIn" | "withinArea" =>
+              val vessel = hleDbObject.asInstanceOf[BasicDBObject].get("vessel").toString
+              val area = hleDbObject.asInstanceOf[BasicDBObject].get("area").toString
+              if (!initiationPoint) s"""holdsAt($hle("$vessel","$area"),"$lleTime")""" else s"""holdsAt($hle("$vessel","$area"),"${lleTime + 1}")"""
+            case "loitering" | "lowSpeed" | "sailing" | "stopped" =>
+              val vessel = hleDbObject.asInstanceOf[BasicDBObject].get("vessel").toString
+              if (!initiationPoint) s"""holdsAt($hle("$vessel"),"$lleTime")""" else s"""holdsAt($hle("$vessel"),"${lleTime + 1}")"""
+            case "rendezVouz" =>
+              val v1 = hleDbObject.asInstanceOf[BasicDBObject].get("vessel1").toString
+              val v2 = hleDbObject.asInstanceOf[BasicDBObject].get("vessel2").toString
+              if (!initiationPoint) s"""holdsAt($hle("$v1","$v2"),"$lleTime")""" else s"""holdsAt($hle("$v1","$v2"),"${lleTime + 1}")"""
+            case _ => throw new RuntimeException(s"HLE name: $hle not found")
+          }
+          atoms :+ atom
         }
-        atoms :+ atom
       }
-    }
 
     val mc = MongoClient()
     val lleCollection = mc(dbName)("lles")
@@ -204,15 +192,15 @@ object DataPreProcessing {
         val lles = dbObject.asInstanceOf[BasicDBObject].get("atoms").asInstanceOf[BasicDBList].toList.map(x => x.toString)
         val currentTime = dbObject.asInstanceOf[BasicDBObject].get("time").toString
 
-        val vesselQueries = vessels.map(v => MongoDBObject("vessel" -> v) ++ ("time" -> currentTime) )
-        val vs = vesselQueries flatMap ( q => portsCollection.find(q) )
+        val vesselQueries = vessels.map(v => MongoDBObject("vessel" -> v) ++ ("time" -> currentTime))
+        val vs = vesselQueries flatMap (q => portsCollection.find(q))
         val portsAtoms = vs.map{ x =>
           val vessel = x.asInstanceOf[BasicDBObject].get("vessel").toString
           s"""notCloseToPorts("$vessel","$currentTime")"""
         }
 
-        val areaQueries = areas.map(a => MongoDBObject("area" -> a)  )
-        val as = areaQueries flatMap ( q => speedLimitsCollection.find(q) )
+        val areaQueries = areas.map(a => MongoDBObject("area" -> a))
+        val as = areaQueries flatMap (q => speedLimitsCollection.find(q))
         val speedLimitAtoms = as.map{ x =>
           val area = x.asInstanceOf[BasicDBObject].get("area").toString
           val speed = x.asInstanceOf[BasicDBObject].get("limit").toString
@@ -220,14 +208,14 @@ object DataPreProcessing {
         }
 
         val query1 = ("start_time" $lte currentTime.toInt) ++ ("end_time" $gte currentTime.toInt)
-        val query2 = "start_time" $eq currentTime.toInt+1
+        val query2 = "start_time" $eq currentTime.toInt + 1
         val hledocs1 = hleCollection.find(query1)
         val hledocs2 = hleCollection.find(query2)
 
-        val initiationPoints = getHLEs(hledocs2, currentTime.toInt, initiationPoint=true)
-        val medianPoints = getHLEs(hledocs1, currentTime.toInt, initiationPoint=false)
+        val initiationPoints = getHLEs(hledocs2, currentTime.toInt, initiationPoint = true)
+        val medianPoints = getHLEs(hledocs1, currentTime.toInt, initiationPoint = false)
 
-        (_narrative ++ lles ++ portsAtoms ++ speedLimitAtoms, (_annotation ++ initiationPoints ++ medianPoints).distinct )
+        (_narrative ++ lles ++ portsAtoms ++ speedLimitAtoms, (_annotation ++ initiationPoints ++ medianPoints).distinct)
       }
       val mergedExmplTime = docs.head.asInstanceOf[BasicDBObject].get("time").toString
       val _merged = new Example(annot = annotation, nar = narrative, _time = mergedExmplTime)
@@ -316,10 +304,8 @@ object DataPreProcessing {
     x.asInstanceOf[BasicDBObject].get("atoms").asInstanceOf[BasicDBList].toList.map(x => x.toString)
   }
 
-
-
   def toMongo_notCloseToPorts(path: String, collection: MongoCollection) = {
-    val info = Source.fromFile(path).getLines.toList.map{x =>
+    val info = Source.fromFile(path).getLines.toList.map{ x =>
       val s = x.split("\\|")
       val time = s(0)
       val vessel = s(1)
@@ -334,7 +320,7 @@ object DataPreProcessing {
   }
 
   def toMongo_speedLimits(path: String, collection: MongoCollection) = {
-    val info = Source.fromFile(path).getLines.toList.map{x =>
+    val info = Source.fromFile(path).getLines.toList.map{ x =>
       val s = x.split("\\|")
       val area = s(0)
       val speed = s(1)
@@ -357,7 +343,7 @@ object DataPreProcessing {
    * that have the same schema
    * */
   def toMongo_areaHLEs(path: String, collection: MongoCollection) = {
-    val hles = Source.fromFile(path).getLines.toList.map{x =>
+    val hles = Source.fromFile(path).getLines.toList.map{ x =>
       val s = x.split("\\|")
       val startTime = s(4)
       val endTime = (s(5).toInt - 1).toString
@@ -395,8 +381,6 @@ object DataPreProcessing {
     }
   }
 
-
-
   /*loitering, low-speed, sailing, stopped have the same schema, so they are handled by the same method */
   /*
   *
@@ -411,14 +395,14 @@ object DataPreProcessing {
   *
   * */
   def toMongo_similarHLEs(path: String, collection: MongoCollection) = {
-    def hles = Source.fromFile(path).getLines.toList.map { x =>
-      val s = x.split("\\|")
-      val startTime = s(3)
-      val endTime = (s(4).toInt - 1).toString
-      val hle = s(0)
-      val vessel = s(1)
-      (hle, vessel, startTime, endTime)
-    }
+      def hles = Source.fromFile(path).getLines.toList.map { x =>
+        val s = x.split("\\|")
+        val startTime = s(3)
+        val endTime = (s(4).toInt - 1).toString
+        val hle = s(0)
+        val vessel = s(1)
+        (hle, vessel, startTime, endTime)
+      }
     hles.foreach { hle =>
       val (hleName, vessel, startTime, endTime) = (hle._1, hle._2, hle._3, hle._4)
       val entry = MongoDBObject("hle" -> hleName) ++ ("start_time" -> startTime.toInt) ++ ("end_time" -> endTime.toInt) ++ ("vessel" -> vessel) ++
@@ -427,10 +411,6 @@ object DataPreProcessing {
       collection.insert(entry)
     }
   }
-
-
-
-
 
   def storeLLEsToMongo(datasetPath: String, LLEcollection: MongoCollection) = {
 
@@ -452,8 +432,6 @@ object DataPreProcessing {
       LLEcollection.insert(entry)
     }
   }
-
-
 
   /* Convert a data point to predicate form. This does not work with proximity for now.
    * This returns the predicate itself, the vessel and the area (if an area is involved).
@@ -508,7 +486,7 @@ object DataPreProcessing {
         predicate = s"""happensAt(leavesArea("$vessel","$area"),"$time")"""
       case "slow_motion_end" =>
         predicate = s"""happensAt(slow_motion_end("$vessel"),"$time")"""
-        //HappensAt [slow_motion_end 271044099] 1451802937
+      //HappensAt [slow_motion_end 271044099] 1451802937
     }
     LLE(lle, predicate, time, vessel, area)
   }
@@ -535,13 +513,11 @@ object DataPreProcessing {
   def getLLENames(data: List[String]) = data.map(x => getLLE(x)).distinct foreach println
 
   def getLLE(dataLine: String) = {
-    val info = if(dataLine.contains("HappensAt")) dataLine.split("HappensAt")(1) else dataLine.split("HoldsFor")(1)
+    val info = if (dataLine.contains("HappensAt")) dataLine.split("HappensAt")(1) else dataLine.split("HoldsFor")(1)
     val _info = info.split("\\]")
     val time = _info(1).trim
     val rest = _info(0).split("\\[")(1)
     rest.split(" ")(0)
   }
-
-
 
 }

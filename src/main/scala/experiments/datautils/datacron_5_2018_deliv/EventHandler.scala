@@ -54,7 +54,7 @@ object EventHandler {
     // These have a different schema
     val abnormalLLEs = Set[String]("coord", "entersArea", "leavesArea", "proximity", "velocity")
     val split = line.split("\\|")
-    if (! abnormalLLEs.contains(split(0))) {
+    if (!abnormalLLEs.contains(split(0))) {
 
       // These have a common simple schema:
       // change_in_heading, change_in_speed_start, change_in_speed_end,

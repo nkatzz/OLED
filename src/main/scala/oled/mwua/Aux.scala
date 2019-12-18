@@ -37,11 +37,10 @@ object MessageTypes {
   class ProcessBatchMsg(val theory: Theory, val batch: Example, val targetClass: String = "")
 
   class FinishedBatchMsg(val theory: Theory, val ruleScoringTime: Double, val newRuleTestTime: Double,
-                         val compressRulesTime: Double, val expandRulesTime: Double,
-                         val newRuleGenerationTime: Double, val BatchProcessingTime: Double, val targetClass: String)
+      val compressRulesTime: Double, val expandRulesTime: Double,
+      val newRuleGenerationTime: Double, val BatchProcessingTime: Double, val targetClass: String)
 
 }
-
 
 object Test extends App {
 
@@ -50,7 +49,7 @@ object Test extends App {
   val vals = Vector(1, -1)
 
   def getRanomVector = {
-    (1 to 20).map( x => Random.shuffle(vals).head ).toVector
+    (1 to 20).map(x => Random.shuffle(vals).head).toVector
   }
 
   def getRandomVectors = {
@@ -59,13 +58,13 @@ object Test extends App {
 
   // in this strategy we get one prediction pre vector
   def individualVoting(vecs: Vector[Vector[Int]]) = {
-    val votes = vecs.map{ x => x.sum.toDouble/x.length }
-    votes.sum/votes.length
+    val votes = vecs.map{ x => x.sum.toDouble / x.length }
+    votes.sum / votes.length
   }
 
   def collectiveVoting(vecs: Vector[Vector[Int]]) = {
     val all = vecs.flatten
-    all.sum.toDouble/all.length
+    all.sum.toDouble / all.length
   }
 
   def vecs = getRandomVectors
@@ -74,12 +73,7 @@ object Test extends App {
 
 }
 
-
-
 object AuxFuncs extends LazyLogging {
-
-
-
 
   def showRuleWithSpecialization(rule: Clause) = {
     val toStrWithWeight = (x: Clause) => s"${x.w_pos} x.tostring"
@@ -185,8 +179,8 @@ object AuxFuncs extends LazyLogging {
 
   /* Learns a new termination rule from an FP data point. */
   def generateNewExpert(dataBatch: Example, fpAtom: String,
-                        globals: Globals, what: String, totalWeight: Double,
-                        otherAwakeExperts: Vector[Clause] = Vector.empty[Clause]) = {
+      globals: Globals, what: String, totalWeight: Double,
+      otherAwakeExperts: Vector[Clause] = Vector.empty[Clause]) = {
 
     val strippedBatch = Example(annot = List(fpAtom), nar = dataBatch.narrative, _time = dataBatch.time)
 
@@ -208,12 +202,11 @@ object AuxFuncs extends LazyLogging {
     }
   }
 
-
   def reportMistake(what: String, atom: String, inertiaWeight: Double,
-                     firingInitRulesNum: Int, nonfiringInitRulesNum: Int,
-                     firingTermRulesNum: Int, nonfiringTermRulesNum: Int,
-                     initWeightSum: Double, termWeightSum: Double,
-                     noinitWeightSum: Double, notermWeightSum: Double, logger: org.slf4j.Logger) = {
+      firingInitRulesNum: Int, nonfiringInitRulesNum: Int,
+      firingTermRulesNum: Int, nonfiringTermRulesNum: Int,
+      initWeightSum: Double, termWeightSum: Double,
+      noinitWeightSum: Double, notermWeightSum: Double, logger: org.slf4j.Logger) = {
 
     logger.info(s"\nMade $what mistake for atom: $atom.\nInertia weight: " +
       s"$inertiaWeight\nFiring initiation rules: $firingInitRulesNum, sum of weight: $initWeightSum\nNon " +
@@ -260,10 +253,10 @@ object AuxFuncs extends LazyLogging {
     }
   }
 
-
-  def normalizeWeights(inertiaExpert: Map[String, Double],
-                       firingInitRules: Vector[Clause], nonFiringInitRules: Vector[Clause],
-                       firingTermRules: Vector[Clause], nonFiringTermRules: Vector[Clause]) = {
+  def normalizeWeights(
+      inertiaExpert: Map[String, Double],
+      firingInitRules: Vector[Clause], nonFiringInitRules: Vector[Clause],
+      firingTermRules: Vector[Clause], nonFiringTermRules: Vector[Clause]) = {
 
     val inertiaWeights = inertiaExpert.values.sum
 
@@ -271,12 +264,9 @@ object AuxFuncs extends LazyLogging {
 
     val totalWeight = allRules.map(x => x.w_pos).sum + inertiaWeights
 
-    allRules foreach {x => x.w_pos = x.w_pos/totalWeight}
+    allRules foreach { x => x.w_pos = x.w_pos / totalWeight }
 
   }
-
-
-
 
   /*
   *
@@ -294,7 +284,7 @@ object AuxFuncs extends LazyLogging {
 
     val wholeCommittee = if (!abstains) rule.refinements :+ rule else rule.refinements
 
-    val rulesToWeightsMap = wholeCommittee.map( x => x.## -> x.w_pos ).toMap
+    val rulesToWeightsMap = wholeCommittee.map(x => x.## -> x.w_pos).toMap
 
     val yesWeight = {
       val yes = firingRuleIds.toSet.intersect(rulesToWeightsMap.keySet.map(_.toString)).map(_.toInt)
@@ -322,7 +312,7 @@ object AuxFuncs extends LazyLogging {
         rule.refinements.sortBy { x => (- x.w, - x.score, x.body.length+1) }.head
       }
     */
-    val sorted = (rule.refinements :+ rule).filter(z => z.score >= 0.2).sortBy { x => (- x.score, - x.w_pos, x.body.length+1) }
+    val sorted = (rule.refinements :+ rule).filter(z => z.score >= 0.2).sortBy { x => (-x.score, -x.w_pos, x.body.length + 1) }
 
     val bestExpert = if (sorted.nonEmpty) sorted.head else Clause.empty
 
@@ -332,16 +322,14 @@ object AuxFuncs extends LazyLogging {
       if (firingRuleIds.toSet.contains(bestExpert.##.toString)) {
         bestExpert.w_pos
       } else if (nonFiringRuleIds.toSet.contains(bestExpert.##.toString)) {
-        - bestExpert.w_pos
+        -bestExpert.w_pos
       } else {
         throw new RuntimeException(s"\nRule:\n${rule.tostring}\nwith id: ${rule.##} " +
           s"is contained neither in the firing, nor the non-firing rules")
       }
     }
 
-
   }
-
 
   /*
   *
@@ -353,8 +341,8 @@ object AuxFuncs extends LazyLogging {
   * */
 
   def computeRuleGroundings(inps: RunningOptions, markedProgram: String,
-                            markedMap: Map[String, Clause], batch: String,
-                            trueAtoms: Set[String] = Set[String](), streaming: Boolean = false) = {
+      markedMap: Map[String, Clause], batch: String,
+      trueAtoms: Set[String] = Set[String](), streaming: Boolean = false) = {
 
     /*
     val targetFluent = {
@@ -410,7 +398,7 @@ object AuxFuncs extends LazyLogging {
 
     val directives = s"\n$initGrndRule\n$termGrndRule\n$fluentGroundings\n"
 
-    val program = batch + markedProgram + "\n#include \""+inps.entryPath+"/bk.lp\"." + directives + "\n#show.\n#show grounding/2.\n#show fluentGrnd/1.\n#show time/1." //"\n#show.\n#show tp/2.\n#show fp/2.\n#show fn/2."
+    val program = batch + markedProgram + "\n#include \"" + inps.entryPath + "/bk.lp\"." + directives + "\n#show.\n#show grounding/2.\n#show fluentGrnd/1.\n#show time/1." //"\n#show.\n#show tp/2.\n#show fp/2.\n#show fn/2."
 
     //val f2 = Utils.getTempFile(s"quick-and-dirty",".lp")
     val f2 = quickAnDirtyFile
@@ -418,7 +406,7 @@ object AuxFuncs extends LazyLogging {
     Utils.writeToFile(f2, "append")(p => List(program) foreach p.println)
     val paaath = f2.getCanonicalPath
 
-    val _result = ASP.solve(task = Globals.SCORE_RULES, aspInputFile = new File(paaath))
+    val _result = ASP.solve(task         = Globals.SCORE_RULES, aspInputFile = new File(paaath))
 
     //f2.delete() // For long execution periods, waiting to delete on exit may exhaust the available space
 
@@ -495,7 +483,6 @@ object AuxFuncs extends LazyLogging {
 
   }
 
-
   // Generates the final theory to use on the test set. The input is a list with
   // the initiation part in the haed and the termination part in the body
   def getFinalTheory(theory: List[Theory], useAvgWeights: Boolean = true, logger: org.slf4j.Logger) = {
@@ -514,19 +501,19 @@ object AuxFuncs extends LazyLogging {
     val newTerm = oldTerm.flatMap(x => x.refinements :+ x).filter(z => z.body.nonEmpty)
 
     // Filter out stuff which have a weight of 1 (never been used)
-    val _merged = Theory( (newInit ++ newTerm).filter(x => x.body.nonEmpty))//.filter(x => x.w != 1.0) )
+    val _merged = Theory((newInit ++ newTerm).filter(x => x.body.nonEmpty)) //.filter(x => x.w != 1.0) )
 
     logger.info(s"\n\n\nPerforming test with:\n\n${_merged.showWithStats}")
 
     if (useAvgWeights) {
       newInit foreach { r =>
         r.w_pos = r.avgWeight
-        r.refinements foreach( r1 => r1.w_pos = r1.avgWeight )
+        r.refinements foreach (r1 => r1.w_pos = r1.avgWeight)
       }
 
       newTerm foreach { r =>
         r.w_pos = r.avgWeight
-        r.refinements foreach( r1 => r1.w_pos = r1.avgWeight )
+        r.refinements foreach (r1 => r1.w_pos = r1.avgWeight)
       }
     }
 
@@ -534,89 +521,73 @@ object AuxFuncs extends LazyLogging {
 
   }
 
-
   // This is wrong, a rule is scored based on its true/false groundings, not the final prediction
   ///*
-  def updateRulesScore(prediction: String,
-                       firingInitRules: Vector[Clause],
-                       nonFiringInitRules: Vector[Clause],
-                       firingTermRules: Vector[Clause],
-                       nonFiringTermRules: Vector[Clause]) = {
+  def updateRulesScore(
+      prediction: String,
+      firingInitRules: Vector[Clause],
+      nonFiringInitRules: Vector[Clause],
+      firingTermRules: Vector[Clause],
+      nonFiringTermRules: Vector[Clause]) = {
 
-    firingInitRules foreach (x => x.seenExmplsNum +=  1)
-    nonFiringInitRules foreach (x => x.seenExmplsNum +=  1)
-    firingTermRules foreach (x => x.seenExmplsNum +=  1)
-    nonFiringTermRules foreach (x => x.seenExmplsNum +=  1)
+    firingInitRules foreach (x => x.seenExmplsNum += 1)
+    nonFiringInitRules foreach (x => x.seenExmplsNum += 1)
+    firingTermRules foreach (x => x.seenExmplsNum += 1)
+    nonFiringTermRules foreach (x => x.seenExmplsNum += 1)
 
     prediction match {
 
       // The master predicted positive and it actually is.
       case "TP" =>
         // Count 1 TP for all initiation rules that fire and all termination rules that do not.
-        firingInitRules foreach (x => x.tps +=  1)
-        nonFiringTermRules foreach (x => x.tps +=  1)
+        firingInitRules foreach (x => x.tps += 1)
+        nonFiringTermRules foreach (x => x.tps += 1)
 
         // Count 1 FN for all initiation rules that do not fire and all termination rules that fire.
-        nonFiringInitRules foreach (x => x.fns +=  1)
-        firingTermRules foreach (x => x.fns +=  1)
+        nonFiringInitRules foreach (x => x.fns += 1)
+        firingTermRules foreach (x => x.fns += 1)
 
       // The master predicted positive but its not.
       case "FP" =>
         // Count 1 FP for all initiation rules that fire.
-        firingInitRules foreach (x => x.fps +=  1)
+        firingInitRules foreach (x => x.fps += 1)
 
         // Count 1 TN for all initiation rules that do not fire.
-        nonFiringInitRules foreach (x => x.tns +=  1)
+        nonFiringInitRules foreach (x => x.tns += 1)
 
         // Count 1 TP for all termination rules that do not fire.
-        nonFiringTermRules foreach (x => x.tps +=  1)
+        nonFiringTermRules foreach (x => x.tps += 1)
 
         // Count 1 TN for all termination rules that fire.
-        firingTermRules foreach (x => x.tns +=  1)
+        firingTermRules foreach (x => x.tns += 1)
 
       // The master predicted negative, but it's actually positive.
       case "FN" =>
         // Count 1 FN for all initiation rules that do not fire and all termination rules that do.
-        nonFiringInitRules foreach (x => x.fns +=  1)
-        firingTermRules foreach (x => x.fns +=  1)
+        nonFiringInitRules foreach (x => x.fns += 1)
+        firingTermRules foreach (x => x.fns += 1)
 
         // Count 1 TP for all initiation rules that fire and all termination rules that do not fire.
-        firingInitRules foreach (x => x.tps +=  1)
-        nonFiringTermRules foreach (x => x.tps +=  1)
+        firingInitRules foreach (x => x.tps += 1)
+        nonFiringTermRules foreach (x => x.tps += 1)
 
       // The master predicted negative, and it actually is.
       case "TN" =>
         // Count 1 TN for all initiation rules that do not fire and all termination rules that fire
-        nonFiringInitRules foreach (x => x.tns +=  1)
-        firingTermRules foreach (x => x.tns +=  1)
+        nonFiringInitRules foreach (x => x.tns += 1)
+        firingTermRules foreach (x => x.tns += 1)
 
         // Count 1 FP for all initiation rules that fire
-        firingInitRules foreach (x => x.fps +=  1)
+        firingInitRules foreach (x => x.fps += 1)
 
         // Count 1 TP for all termination rules that fire.
-        firingTermRules foreach (x => x.tps +=  1)
+        firingTermRules foreach (x => x.tps += 1)
 
       case _ => throw new RuntimeException(s"Recieved $prediction as the prediction while updating the rules' scores.")
     }
 
   }
   //*/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
   /**
     *
@@ -629,23 +600,22 @@ object AuxFuncs extends LazyLogging {
 
     val hashCodesClausesMap = (allRules map (x => x.##.toString -> x)).toMap
     val rulePredicates = hashCodesClausesMap.keySet.map(x => s"rule($x). ").mkString("\n")
-    (allRulesMarked.map(_.tostring).mkString("\n")+rulePredicates, hashCodesClausesMap)
+    (allRulesMarked.map(_.tostring).mkString("\n") + rulePredicates, hashCodesClausesMap)
   }
 
   // The head of a weighted rule is of the form: marked(ruleId, "weight", actualHead)
   def marked(c: Clause, globals: Globals) = {
-    val cc = Clause(head=Literal(predSymbol = "marked", terms=List(c.##.toString, s""""${c.w_pos}"""", c.head)), body=c.withTypePreds(globals).body)
+    val cc = Clause(head = Literal(predSymbol = "marked", terms = List(c.##.toString, s""""${c.w_pos}"""", c.head)), body = c.withTypePreds(globals).body)
     cc.w_pos = c.w_pos
     cc
   }
 
   // The head of a weighted rule is of the form: marked(ruleId, actualHead)
   def markedQuickAndDirty(c: Clause, globals: Globals) = {
-    val cc = Clause(head=Literal(predSymbol = "marked", terms=List(c.##.toString, c.head)), body=c.withTypePreds(globals).body)
+    val cc = Clause(head = Literal(predSymbol = "marked", terms = List(c.##.toString, c.head)), body = c.withTypePreds(globals).body)
     cc.w_pos = c.w_pos
     cc
   }
 
 }
-
 

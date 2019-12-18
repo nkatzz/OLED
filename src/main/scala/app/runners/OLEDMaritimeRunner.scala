@@ -40,7 +40,6 @@ import scala.io.Source
 // stopped:
 //--inpath=/home/nkatz/dev/iled/datasets/MaritimeAegean/stopped --chunksize=1 --target=stopped --minseen=100000 --prune=0.9 --ties=0.0005 --delta=0.00000005
 
-
 // sailing:
 //--inpath=/home/nkatz/dev/iled/datasets/MaritimeAegean/sailing --chunksize=1 --target=sailing --minseen=100000 --prune=0.9 --ties=0.0005 --delta=0.00000005
 
@@ -69,83 +68,79 @@ import scala.io.Source
 
 object OLEDMaritimeRunner {
 
-
   lazy val highSpeedInDataOptionsTraining = new MaritimeDataOptions(
-    llePath = "/home/nkatz/dev/maritime/brest-data/datasets/dataset1.txt",
-    db = "brest-1",
-    hlePath = "/home/nkatz/dev/maritime/brest-data/recognition/1/highSpeedIn.csv",
-    speedLimitsPath = "/home/nkatz/dev/maritime/brest-data/areas_speed_limits.csv",
+    llePath          = "/home/nkatz/dev/maritime/brest-data/datasets/dataset1.txt",
+    db               = "brest-1",
+    hlePath          = "/home/nkatz/dev/maritime/brest-data/recognition/1/highSpeedIn.csv",
+    speedLimitsPath  = "/home/nkatz/dev/maritime/brest-data/areas_speed_limits.csv",
     closeToPortsPath = "/home/nkatz/dev/maritime/brest-data/recognition/1/close_to_ports.csv",
-    chunkSize = 10,
-    limit = 10000.0,
-    targetConcept = "highSpeedIn",
-    hlesMap = HLEsMap,
-    proxMap = proximityMap,
-    portsMap = portsMap)
+    chunkSize        = 10,
+    limit            = 10000.0,
+    targetConcept    = "highSpeedIn",
+    hlesMap          = HLEsMap,
+    proxMap          = proximityMap,
+    portsMap         = portsMap)
 
   lazy val highSpeedInDataOptionsTesting = new MaritimeDataOptions(
-    llePath = "/home/nkatz/dev/maritime/brest-data/datasets/dataset1.txt",
-    db = "brest-1",
-    hlePath = "/home/nkatz/dev/maritime/brest-data/recognition/1/highSpeedIn.csv",
-    speedLimitsPath = "/home/nkatz/dev/maritime/brest-data/areas_speed_limits.csv",
+    llePath          = "/home/nkatz/dev/maritime/brest-data/datasets/dataset1.txt",
+    db               = "brest-1",
+    hlePath          = "/home/nkatz/dev/maritime/brest-data/recognition/1/highSpeedIn.csv",
+    speedLimitsPath  = "/home/nkatz/dev/maritime/brest-data/areas_speed_limits.csv",
     closeToPortsPath = "/home/nkatz/dev/maritime/brest-data/recognition/1/close_to_ports.csv",
-    chunkSize = 100,
-    limit = 10000.0,
-    targetConcept = "highSpeedIn",
-    hlesMap = HLEsMap,
-    proxMap = proximityMap,
-    portsMap = portsMap)
-
+    chunkSize        = 100,
+    limit            = 10000.0,
+    targetConcept    = "highSpeedIn",
+    hlesMap          = HLEsMap,
+    proxMap          = proximityMap,
+    portsMap         = portsMap)
 
   lazy val stoppedDataOptions = new MaritimeDataOptions(
-    llePath = "/home/nkatz/dev/maritime/brest-data/datasets/dataset1.txt",
-    hlePath = "/home/nkatz/dev/maritime/brest-data/recognition/1/stopped-no-infs.csv",
-    speedLimitsPath = "/home/nkatz/dev/maritime/brest-data/areas_speed_limits.csv",
+    llePath          = "/home/nkatz/dev/maritime/brest-data/datasets/dataset1.txt",
+    hlePath          = "/home/nkatz/dev/maritime/brest-data/recognition/1/stopped-no-infs.csv",
+    speedLimitsPath  = "/home/nkatz/dev/maritime/brest-data/areas_speed_limits.csv",
     closeToPortsPath = "/home/nkatz/dev/maritime/brest-data/recognition/1/close_to_ports.csv",
-    chunkSize = 10,
-    targetConcept = "stopped",
-    hlesMap = HLEsMap,
-    proxMap = proximityMap,
-    portsMap = portsMap)
+    chunkSize        = 10,
+    targetConcept    = "stopped",
+    hlesMap          = HLEsMap,
+    proxMap          = proximityMap,
+    portsMap         = portsMap)
 
   lazy val sailingDataOptions = new MaritimeDataOptions(
-    llePath = "/home/nkatz/dev/maritime/brest-data/datasets/dataset1.txt",
-    hlePath = "/home/nkatz/dev/maritime/brest-data/recognition/1/sailing-no-infs.csv",
-    speedLimitsPath = "/home/nkatz/dev/maritime/brest-data/areas_speed_limits.csv",
+    llePath          = "/home/nkatz/dev/maritime/brest-data/datasets/dataset1.txt",
+    hlePath          = "/home/nkatz/dev/maritime/brest-data/recognition/1/sailing-no-infs.csv",
+    speedLimitsPath  = "/home/nkatz/dev/maritime/brest-data/areas_speed_limits.csv",
     closeToPortsPath = "/home/nkatz/dev/maritime/brest-data/recognition/1/close_to_ports.csv",
-    chunkSize = 10,
-    targetConcept = "sailing",
-    hlesMap = HLEsMap,
-    proxMap = proximityMap,
-    portsMap = portsMap)
+    chunkSize        = 10,
+    targetConcept    = "sailing",
+    hlesMap          = HLEsMap,
+    proxMap          = proximityMap,
+    portsMap         = portsMap)
 
   lazy val lowSpeedDataOptionsTraining = new MaritimeDataOptions(
-      llePath = "/home/nkatz/dev/maritime/brest-data/datasets/dataset1.txt",
-      hlePath = "/home/nkatz/dev/maritime/brest-data/recognition/1/lowSpeed-no-infs.csv",
-      speedLimitsPath = "/home/nkatz/dev/maritime/brest-data/areas_speed_limits.csv",
-      closeToPortsPath = "/home/nkatz/dev/maritime/brest-data/recognition/1/close_to_ports.csv",
-      chunkSize = 10,
-      targetConcept = "lowSpeed",
-      limit = 100000.0,
-      trainingMode = true,
-      hlesMap = HLEsMap,
-      proxMap = proximityMap,
-      portsMap = portsMap)
-
-  lazy val lowSpeedDataOptionsTesting= new MaritimeDataOptions(
-    llePath = "/home/nkatz/dev/maritime/brest-data/datasets/dataset1.txt",
-    hlePath = "/home/nkatz/dev/maritime/brest-data/recognition/1/lowSpeed-no-infs.csv",
-    speedLimitsPath = "/home/nkatz/dev/maritime/brest-data/areas_speed_limits.csv",
+    llePath          = "/home/nkatz/dev/maritime/brest-data/datasets/dataset1.txt",
+    hlePath          = "/home/nkatz/dev/maritime/brest-data/recognition/1/lowSpeed-no-infs.csv",
+    speedLimitsPath  = "/home/nkatz/dev/maritime/brest-data/areas_speed_limits.csv",
     closeToPortsPath = "/home/nkatz/dev/maritime/brest-data/recognition/1/close_to_ports.csv",
-    chunkSize = 10,
-    targetConcept = "lowSpeed",
-    limit = 100000.0,
-    trainingMode = false,
-    hlesMap = HLEsMap,
-    proxMap = proximityMap,
-    portsMap = portsMap)
+    chunkSize        = 10,
+    targetConcept    = "lowSpeed",
+    limit            = 100000.0,
+    trainingMode     = true,
+    hlesMap          = HLEsMap,
+    proxMap          = proximityMap,
+    portsMap         = portsMap)
 
-
+  lazy val lowSpeedDataOptionsTesting = new MaritimeDataOptions(
+    llePath          = "/home/nkatz/dev/maritime/brest-data/datasets/dataset1.txt",
+    hlePath          = "/home/nkatz/dev/maritime/brest-data/recognition/1/lowSpeed-no-infs.csv",
+    speedLimitsPath  = "/home/nkatz/dev/maritime/brest-data/areas_speed_limits.csv",
+    closeToPortsPath = "/home/nkatz/dev/maritime/brest-data/recognition/1/close_to_ports.csv",
+    chunkSize        = 10,
+    targetConcept    = "lowSpeed",
+    limit            = 100000.0,
+    trainingMode     = false,
+    hlesMap          = HLEsMap,
+    proxMap          = proximityMap,
+    portsMap         = portsMap)
 
   def main(args: Array[String]) = {
     val argsok = CMDArgs.argsOk(args)
@@ -179,28 +174,24 @@ object OLEDMaritimeRunner {
       ///*
       val system = ActorSystem("HoeffdingLearningSystem")
       val startMsg = if (runOpts.evalth != "None") "eval" else "start"
-      system.actorOf(Props(new Master(runOpts, trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction)), name = "Master-Actor") !  startMsg
+      system.actorOf(Props(new Master(runOpts, trainingDataOptions, testingDataOptions, trainingDataFunction, testingDataFunction)), name = "Master-Actor") ! startMsg
       //*/
     }
   }
 
-
-
-  class MaritimeDataOptions(val llePath: String = "",
-                            val db: String = "",
-                            val hlePath: String,
-                            val speedLimitsPath: String = "/home/nkatz/dev/maritime/brest-data/areas_speed_limits.csv",
-                            val closeToPortsPath: String,
-                            val chunkSize: Int = 1,
-                            val limit: Double = Double.PositiveInfinity.toInt,
-                            val targetConcept: String = "None",
-                            val trainingMode: Boolean = true,
-                            val hlesMap: scala.collection.mutable.Map[String, AnnotationPerVessel],
-                            val proxMap: scala.collection.mutable.Map[String, AnnotationPerVessel],
-                            val portsMap: scala.collection.mutable.Map[String, scala.collection.mutable.Set[String]]) extends app.runutils.IOHandling.InputSource
-
-
-
+  class MaritimeDataOptions(
+      val llePath: String = "",
+      val db: String = "",
+      val hlePath: String,
+      val speedLimitsPath: String = "/home/nkatz/dev/maritime/brest-data/areas_speed_limits.csv",
+      val closeToPortsPath: String,
+      val chunkSize: Int = 1,
+      val limit: Double = Double.PositiveInfinity.toInt,
+      val targetConcept: String = "None",
+      val trainingMode: Boolean = true,
+      val hlesMap: scala.collection.mutable.Map[String, AnnotationPerVessel],
+      val proxMap: scala.collection.mutable.Map[String, AnnotationPerVessel],
+      val portsMap: scala.collection.mutable.Map[String, scala.collection.mutable.Set[String]]) extends app.runutils.IOHandling.InputSource
 
   def getData(opts: MaritimeDataOptions): Iterator[Example] = {
 
@@ -219,22 +210,22 @@ object OLEDMaritimeRunner {
     times map { timeSlice => getDataSlice(timeSlice, opts.hlesMap, opts.proxMap, opts.portsMap) }
   }
 
+  def getDataSlice(
+      objects: Seq[DBObject],
+      hlesMap: scala.collection.mutable.Map[String, AnnotationPerVessel],
+      proxMap: scala.collection.mutable.Map[String, AnnotationPerVessel],
+      ports: scala.collection.mutable.Map[String, scala.collection.mutable.Set[String]]) = {
 
-  def getDataSlice(objects: Seq[DBObject],
-                   hlesMap: scala.collection.mutable.Map[String, AnnotationPerVessel],
-                   proxMap: scala.collection.mutable.Map[String, AnnotationPerVessel],
-                   ports: scala.collection.mutable.Map[String, scala.collection.mutable.Set[String]]) = {
+      def convert(o: DBObject) = {
+        val obj = o.asInstanceOf[BasicDBObject]
+        //val time = obj.get("time").toString
+        val atoms = obj.get("lles").asInstanceOf[BasicDBList].toList.map(_.toString).toSet
+        val vessels = obj.get("vessels").asInstanceOf[BasicDBList].toList.map(_.toString).toSet
+        val areas = obj.get("areas").asInstanceOf[BasicDBList].toList.map(_.toString).toSet
+        (atoms, vessels, areas)
+      }
 
-    def convert(o: DBObject) = {
-      val obj = o.asInstanceOf[BasicDBObject]
-      //val time = obj.get("time").toString
-      val atoms = obj.get("lles").asInstanceOf[BasicDBList].toList.map(_.toString).toSet
-      val vessels = obj.get("vessels").asInstanceOf[BasicDBList].toList.map(_.toString).toSet
-      val areas = obj.get("areas").asInstanceOf[BasicDBList].toList.map(_.toString).toSet
-      (atoms, vessels, areas)
-    }
-
-    def getTimes = objects.map(o => o.asInstanceOf[BasicDBObject].get("time").toString.toInt)
+      def getTimes = objects.map(o => o.asInstanceOf[BasicDBObject].get("time").toString.toInt)
     val times = getTimes
     val finalExampleStartTime = times.min
 
@@ -249,7 +240,7 @@ object OLEDMaritimeRunner {
     val (closeToPortsAtoms, speedLimitAtoms) = times.foldLeft(Set[String](), Set[String]()){ (accum, time) =>
 
       val closeToPortsAtoms_ = {
-        if(ports.contains(time.toString)) ports(time.toString)
+        if (ports.contains(time.toString)) ports(time.toString)
         else scala.collection.mutable.Set[String]()
       }
 
@@ -265,26 +256,17 @@ object OLEDMaritimeRunner {
     new Example(annot = hleAtoms.toList, nar = narrative, _time = finalExampleStartTime.toString)
   }
 
-
-
-
-
-
-
   def isWithinInterval(i: Int, interval: (Int, Int)) = {
     i >= interval._1 && i <= interval._2
   }
 
   def checkInterval(time: Int, interval: VesselAnnotationAtom): String = {
-    if ( isWithinInterval(time.toInt, (interval.startTime, interval.endTime)) ) {
+    if (isWithinInterval(time.toInt, (interval.startTime, interval.endTime))) {
       interval.getActualAtom(time.toInt)
     } else {
       "None"
     }
   }
-
-
-
 
   def getCurrentVesselsAnnotation(time: Int, vessels: Set[String], map: scala.collection.mutable.Map[String, AnnotationPerVessel]) = {
     vessels.foldLeft(Set[String]()){ (accum, v) =>
@@ -298,10 +280,7 @@ object OLEDMaritimeRunner {
     }
   }
 
-
-
-
-  case class VesselAnnotationAtom (atom: String, startTime: Int, endTime: Int, var hasBeenChecked: Boolean = false) {
+  case class VesselAnnotationAtom(atom: String, startTime: Int, endTime: Int, var hasBeenChecked: Boolean = false) {
     def getActualAtom(time: Int) = this.atom.replaceAll("ReplaceThisByActualTime", time.toString)
   }
 
@@ -348,7 +327,7 @@ object OLEDMaritimeRunner {
       case "rendezVous" =>
         data foreach { x =>
           val s = x.split("\\|")
-          val (startTime, endTime, vessel1, vessel2)  = (s(4).toInt, s(5).toInt - 1, s(1), s(0))
+          val (startTime, endTime, vessel1, vessel2) = (s(4).toInt, s(5).toInt - 1, s(1), s(0))
           val atom = s"""holdsAt($hle("$vessel1","$vessel2"),"ReplaceThisByActualTime")"""
           val a = VesselAnnotationAtom(atom, startTime, endTime)
           updateMap(vessel1, a, HLEsMap)
@@ -381,16 +360,5 @@ object OLEDMaritimeRunner {
       updateMap(vessel2, a, proximityMap)
     }
   }
-
-
-
-
-
-
-
-
-
-
-
 
 }

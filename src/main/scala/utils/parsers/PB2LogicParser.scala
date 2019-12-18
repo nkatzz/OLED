@@ -50,10 +50,11 @@ object PB2LogicParser extends LazyLogging {
     val out = result match {
       case Success(x) =>
         if (debug) {
-          logger.info("\n"+x.tostring)
+          logger.info("\n" + x.tostring)
           Some(x)
         } else Some(x)
-      case Failure(e: ParseError) => logger.error(parser.formatError(e)) ; None
+      case Failure(e: ParseError) =>
+        logger.error(parser.formatError(e)); None
       case Failure(e: Throwable) => throw e
     }
     out match {
@@ -62,8 +63,6 @@ object PB2LogicParser extends LazyLogging {
     }
   }
 
-
-
 }
 
 final class PB2LogicParser(val input: ParserInput) extends Parser {
@@ -71,8 +70,8 @@ final class PB2LogicParser(val input: ParserInput) extends Parser {
   case class ExpressionList(elems: List[Expression])
 
   def Clause = rule {
-    Atom ~ " :- " ~ BodyLiterals ~ optional(".") ~ EOI ~> ( (x, y) =>
-      logic.Clause(head = x, body = y.elems.map(_.asInstanceOf[Literal])) )
+    Atom ~ " :- " ~ BodyLiterals ~ optional(".") ~ EOI ~> ((x, y) =>
+      logic.Clause(head = x, body = y.elems.map(_.asInstanceOf[Literal])))
   }
 
   def Atom = rule {
@@ -82,24 +81,22 @@ final class PB2LogicParser(val input: ParserInput) extends Parser {
 
   private def Term: Rule1[Expression] = rule { Atom | Const | Var }
 
-  private def BodyLiterals = rule { oneOrMore(Atom).separatedBy(",") ~> ( x => ExpressionList(x.toList)) }
+  private def BodyLiterals = rule { oneOrMore(Atom).separatedBy(",") ~> (x => ExpressionList(x.toList)) }
 
-  private def InnerTerms = rule { "(" ~ oneOrMore(Term).separatedBy(",") ~ ")" ~> ( x => ExpressionList(x.toList)) }
+  private def InnerTerms = rule { "(" ~ oneOrMore(Term).separatedBy(",") ~ ")" ~> (x => ExpressionList(x.toList)) }
 
   private def Funct = rule { capture(LowerCaseString) ~> ((x: String) => x) }
 
   private def Var = rule { capture(UpperCaseString) ~> ((x: String) => Variable(x)) }
 
-
   private def Const = rule {
     (capture(LowerCaseString) ~> ((x: String) => Constant(x))) |
-     (capture(Integer) ~> (x => Constant(x))) |
-     (capture(MinusInteger) ~> (x => Constant(x))) |
-     (capture(optional('"') ~ TK_WhatEver ~ optional('"')) ~> (x => Constant(x))) |
-     (capture(optional('"') ~ LowerCaseString ~ optional('"')) ~> ((x: String) => Constant(x))) |
-     (capture('"' ~ UpperCaseString ~ '"') ~> ((x: String) => Constant(x)))
+      (capture(Integer) ~> (x => Constant(x))) |
+      (capture(MinusInteger) ~> (x => Constant(x))) |
+      (capture(optional('"') ~ TK_WhatEver ~ optional('"')) ~> (x => Constant(x))) |
+      (capture(optional('"') ~ LowerCaseString ~ optional('"')) ~> ((x: String) => Constant(x))) |
+      (capture('"' ~ UpperCaseString ~ '"') ~> ((x: String) => Constant(x)))
   }
-
 
   /*
   private def Const = rule {
@@ -125,36 +122,33 @@ final class PB2LogicParser(val input: ParserInput) extends Parser {
 }
 
 object TestRunner extends App {
-  val t = PB2LogicParser.parseAtom("fluentGrnd(holdsAt(reFuel(\"7330_124060\"),1498863690))", debug=true)
+  val t = PB2LogicParser.parseAtom("fluentGrnd(holdsAt(reFuel(\"7330_124060\"),1498863690))", debug = true)
   // - in
-  PB2LogicParser.parseAtom("use(-34534534,6)", debug=true)
-  PB2LogicParser.parseAtom("initiatedAt(meeting(X0,X1,45),1,Z,Petryb,a(p(2,3,z(23,g,f,ert(sdjfskj,Xkjsh))),1),oo(12,23,E))", debug=true)
+  PB2LogicParser.parseAtom("use(-34534534,6)", debug = true)
+  PB2LogicParser.parseAtom("initiatedAt(meeting(X0,X1,45),1,Z,Petryb,a(p(2,3,z(23,g,f,ert(sdjfskj,Xkjsh))),1),oo(12,23,E))", debug = true)
   // with a final "."
-  PB2LogicParser.parseAtom("initiatedAt(meeting(X0,X1,45),1,Z,Petryb,a(p(2,3,z(23,g,f,ert(sdjfskj,Xkjsh))),1),oo(12,23,E)).", debug=true)
+  PB2LogicParser.parseAtom("initiatedAt(meeting(X0,X1,45),1,Z,Petryb,a(p(2,3,z(23,g,f,ert(sdjfskj,Xkjsh))),1),oo(12,23,E)).", debug = true)
   // The Atom parser succeeds in the first match, e.g here it parses the (garbage) expression since it matches the head.
   // I'll have to do something with EOI to disallow that
-  PB2LogicParser.parseAtom("initiatedAt(meeting(X0,X1,45),1,Z,Petryb,a(p(2,3,z(23,g,f,ert(sdjfskj,Xkjsh))),1),oo(12,23,E)). :- sdfsdfsfsdfsdf", debug=true)
+  PB2LogicParser.parseAtom("initiatedAt(meeting(X0,X1,45),1,Z,Petryb,a(p(2,3,z(23,g,f,ert(sdjfskj,Xkjsh))),1),oo(12,23,E)). :- sdfsdfsfsdfsdf", debug = true)
   // negation
-  PB2LogicParser.parseAtom("not initiatedAt(meeting(X0,X1,45),1,Z,Petryb,a(p(2,3,z(23,g,f,ert(sdjfskj,Xkjsh))),1),oo(12,23,E))", debug=true)
+  PB2LogicParser.parseAtom("not initiatedAt(meeting(X0,X1,45),1,Z,Petryb,a(p(2,3,z(23,g,f,ert(sdjfskj,Xkjsh))),1),oo(12,23,E))", debug = true)
   // negation with final "."
-  PB2LogicParser.parseAtom("not initiatedAt(meeting(X0,X1,45),1,Z,Petryb,a(p(2,3,z(23,g,f,ert(sdjfskj,Xkjsh))),1),oo(12,23,E)).", debug=true)
+  PB2LogicParser.parseAtom("not initiatedAt(meeting(X0,X1,45),1,Z,Petryb,a(p(2,3,z(23,g,f,ert(sdjfskj,Xkjsh))),1),oo(12,23,E)).", debug = true)
   // clause
-  PB2LogicParser.parseClause("initiatedAt(meeting(X0,X1,45),1,Z,Petryb,a(p(2,3,z(23,g,f,ert(sdjfskj,Xkjsh))),1),oo(12,23,E)) :- happensAt(walking(X,34,p(a(s,2),Z)),T,Or),close(1,2,3,4,Yt)", debug=true)
+  PB2LogicParser.parseClause("initiatedAt(meeting(X0,X1,45),1,Z,Petryb,a(p(2,3,z(23,g,f,ert(sdjfskj,Xkjsh))),1),oo(12,23,E)) :- happensAt(walking(X,34,p(a(s,2),Z)),T,Or),close(1,2,3,4,Yt)", debug = true)
   // clause with final "."
-  PB2LogicParser.parseClause("initiatedAt(meeting(X0,X1,45),1,Z,Petryb,a(p(2,3,z(23,g,f,ert(sdjfskj,Xkjsh))),1),oo(12,23,E)) :- happensAt(walking(X,34,p(a(s,2),Z)),T,Or),close(1,2,3,4,Yt)", debug=true)
+  PB2LogicParser.parseClause("initiatedAt(meeting(X0,X1,45),1,Z,Petryb,a(p(2,3,z(23,g,f,ert(sdjfskj,Xkjsh))),1),oo(12,23,E)) :- happensAt(walking(X,34,p(a(s,2),Z)),T,Or),close(1,2,3,4,Yt)", debug = true)
   // clause with NAF in the body
-  PB2LogicParser.parseClause("initiatedAt(meeting(X0,X1,45),1,Z,Petryb,a(p(2,3,z(23,g,f,ert(sdjfskj,Xkjsh))),1),oo(12,23,E)) :- not happensAt(walking(X,34,p(a(s,2),Z)),T,Or),close(1,2,3,4,Yt),not happens(a(X,R,T,z(a,23,4)))", debug=true)
+  PB2LogicParser.parseClause("initiatedAt(meeting(X0,X1,45),1,Z,Petryb,a(p(2,3,z(23,g,f,ert(sdjfskj,Xkjsh))),1),oo(12,23,E)) :- not happensAt(walking(X,34,p(a(s,2),Z)),T,Or),close(1,2,3,4,Yt),not happens(a(X,R,T,z(a,23,4)))", debug = true)
 
-
-  val mlnTest = PB2LogicParser.parseAtom("initiatedAt(meeting(a(k,l,m),b,45),c,a,d)", debug=true)
+  val mlnTest = PB2LogicParser.parseAtom("initiatedAt(meeting(a(k,l,m),b,45),c,a,d)", debug = true)
   val a = Literal.toMLNFlat(mlnTest.asInstanceOf[Literal])
   println(a.tostring)
 
   // This does not work for variabilized literals (throws an exception).
-  val mlnTest1 = PB2LogicParser.parseAtom("initiatedAt(c,A,d)", debug=true)
+  val mlnTest1 = PB2LogicParser.parseAtom("initiatedAt(c,A,d)", debug = true)
   val b = Literal.toMLNFlat(mlnTest1.asInstanceOf[Literal])
   println(b.tostring)
 }
-
-
 

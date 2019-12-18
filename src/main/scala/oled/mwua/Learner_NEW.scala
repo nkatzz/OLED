@@ -31,12 +31,13 @@ import org.slf4j.LoggerFactory
 import scala.util.Random
 import scala.util.matching.Regex
 
-class Learner_NEW[T <: InputSource](val inps: RunningOptions,
-                                    val trainingDataOptions: T,
-                                    val testingDataOptions: T,
-                                    val trainingDataFunction: T => Iterator[Example],
-                                    val testingDataFunction: T => Iterator[Example],
-                                    val writeExprmtResultsTo: String = "") extends Actor {
+class Learner_NEW[T <: InputSource](
+    val inps: RunningOptions,
+    val trainingDataOptions: T,
+    val testingDataOptions: T,
+    val trainingDataFunction: T => Iterator[Example],
+    val testingDataFunction: T => Iterator[Example],
+    val writeExprmtResultsTo: String = "") extends Actor {
   val learningRate = 0.2 //1.0 //0.05 //0.2 // 1.0 usually works for winnow
 
   val epsilon = 0.9 //0.9 // used in the randomized version
@@ -56,7 +57,7 @@ class Learner_NEW[T <: InputSource](val inps: RunningOptions,
   // Set this to 1.0 to simulate the case of constant feedback at each round.
   // For values < 1.0 we only update weights and structure if a biased coin
   // with receiveFeedbackBias for heads returns heads.
-  val receiveFeedbackBias = 1.0//0.09 //0.2 //0.5
+  val receiveFeedbackBias = 1.0 //0.09 //0.2 //0.5
 
   val conservativeRuleGeneration = true
 
@@ -68,11 +69,11 @@ class Learner_NEW[T <: InputSource](val inps: RunningOptions,
   val inputTheoryFile = ""
 
   val inputTheory: List[Clause] = {
-    def matches(p: Regex, str: String) = p.pattern.matcher(str).matches
+      def matches(p: Regex, str: String) = p.pattern.matcher(str).matches
     if (inputTheoryFile == "") {
       Nil
-    }  else {
-      val rules = scala.io.Source.fromFile(inputTheoryFile).getLines.toList.filter(line => !matches( """""".r, line) && !line.startsWith("%"))
+    } else {
+      val rules = scala.io.Source.fromFile(inputTheoryFile).getLines.toList.filter(line => !matches("""""".r, line) && !line.startsWith("%"))
       val rulesParsed = rules.map(r => Clause.parse(r))
       rulesParsed
     }
@@ -92,7 +93,6 @@ class Learner_NEW[T <: InputSource](val inps: RunningOptions,
     }
   }
 
-
   // Just print-out all the data
   /*
   val test = {
@@ -106,7 +106,6 @@ class Learner_NEW[T <: InputSource](val inps: RunningOptions,
     pw.close()
   }
   */
-
 
   private val logger = LoggerFactory.getLogger(self.path.name)
 
@@ -152,7 +151,7 @@ class Learner_NEW[T <: InputSource](val inps: RunningOptions,
             x.replaceAll("active", "active_1")
           }
         }
-        Example(annot = currentBatch.annotation, nar = noisyNarrative, _time=currentBatch.time)
+        Example(annot = currentBatch.annotation, nar = noisyNarrative, _time = currentBatch.time)
       }
     }
   }
@@ -166,7 +165,6 @@ class Learner_NEW[T <: InputSource](val inps: RunningOptions,
 
   def wrapupAndShutDown() = {}
 
-
   def processData() = {
     data = getTrainData
     logEmptyDataError()
@@ -174,7 +172,7 @@ class Learner_NEW[T <: InputSource](val inps: RunningOptions,
 
     var perBatchError: Vector[Int] = Vector.empty[Int]
 
-    while(! done) {
+    while (!done) {
       val batch = getNextBatch(lleNoise = false)
       logger.info(s"Processing batch $batchCounter")
       if (batch.isEmpty) {
@@ -190,7 +188,6 @@ class Learner_NEW[T <: InputSource](val inps: RunningOptions,
 
         if (inputTheory.isEmpty) {
 
-
           //stateHandler.perBatchError = stateHandler.perBatchError :+ batchError
 
           /*  ======================= Dirty hack ===============================*/
@@ -198,9 +195,9 @@ class Learner_NEW[T <: InputSource](val inps: RunningOptions,
           stateHandler.clearDelayedUpdates
           var bias = 0.0
           val error = ExpertAdviceFunctions.process(batch, batch.annotation.toSet, inps,
-            stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
-            batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
-            bias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap)
+                                                    stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
+                                                    batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
+                                                    bias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap)
 
           perBatchError = perBatchError :+ error
 
@@ -208,20 +205,15 @@ class Learner_NEW[T <: InputSource](val inps: RunningOptions,
 
           bias = 1.0
           ExpertAdviceFunctions.process(batch, batch.annotation.toSet, inps,
-            stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
-            batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
-            bias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap)
+                                        stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
+                                        batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
+                                        bias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap)
 
           expandRules()
           woled.Utils.dumpToFile(avgLoss(perBatchError)._3.mkString(", "), "/home/nkatz/Desktop/kernel", "overwrite")
 
           //stateHandler.pruneRules("weight", 0.0005, Logger(this.getClass).underlying)
           //stateHandler.pruneRules("score", inps.pruneThreshold)
-
-
-
-
-
 
           /*
           stateHandler.clearDelayedUpdates
@@ -288,8 +280,6 @@ class Learner_NEW[T <: InputSource](val inps: RunningOptions,
             batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
             receiveFeedbackBias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap)*/
 
-
-
         } else {
 
           /*==============================*/
@@ -299,9 +289,9 @@ class Learner_NEW[T <: InputSource](val inps: RunningOptions,
           var bias = 1.0
 
           val error = ExpertAdviceFunctions.process(batch, batch.annotation.toSet, inps,
-            stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
-            batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
-            bias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap, inputTheory = Some(inputTheory))
+                                                    stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
+                                                    batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
+                                                    bias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap, inputTheory = Some(inputTheory))
 
           perBatchError = perBatchError :+ error
 
@@ -326,8 +316,6 @@ class Learner_NEW[T <: InputSource](val inps: RunningOptions,
           println(s"Per batch error:\n$perBatchError")
           println(s"Accumulated Per batch error:\n${perBatchError.scanLeft(0.0)(_ + _).tail}")
 
-
-
           /*ExpertAdviceFunctions.process(batch, batch.annotation.toSet, inps,
             stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
             batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
@@ -336,7 +324,6 @@ class Learner_NEW[T <: InputSource](val inps: RunningOptions,
       }
     }
   }
-
 
   def expandRules() = {
     val expandedInit =
@@ -353,7 +340,7 @@ class Learner_NEW[T <: InputSource](val inps: RunningOptions,
     in.foldLeft(0, 0, Vector.empty[Double]){ (x, y) =>
       val (count, prevSum, avgVector) = (x._1, x._2, x._3)
       val (newCount, newSum) = (count + 1, prevSum + y)
-      (newCount, newSum, avgVector :+ newSum.toDouble/newCount )
+      (newCount, newSum, avgVector :+ newSum.toDouble / newCount)
     }
   }
 
@@ -370,15 +357,13 @@ class Learner_NEW[T <: InputSource](val inps: RunningOptions,
     }
   }
 
-
   def receive = {
 
     case "start" => {
 
-      for( i <- (1 to 1) ) {
+      for (i <- (1 to 1)) {
         processData()
       }
-
 
     }
 
@@ -406,15 +391,15 @@ class Learner_NEW[T <: InputSource](val inps: RunningOptions,
 
           if (inputTheory.isEmpty) {
             ExpertAdviceFunctions.process(train, train.annotation.toSet, inps,
-              stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
-              batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
-              receiveFeedbackBias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap)
+                                          stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
+                                          batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
+                                          receiveFeedbackBias, conservativeRuleGeneration, weightUpdateStrategy, withInertia, feedbackGap)
           } else {
             ExpertAdviceFunctions.process(train, train.annotation.toSet, inps,
-              stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
-              batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
-              receiveFeedbackBias, conservativeRuleGeneration, weightUpdateStrategy, withInertia,
-              feedbackGap, inputTheory = Some(inputTheory))
+                                          stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
+                                          batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake,
+                                          receiveFeedbackBias, conservativeRuleGeneration, weightUpdateStrategy, withInertia,
+                                          feedbackGap, inputTheory = Some(inputTheory))
           }
 
           // test
@@ -467,10 +452,6 @@ class Learner_NEW[T <: InputSource](val inps: RunningOptions,
 
   }
 
-
-
-
-
   def wrapUp() = {
 
     if (trainingDataOptions != testingDataOptions) {
@@ -488,7 +469,7 @@ class Learner_NEW[T <: InputSource](val inps: RunningOptions,
 
         val getRules = (allRules: List[Clause]) => {
           val nonEmptyBodied = allRules.filter(x => x.body.nonEmpty) // Refs of empty-bodied rules would be too immature.
-          nonEmptyBodied.map( x => (x.refinements :+ x).minBy(-_.w_pos) ) // use the ref with the best score so far
+          nonEmptyBodied.map(x => (x.refinements :+ x).minBy(-_.w_pos)) // use the ref with the best score so far
           //nonEmptyBodied.flatMap( x => (x.refinements :+ x)) // use all
         }
 
@@ -507,9 +488,9 @@ class Learner_NEW[T <: InputSource](val inps: RunningOptions,
         _stateHandler.inertiaExpert.clear()
         val trueLabels = batch.annotation.toSet
         ExpertAdviceFunctions.process(batch, batch.annotation.toSet, inps,
-          _stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
-          batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake, _receiveFeedbackBias,
-          conservativeRuleGeneration, weightUpdateStrategy)
+                                      _stateHandler, trueLabels, learningRate, epsilon, randomizedPrediction,
+                                      batchCounter, percentOfMistakesBeforeSpecialize, specializeAllAwakeRulesOnFPMistake, _receiveFeedbackBias,
+                                      conservativeRuleGeneration, weightUpdateStrategy)
       }
       logger.info(s"Prequential error vector:\n${_stateHandler.perBatchError.map(x => x.toDouble)}")
       logger.info(s"Prequential error vector (Accumulated Error):\n${_stateHandler.perBatchError.scanLeft(0.0)(_ + _).tail}")
@@ -522,9 +503,9 @@ class Learner_NEW[T <: InputSource](val inps: RunningOptions,
       val fps = _stateHandler.totalFPs
       val fns = _stateHandler.totalFNs
 
-      val microPrecision = tps.toDouble/(tps.toDouble + fps.toDouble)
-      val microRecall = tps.toDouble/(tps.toDouble + fns.toDouble)
-      val microFscore = (2*microPrecision*microRecall)/(microPrecision+microRecall)
+      val microPrecision = tps.toDouble / (tps.toDouble + fps.toDouble)
+      val microRecall = tps.toDouble / (tps.toDouble + fns.toDouble)
+      val microFscore = (2 * microPrecision * microRecall) / (microPrecision + microRecall)
 
       println(s"Micro F1-score on test set: $microFscore")
 
@@ -532,15 +513,14 @@ class Learner_NEW[T <: InputSource](val inps: RunningOptions,
       wrapUp_NO_TEST()
     }
 
-
   }
 
   def wrapUp_NO_TEST() = {
 
-    def show(in: List[Clause]) = {
-      in.sortBy(x => -x.w_pos).
-        map(x => x.showWithStats + "\n" + x.refinements.sortBy(x => -x.w_pos).map(x => x.showWithStats).mkString("\n      ")).mkString("\n")
-    }
+      def show(in: List[Clause]) = {
+        in.sortBy(x => -x.w_pos).
+          map(x => x.showWithStats + "\n" + x.refinements.sortBy(x => -x.w_pos).map(x => x.showWithStats).mkString("\n      ")).mkString("\n")
+      }
 
     //logger.info(show(stateHandler.ensemble.initiationRules))
     //logger.info(show(stateHandler.ensemble.terminationRules))
@@ -553,7 +533,7 @@ class Learner_NEW[T <: InputSource](val inps: RunningOptions,
     logger.info(s"Prequential (running) F1-score:\n${stateHandler.runningF1Score}")
     logger.info(s"Running rules number:\n${stateHandler.runningRulesNumber}")
     logger.info(s"Total TPs: ${stateHandler.totalTPs}, Total FPs: ${stateHandler.totalFPs}, Total FNs: ${stateHandler.totalFNs}, Total TNs: ${stateHandler.totalTNs}")
-    logger.info(s"Total time: ${(endTime - startTime)/1000000000.0}")
+    logger.info(s"Total time: ${(endTime - startTime) / 1000000000.0}")
 
     if (randomizedPrediction) {
       logger.info(s"\nPredicted with initiation rules: ${stateHandler.predictedWithInitRule} times")
