@@ -23,14 +23,13 @@ import akka.actor.{ActorSystem, Props}
 import app.runners.MLNDataHandler.MLNDataOptions
 import app.runutils.{CMDArgs, Globals}
 import logic.Examples.Example
-import logic.{Clause, Literal, LogicUtils, Theory}
+import logic.{Clause, LogicUtils, Theory}
 import oled.single_core.Dispatcher
 import utils.DataUtils.DataAsExamples
 import utils.Utils
 import xhail.Xhail
 
 import scala.io.Source
-import scala.util.Random
 
 /**
   * Created by nkatz on 9/14/16.
@@ -55,7 +54,7 @@ object OLEDRunner_MLNExperiments {
 
       val inps = CMDArgs.getOLEDInputArgs(args)
 
-      val trainingDataOptions = new MLNDataOptions(foldPath, inps.chunkSize, take = 10000)
+      val trainingDataOptions = new MLNDataOptions(foldPath, inps.chunkSize, take = 1000000)
       //val trainingDataOptions = new MLNDataOptions(foldPath, inps.chunkSize)
       val testingDataOptions = new MLNDataOptions(foldPath, inps.chunkSize)
       val trainingDataFunction: MLNDataOptions => Iterator[Example] = MLNDataHandler.getTrainingData

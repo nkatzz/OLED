@@ -42,7 +42,7 @@ object TPLPExpertsPlots extends App {
   //plotMeetingStreaming("/home/nkatz/Desktop/TPLP-2019-results/meeting-streaming", "/home/nkatz/Desktop/TPLP-2019-results")
   //plotMovingStreaming("/home/nkatz/Desktop/TPLP-2019-results/moving-streaming", "/home/nkatz/Desktop/TPLP-2019-results")
 
-  //plotCrossValBothCEs("/home/nkatz/Desktop/TPLP-2019-results")
+  plotCrossValBothCEs("/home/nkatz/Desktop/TPLP-2019-results")
 
   //plotMovingF1Scores("/home/nkatz/Desktop/TPLP-2019-results/moving-prequential-comparison-PrequentialF1Score", "/home/nkatz/Desktop/TPLP-2019-results")
   //plotMovingMistakes("/home/nkatz/Desktop/TPLP-2019-results/moving-prequential-comparison-MistakeNum", "/home/nkatz/Desktop/TPLP-2019-results")

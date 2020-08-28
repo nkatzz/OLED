@@ -19,12 +19,8 @@ package utils
 
 import java.io.File
 
-import utils.DataUtils.{DataAsIntervals, DataSet}
-import utils.DataUtils.Interval
-import logic.Examples.Example
 import logic.{Clause, Constant, PriorTheory, Theory}
-
-import scala.math.pow
+import utils.DataUtils.{DataAsIntervals, DataSet, Interval}
 
 /**
   * Created by nkatz on 4/2/2016.
@@ -94,4 +90,4 @@ object ExmplImplicits {
     e map (x => new Example(annot = x.exmplWithInertia.annotation, nar = x.exmplWithInertia.narrative, _time = x.exmplWithInertia.time))
   }
 }
-*/ 
+*/

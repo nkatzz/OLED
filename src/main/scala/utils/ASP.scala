@@ -18,12 +18,13 @@
 package utils
 
 import java.io.File
+
 import app.runutils.{Globals, RunningOptions}
 import com.typesafe.scalalogging._
-import parsers.ASPResultsParser
-import logic._
 import logic.Examples._
-import scala.io.Source
+import logic._
+import utils.parsers.ASPResultsParser
+
 import scala.sys.process._
 
 object ASP extends ASPResultsParser with LazyLogging {
@@ -471,7 +472,7 @@ object ASP extends ASPResultsParser with LazyLogging {
     val mode = if (List("all", "optN").contains(solveMode)) "0" else ""
     //val command = Seq("clingo", aspFile, mode, with_atom_undefiend, aspCores, " > ", outFile.getCanonicalPath)
 
-    val command = Seq("clingo", aspFile, mode, with_atom_undefiend, aspCores)
+    val command = Seq("/home/nkatz/software/oledhome/clingo/clingo-4.5.4-source/build/release/clingo", aspFile, mode, with_atom_undefiend, aspCores)
 
     val result = command.mkString(" ").lineStream_!
     val results = result.toList
