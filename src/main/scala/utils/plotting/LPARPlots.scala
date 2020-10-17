@@ -16,11 +16,19 @@ object LPARPlots extends App {
   //plotTheorySizes("/home/nkatz/Dropbox/PapersAll/LPAR-2020/woled-asp")
 
 
-  plotMapInferenceMeet("/home/nkatz/Dropbox/PapersAll/KR-2020/KR20_authors_kit_v1.2/paper")
-  plotMapInferenceMove("/home/nkatz/Dropbox/PapersAll/KR-2020/KR20_authors_kit_v1.2/paper")
-  plotMapInferenceRendezVous("/home/nkatz/Dropbox/PapersAll/KR-2020/KR20_authors_kit_v1.2/paper")
-  plotMapInferenceDangerousDriving("/home/nkatz/Dropbox/PapersAll/KR-2020/KR20_authors_kit_v1.2/paper")
+  //plotMapInferenceMeet("/home/nkatz/Dropbox/PapersAll/KR-2020/KR20_authors_kit_v1.2/paper")
+  //plotMapInferenceMove("/home/nkatz/Dropbox/PapersAll/KR-2020/KR20_authors_kit_v1.2/paper")
+  //plotMapInferenceRendezVous("/home/nkatz/Dropbox/PapersAll/KR-2020/KR20_authors_kit_v1.2/paper")
+  //plotMapInferenceDangerousDriving("/home/nkatz/Dropbox/PapersAll/KR-2020/KR20_authors_kit_v1.2/paper")
 
+  //plotMapInferenceDangerousDriving("/home/nkatz/Dropbox/PapersAll/ACCEPTED/KR-2020/scalatikz-graphs")
+  //plotMapInferenceNonEconomicDriving("/home/nkatz/Dropbox/PapersAll/ACCEPTED/KR-2020/scalatikz-graphs")
+  //plotMapInferenceRefuelOpportunity("/home/nkatz/Dropbox/PapersAll/ACCEPTED/KR-2020/scalatikz-graphs")
+
+  //plotMapInferenceRendezVous("/home/nkatz/Dropbox/PapersAll/ACCEPTED/KR-2020/scalatikz-graphs")
+  //plotMapInferencePilotOps("/home/nkatz/Dropbox/PapersAll/ACCEPTED/KR-2020/scalatikz-graphs")
+
+  plotCrossValRendevousPilotOps("/home/nkatz/Dropbox/PapersAll/ACCEPTED/KR-2020/scalatikz-graphs")
 
   def plotMapInferenceDangerousDriving(savePath: String) = {
     val groundingSolvingASP = Vector(0.041, 0.072, 0.098, 0.568)
@@ -32,9 +40,45 @@ object LPARPlots extends App {
       .havingLegendPos(NORTH_WEST)
       .havingXLabel("\\Large{Avg. #atoms in ground program}")
       .havingYLabel("\\Large{Grounding + solving (sec)}")
-      //.havingTitle("\\emph{\\large{DangerousDriving}}")
+      .havingTitle("\\emph{\\large{Dangerous Driving}}")
       //havingTitle("\\emph{Meeting},ybar").
       .havingAxisXLabels(Seq("1.8K", "2.9K", "12K", "16K")).
+      havingFontSize(VERY_LARGE).
+      saveAsPDF(savePath)
+    //.show()
+  }
+
+  def plotMapInferenceNonEconomicDriving(savePath: String) = {
+    val groundingSolvingASP = Vector(0.024, 0.032, 0.076, 0.468)
+    val groundingSolvingMLN = Vector(0.086, 0.283, 3.675, 12.922)
+    Figure("map-scalability-non-economic-driving")
+      .plot(lineColor       = RED, marker = X, markStrokeColor = RED)(groundingSolvingASP).
+      plot(lineColor       = BLUE, marker = TRIANGLE, markStrokeColor = BLUE)(groundingSolvingMLN)
+      .havingLegends("\\large{WOLED-ASP}", "\\large{WOLED-MLN}")
+      .havingLegendPos(NORTH_WEST)
+      .havingXLabel("\\Large{Avg. #atoms in ground program}")
+      .havingYLabel("\\Large{Grounding + solving (sec)}")
+      .havingTitle("\\emph{\\large{Non-Economic Driving}}")
+      //havingTitle("\\emph{Meeting},ybar").
+      .havingAxisXLabels(Seq("2K", "3.3K", "14K", "17K")).
+      havingFontSize(VERY_LARGE).
+      saveAsPDF(savePath)
+    //.show()
+  }
+
+  def plotMapInferenceRefuelOpportunity(savePath: String) = {
+    val groundingSolvingASP = Vector(0.022, 0.031, 0.06, 0.426)
+    val groundingSolvingMLN = Vector(0.112, 0.344, 4.234, 11.423)
+    Figure("map-scalability-refuel")
+      .plot(lineColor       = RED, marker = X, markStrokeColor = RED)(groundingSolvingASP).
+      plot(lineColor       = BLUE, marker = TRIANGLE, markStrokeColor = BLUE)(groundingSolvingMLN)
+      .havingLegends("\\large{WOLED-ASP}", "\\large{WOLED-MLN}")
+      .havingLegendPos(NORTH_WEST)
+      .havingXLabel("\\Large{Avg. #atoms in ground program}")
+      .havingYLabel("\\Large{Grounding + solving (sec)}")
+      .havingTitle("\\emph{\\large{Re-Fuel Opportunity}}")
+      //havingTitle("\\emph{Meeting},ybar").
+      .havingAxisXLabels(Seq("2K", "3K", "13K", "16.3K")).
       havingFontSize(VERY_LARGE).
       saveAsPDF(savePath)
     //.show()
@@ -51,13 +95,50 @@ object LPARPlots extends App {
       .havingLegendPos(NORTH_WEST)
       .havingXLabel("\\Large{Avg. #atoms in ground program}")
       .havingYLabel("\\Large{Grounding + solving (sec)}")
-      //.havingTitle("\\emph{\\large{RendezVous}}")
+      .havingTitle("\\emph{\\large{Vessel RendezVous}}")
       //havingTitle("\\emph{Meeting},ybar").
-      .havingAxisXLabels(Seq("2.6K", "3.8K", "18K", "29K")).
+      .havingAxisXLabels(Seq("3K", "5K", "20K", "30K")).
       havingFontSize(VERY_LARGE).
       saveAsPDF(savePath)
     //.show()
   }
+
+  def plotMapInferencePilotOps(savePath: String) = {
+    val groundingSolvingASP = Vector(0.045, 0.068, 0.178, 0.456)
+    val groundingSolvingMLN = Vector(0.042, 0.243, 4.624, 22.228)
+    Figure("map-scalability-pilotops")
+      .plot(lineColor       = RED, marker = X, markStrokeColor = RED)(groundingSolvingASP).
+      plot(lineColor       = BLUE, marker = TRIANGLE, markStrokeColor = BLUE)(groundingSolvingMLN)
+      .havingLegends("\\large{WOLED-ASP}", "\\large{WOLED-MLN}")
+      .havingLegendPos(NORTH_WEST)
+      .havingXLabel("\\Large{Avg. #atoms in ground program}")
+      .havingYLabel("\\Large{Grounding + solving (sec)}")
+      .havingTitle("\\emph{\\large{Pilot Ops}}")
+      //havingTitle("\\emph{Meeting},ybar").
+      .havingAxisXLabels(Seq("3K", "5K", "20K", "30K")).
+      havingFontSize(VERY_LARGE).
+      saveAsPDF(savePath)
+    //.show()
+  }
+
+  def plotCrossValRendevousPilotOps(savePath: String) = {
+    val fscoresRendezVous = Vector(0.837, 0.724) //, 0.782
+    val fscoresPilotOps = Vector (0.848, 0.725) //, 0.704
+    Figure("cross-val").
+      bar(barColor = BLUE ! 50 ! BLACK, barWidth = 0.1)(fscoresRendezVous). //
+      bar(barColor = RED ! 50 ! BLACK, barWidth = 0.1)(fscoresPilotOps). //, barWidth = 0.2
+      havingYLabel("\\textbf{$F_1$-score (test set)}").havingYLimits(0.5, 1.0).
+      havingAxisXLabels(Seq(
+        "\\textsf{WOLED-ASP}",
+        "\\textsf{WOLED-MLN}",
+        //"\\textsf{\\scriptsize OLED}"
+      ))//.rotateXTicks(20)
+      .havingTitle("\\emph{},ybar")
+      .havingLegends("\\emph{RendezVous}", "\\emph{PilotOps}")
+      .havingLegendPos(NORTH_EAST)
+      .saveAsPDF(savePath)
+  }
+
 
   def plotMapInferenceMove(savePath: String) = {
     val groundingSolvingASP = Vector(0.032, 0.068, 0.187, 0.634)
